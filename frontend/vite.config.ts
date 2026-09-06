@@ -5,7 +5,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    // Lets the dev server run correctly inside a docker container
     watch: { usePolling: true },
+  },
+  optimizeDeps: {
+    exclude: ["@pie-framework/pie-fixed-player-static"],
   },
 });

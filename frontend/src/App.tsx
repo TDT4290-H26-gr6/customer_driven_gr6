@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Login } from "./Login";
+import { QuestionPlayer } from "./QuestionPlayer";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
@@ -59,7 +60,7 @@ export function App() {
     <div style={{ fontFamily: "sans-serif", padding: "2rem", maxWidth: 640 }}>
       <h1>AIOS Question Bank</h1>
       {!learner ? (
-        <Login onLogin={handleLogin} />
+<Login onLogin={handleLogin} />
       ) : (
         <>
           <p>Signed in as {learner.email} <button onClick={handleLogout}>Sign out</button></p>
@@ -69,6 +70,7 @@ export function App() {
               <p>{q.prompt}</p>
             </div>
           ))}
+          {questions[0] && <QuestionPlayer content={questions[0].content} />}
         </>
       )}
     </div>

@@ -31,13 +31,8 @@ docker-compose.yml   Runs mysql + backend + frontend together
 .github/workflows/ci.yml   Installs deps and builds both apps on push
 ```
 
-## Next steps (see sprint 1 plan)
+## Next steps 
 
-- Add Google OAuth (backend token verification + frontend login button)
-- Flesh out `backend/prisma/schema.prisma` with the rest of the core tables
-  (question, competence_area, sat_instance, response, competence_score)
-- Embed the PIE player component in the frontend and render one question
-- Add a POST endpoint that scores and stores a submitted response
 
 ## Common commands
 

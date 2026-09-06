@@ -20,23 +20,24 @@ async function main() {
     }),
   };
 
-  function mcQuestion(competenceAreaId: string, prompt: string, choices: { label: string; correct: boolean }[]) {
-    return {
-      competenceAreaId,
-      prompt,
-      questionType: "behavioral_anchor",
-      content: {
-        elements: { "multiple-choice": "@pie-element/multiple-choice@latest" },
-        models: [{
-          id: "1",
-          element: "multiple-choice",
-          prompt,
-          choices: choices.map((c, i) => ({ value: String(i), label: c.label, correct: c.correct })),
-        }],
-        markup: "<multiple-choice id='1'></multiple-choice>",
-      },
-    };
-  }
+function mcQuestion(competenceAreaId: string, prompt: string, choices: { label: string; correct: boolean }[]) {
+  return {
+    competenceAreaId,
+    prompt,
+    questionType: "behavioral_anchor",
+    content: {
+      elements: { "multiple-choice": "@pie-element/multiple-choice@latest" },
+      models: [{
+        id: "1",
+        element: "multiple-choice",
+        prompt,
+        choiceMode: "radio",
+        choices: choices.map((c, i) => ({ value: String(i), label: `<div>${c.label}</div>`, correct: c.correct })),
+      }],
+      markup: "<multiple-choice id='1'></multiple-choice>",
+    },
+  };
+}
 
   await prisma.question.create({
     data: mcQuestion(areas.c1.id,
