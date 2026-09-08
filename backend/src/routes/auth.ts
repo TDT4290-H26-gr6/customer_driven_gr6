@@ -26,6 +26,7 @@ authRouter.post("/auth/google", async (req, res) => {
       where: { googleSubId: payload.sub },
       update: { email: payload.email, name: payload.name },
       create: { email: payload.email, name: payload.name, googleSubId: payload.sub },
+      include: { userRole: true },
     });
 
     const sessionToken = jwt.sign(
@@ -34,7 +35,10 @@ authRouter.post("/auth/google", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ token: sessionToken, learner: { id: learner.id, email: learner.email, name: learner.name } });
+    res.json({
+      token: sessionToken,
+      learner: { id: learner.id, email: learner.email, name: learner.name, role: learner.userRole },
+    });
   } catch (err) {
     console.error(err);
     res.status(401).json({ error: "Google token verification failed" });
@@ -44,7 +48,10 @@ authRouter.post("/auth/google", async (req, res) => {
 import { requireAuth, AuthedRequest } from "../middleware/requireAuth";
 
 authRouter.get("/auth/me", requireAuth, async (req: AuthedRequest, res) => {
-  const learner = await prisma.learner.findUnique({ where: { id: req.learnerId } });
+  const learner = await prisma.learner.findUnique({
+    where: { id: req.learnerId },
+    include: { userRole: true },
+  });
   if (!learner) return res.status(404).json({ error: "Not found" });
-  res.json({ id: learner.id, email: learner.email, name: learner.name });
+  res.json({ id: learner.id, email: learner.email, name: learner.name, role: learner.userRole });
 });
