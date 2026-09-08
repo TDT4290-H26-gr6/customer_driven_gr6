@@ -1,7 +1,13 @@
 import { PrismaClient } from "@prisma/client";
+import { DEFAULT_ROLES } from "../src/roles";
 const prisma = new PrismaClient();
 
 async function main() {
+  await prisma.role.createMany({
+    data: DEFAULT_ROLES.map((name) => ({ name })),
+    skipDuplicates: true,
+  });
+
   const areas = {
     c1: await prisma.competenceArea.create({
       data: { name: "Open Science Principles and Policy" },

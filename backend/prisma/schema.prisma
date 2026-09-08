@@ -16,10 +16,19 @@ model Learner {
   email        String   @unique
   name         String?
   googleSubId  String?  @unique // "sub" claim from Google's ID token
-  role         String   @default("learner") // "learner" | "admin"
+  role         String   @default("learner") // system role: "learner" | "admin"
+  roleId       String?  // chosen persona (Role table): student, librarian, CEO, ...
+  userRole     Role?    @relation(fields: [roleId], references: [id])
   createdAt    DateTime @default(now())
 
   satInstances SatInstance[]
+}
+
+// Persona the learner picks after signing in, before starting a learning journey.
+model Role {
+  id       String    @id @default(uuid())
+  name     String    @unique
+  learners Learner[]
 }
 
 model CompetenceArea {
