@@ -1,67 +1,42 @@
 import { useEffect, useState } from "react";
-import { Login } from "./Login";
-import { QuestionPlayer } from "./QuestionPlayer";
-import { RoleSelect } from "./RoleSelect";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
-
-type Question = {
-  id: string;
-  prompt: string;
-  questionType: string;
-  competenceArea: { name: string };
-  content: any;
-};
-type Role = { id: string; name: string };
-type Learner = { id: string; email: string; name: string; role?: Role | null };
+import { GoogleLoginButton, getMe, getToken, clearToken } from "@/features/auth";
+import type { Learner, Role } from "@/features/auth";
+import { RoleSelect } from "@/features/onboarding";
+import { PieQuestionPlayer, getQuestions } from "@/features/assessment";
+import type { Question } from "@/features/assessment";
 
 export function App() {
-  const [token, setToken] = useState<string | null>(null);
   const [learner, setLearner] = useState<Learner | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("aios_token");
-    if (!stored) {
+    if (!getToken()) {
       setCheckingSession(false);
       return;
     }
-    fetch(`${API_URL}/auth/me`, {
-      headers: { Authorization: `Bearer ${stored}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Invalid session");
-        return res.json();
+    getMe()
+      .then((me) => {
+        setLearner(me);
+        loadQuestions();
       })
-      .then((loggedInLearner) => {
-        setToken(stored);
-        setLearner(loggedInLearner);
-        fetchQuestions(stored);
-      })
-      .catch(() => {
-        localStorage.removeItem("aios_token");
-      })
+      .catch(() => clearToken())
       .finally(() => setCheckingSession(false));
   }, []);
 
-  function fetchQuestions(authToken: string) {
-    fetch(`${API_URL}/questions`, {
-      headers: { Authorization: `Bearer ${authToken}` },
-    })
-      .then((res) => res.json())
-      .then(setQuestions);
+  function loadQuestions() {
+    getQuestions()
+      .then(setQuestions)
+      .catch(() => setQuestions([]));
   }
 
-  function handleLogin(newToken: string, loggedInLearner: Learner) {
-    setToken(newToken);
-    setLearner(loggedInLearner);
-    fetchQuestions(newToken);
+  function handleLogin(me: Learner) {
+    setLearner(me);
+    loadQuestions();
   }
 
   function handleLogout() {
-    localStorage.removeItem("aios_token");
-    setToken(null);
+    clearToken();
     setLearner(null);
     setQuestions([]);
   }
@@ -71,18 +46,15 @@ export function App() {
   return (
     <div style={{ fontFamily: "sans-serif", padding: "2rem", maxWidth: 640 }}>
       <h1>AIOS Question Bank</h1>
-      {!learner || !token ? (
-        <Login onLogin={handleLogin} />
+      {!learner ? (
+        <GoogleLoginButton onLogin={handleLogin} />
       ) : !learner.role ? (
         <>
           <p>
             Signed in as {learner.email}{" "}
             <button onClick={handleLogout}>Sign out</button>
           </p>
-          <RoleSelect
-            token={token}
-            onDone={(role) => setLearner({ ...learner, role })}
-          />
+          <RoleSelect onDone={(role: Role) => setLearner({ ...learner, role })} />
         </>
       ) : (
         <>
@@ -96,7 +68,7 @@ export function App() {
               <p>{q.prompt}</p>
             </div>
           ))}
-          {questions[0] && <QuestionPlayer content={questions[0].content} />}
+          {questions[0] && <PieQuestionPlayer content={questions[0].content} />}
         </>
       )}
     </div>

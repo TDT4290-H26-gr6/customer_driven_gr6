@@ -1,50 +1,27 @@
 import { useEffect, useState } from "react";
+import { getRoles, setMyRole } from "../api";
+import type { Role } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
-
-type Role = { id: string; name: string };
-
-export function RoleSelect({
-  token,
-  onDone,
-}: {
-  token: string;
-  onDone: (role: Role) => void;
-}) {
+export function RoleSelect({ onDone }: { onDone: (role: Role) => void }) {
   const [roles, setRoles] = useState<Role[]>([]);
   const [selected, setSelected] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`${API_URL}/roles`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then((data: Role[]) => {
+    getRoles()
+      .then((data) => {
         setRoles(data);
         if (data[0]) setSelected(data[0].id);
       })
       .catch(() => setError("Could not load roles."));
-  }, [token]);
+  }, []);
 
   function confirm() {
     if (!selected) return;
     setSaving(true);
     setError("");
-    fetch(`${API_URL}/auth/me/role`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ roleId: selected }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
+    setMyRole(selected)
       .then((me) => onDone(me.role))
       .catch(() => setError("Could not save your role. Try again."))
       .finally(() => setSaving(false));

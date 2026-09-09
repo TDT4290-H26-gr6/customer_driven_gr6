@@ -1,4 +1,4 @@
-import { prisma } from "./prisma";
+import { prisma } from "../../db/prisma";
 
 // Default selectable personas. Idempotent: safe to run on every boot.
 export const DEFAULT_ROLES = [

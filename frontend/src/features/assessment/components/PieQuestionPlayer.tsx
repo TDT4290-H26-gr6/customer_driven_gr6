@@ -1,13 +1,8 @@
 import { useEffect, useRef } from "react";
 import "@pie-framework/pie-fixed-player-static";
+import type { PieContent } from "../types";
 
-type PieContent = {
-  elements: Record<string, string>;
-  models: any[];
-  markup: string;
-};
-
-export function QuestionPlayer({ content }: { content: PieContent }) {
+export function PieQuestionPlayer({ content }: { content: PieContent }) {
   const ref = useRef<any>(null);
 
   useEffect(() => {

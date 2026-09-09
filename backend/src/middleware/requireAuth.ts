@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.JWT_SECRET || "dev-secret-change-me";
+import { config } from "../config";
 
 export interface AuthedRequest extends Request {
   learnerId?: string;
@@ -13,7 +12,7 @@ export function requireAuth(req: AuthedRequest, res: Response, next: NextFunctio
 
   try {
     const token = header.slice("Bearer ".length);
-    const decoded = jwt.verify(token, JWT_SECRET) as { learnerId: string };
+    const decoded = jwt.verify(token, config.jwtSecret) as { learnerId: string };
     req.learnerId = decoded.learnerId;
     next();
   } catch {

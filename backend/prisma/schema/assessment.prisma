@@ -1,0 +1,62 @@
+/// Assessment module — the question bank, self-assessment runs, answers and
+/// derived scores. Tables: assessment_*.
+
+model CompetenceArea {
+  id          String  @id @default(uuid())
+  name        String
+  description String? @db.Text
+
+  questions Question[]
+
+  @@map("assessment_competence_area")
+}
+
+model Question {
+  id               String         @id @default(uuid())
+  competenceAreaId String
+  competenceArea   CompetenceArea @relation(fields: [competenceAreaId], references: [id])
+  prompt           String         @db.Text
+  questionType     String // "multiple_choice" | "self_rating" | "behavioral_anchor" | "rubric"
+  content          Json // PIE item content (elements / models / markup)
+
+  responses Response[]
+
+  @@map("assessment_question")
+}
+
+model SatInstance {
+  id          String    @id @default(uuid())
+  learnerId   String
+  learner     Learner   @relation(fields: [learnerId], references: [id])
+  instanceNum Int // 1 = before curriculum, 2 = after (SAT16)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  responses        Response[]
+  competenceScores CompetenceScore[]
+
+  @@map("assessment_sat_instance")
+}
+
+model Response {
+  id            String      @id @default(uuid())
+  satInstanceId String
+  satInstance   SatInstance @relation(fields: [satInstanceId], references: [id])
+  questionId    String
+  question      Question    @relation(fields: [questionId], references: [id])
+  answer        Json
+  score         Float?
+  answeredAt    DateTime    @default(now())
+
+  @@map("assessment_response")
+}
+
+model CompetenceScore {
+  id               String      @id @default(uuid())
+  satInstanceId    String
+  satInstance      SatInstance @relation(fields: [satInstanceId], references: [id])
+  competenceAreaId String
+  score            Float
+
+  @@map("assessment_competence_score")
+}
