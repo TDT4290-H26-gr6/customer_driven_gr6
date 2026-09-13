@@ -13,6 +13,8 @@
   --color-primary-hover: #4338ca;
   --color-primary-contrast: #ffffff;
   --color-danger: #dc2626;
+  --color-warning: #b45309;
+  --color-warning-bg: #fef3c7;
 
   --header-height: 56px;
   --sidebar-width: 220px;

@@ -1,0 +1,176 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.toggle {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.banner {
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.bannerIcon {
+  opacity: 0.9;
+}
+
+.body {
+  /* Fixed floor so every collapsed card is the same size regardless of how
+     many optional facts (level, credits, ...) a course actually has. An
+     expanded card's content simply grows past this. */
+  min-height: 220px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.typeBadge,
+.confirmedBadge,
+.unconfirmedBadge {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.typeBadge {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.confirmedBadge {
+  background: rgba(79, 70, 229, 0.12);
+  color: var(--color-primary);
+}
+
+.unconfirmedBadge {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.name {
+  margin: 0;
+  font-size: 15px;
+}
+
+.institution {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.factRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 4px 0 0;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+}
+
+.fact dt {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.fact dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.details {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.details p {
+  margin: 0;
+}
+
+.description {
+  color: var(--color-text-muted);
+}
+
+.topics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.topicChip {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  font-size: 11px;
+  color: var(--color-text);
+}
+
+.confidenceNote {
+  font-size: 12px;
+  font-style: italic;
+  color: var(--color-text-muted);
+}
+
+.expandHint {
+  display: inline-block;
+  /* Pins to the bottom of .body's flex column, so it lines up at the same
+     spot on every collapsed card even when one has fewer facts above it. */
+  margin-top: auto;
+  padding-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.externalLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.externalLink:hover {
+  text-decoration: underline;
+}
