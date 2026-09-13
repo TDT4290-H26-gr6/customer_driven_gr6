@@ -51,12 +51,12 @@ frontend/
     │   │   ├── AppProviders.tsx     # composes all context providers
     │   │   └── AuthProvider.tsx     # session/token state + refresh
     │   ├── layout/
-    │   │   ├── AppShell.tsx         # header + sidebar + <Outlet/>
+    │   │   ├── AppShell.tsx         # header + sidebar + <Outlet/>, blocks with RoleGateModal if no role
     │   │   ├── Header.tsx           # brand left, signed-in user right
-    │   │   └── Sidebar.tsx          # collapsible nav
+    │   │   ├── Sidebar.tsx          # collapsible nav
+    │   │   └── RoleGateModal.tsx    # forced role-pick modal — see "Role gating" below
     │   └── guards/
-    │       ├── RequireAuth.tsx      # no session -> redirect /login
-    │       └── RequireRole.tsx      # no persona chosen -> redirect /onboarding
+    │       └── RequireAuth.tsx      # no session -> redirect /login
     │
     ├── features/
     │   ├── auth/
@@ -70,11 +70,10 @@ frontend/
     │   │   ├── types.ts             # Learner, Session
     │   │   └── index.ts             # public surface of the feature
     │   │
-    │   ├── onboarding/              # persona / role selection before the journey
+    │   ├── onboarding/              # persona / role selection
     │   │   ├── components/
-    │   │   │   └── RoleSelect.tsx       # dropdown + confirm button
-    │   │   ├── pages/
-    │   │   │   └── OnboardingPage.tsx
+    │   │   │   └── RoleSelect.tsx       # dropdown + confirm button; used by both
+    │   │   │                            # RoleGateModal (forced pick) and Settings (change it)
     │   │   ├── api.ts               # GET /roles, PUT /auth/me/role
     │   │   ├── hooks.ts             # useRoles(), useSetRole()
     │   │   ├── types.ts             # Role
@@ -160,6 +159,8 @@ frontend/
 | `shared/`                | `shared/`, `config/`                        | `features/`, `app/`                 |
 | `features/<x>/`          | its own folder, `shared/`, `config/`        | other `features/`, `app/`           |
 | `app/`                   | `features/*/index.ts`, `shared/`, `config/` | feature internals (only the barrel) |
+
+**Exception:** a page may import a hook directly from `app/providers/` (`useAuth`, `useTheme`) even though that's technically "`app/`". These providers hold genuinely app-wide state — the current session, the visuals setting — not feature-specific logic, so treat them like `shared/`: any feature may depend on the hook, but never reach into a provider's other internals.
 | `App.tsx` / `routes.tsx` | `app/`, `features/*/index.ts`               | anything deep                       |
 
 A **page** owns data loading and composition for one screen. A **component**
@@ -220,16 +221,44 @@ is given everything it needs via props and stays reusable. A feature's
 `react-router-dom` drives page‑level navigation. The agreed flow:
 
 ```
-/login        -> LoginPage                       (public)
-/onboarding   -> OnboardingPage   (RequireAuth)
-/settings     -> SettingsPage     (RequireAuth) — role change, reached from the header's account dropdown
-/assessment   -> Assessment* pages (RequireAuth + RequireRole)
-/courses      -> CoursesPage       (RequireAuth + RequireRole)
-/results      -> ResultsPage       (RequireAuth + RequireRole)
-/             -> redirect to the right step based on session + role
+/login        -> LoginPage        (public)
+/settings     -> SettingsPage     (RequireAuth) — reached from the header's account dropdown
+/results      -> ResultsPage      (RequireAuth)
+/courses      -> CoursesPage      (RequireAuth)
+/assessment   -> AssessmentRunnerPage (RequireAuth) — not in the sidebar; only reached via
+                                        the dashboard's "Assess yourself" button
+/             -> redirect to /login or /results based on session
 ```
 
-Guards live in `app/guards/` and are applied in `routes.tsx`.
+`RequireAuth` (in `app/guards/`) is the only route guard. There is no
+`/onboarding` route and no `RequireRole` guard — see "Role gating" below for
+why picking a role is a modal, not a page or a redirect target.
+
+### Role gating
+
+A learner with no role yet must pick one before touching anything else,
+but as a **modal**, not a separate page — the same page (e.g. `/results`)
+stays mounted underneath, blocked:
+
+- `AppShell` computes `needsRole = learner && !learner.role`. While true, it
+  renders `RoleGateModal` on top and skips rendering `<Outlet/>` entirely
+  (so the routed page doesn't mount — and doesn't fetch — until a role
+  exists; once it does, the page mounts fresh with no stale pre-role state
+  to clean up).
+- `AppShell` also sets the DOM `inert` property on everything else (header,
+  sidebar, the empty main area) while the modal is up. `inert` blocks clicks
+  *and* removes those elements from the tab order, so there's no
+  keyboard-only escape route around the modal either. The modal itself has
+  no close button, no backdrop-click-to-dismiss, and no Escape handling.
+- **This client-side blocking is UX, not the security boundary.** A learner
+  with dev tools can always edit their own client-side state (call
+  `setRole` from the console, delete the overlay from the DOM, etc.) — no
+  amount of frontend hardening changes that for a browser they control. The
+  actual enforcement is server-side: `requireRole` middleware (see
+  `context/backend-structure.md`) sits on every endpoint that assumes a
+  persona (`GET /questions`, `GET /courses`) and returns 403 regardless of
+  what the page renders. Add it to any new endpoint that shouldn't work
+  before onboarding.
 
 ---
 
@@ -239,6 +268,84 @@ Guards live in `app/guards/` and are applied in `routes.tsx`.
   (`Component.module.css`) co‑located with the component.
 - No inline `style={{…}}` for anything beyond a one‑off nudge. The current
   inline‑styled screens are refactored to modules during migration.
+- **Every color a component uses must be one of the `--color-*` tokens
+  below** (never a hardcoded hex/rgb) — that's the only thing that makes
+  dark mode automatic instead of a per‑component chore. `npx grep` for
+  `#[0-9a-f]{3,8}|rgba?\(` under `src/` before merging a new screen; a hit
+  in a `.module.css` (as opposed to `styles/globals.css` itself, or a
+  deliberately theme‑agnostic decorative color, e.g. `CourseCard`'s banner
+  gradients) means a token got skipped.
+
+### Theming: Default / Light / Dark
+
+Modeled on Claude's own visuals picker — Settings has three options, not
+a single toggle:
+
+- **Default** — follows the OS/browser's `prefers-color-scheme`.
+- **Light** / **Dark** — pinned regardless of the system setting.
+
+**How it works:**
+
+1. `styles/globals.css` defines the full light palette unguarded on `:root`,
+   then redefines the same token names twice for dark: once inside
+   `@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { … } }`
+   (serves "Default" when the OS is dark, but backs off if the learner picked
+   "Light" explicitly) and once inside `:root[data-theme="dark"] { … }` (an
+   explicit "Dark" choice, wins even on a light‑system browser). Never define
+   a color only inside one of those two blocks — both must agree, or the
+   toggle and the OS setting can disagree with each other.
+2. `app/providers/ThemeProvider.tsx` holds the `preference`
+   (`"default" | "light" | "dark"`, persisted via `useLocalStorage`) and sets
+   or removes the `data-theme` attribute on `<html>` to match. It also
+   exposes `resolvedTheme` (`"light" | "dark"`, resolving what "Default"
+   currently means) for the rare case a component can't rely on CSS
+   variables — e.g. `GoogleLoginButton` picks a matching Google‑widget theme.
+3. `index.html` has a small inline script that applies a stored `data-theme`
+   *before* React mounts, so there's no flash of the wrong theme on first
+   paint. It reads the same `localStorage` key `ThemeProvider` writes
+   (`aios.themePreference`) — keep them in sync if either changes.
+4. The picker itself lives in `features/settings/pages/SettingsPage.tsx`
+   ("Choose your visuals"), via `useTheme()`.
+
+**Token list** (defined for both light and dark — add new ones to *both*
+places in `globals.css`, right next to each other, so they can't drift):
+`--color-bg`, `--color-surface`, `--color-border`, `--color-text`,
+`--color-text-muted`, `--color-primary`, `--color-primary-hover`,
+`--color-primary-contrast`, `--color-primary-soft`, `--color-danger`,
+`--color-warning`, `--color-warning-bg`, `--shadow-sm`, `--shadow-md`.
+Non‑color tokens (`--header-height`, `--sidebar-width*`, `--radius-*`) don't
+need a dark variant.
+
+### Third-party widgets: pie-fixed-player
+
+`<pie-fixed-player>` (`@pie-framework/pie-fixed-player-static`, wrapped by
+`features/assessment/components/PieQuestionPlayer.tsx`) renders its
+question/answer content via Material‑UI (MUI) in the regular **light
+DOM — not Shadow DOM**, so global CSS *can* reach its internals. It's just
+built assuming a light page and doesn't read our tokens on its own, so in
+dark mode it was rendering dark widget text on our now-dark card
+background — unreadable.
+
+**Fix:** `styles/globals.css` overrides its colors directly, targeting the
+classes it actually renders (`.MuiTypography-root`, `.MuiFormLabel-root`,
+`.choice-label`, `.option-label`, plus raw `svg text`/`svg tspan` for
+elements that render via SVG) to our `--color-text` / `--color-border`
+tokens, with `!important` (needed to beat MUI's own inline/JS-set styles).
+Duplicated across both dark blocks exactly like every other token — never
+add this only under `[data-theme="dark"]` or only under
+`prefers-color-scheme`, same rule as everywhere else in this file.
+`PieQuestionPlayer`'s `.canvas` wrapper is then just a normal themed
+surface (`--color-surface` / `--color-text`), not a special case.
+
+This is inherently a bit brittle: it depends on class names inside a
+package we don't control, so a future `@pie-framework` upgrade could
+silently stop matching. If widget text goes unreadable again, inspect the
+rendered markup for its current classes and update the selectors.
+
+This is the pattern for any future embedded/third-party widget that ships
+its own styling: isolate it in a small fixed-color container rather than
+hoping it inherits our tokens — don't leave it to blend into whatever
+`--color-surface` happens to resolve to.
 
 ---
 

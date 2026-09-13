@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom";
-import { BookIcon, ChevronIcon, ClipboardIcon, HomeIcon } from "@/shared/components/icons";
+import { BookIcon, ChevronIcon, HomeIcon } from "@/shared/components/icons";
 import styles from "./Sidebar.module.css";
 
+// Assessment is deliberately not a nav item — it's only reachable via the
+// dashboard's "Assess yourself" button, not as a page someone browses to.
 const NAV_ITEMS = [
   { to: "/results", label: "Dashboard", Icon: HomeIcon },
   { to: "/courses", label: "Courses", Icon: BookIcon },
-  { to: "/assessment", label: "Assessment", Icon: ClipboardIcon },
 ];
 
 type Props = {

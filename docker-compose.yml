@@ -25,6 +25,11 @@ services:
       BACKEND_PORT: ${BACKEND_PORT}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       JWT_SECRET: ${JWT_SECRET}
+      # tsx watch's file watcher misses bind-mount changes on Docker
+      # Desktop/Windows (native fs events don't cross the mount) — same
+      # class of issue the frontend's vite.config.ts already works around
+      # with `watch: { usePolling: true }`.
+      CHOKIDAR_USEPOLLING: "true"
     ports:
       - "${BACKEND_PORT}:4000"
       - "5555:5555"

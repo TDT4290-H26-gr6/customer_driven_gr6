@@ -1,23 +1,25 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "@/app/layout/AppShell";
 import { RequireAuth } from "@/app/guards/RequireAuth";
-import { RequireRole } from "@/app/guards/RequireRole";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { LoginPage } from "@/features/auth";
-import { OnboardingPage } from "@/features/onboarding";
 import { AssessmentRunnerPage } from "@/features/assessment";
 import { ResultsPage } from "@/features/results";
 import { SettingsPage } from "@/features/settings";
 import { CoursesPage } from "@/features/courses";
 import { Spinner } from "@/shared/components/Spinner";
 
-/** "/" always redirects to whatever step the learner is actually on. */
+/**
+ * "/" always redirects to whatever step the learner is actually on. There's
+ * no dedicated onboarding route: AppShell itself blocks with a modal
+ * (RoleGateModal) whenever a signed-in learner has no role yet, on
+ * whichever page they land on.
+ */
 function HomeRedirect() {
-  const { status, learner } = useAuth();
+  const { status } = useAuth();
 
   if (status === "loading") return <Spinner />;
   if (status === "signedOut") return <Navigate to="/login" replace />;
-  if (!learner?.role) return <Navigate to="/onboarding" replace />;
   return <Navigate to="/results" replace />;
 }
 
@@ -28,14 +30,12 @@ export function AppRoutes() {
 
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
-          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/settings" element={<SettingsPage />} />
-
-          <Route element={<RequireRole />}>
-            <Route path="/results" element={<ResultsPage />} />
-            <Route path="/courses" element={<CoursesPage />} />
-            <Route path="/assessment" element={<AssessmentRunnerPage />} />
-          </Route>
+          <Route path="/results" element={<ResultsPage />} />
+          <Route path="/courses" element={<CoursesPage />} />
+          {/* Not in the sidebar — only reachable via the dashboard's
+              "Assess yourself" button. */}
+          <Route path="/assessment" element={<AssessmentRunnerPage />} />
         </Route>
       </Route>
 

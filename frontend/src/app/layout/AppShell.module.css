@@ -4,6 +4,13 @@
   flex-direction: column;
 }
 
+/* Layout-transparent — exists only so AppShell has a single node to mark
+   `inert` while the role-gate modal is up, without disturbing the flex
+   layout of its Header/.body children. */
+.inertWrapper {
+  display: contents;
+}
+
 .body {
   flex: 1;
   display: flex;

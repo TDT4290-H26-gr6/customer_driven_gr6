@@ -16,7 +16,7 @@ model Question {
   competenceAreaId String
   competenceArea   CompetenceArea @relation(fields: [competenceAreaId], references: [id])
   prompt           String         @db.Text
-  questionType     String // "multiple_choice" | "self_rating" | "behavioral_anchor" | "rubric"
+  questionType     String // "multiple_choice" | "self_rating" | "behavioral_anchor" | "rubric" | "drag_and_drop"
   content          Json // PIE item content (elements / models / markup)
 
   responses Response[]
