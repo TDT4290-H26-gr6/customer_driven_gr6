@@ -1,6 +1,22 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Applies a stored "Light"/"Dark" visuals choice before first paint,
+         so there's no flash of the wrong theme. "Default" leaves no
+         attribute here and falls through to prefers-color-scheme in
+         styles/globals.css. Kept in sync with ThemeProvider's storage key. -->
+    <script>
+      (function () {
+        try {
+          var pref = localStorage.getItem("aios.themePreference");
+          if (pref === "light" || pref === "dark") {
+            document.documentElement.setAttribute("data-theme", pref);
+          }
+        } catch (e) {
+          /* storage unavailable — falls back to prefers-color-scheme */
+        }
+      })();
+    </script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

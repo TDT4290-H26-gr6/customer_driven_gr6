@@ -103,6 +103,61 @@ function mcQuestion(competenceAreaId: string, prompt: string, choices: { label: 
       questionType: "self_rating",
     },
   });
+
+// Drag-and-drop example, using @pie-element/drag-in-the-blank (bundled in
+// pie-fixed-player-static — see docs/demo/generate.js in the pie-elements
+// repo for the config shape this is based on). `rows[].text` becomes a table
+// row with a `{{i}}` blank; `rows[].term` becomes the draggable choice that
+// belongs in that blank.
+function dragQuestion(competenceAreaId: string, prompt: string, rows: { text: string; term: string }[]) {
+  const choices = rows.map((r, i) => ({ id: String(i), value: r.term }));
+  const correctResponse = Object.fromEntries(rows.map((_, i) => [i, String(i)]));
+  const tableRows = rows
+    .map((r, i) => `<tr><td><p>${r.text}</p></td><td><p>{{${i}}}</p></td></tr>`)
+    .join("\n");
+
+  return {
+    competenceAreaId,
+    prompt,
+    questionType: "drag_and_drop",
+    content: {
+      elements: { "drag-in-the-blank": "@pie-element/drag-in-the-blank@latest" },
+      models: [{
+        id: "1",
+        element: "drag-in-the-blank",
+        prompt: `<p>${prompt}</p>`,
+        choicesPosition: "below",
+        lockChoiceOrder: true,
+        partialScoring: true,
+        // How many blanks must be filled to count as answered — the
+        // widget's own isComplete() compares against this and there's no
+        // way to derive it automatically from the markup, so it must be
+        // set explicitly or the item can never report complete.
+        responseAreasToBeFilled: rows.length,
+        duplicates: false,
+        feedback: {},
+        mode: "gather",
+        choices,
+        markup:
+          `<table class="table table-bordered">\n<tbody>\n` +
+          `<tr><td><strong>Description</strong></td><td><strong>Term</strong></td></tr>\n${tableRows}\n` +
+          `</tbody>\n</table>`,
+        correctResponse,
+      }],
+      markup: "<drag-in-the-blank id='1'></drag-in-the-blank>",
+    },
+  };
+}
+
+  await prisma.question.create({
+    data: dragQuestion(areas.c1.id,
+      "Drag each term into the box next to its correct definition.",
+      [
+        { text: "Findable, Accessible, Interoperable, and Reusable — guiding principles for research data.", term: "FAIR" },
+        { text: "Data anyone can access, use, and share without restriction.", term: "Open Data" },
+        { text: "Independently repeating a study and getting the same results.", term: "Reproducibility" },
+      ]),
+  });
 }
 
 main()

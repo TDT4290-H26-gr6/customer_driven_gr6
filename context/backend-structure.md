@@ -126,7 +126,8 @@ backend/src/
 ├── db/
 │   └── prisma.ts            # the single shared PrismaClient
 ├── middleware/
-│   └── requireAuth.ts       # JWT -> req.learnerId
+│   ├── requireAuth.ts       # JWT -> req.learnerId
+│   └── requireRole.ts       # requires req.learnerId's persona to be set (403 otherwise)
 ├── lib/                     # framework-agnostic helpers (jwt, errors, ...)
 ├── modules/
 │   ├── identity/
@@ -135,9 +136,13 @@ backend/src/
 │   │   ├── identity.types.ts
 │   │   └── roles.bootstrap.ts     # ensureDefaultRoles() — idempotent seed
 │   ├── assessment/
-│   │   ├── assessment.routes.ts   # /questions, (later) /responses, /sat-instances
+│   │   ├── assessment.routes.ts   # /questions (requireRole), (later) /responses, /sat-instances
 │   │   ├── assessment.service.ts
 │   │   └── assessment.types.ts
+│   ├── courses/
+│   │   ├── courses.routes.ts      # /courses (requireRole)
+│   │   ├── courses.service.ts
+│   │   └── courses.bootstrap.ts   # ensureSeedCourses() — idempotent example data
 │   ├── security/                  # (added with the module)
 │   │   ├── security.routes.ts
 │   │   ├── security.service.ts
@@ -175,8 +180,19 @@ backend/src/
 ## 6. Cross-cutting concerns
 
 - **Auth**: `middleware/requireAuth.ts` stays shared; it only decodes the JWT.
-  Anything role/permission‑aware lives in `identity` (persona) or `security`
-  (privileged access).
+- **Role gating**: `middleware/requireRole.ts` is chained after `requireAuth`
+  on any route that assumes a persona has been picked (`GET /questions`,
+  `GET /courses`) and returns `403` otherwise. It's the one deliberate
+  exception to "modules import middleware, not the other way around" —
+  it calls `identity.service.ts`'s `findLearnerById` because "has a role"
+  is identity's data, and duplicating that check per-module wasn't worth
+  avoiding a shared middleware importing one read-only service function.
+  This is also the *real* enforcement behind the frontend's role-gate
+  modal (`RoleGateModal` — see `context/frontend-structure.md`): that modal
+  is UX, easily defeated by anyone editing their own client-side state, so
+  every endpoint it's meant to protect must carry `requireRole` itself.
+  Privileged (admin) access is a separate concern and still belongs in
+  `security`.
 - **Errors**: services throw typed errors from `lib/errors.ts`; a single Express
   error handler in `server.ts` maps them to status codes.
 - **Config**: one `src/config.ts` reads `process.env` once (`DATABASE_URL`,
