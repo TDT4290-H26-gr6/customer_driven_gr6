@@ -96,16 +96,21 @@ frontend/
     │   │   ├── types.ts             # Question, PieContent, Response, SatInstance
     │   │   └── index.ts
     │   │
-    │   └── results/                # scores + visualisation
-    │       ├── components/
-    │       │   ├── CompetenceRadar.tsx      # radar / spider chart (inline SVG)
-    │       │   ├── CompetenceBreakdown.tsx
-    │       │   └── ScoreTable.tsx
+    │   ├── results/                # scores + visualisation
+    │   │   ├── components/
+    │   │   │   ├── CompetenceRadar.tsx      # radar / spider chart (inline SVG)
+    │   │   │   ├── CompetenceBreakdown.tsx
+    │   │   │   └── ScoreTable.tsx
+    │   │   ├── pages/
+    │   │   │   └── ResultsPage.tsx
+    │   │   ├── api.ts               # GET /results, GET /competence-scores
+    │   │   ├── hooks.ts             # useResults()
+    │   │   ├── types.ts             # CompetenceScore, ResultSummary
+    │   │   └── index.ts
+    │   │
+    │   └── settings/                # account settings — role change for now, more later
     │       ├── pages/
-    │       │   └── ResultsPage.tsx
-    │       ├── api.ts               # GET /results, GET /competence-scores
-    │       ├── hooks.ts             # useResults()
-    │       ├── types.ts             # CompetenceScore, ResultSummary
+    │       │   └── SettingsPage.tsx     # reuses onboarding's RoleSelect via its barrel
     │       └── index.ts
     │
     ├── shared/                     # generic, domain-agnostic building blocks
@@ -208,6 +213,7 @@ is given everything it needs via props and stays reusable. A feature's
 ```
 /login        -> LoginPage                       (public)
 /onboarding   -> OnboardingPage   (RequireAuth)
+/settings     -> SettingsPage     (RequireAuth) — role change, reached from the header's account dropdown
 /assessment   -> Assessment* pages (RequireAuth + RequireRole)
 /results      -> ResultsPage       (RequireAuth + RequireRole)
 /             -> redirect to the right step based on session + role
