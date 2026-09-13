@@ -7,8 +7,8 @@ COPY package.json package-lock.json* ./
 RUN npm install
 
 COPY . .
-RUN npx prisma generate
+RUN npx prisma generate --schema=./prisma/schema
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss; npm run dev"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss --schema=./prisma/schema; npm run dev"]

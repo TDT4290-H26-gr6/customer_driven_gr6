@@ -9,6 +9,7 @@
     "prisma:generate": "prisma generate"
   },
   "prisma": {
+    "schema": "./prisma/schema",
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {

@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { DEFAULT_ROLES } from "../src/roles";
+import { DEFAULT_ROLES } from "../src/modules/identity/roles.bootstrap";
 const prisma = new PrismaClient();
 
 async function main() {

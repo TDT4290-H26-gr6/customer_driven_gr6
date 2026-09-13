@@ -1,0 +1,13 @@
+// Prisma schema is split into one file per domain module (see
+// context/backend-structure.md). This file holds only the generator and
+// datasource; models live in identity.prisma, assessment.prisma, etc.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["prismaSchemaFolder"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
