@@ -8,6 +8,7 @@ import { OnboardingPage } from "@/features/onboarding";
 import { AssessmentRunnerPage } from "@/features/assessment";
 import { ResultsPage } from "@/features/results";
 import { SettingsPage } from "@/features/settings";
+import { CoursesPage } from "@/features/courses";
 import { Spinner } from "@/shared/components/Spinner";
 
 /** "/" always redirects to whatever step the learner is actually on. */
@@ -32,6 +33,7 @@ export function AppRoutes() {
 
           <Route element={<RequireRole />}>
             <Route path="/results" element={<ResultsPage />} />
+            <Route path="/courses" element={<CoursesPage />} />
             <Route path="/assessment" element={<AssessmentRunnerPage />} />
           </Route>
         </Route>

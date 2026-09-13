@@ -8,4 +8,5 @@ export const endpoints = {
   roles: "/roles",
   questions: "/questions",
   competenceScores: "/competence-scores",
+  courses: "/courses",
 } as const;

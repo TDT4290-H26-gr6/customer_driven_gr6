@@ -96,6 +96,15 @@ frontend/
     │   │   ├── types.ts             # Question, PieContent, Response, SatInstance
     │   │   └── index.ts
     │   │
+    │   ├── courses/                # partner-institution courses/resources
+    │   │   ├── components/
+    │   │   │   └── CourseCard.tsx        # expandable stat-card, always shows the source link
+    │   │   ├── pages/
+    │   │   │   └── CoursesPage.tsx
+    │   │   ├── api.ts               # GET /courses
+    │   │   ├── types.ts             # Course
+    │   │   └── index.ts
+    │   │
     │   ├── results/                # scores + visualisation
     │   │   ├── components/
     │   │   │   ├── CompetenceRadar.tsx      # radar / spider chart (inline SVG)
@@ -215,6 +224,7 @@ is given everything it needs via props and stays reusable. A feature's
 /onboarding   -> OnboardingPage   (RequireAuth)
 /settings     -> SettingsPage     (RequireAuth) — role change, reached from the header's account dropdown
 /assessment   -> Assessment* pages (RequireAuth + RequireRole)
+/courses      -> CoursesPage       (RequireAuth + RequireRole)
 /results      -> ResultsPage       (RequireAuth + RequireRole)
 /             -> redirect to the right step based on session + role
 ```

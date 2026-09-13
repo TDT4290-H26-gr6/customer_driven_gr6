@@ -1,0 +1,31 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.heading {
+  margin: 0;
+  font-size: 24px;
+}
+
+.subheading {
+  margin: -12px 0 0;
+  color: var(--color-text-muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* start (not the grid default stretch): an expanded card grows the row's
+     height and pushes the next row down, without stretching its unexpanded
+     row-mates to match it. */
+  align-items: start;
+  gap: 20px;
+}
+
+.empty {
+  color: var(--color-text-muted);
+}

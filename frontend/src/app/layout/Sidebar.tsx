@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
-import { ChevronIcon, ClipboardIcon, HomeIcon } from "@/shared/components/icons";
+import { BookIcon, ChevronIcon, ClipboardIcon, HomeIcon } from "@/shared/components/icons";
 import styles from "./Sidebar.module.css";
 
 const NAV_ITEMS = [
   { to: "/results", label: "Dashboard", Icon: HomeIcon },
+  { to: "/courses", label: "Courses", Icon: BookIcon },
   { to: "/assessment", label: "Assessment", Icon: ClipboardIcon },
 ];
 

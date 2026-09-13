@@ -42,6 +42,7 @@ possible without a rewrite.
 | --- | --- | --- | --- |
 | **`identity`** | who the user is: accounts, Google sign‑in, the persona role picked at onboarding | `identity_learner`, `identity_role`, *(later)* `identity_session` | `POST /auth/google`, `GET /auth/me`, `PUT /auth/me/role`, `GET /roles` |
 | **`assessment`** | the question bank, self‑assessment runs, answers, scores | `assessment_competence_area`, `assessment_question`, `assessment_sat_instance`, `assessment_response`, `assessment_competence_score` | `GET /questions`, *(later)* `POST /sat-instances`, `POST /responses`, `GET /results` |
+| **`courses`** | third‑party learning resources (courses, training programmes, institutional initiatives) that build a competence area | `courses_course` | `GET /courses` |
 | **`security`** | privileged access and traceability | *(later)* `security_admin`, `security_audit_event`, `security_api_key` | *(later)* `GET/POST /admin/*` |
 | **`platform`** | cross‑cutting config | *(later)* `platform_app_setting`, `platform_feature_flag` | — |
 | **`health`** | liveness / readiness for ops | — | `GET /health` |
