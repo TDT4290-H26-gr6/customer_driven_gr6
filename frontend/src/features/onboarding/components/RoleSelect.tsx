@@ -1,10 +1,28 @@
 import { useEffect, useState } from "react";
+import { Button } from "@/shared/components/Button";
 import { getRoles, setMyRole } from "../api";
 import type { Role } from "../types";
+import styles from "./RoleSelect.module.css";
 
-export function RoleSelect({ onDone }: { onDone: (role: Role) => void }) {
+type Props = {
+  onDone: (role: Role) => void;
+  /** Preselect an existing role instead of defaulting to the first option — used by Settings. */
+  initialRoleId?: string;
+  heading?: string;
+  description?: string;
+  confirmLabel?: string;
+};
+
+/** Dropdown + confirm button for choosing a role. Reused by onboarding and settings. */
+export function RoleSelect({
+  onDone,
+  initialRoleId,
+  heading = "Choose your role",
+  description = "Pick the role that best describes you to start your learning journey.",
+  confirmLabel = "Confirm",
+}: Props) {
   const [roles, setRoles] = useState<Role[]>([]);
-  const [selected, setSelected] = useState("");
+  const [selected, setSelected] = useState(initialRoleId ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -12,10 +30,10 @@ export function RoleSelect({ onDone }: { onDone: (role: Role) => void }) {
     getRoles()
       .then((data) => {
         setRoles(data);
-        if (data[0]) setSelected(data[0].id);
+        if (!initialRoleId && data[0]) setSelected(data[0].id);
       })
       .catch(() => setError("Could not load roles."));
-  }, []);
+  }, [initialRoleId]);
 
   function confirm() {
     if (!selected) return;
@@ -28,16 +46,14 @@ export function RoleSelect({ onDone }: { onDone: (role: Role) => void }) {
   }
 
   return (
-    <div style={{ maxWidth: 360 }}>
-      <h2>Choose your role</h2>
-      <p style={{ color: "#555" }}>
-        Pick the role that best describes you to start your learning journey.
-      </p>
+    <div className={styles.wrap}>
+      <h2 className={styles.heading}>{heading}</h2>
+      <p className={styles.hint}>{description}</p>
       <select
+        className={styles.select}
         value={selected}
         onChange={(e) => setSelected(e.target.value)}
         disabled={roles.length === 0 || saving}
-        style={{ padding: "0.5rem", fontSize: "1rem", width: "100%" }}
       >
         {roles.map((r) => (
           <option key={r.id} value={r.id}>
@@ -45,16 +61,12 @@ export function RoleSelect({ onDone }: { onDone: (role: Role) => void }) {
           </option>
         ))}
       </select>
-      <div style={{ marginTop: "1rem" }}>
-        <button
-          onClick={confirm}
-          disabled={saving || !selected}
-          style={{ padding: "0.5rem 1rem", fontSize: "1rem" }}
-        >
-          {saving ? "Saving…" : "Confirm"}
-        </button>
+      <div>
+        <Button onClick={confirm} disabled={saving || !selected}>
+          {saving ? "Saving…" : confirmLabel}
+        </Button>
       </div>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+      {error && <p className={styles.error}>{error}</p>}
     </div>
   );
 }
