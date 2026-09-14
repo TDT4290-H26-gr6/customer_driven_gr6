@@ -3,7 +3,9 @@ import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import { config } from "../../config";
 import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
+import { requireRole } from "../../middleware/requireRole";
 import {
+  completeInitialAssessment,
   findLearnerById,
   findRole,
   listRoles,
@@ -62,3 +64,13 @@ identityRouter.put("/auth/me/role", requireAuth, async (req: AuthedRequest, res)
   const learner = await setLearnerRole(req.learnerId!, roleId);
   res.json(toLearnerDto(learner));
 });
+
+identityRouter.put(
+  "/auth/me/initial-assessment",
+  requireAuth,
+  requireRole,
+  async (req: AuthedRequest, res) => {
+    const learner = await completeInitialAssessment(req.learnerId!);
+    res.json(toLearnerDto(learner));
+  },
+);

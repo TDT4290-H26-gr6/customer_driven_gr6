@@ -10,6 +10,7 @@ type AuthContextValue = {
   login: (learner: Learner) => void;
   logout: () => void;
   setRole: (role: Role) => void;
+  markInitialAssessmentComplete: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -50,8 +51,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLearner((prev) => (prev ? { ...prev, role } : prev));
   }
 
+  function markInitialAssessmentComplete() {
+    setLearner((prev) => (prev ? { ...prev, hasCompletedInitialAssessment: true } : prev));
+  }
+
   return (
-    <AuthContext.Provider value={{ learner, status, login, logout, setRole }}>
+    <AuthContext.Provider
+      value={{ learner, status, login, logout, setRole, markInitialAssessmentComplete }}
+    >
       {children}
     </AuthContext.Provider>
   );

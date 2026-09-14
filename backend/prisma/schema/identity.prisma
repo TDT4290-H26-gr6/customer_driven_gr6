@@ -2,14 +2,15 @@
 /// picks during onboarding. Tables: identity_*.
 
 model Learner {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  name        String?
-  googleSubId String?  @unique // "sub" claim from Google's ID token
-  role        String   @default("learner") // system role: "learner" | "admin"
-  roleId      String? // chosen persona (identity_role): student, librarian, CEO, ...
-  userRole    Role?    @relation(fields: [roleId], references: [id])
-  createdAt   DateTime @default(now())
+  id                            String   @id @default(uuid())
+  email                         String   @unique
+  name                          String?
+  googleSubId                   String?  @unique // "sub" claim from Google's ID token
+  role                          String   @default("learner") // system role: "learner" | "admin"
+  roleId                        String? // chosen persona (identity_role): student, librarian, CEO, ...
+  userRole                      Role?    @relation(fields: [roleId], references: [id])
+  hasCompletedInitialAssessment Boolean  @default(false) // true once every question in SAT instance 1 has been answered
+  createdAt                     DateTime @default(now())
 
   satInstances SatInstance[]
 

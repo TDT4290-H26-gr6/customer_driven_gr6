@@ -108,7 +108,8 @@ frontend/
     │   │   ├── components/
     │   │   │   ├── CompetenceRadar.tsx      # radar / spider chart (inline SVG)
     │   │   │   ├── CompetenceBreakdown.tsx
-    │   │   │   └── ScoreTable.tsx
+    │   │   │   ├── ScoreTable.tsx
+    │   │   │   └── WelcomeScreen.tsx         # first-run state: no assessment taken yet
     │   │   ├── pages/
     │   │   │   └── ResultsPage.tsx
     │   │   ├── api.ts               # GET /results, GET /competence-scores
@@ -133,7 +134,8 @@ frontend/
     │   │   └── ErrorBanner.tsx
     │   ├── hooks/
     │   │   ├── useAsync.ts
-    │   │   └── useLocalStorage.ts
+    │   │   ├── useLocalStorage.ts
+    │   │   └── useSessionStorage.ts   # like useLocalStorage, but cleared when the tab/session ends
     │   ├── lib/
     │   │   └── format.ts
     │   └── types/

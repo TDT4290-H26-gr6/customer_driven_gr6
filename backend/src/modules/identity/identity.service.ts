@@ -32,3 +32,11 @@ export function setLearnerRole(learnerId: string, roleId: string) {
     include: { userRole: true },
   });
 }
+
+export function completeInitialAssessment(learnerId: string) {
+  return prisma.learner.update({
+    where: { id: learnerId },
+    data: { hasCompletedInitialAssessment: true },
+    include: { userRole: true },
+  });
+}

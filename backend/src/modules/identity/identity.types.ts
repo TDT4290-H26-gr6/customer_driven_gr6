@@ -7,6 +7,7 @@ export type LearnerDto = {
   email: string;
   name: string | null;
   role: Role | null;
+  hasCompletedInitialAssessment: boolean;
 };
 
 export function toLearnerDto(learner: LearnerWithRole): LearnerDto {
@@ -15,5 +16,6 @@ export function toLearnerDto(learner: LearnerWithRole): LearnerDto {
     email: learner.email,
     name: learner.name,
     role: learner.userRole,
+    hasCompletedInitialAssessment: learner.hasCompletedInitialAssessment,
   };
 }

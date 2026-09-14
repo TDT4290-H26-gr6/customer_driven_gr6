@@ -18,3 +18,8 @@ export async function googleLogin(credential: string): Promise<LoginResult> {
 export function getMe(): Promise<Learner> {
   return apiFetch<Learner>(endpoints.auth.me);
 }
+
+/** Marks the signed-in learner as having finished every question in the initial assessment. */
+export function completeInitialAssessment(): Promise<Learner> {
+  return apiFetch<Learner>(endpoints.auth.myInitialAssessment, { method: "PUT" });
+}

@@ -5,6 +5,7 @@ export type Learner = {
   email: string;
   name: string;
   role?: Role | null;
+  hasCompletedInitialAssessment: boolean;
 };
 
 export type LoginResult = {
