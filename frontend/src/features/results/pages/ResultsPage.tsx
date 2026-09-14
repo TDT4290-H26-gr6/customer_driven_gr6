@@ -4,6 +4,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
 import { CompetenceRadar } from "../components/CompetenceRadar";
+import { WelcomeScreen } from "../components/WelcomeScreen";
 import { getCompetenceScores } from "../api";
 import type { CompetenceScore } from "../types";
 import styles from "./ResultsPage.module.css";
@@ -35,24 +36,25 @@ export function ResultsPage() {
       });
   }, []);
 
+  if (scores === null) {
+    return (
+      <div className={styles.page}>
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (isPlaceholder) {
+    return <WelcomeScreen name={learner?.name} onStart={() => navigate("/assessment")} />;
+  }
+
   return (
     <div className={styles.page}>
       <h1 className={styles.heading}>Welcome{learner?.name ? `, ${learner.name}` : ""}</h1>
       <p className={styles.subheading}>Here&apos;s where your skills stand right now.</p>
 
       <div className={styles.chartCard}>
-        {scores === null ? (
-          <Spinner />
-        ) : (
-          <>
-            <CompetenceRadar data={scores} />
-            {isPlaceholder && (
-              <p className={styles.note}>
-                Sample data — take the assessment to see your own results.
-              </p>
-            )}
-          </>
-        )}
+        <CompetenceRadar data={scores} />
       </div>
 
       <Button onClick={() => navigate("/assessment")}>Assess yourself</Button>
