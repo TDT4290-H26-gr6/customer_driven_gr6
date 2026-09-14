@@ -9,8 +9,7 @@ import { getCompetenceScores } from "../api";
 import type { CompetenceScore } from "../types";
 import styles from "./ResultsPage.module.css";
 
-// Shown until the learner has completed an assessment, or while
-// GET /competence-scores isn't implemented on the backend yet.
+// Shown while GET /competence-scores isn't implemented on the backend yet.
 const PLACEHOLDER_SCORES: CompetenceScore[] = [
   { competenceArea: { name: "AI Literacy" }, score: 3, maxScore: 5 },
   { competenceArea: { name: "Open Science" }, score: 2, maxScore: 5 },
@@ -44,7 +43,7 @@ export function ResultsPage() {
     );
   }
 
-  if (isPlaceholder) {
+  if (!learner?.hasCompletedInitialAssessment) {
     return <WelcomeScreen name={learner?.name} onStart={() => navigate("/assessment")} />;
   }
 
@@ -55,6 +54,9 @@ export function ResultsPage() {
 
       <div className={styles.chartCard}>
         <CompetenceRadar data={scores} />
+        {isPlaceholder && (
+          <p className={styles.note}>Sample data — real scoring isn&apos;t available yet.</p>
+        )}
       </div>
 
       <Button onClick={() => navigate("/assessment")}>Assess yourself</Button>

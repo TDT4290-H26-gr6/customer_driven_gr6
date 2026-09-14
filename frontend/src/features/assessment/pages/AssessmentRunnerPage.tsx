@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/app/providers/AuthProvider";
+import { completeInitialAssessment } from "@/features/auth";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
 import { AssessmentProgress } from "../components/AssessmentProgress";
@@ -15,13 +17,15 @@ import styles from "./AssessmentRunnerPage.module.css";
  * restore whatever was previously selected and Next/Finish is disabled
  * until the current question is complete (per the widget's own
  * isComplete() — see PieQuestionPlayer). There is no results/scoring step
- * or server-side persistence yet — finishing just returns to the dashboard.
+ * or per-response server-side persistence yet, but finishing the last
+ * question does flag the learner as having completed the initial assessment.
  */
 export function AssessmentRunnerPage() {
   const [questions, setQuestions] = useState<Question[] | null>(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, PieAnswer>>({});
   const navigate = useNavigate();
+  const { markInitialAssessmentComplete } = useAuth();
 
   useEffect(() => {
     getQuestions()
@@ -47,7 +51,12 @@ export function AssessmentRunnerPage() {
 
   function handleNext() {
     if (isLast) {
-      navigate("/", { replace: true });
+      completeInitialAssessment()
+        .then(markInitialAssessmentComplete)
+        .catch(() => {
+          /* dashboard falls back to the welcome screen until this succeeds */
+        })
+        .finally(() => navigate("/", { replace: true }));
     } else {
       setIndex((i) => i + 1);
     }

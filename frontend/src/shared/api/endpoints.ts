@@ -4,6 +4,7 @@ export const endpoints = {
     google: "/auth/google",
     me: "/auth/me",
     myRole: "/auth/me/role",
+    myInitialAssessment: "/auth/me/initial-assessment",
   },
   roles: "/roles",
   questions: "/questions",
