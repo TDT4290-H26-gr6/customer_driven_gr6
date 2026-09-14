@@ -1,0 +1,42 @@
+import { useEffect, useState } from "react";
+import { Button } from "@/shared/components/Button";
+import { useSessionStorage } from "@/shared/hooks/useSessionStorage";
+import styles from "./WelcomeScreen.module.css";
+
+type Props = {
+  name?: string;
+  onStart: () => void;
+};
+
+const SEEN_KEY = "aios.welcomeSeen";
+
+/**
+ * Shown instead of the results dashboard when the learner hasn't completed
+ * an assessment yet. Plays a one-time entrance animation the first time it's
+ * shown in a session (sessionStorage, not localStorage — it should replay
+ * next time the learner signs in), then stays static on later visits.
+ */
+export function WelcomeScreen({ name, onStart }: Props) {
+  const [hasSeen, setHasSeen] = useSessionStorage(SEEN_KEY, false);
+  const [animate] = useState(() => !hasSeen);
+
+  useEffect(() => {
+    if (!hasSeen) setHasSeen(true);
+  }, [hasSeen, setHasSeen]);
+
+  return (
+    <div className={styles.page}>
+      <div className={`${styles.card} ${animate ? styles.enter : ""}`}>
+        <p className={styles.eyebrow}>Welcome{name ? `, ${name}` : ""}</p>
+        <h1 className={styles.heading}>Let&apos;s find out where you stand.</h1>
+        <p className={styles.subheading}>
+          You haven&apos;t taken the self-assessment yet — it only takes a few minutes and gives you
+          a personal breakdown of your skills.
+        </p>
+        <Button className={styles.cta} onClick={onStart}>
+          Take self assessment
+        </Button>
+      </div>
+    </div>
+  );
+}
