@@ -26,72 +26,111 @@ async function main() {
     }),
   };
 
-function mcQuestion(competenceAreaId: string, prompt: string, choices: { label: string; correct: boolean }[]) {
-  return {
-    competenceAreaId,
-    prompt,
-    questionType: "behavioral_anchor",
-    content: {
-      elements: { "multiple-choice": "@pie-element/multiple-choice@latest" },
-      models: [{
-        id: "1",
-        element: "multiple-choice",
-        prompt,
-        choiceMode: "radio",
-        choices: choices.map((c, i) => ({ value: String(i), label: `<div>${c.label}</div>`, correct: c.correct })),
-      }],
-      markup: "<multiple-choice id='1'></multiple-choice>",
-    },
-  };
-}
+  function mcQuestion(
+    competenceAreaId: string,
+    prompt: string,
+    choices: { label: string; correct: boolean }[],
+  ) {
+    return {
+      competenceAreaId,
+      prompt,
+      questionType: "behavioral_anchor",
+      content: {
+        elements: { "multiple-choice": "@pie-element/multiple-choice@latest" },
+        models: [
+          {
+            id: "1",
+            element: "multiple-choice",
+            prompt,
+            choiceMode: "radio",
+            choices: choices.map((c, i) => ({
+              value: String(i),
+              label: `<div>${c.label}</div>`,
+              correct: c.correct,
+            })),
+          },
+        ],
+        markup: "<multiple-choice id='1'></multiple-choice>",
+      },
+    };
+  }
 
   await prisma.question.create({
-    data: mcQuestion(areas.c1.id,
+    data: mcQuestion(
+      areas.c1.id,
       "Which article of the UN Declaration of Human Rights does Open Science most directly support?",
       [
-        { label: "Article 27.1 — the right of everyone to share in scientific advancement and its benefits", correct: true },
-        { label: "Article 26.3 — parents' right to choose the kind of education their children receive", correct: false },
-        { label: "Article 27.2 — protection of material interests resulting from individuals' scientific production", correct: false },
-      ]),
+        {
+          label:
+            "Article 27.1 — the right of everyone to share in scientific advancement and its benefits",
+          correct: true,
+        },
+        {
+          label:
+            "Article 26.3 — parents' right to choose the kind of education their children receive",
+          correct: false,
+        },
+        {
+          label:
+            "Article 27.2 — protection of material interests resulting from individuals' scientific production",
+          correct: false,
+        },
+      ],
+    ),
   });
 
   await prisma.question.create({
-    data: mcQuestion(areas.c1.id,
-      "What does FAIR stand for in FAIR data?",
-      [
-        { label: "Findable, Accessible, Interoperable, Reusable", correct: true },
-        { label: "Function, Access, Infrastructure, Rich", correct: false },
-        { label: "Findable, Applicable, Interoperable, Rich", correct: false },
-        { label: "Fair, Applicable, Inter-cultural, ...", correct: false },
-      ]),
+    data: mcQuestion(areas.c1.id, "What does FAIR stand for in FAIR data?", [
+      { label: "Findable, Accessible, Interoperable, Reusable", correct: true },
+      { label: "Function, Access, Infrastructure, Rich", correct: false },
+      { label: "Findable, Applicable, Interoperable, Rich", correct: false },
+      { label: "Fair, Applicable, Inter-cultural, ...", correct: false },
+    ]),
   });
 
   await prisma.question.create({
-    data: mcQuestion(areas.c1.id,
+    data: mcQuestion(
+      areas.c1.id,
       "Is data that follows the FAIR principles automatically 'open data'?",
       [
-        { label: "No. FAIR data focuses on interoperability and re-usability with minimum manual work, while open data usually refers to open access.", correct: true },
-        { label: "Yes; following the FAIR principles includes trying to make data as publicly available as possible.", correct: false },
-        { label: "Yes; following the FAIR principles includes removing proprietary restrictions on that data.", correct: false },
-        { label: "No; FAIR data is specific to privacy-sensitive data, for which open access is not appropriate.", correct: false },
-      ]),
+        {
+          label:
+            "No. FAIR data focuses on interoperability and re-usability with minimum manual work, while open data usually refers to open access.",
+          correct: true,
+        },
+        {
+          label:
+            "Yes; following the FAIR principles includes trying to make data as publicly available as possible.",
+          correct: false,
+        },
+        {
+          label:
+            "Yes; following the FAIR principles includes removing proprietary restrictions on that data.",
+          correct: false,
+        },
+        {
+          label:
+            "No; FAIR data is specific to privacy-sensitive data, for which open access is not appropriate.",
+          correct: false,
+        },
+      ],
+    ),
   });
 
   await prisma.question.create({
-    data: mcQuestion(areas.c1.id,
-      "Which of the following is not a key attribute of open data?",
-      [
-        { label: "Available", correct: false },
-        { label: "Accessible", correct: false },
-        { label: "Re-usable", correct: false },
-        { label: "Described", correct: false },
-        { label: "De-anonymized", correct: true },
-      ]),
+    data: mcQuestion(areas.c1.id, "Which of the following is not a key attribute of open data?", [
+      { label: "Available", correct: false },
+      { label: "Accessible", correct: false },
+      { label: "Re-usable", correct: false },
+      { label: "Described", correct: false },
+      { label: "De-anonymized", correct: true },
+    ]),
   });
 
   await prisma.question.create({
     data: {
-      ...mcQuestion(areas.c5.id,
+      ...mcQuestion(
+        areas.c5.id,
         "As an open science officer, how comfortable would you be evaluating whether your institute's current generative AI tool suffices, or whether to purchase another?",
         [
           { label: "Very uncomfortable making this evaluation myself", correct: false },
@@ -99,67 +138,81 @@ function mcQuestion(competenceAreaId: string, prompt: string, choices: { label: 
           { label: "In the middle", correct: false },
           { label: "Comfortable", correct: false },
           { label: "Very comfortable making this evaluation myself", correct: false },
-        ]),
+        ],
+      ),
       questionType: "self_rating",
     },
   });
 
-// Drag-and-drop example, using @pie-element/drag-in-the-blank (bundled in
-// pie-fixed-player-static — see docs/demo/generate.js in the pie-elements
-// repo for the config shape this is based on). `rows[].text` becomes a table
-// row with a `{{i}}` blank; `rows[].term` becomes the draggable choice that
-// belongs in that blank.
-function dragQuestion(competenceAreaId: string, prompt: string, rows: { text: string; term: string }[]) {
-  const choices = rows.map((r, i) => ({ id: String(i), value: r.term }));
-  const correctResponse = Object.fromEntries(rows.map((_, i) => [i, String(i)]));
-  const tableRows = rows
-    .map((r, i) => `<tr><td><p>${r.text}</p></td><td><p>{{${i}}}</p></td></tr>`)
-    .join("\n");
+  // Drag-and-drop example, using @pie-element/drag-in-the-blank (bundled in
+  // pie-fixed-player-static — see docs/demo/generate.js in the pie-elements
+  // repo for the config shape this is based on). `rows[].text` becomes a table
+  // row with a `{{i}}` blank; `rows[].term` becomes the draggable choice that
+  // belongs in that blank.
+  function dragQuestion(
+    competenceAreaId: string,
+    prompt: string,
+    rows: { text: string; term: string }[],
+  ) {
+    const choices = rows.map((r, i) => ({ id: String(i), value: r.term }));
+    const correctResponse = Object.fromEntries(rows.map((_, i) => [i, String(i)]));
+    const tableRows = rows
+      .map((r, i) => `<tr><td><p>${r.text}</p></td><td><p>{{${i}}}</p></td></tr>`)
+      .join("\n");
 
-  return {
-    competenceAreaId,
-    prompt,
-    questionType: "drag_and_drop",
-    content: {
-      elements: { "drag-in-the-blank": "@pie-element/drag-in-the-blank@latest" },
-      models: [{
-        id: "1",
-        element: "drag-in-the-blank",
-        prompt: `<p>${prompt}</p>`,
-        choicesPosition: "below",
-        lockChoiceOrder: true,
-        partialScoring: true,
-        // How many blanks must be filled to count as answered — the
-        // widget's own isComplete() compares against this and there's no
-        // way to derive it automatically from the markup, so it must be
-        // set explicitly or the item can never report complete.
-        responseAreasToBeFilled: rows.length,
-        duplicates: false,
-        feedback: {},
-        mode: "gather",
-        choices,
-        markup:
-          `<table class="table table-bordered">\n<tbody>\n` +
-          `<tr><td><strong>Description</strong></td><td><strong>Term</strong></td></tr>\n${tableRows}\n` +
-          `</tbody>\n</table>`,
-        correctResponse,
-      }],
-      markup: "<drag-in-the-blank id='1'></drag-in-the-blank>",
-    },
-  };
-}
+    return {
+      competenceAreaId,
+      prompt,
+      questionType: "drag_and_drop",
+      content: {
+        elements: { "drag-in-the-blank": "@pie-element/drag-in-the-blank@latest" },
+        models: [
+          {
+            id: "1",
+            element: "drag-in-the-blank",
+            prompt: `<p>${prompt}</p>`,
+            choicesPosition: "below",
+            lockChoiceOrder: true,
+            partialScoring: true,
+            // How many blanks must be filled to count as answered — the
+            // widget's own isComplete() compares against this and there's no
+            // way to derive it automatically from the markup, so it must be
+            // set explicitly or the item can never report complete.
+            responseAreasToBeFilled: rows.length,
+            duplicates: false,
+            feedback: {},
+            mode: "gather",
+            choices,
+            markup:
+              `<table class="table table-bordered">\n<tbody>\n` +
+              `<tr><td><strong>Description</strong></td><td><strong>Term</strong></td></tr>\n${tableRows}\n` +
+              `</tbody>\n</table>`,
+            correctResponse,
+          },
+        ],
+        markup: "<drag-in-the-blank id='1'></drag-in-the-blank>",
+      },
+    };
+  }
 
   await prisma.question.create({
-    data: dragQuestion(areas.c1.id,
-      "Drag each term into the box next to its correct definition.",
-      [
-        { text: "Findable, Accessible, Interoperable, and Reusable — guiding principles for research data.", term: "FAIR" },
-        { text: "Data anyone can access, use, and share without restriction.", term: "Open Data" },
-        { text: "Independently repeating a study and getting the same results.", term: "Reproducibility" },
-      ]),
+    data: dragQuestion(areas.c1.id, "Drag each term into the box next to its correct definition.", [
+      {
+        text: "Findable, Accessible, Interoperable, and Reusable — guiding principles for research data.",
+        term: "FAIR",
+      },
+      { text: "Data anyone can access, use, and share without restriction.", term: "Open Data" },
+      {
+        text: "Independently repeating a study and getting the same results.",
+        term: "Reproducibility",
+      },
+    ]),
   });
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1); })
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

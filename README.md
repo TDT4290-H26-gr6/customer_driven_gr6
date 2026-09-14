@@ -28,11 +28,30 @@ frontend → backend → (eventually) database are connected end to end.
 backend/    Express + TypeScript API, Prisma ORM, MySQL schema
 frontend/   React + TypeScript, Vite dev server
 docker-compose.yml   Runs mysql + backend + frontend together
-.github/workflows/ci.yml   Installs deps and builds both apps on push
+.github/workflows/ci.yml   Installs deps, lints, and builds both apps on push/PR
 ```
 
-## Next steps 
+## Code quality
 
+Both `backend/` and `frontend/` have ESLint (flat config, `eslint.config.js`/`.mjs`)
+and Prettier set up, with a shared style at the repo root (`.prettierrc.json`).
+Run from either package directory:
+
+```bash
+npm run lint           # ESLint — errors fail the build; warnings don't
+npm run format:check   # Prettier — verifies formatting, changes nothing
+npm run format         # Prettier — rewrites files to match the style
+```
+
+The frontend config also enables `eslint-plugin-jsx-a11y`, which statically
+flags common keyboard-accessibility mistakes (e.g. a clickable element with
+no keyboard handler) as part of the normal lint run.
+
+CI (`.github/workflows/ci.yml`) runs `format:check` and `lint` before
+`build` for both packages on every push and pull request to `main`, so a
+PR with lint or formatting problems fails before it can be merged.
+
+## Next steps
 
 ## Common commands
 

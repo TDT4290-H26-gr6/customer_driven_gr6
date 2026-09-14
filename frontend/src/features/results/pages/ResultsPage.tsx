@@ -38,7 +38,7 @@ export function ResultsPage() {
   return (
     <div className={styles.page}>
       <h1 className={styles.heading}>Welcome{learner?.name ? `, ${learner.name}` : ""}</h1>
-      <p className={styles.subheading}>Here's where your skills stand right now.</p>
+      <p className={styles.subheading}>Here&apos;s where your skills stand right now.</p>
 
       <div className={styles.chartCard}>
         {scores === null ? (
@@ -47,7 +47,9 @@ export function ResultsPage() {
           <>
             <CompetenceRadar data={scores} />
             {isPlaceholder && (
-              <p className={styles.note}>Sample data — take the assessment to see your own results.</p>
+              <p className={styles.note}>
+                Sample data — take the assessment to see your own results.
+              </p>
             )}
           </>
         )}

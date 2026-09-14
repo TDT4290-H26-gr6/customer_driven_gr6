@@ -51,7 +51,9 @@ export function CompetenceRadar({ data, size = 340 }: Props) {
 
       {data.map((_, i) => {
         const outer = pointAt(i, 1);
-        return <line key={i} x1={center} y1={center} x2={outer.x} y2={outer.y} className={styles.axis} />;
+        return (
+          <line key={i} x1={center} y1={center} x2={outer.x} y2={outer.y} className={styles.axis} />
+        );
       })}
 
       <polygon points={toPolygon(dataPoints)} className={styles.area} />

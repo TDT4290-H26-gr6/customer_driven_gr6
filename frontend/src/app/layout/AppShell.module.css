@@ -22,3 +22,22 @@
   padding: 32px;
   overflow-y: auto;
 }
+
+/* Keyboard-only "skip to content" link — offscreen until it receives focus
+   (Tab from the very top of the page), so keyboard/screen-reader users can
+   bypass the header + sidebar nav instead of tabbing through every link. */
+.skipLink {
+  position: absolute;
+  top: -40px;
+  left: 8px;
+  z-index: 100;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  transition: top 0.15s ease;
+}
+
+.skipLink:focus-visible {
+  top: 8px;
+}

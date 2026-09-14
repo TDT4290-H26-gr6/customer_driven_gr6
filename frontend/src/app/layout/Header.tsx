@@ -66,11 +66,21 @@ export function Header() {
                 <span className={styles.dropdownName}>{displayName}</span>
                 {learner.role && <span className={styles.dropdownRole}>{learner.role.name}</span>}
               </div>
-              <button type="button" className={styles.dropdownItem} role="menuitem" onClick={goToSettings}>
+              <button
+                type="button"
+                className={styles.dropdownItem}
+                role="menuitem"
+                onClick={goToSettings}
+              >
                 <SettingsIcon className={styles.dropdownIcon} />
                 Settings
               </button>
-              <button type="button" className={styles.dropdownItem} role="menuitem" onClick={handleLogout}>
+              <button
+                type="button"
+                className={styles.dropdownItem}
+                role="menuitem"
+                onClick={handleLogout}
+              >
                 <LogoutIcon className={styles.dropdownIcon} />
                 Sign out
               </button>

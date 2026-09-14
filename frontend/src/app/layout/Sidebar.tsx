@@ -25,7 +25,9 @@ export function Sidebar({ collapsed, onToggleCollapsed }: Props) {
           <NavLink
             key={to}
             to={to}
-            className={({ isActive }) => (isActive ? `${styles.item} ${styles.active}` : styles.item)}
+            className={({ isActive }) =>
+              isActive ? `${styles.item} ${styles.active}` : styles.item
+            }
             title={collapsed ? label : undefined}
           >
             <Icon className={styles.icon} />

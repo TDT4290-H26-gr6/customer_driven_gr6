@@ -24,10 +24,18 @@ export function AppShell() {
   return (
     <div className={styles.shell}>
       <div ref={appRef} className={styles.inertWrapper}>
+        <a href="#main-content" className={styles.skipLink}>
+          Skip to main content
+        </a>
         <Header />
         <div className={styles.body}>
           <Sidebar collapsed={collapsed} onToggleCollapsed={() => setCollapsed((c) => !c)} />
-          <main className={styles.main}>{needsRole ? null : <Outlet />}</main>
+          {/* tabIndex={-1}: not a normal Tab stop, but focusable when the skip
+              link above jumps here so keyboard focus actually moves (not just
+              the visible scroll position). */}
+          <main id="main-content" tabIndex={-1} className={styles.main}>
+            {needsRole ? null : <Outlet />}
+          </main>
         </div>
       </div>
 

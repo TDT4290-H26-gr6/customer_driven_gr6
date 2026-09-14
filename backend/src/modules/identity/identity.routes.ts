@@ -31,11 +31,9 @@ identityRouter.post("/auth/google", async (req, res) => {
     }
 
     const learner = await upsertLearnerFromGoogle(payload.sub, payload.email, payload.name);
-    const token = jwt.sign(
-      { learnerId: learner.id, email: learner.email },
-      config.jwtSecret,
-      { expiresIn: "7d" }
-    );
+    const token = jwt.sign({ learnerId: learner.id, email: learner.email }, config.jwtSecret, {
+      expiresIn: "7d",
+    });
 
     res.json({ token, learner: toLearnerDto(learner) });
   } catch (err) {

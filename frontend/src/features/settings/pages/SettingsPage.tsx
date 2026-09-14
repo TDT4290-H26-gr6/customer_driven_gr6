@@ -33,7 +33,7 @@ export function SettingsPage() {
       <div className={styles.card}>
         <h2 className={styles.cardHeading}>Choose your visuals</h2>
         <p className={styles.cardHint}>
-          "Default" follows your system's light/dark setting.
+          &quot;Default&quot; follows your system&apos;s light/dark setting.
         </p>
         <div className={styles.visualOptions} role="radiogroup" aria-label="Visuals">
           {VISUAL_OPTIONS.map(({ value, label, Icon }) => (
@@ -64,7 +64,9 @@ export function SettingsPage() {
           confirmLabel="Save"
           onDone={handleRoleChange}
         />
-        {saved && <p className={styles.confirmation}>Saved — you're now set as {saved.name}.</p>}
+        {saved && (
+          <p className={styles.confirmation}>Saved — you&apos;re now set as {saved.name}.</p>
+        )}
       </div>
     </div>
   );

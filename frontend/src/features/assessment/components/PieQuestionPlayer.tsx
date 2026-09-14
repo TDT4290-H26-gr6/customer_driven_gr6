@@ -17,8 +17,19 @@ type Props = {
   onAnswerChange?: (answer: PieAnswer) => void;
 };
 
+/**
+ * The widget's own imperative properties, set directly on the element
+ * rather than passed as JSX props — untyped upstream (pie-fixed-player-static
+ * ships no .d.ts), so `session`/`config` stay `unknown` rather than `any`.
+ */
+type PieFixedPlayerElement = HTMLElement & {
+  env: { mode: string; role: string };
+  config: PieContent;
+  session: unknown;
+};
+
 export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
-  const ref = useRef<any>(null);
+  const ref = useRef<PieFixedPlayerElement>(null);
 
   useEffect(() => {
     if (ref.current) {
@@ -37,10 +48,11 @@ export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
     // session-changed's own e.detail is just {component: tagName, complete},
     // not the response itself — the actual answer lives on the element's
     // `.session` getter, read fresh at the moment the event fires.
-    const handler = (e: any) => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ complete?: boolean }>).detail;
       onAnswerChange?.({
         session: ref.current?.session,
-        complete: Boolean(e.detail?.complete),
+        complete: Boolean(detail?.complete),
       });
     };
     ref.current.addEventListener("session-changed", handler);

@@ -28,19 +28,20 @@ type Props = {
 /** Controlled by the page so only one card expands at a time. */
 export function CourseCard({ course, expanded, onToggle }: Props) {
   const topics = course.topics
-    ? course.topics.split(",").map((t) => t.trim()).filter(Boolean)
+    ? course.topics
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
     : [];
   const isConfirmed = course.confidence?.toLowerCase().startsWith("confirmed") ?? false;
 
   return (
     <article className={styles.card}>
-      <button
-        type="button"
-        className={styles.toggle}
-        onClick={onToggle}
-        aria-expanded={expanded}
-      >
-        <div className={styles.banner} style={{ backgroundImage: bannerGradient(course.institution) }}>
+      <button type="button" className={styles.toggle} onClick={onToggle} aria-expanded={expanded}>
+        <div
+          className={styles.banner}
+          style={{ backgroundImage: bannerGradient(course.institution) }}
+        >
           <BookIcon className={styles.bannerIcon} width={32} height={32} />
         </div>
 

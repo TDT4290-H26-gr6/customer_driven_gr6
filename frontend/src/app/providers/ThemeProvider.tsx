@@ -47,7 +47,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [preference]);
 
-  const resolvedTheme: ResolvedTheme = preference === "default" ? (systemDark ? "dark" : "light") : preference;
+  const resolvedTheme: ResolvedTheme =
+    preference === "default" ? (systemDark ? "dark" : "light") : preference;
 
   return (
     <ThemeContext.Provider value={{ preference, resolvedTheme, setPreference }}>
