@@ -10,4 +10,6 @@ export const endpoints = {
   questions: "/questions",
   competenceScores: "/competence-scores",
   courses: "/courses",
+  learningJourneys: "/learning-journeys",
+  learningJourneyRecommendation: "/learning-journeys/recommendation",
 } as const;

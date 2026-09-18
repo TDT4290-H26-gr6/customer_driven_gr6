@@ -7,6 +7,8 @@ import { CompetenceRadar } from "../components/CompetenceRadar";
 import { WelcomeScreen } from "../components/WelcomeScreen";
 import { getCompetenceScores } from "../api";
 import type { CompetenceScore } from "../types";
+import { RecommendedJourneyCard, getRecommendedJourney } from "@/features/learningJourney";
+import type { LearningJourney } from "@/features/learningJourney";
 import styles from "./ResultsPage.module.css";
 
 // Shown while GET /competence-scores isn't implemented on the backend yet.
@@ -25,6 +27,7 @@ export function ResultsPage() {
   const navigate = useNavigate();
   const [scores, setScores] = useState<CompetenceScore[] | null>(null);
   const [isPlaceholder, setIsPlaceholder] = useState(false);
+  const [journey, setJourney] = useState<LearningJourney | null>(null);
 
   useEffect(() => {
     getCompetenceScores()
@@ -33,6 +36,9 @@ export function ResultsPage() {
         setScores(PLACEHOLDER_SCORES);
         setIsPlaceholder(true);
       });
+    getRecommendedJourney()
+      .then(setJourney)
+      .catch(() => setJourney(null));
   }, []);
 
   if (scores === null) {
@@ -58,6 +64,8 @@ export function ResultsPage() {
           <p className={styles.note}>Sample data — real scoring isn&apos;t available yet.</p>
         )}
       </div>
+
+      {journey && <RecommendedJourneyCard journey={journey} />}
 
       <Button onClick={() => navigate("/assessment")}>Assess yourself</Button>
     </div>

@@ -1,0 +1,45 @@
+/// Learning Journey module — curated module sequences a learner can follow,
+/// and the score-based recommendation that points them at one (LJ01/LJ02/LJ04).
+/// Tables: learning_journey_*.
+///
+/// competenceAreaId / courseId / learnerId below are intentionally plain
+/// fields, not Prisma relations — same pattern as
+/// CompetenceScore.competenceAreaId in assessment.prisma. That lets this
+/// module read across module boundaries (assessment, courses, identity)
+/// without a schema change to those other modules' files.
+
+model LearningJourney {
+  id               String  @id @default(uuid())
+  name             String  @unique
+  description      String? @db.Text
+  competenceAreaId String // targets assessment_competence_area.id
+
+  modules         LearningJourneyModule[]
+  recommendations JourneyRecommendation[]
+
+  @@map("learning_journey_journey")
+}
+
+model LearningJourneyModule {
+  id          String          @id @default(uuid())
+  journeyId   String
+  journey     LearningJourney @relation(fields: [journeyId], references: [id])
+  order       Int
+  title       String
+  description String?         @db.Text
+  courseId    String? // optional link to courses_course.id for the actual content
+
+  @@unique([journeyId, order])
+  @@map("learning_journey_module")
+}
+
+model JourneyRecommendation {
+  id        String          @id @default(uuid())
+  learnerId String // identity_learner.id
+  journeyId String
+  journey   LearningJourney @relation(fields: [journeyId], references: [id])
+  reason    String?         @db.Text
+  createdAt DateTime        @default(now())
+
+  @@map("learning_journey_recommendation")
+}
