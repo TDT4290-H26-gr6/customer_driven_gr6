@@ -7,4 +7,14 @@
   color: var(--color-text);
   border-radius: var(--radius-sm);
   padding: 16px;
+  /* Third-party widgets (tables, drag-and-drop grids) can be wider than a
+     phone. Scroll inside the card rather than widening the whole page. */
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 767px) {
+  .canvas {
+    padding: 8px;
+  }
 }

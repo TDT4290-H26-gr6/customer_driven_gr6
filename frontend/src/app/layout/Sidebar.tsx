@@ -12,15 +12,28 @@ const NAV_ITEMS = [
 type Props = {
   collapsed: boolean;
   onToggleCollapsed: () => void;
+  /**
+   * "side": the collapsible left rail (desktop). "bottom": a fixed tab bar
+   * with icon + label stacked, no collapse control (mobile — see AppShell).
+   */
+  layout?: "side" | "bottom";
 };
 
-/** Collapsible left nav. Icons replace icon+label when collapsed. */
-export function Sidebar({ collapsed, onToggleCollapsed }: Props) {
-  const sidebarClass = collapsed ? `${styles.sidebar} ${styles.collapsed}` : styles.sidebar;
+/** Main nav: a collapsible left rail on desktop, a bottom tab bar on mobile. */
+export function Sidebar({ collapsed, onToggleCollapsed, layout = "side" }: Props) {
+  const isBottom = layout === "bottom";
+  // The bottom bar always shows labels — the persisted "collapsed" preference
+  // is a desktop-only concept and must not leak into it.
+  const showLabels = isBottom || !collapsed;
+  const sidebarClass = isBottom
+    ? `${styles.sidebar} ${styles.bottomBar}`
+    : collapsed
+      ? `${styles.sidebar} ${styles.collapsed}`
+      : styles.sidebar;
 
   return (
     <aside className={sidebarClass}>
-      <nav className={styles.nav}>
+      <nav className={styles.nav} aria-label="Main">
         {NAV_ITEMS.map(({ to, label, Icon }) => (
           <NavLink
             key={to}
@@ -28,24 +41,26 @@ export function Sidebar({ collapsed, onToggleCollapsed }: Props) {
             className={({ isActive }) =>
               isActive ? `${styles.item} ${styles.active}` : styles.item
             }
-            title={collapsed ? label : undefined}
+            title={showLabels ? undefined : label}
           >
             <Icon className={styles.icon} />
-            {!collapsed && <span className={styles.label}>{label}</span>}
+            {showLabels && <span className={styles.label}>{label}</span>}
           </NavLink>
         ))}
       </nav>
 
       {/* Always anchored to the sidebar's right edge, no label — icon only. */}
-      <button
-        type="button"
-        className={styles.toggle}
-        onClick={onToggleCollapsed}
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        aria-expanded={!collapsed}
-      >
-        <ChevronIcon className={collapsed ? styles.chevronCollapsed : styles.chevronExpanded} />
-      </button>
+      {!isBottom && (
+        <button
+          type="button"
+          className={styles.toggle}
+          onClick={onToggleCollapsed}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-expanded={!collapsed}
+        >
+          <ChevronIcon className={collapsed ? styles.chevronCollapsed : styles.chevronExpanded} />
+        </button>
+      )}
     </aside>
   );
 }

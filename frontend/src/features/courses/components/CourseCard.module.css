@@ -174,3 +174,18 @@
 .externalLink:hover {
   text-decoration: underline;
 }
+
+/* Touch devices: the bare inline link is a ~15px-tall target — pad it out to
+   a finger-sized one, taking the space from the footer's own padding so the
+   card doesn't grow. */
+@media (pointer: coarse) {
+  .footer {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  .externalLink {
+    display: inline-block;
+    padding: 14px 0;
+  }
+}

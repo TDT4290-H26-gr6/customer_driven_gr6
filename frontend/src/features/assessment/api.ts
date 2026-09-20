@@ -1,26 +1,34 @@
 import { apiFetch } from "@/shared/api/client";
 import { endpoints } from "@/shared/api/endpoints";
-import type { Question, SatInstance } from "./types";
+import type { PieAnswer } from "./components/PieQuestionPlayer";
+import type { Question } from "./types";
 
 /** All questions in the bank, with their competence area and PIE content. */
 export function getQuestions(): Promise<Question[]> {
   return apiFetch<Question[]>(endpoints.questions);
 }
 
-/** Resumes the learner's in-progress SAT instance, or opens a new one. */
-export function startSatInstance(): Promise<SatInstance> {
-  return apiFetch<SatInstance>(endpoints.satInstances, { method: "POST" });
+export type AssessmentProgress = {
+  satInstanceId: string;
+  responses: { questionId: string; answer: PieAnswer }[];
+};
+
+/** The learner's in-progress instance and saved answers, or null if they haven't started. */
+export function getProgress(): Promise<AssessmentProgress | null> {
+  return apiFetch<AssessmentProgress | undefined>(endpoints.assessment.progress).then(
+    (progress) => progress ?? null,
+  );
 }
 
-/** Scores and saves one answer; safe to call again for the same question to replace it. */
-export function submitResponse(satInstanceId: string, questionId: string, answer: unknown) {
-  return apiFetch(endpoints.responses, {
+/** Saves (or updates) one answer against the learner's active instance. */
+export function saveResponse(questionId: string, answer: PieAnswer): Promise<void> {
+  return apiFetch<void>(endpoints.assessment.responses, {
     method: "POST",
-    body: { satInstanceId, questionId, answer },
+    body: { questionId, answer },
   });
 }
 
-/** Finalizes a SAT instance and rolls its responses up into per-area competence scores. */
-export function completeSatInstance(satInstanceId: string) {
-  return apiFetch(endpoints.satInstanceComplete(satInstanceId), { method: "PUT" });
+/** Marks the learner's active instance complete. */
+export function completeAssessment(): Promise<void> {
+  return apiFetch<void>(endpoints.assessment.complete, { method: "POST" });
 }

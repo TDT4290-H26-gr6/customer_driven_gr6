@@ -19,7 +19,10 @@
     </script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover lets the layout use the notch / home-indicator
+         safe-area insets (see env(safe-area-inset-*) in the layout CSS).
+         Zoom is deliberately NOT disabled (no maximum-scale / user-scalable). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>AIOS SAT/LJ</title>
   </head>
   <body>

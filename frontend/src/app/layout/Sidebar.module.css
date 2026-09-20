@@ -81,3 +81,41 @@
 .chevronCollapsed {
   transform: rotate(0deg);
 }
+
+/* Mobile (< 768px): AppShell renders <Sidebar layout="bottom"> after <main>,
+   and the rail becomes a fixed tab bar. Mind the home-indicator inset. */
+.bottomBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  width: auto;
+  padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
+    env(safe-area-inset-left, 0px);
+  border-right: none;
+  border-top: 1px solid var(--color-border);
+  transition: none;
+}
+
+.bottomBar .nav {
+  flex-direction: row;
+  gap: 0;
+  height: var(--bottom-nav-height);
+}
+
+.bottomBar .item {
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 0;
+  font-size: 12px;
+}
+
+.bottomBar .item:hover,
+.bottomBar .active {
+  background: transparent;
+}

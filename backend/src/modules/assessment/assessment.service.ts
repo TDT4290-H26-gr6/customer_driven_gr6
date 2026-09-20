@@ -44,26 +44,6 @@ export async function listQuestions() {
   return questions.map(withShuffledChoices);
 }
 
-export function findQuestionById(id: string) {
-  return prisma.question.findUnique({ where: { id } });
-}
-
-export function findSatInstance(id: string) {
-  return prisma.satInstance.findUnique({ where: { id } });
-}
-
-/** The learner's in-progress SAT instance, or a fresh one if none is open. */
-export async function startSatInstance(learnerId: string) {
-  const open = await prisma.satInstance.findFirst({
-    where: { learnerId, completedAt: null },
-    orderBy: { startedAt: "desc" },
-  });
-  if (open) return open;
-
-  const priorCount = await prisma.satInstance.count({ where: { learnerId } });
-  return prisma.satInstance.create({ data: { learnerId, instanceNum: priorCount + 1 } });
-}
-
 /**
  * Shape of the PIE `content` this module seeds — narrowed just enough to
  * score it. See assessment.scoring.ts for the caveat on the actual session
@@ -76,49 +56,105 @@ type PieModel = {
   correctResponse?: Record<string, string>;
 };
 
+/**
+ * Scores one answer against its question. `answer` is the frontend's
+ * PieAnswer wrapper (`{ session, complete }` — see PieQuestionPlayer), not
+ * the raw PIE session itself; the session lives at `answer.session`.
+ */
 function scoreAnswer(question: Pick<Question, "questionType" | "content">, answer: unknown): ScoreResult | null {
   if (question.questionType === "self_rating") return null;
 
   const model = (question.content as { models?: PieModel[] } | null)?.models?.[0];
   if (!model) return null;
   const modelId = model.id ?? "1"; // every question this module seeds has exactly one model, id "1"
+  const session = (answer as { session?: unknown } | null)?.session;
 
   if (question.questionType === "drag_and_drop" && model.correctResponse) {
-    return scoreDragAndDrop(model.correctResponse, extractDragAndDropBlanks(answer, modelId));
+    return scoreDragAndDrop(model.correctResponse, extractDragAndDropBlanks(session, modelId));
   }
 
   if (model.choices && model.choiceMode) {
     const choices = model.choices.map((c) => ({ value: String(c.value), correct: Boolean(c.correct) }));
-    return scoreMultipleChoice(choices, model.choiceMode, extractMultipleChoiceValues(answer, modelId));
+    return scoreMultipleChoice(choices, model.choiceMode, extractMultipleChoiceValues(session, modelId));
   }
 
   return null;
 }
 
-/** Scores and persists one answer, replacing any prior answer to the same question in this instance. */
-export function submitResponse(satInstanceId: string, question: Question, answer: unknown) {
-  const result = scoreAnswer(question, answer);
-  const data = {
-    answer: answer as Prisma.InputJsonValue,
-    score: result?.score ?? null,
-    maxScore: result?.maxScore ?? null,
-  };
+/** The learner's current unfinished SAT instance, if any — not created here. */
+function findActiveInstance(learnerId: string) {
+  return prisma.satInstance.findFirst({
+    where: { learnerId, completedAt: null },
+    orderBy: { startedAt: "desc" },
+  });
+}
 
-  return prisma.response.upsert({
-    where: { satInstanceId_questionId: { satInstanceId, questionId: question.id } },
-    update: data,
-    create: { satInstanceId, questionId: question.id, ...data },
+async function getOrCreateActiveInstance(learnerId: string) {
+  const active = await findActiveInstance(learnerId);
+  if (active) return active;
+
+  const priorCount = await prisma.satInstance.count({ where: { learnerId } });
+  return prisma.satInstance.create({
+    data: { learnerId, instanceNum: priorCount + 1 },
   });
 }
 
 /**
- * Marks a SAT instance finished and rolls its scored responses up into one
- * CompetenceScore row per competence area touched. Self-rating (and any
- * other unscored) responses are excluded — they have no score to sum.
+ * Save/resume (CD-7 / SAT2): the learner's in-progress instance plus every
+ * answer saved so far, so the frontend can restore exactly where they left
+ * off. Returns null if they haven't started (or have only completed
+ * instances) — a fresh start, not an error.
  */
-export async function completeSatInstance(satInstanceId: string) {
+export async function getProgress(learnerId: string) {
+  const active = await findActiveInstance(learnerId);
+  if (!active) return null;
+
   const responses = await prisma.response.findMany({
-    where: { satInstanceId, score: { not: null } },
+    where: { satInstanceId: active.id },
+  });
+
+  return {
+    satInstanceId: active.id,
+    responses: responses.map((r) => ({ questionId: r.questionId, answer: r.answer })),
+  };
+}
+
+/**
+ * Upserts one answer against the learner's active instance, creating the
+ * instance on the first call, and scores it against the question.
+ */
+export async function saveResponse(learnerId: string, questionId: string, answer: Prisma.InputJsonValue) {
+  const instance = await getOrCreateActiveInstance(learnerId);
+  const question = await prisma.question.findUnique({ where: { id: questionId } });
+  if (!question) throw new Error(`Question not found: ${questionId}`);
+
+  const result = scoreAnswer(question, answer);
+  const data = { answer, score: result?.score ?? null, maxScore: result?.maxScore ?? null };
+
+  const existing = await prisma.response.findFirst({
+    where: { satInstanceId: instance.id, questionId },
+  });
+
+  if (existing) {
+    return prisma.response.update({ where: { id: existing.id }, data });
+  }
+  return prisma.response.create({
+    data: { satInstanceId: instance.id, questionId, ...data },
+  });
+}
+
+/**
+ * Marks the learner's active instance complete and rolls its scored
+ * responses up into one CompetenceScore row per competence area touched.
+ * Self-rating (and any other unscored) responses are excluded — they have
+ * no score to sum. No-ops if there isn't an active instance.
+ */
+export async function completeActiveInstance(learnerId: string) {
+  const active = await findActiveInstance(learnerId);
+  if (!active) return null;
+
+  const responses = await prisma.response.findMany({
+    where: { satInstanceId: active.id, score: { not: null } },
     include: { question: { select: { competenceAreaId: true } } },
   });
 
@@ -132,17 +168,17 @@ export async function completeSatInstance(satInstanceId: string) {
   }
 
   await prisma.$transaction([
-    prisma.satInstance.update({ where: { id: satInstanceId }, data: { completedAt: new Date() } }),
+    prisma.satInstance.update({ where: { id: active.id }, data: { completedAt: new Date() } }),
     ...Array.from(byArea.entries()).map(([competenceAreaId, totals]) =>
       prisma.competenceScore.upsert({
-        where: { satInstanceId_competenceAreaId: { satInstanceId, competenceAreaId } },
+        where: { satInstanceId_competenceAreaId: { satInstanceId: active.id, competenceAreaId } },
         update: totals,
-        create: { satInstanceId, competenceAreaId, ...totals },
+        create: { satInstanceId: active.id, competenceAreaId, ...totals },
       }),
     ),
   ]);
 
-  return getCompetenceScores(satInstanceId);
+  return active;
 }
 
 export function getCompetenceScores(satInstanceId: string) {

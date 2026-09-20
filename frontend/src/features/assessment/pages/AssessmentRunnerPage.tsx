@@ -7,38 +7,44 @@ import { Spinner } from "@/shared/components/Spinner";
 import { AssessmentProgress } from "../components/AssessmentProgress";
 import { QuestionCard } from "../components/QuestionCard";
 import type { PieAnswer } from "../components/PieQuestionPlayer";
-import { completeSatInstance, getQuestions, startSatInstance, submitResponse } from "../api";
+import { completeAssessment, getProgress, getQuestions, saveResponse } from "../api";
 import type { Question } from "../types";
 import styles from "./AssessmentRunnerPage.module.css";
 
 /**
  * Runs the questionnaire one question at a time with a progress bar on top.
- * Answers are kept in memory locally, keyed by question id, so Back can
- * restore whatever was previously selected and Next/Finish is disabled
- * until the current question is complete (per the widget's own
- * isComplete() — see PieQuestionPlayer). Each answer is persisted to the
- * backend (scored server-side) only once its question is left via Next —
- * by then hasAnswered has already gated on isComplete(), so the answer is
- * final. Persistence failures are swallowed: this in-memory run is still
- * fully usable, it just won't show real results until submission succeeds.
+ * Each answer is saved to the backend as it changes (CD-7 / SAT2 save &
+ * resume), and on mount any previously saved answers are restored and the
+ * learner is dropped back at the first question they haven't finished yet —
+ * so leaving mid-assessment and coming back continues where they left off.
+ * Back still restores from local state so navigating within the session
+ * stays instant. Finishing the last question marks the SAT instance
+ * complete and flags the learner as having completed the initial assessment.
  */
 export function AssessmentRunnerPage() {
   const [questions, setQuestions] = useState<Question[] | null>(null);
-  const [satInstanceId, setSatInstanceId] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, PieAnswer>>({});
   const navigate = useNavigate();
   const { markInitialAssessmentComplete } = useAuth();
 
   useEffect(() => {
-    getQuestions()
-      .then(setQuestions)
-      .catch(() => setQuestions([]));
-    startSatInstance()
-      .then((instance) => setSatInstanceId(instance.id))
-      .catch(() => {
-        /* answers still work locally; they just won't be persisted/scored */
-      });
+    Promise.all([getQuestions(), getProgress().catch(() => null)]).then(
+      ([loadedQuestions, progress]) => {
+        setQuestions(loadedQuestions);
+
+        if (!progress) return;
+
+        const restored = Object.fromEntries(
+          progress.responses.map((r) => [r.questionId, r.answer]),
+        );
+        setAnswers(restored);
+
+        const firstUnanswered = loadedQuestions.findIndex((q) => !restored[q.id]?.complete);
+        setIndex(firstUnanswered === -1 ? loadedQuestions.length - 1 : firstUnanswered);
+      },
+      () => setQuestions([]),
+    );
   }, []);
 
   if (questions === null) return <Spinner />;
@@ -51,24 +57,23 @@ export function AssessmentRunnerPage() {
 
   function handleAnswerChange(answer: PieAnswer) {
     setAnswers((prev) => ({ ...prev, [current.id]: answer }));
+    if (answer.complete) {
+      saveResponse(current.id, answer).catch(() => {
+        /* best-effort — Back/Next still work from local state this session */
+      });
+    }
   }
 
   function handleBack() {
     setIndex((i) => Math.max(0, i - 1));
   }
 
-  async function handleNext() {
-    if (satInstanceId) {
-      await submitResponse(satInstanceId, current.id, answers[current.id].session).catch(() => {
-        /* see the persistence-failure note above */
-      });
-    }
-
+  function handleNext() {
     if (isLast) {
-      const finish = satInstanceId ? completeSatInstance(satInstanceId) : Promise.resolve();
-      finish
-        .catch(() => {})
-        .then(completeInitialAssessment)
+      completeAssessment().catch(() => {
+        /* best-effort, same as the initial-assessment flag below */
+      });
+      completeInitialAssessment()
         .then(markInitialAssessmentComplete)
         .catch(() => {
           /* dashboard falls back to the welcome screen until this succeeds */
