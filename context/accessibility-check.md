@@ -53,6 +53,28 @@ The app was already in good shape:
   matching `id="main-content"` and `tabIndex={-1}` so the jump actually
   moves focus, not just the scroll position.
 
+## Mobile / touch (CD-40)
+
+The mobile layout (see "Responsive / mobile layout" in
+[`frontend-structure.md`](./frontend-structure.md)) changes where the nav
+lives, so the keyboard and touch story was kept intact deliberately:
+
+- On mobile the nav is a bottom tab bar, and `AppShell` renders it _after_
+  `<main>` in the DOM (not just visually) — Tab order matches what's on
+  screen. As a consequence, the "Skip to main content" link skips only the
+  header there, which is all that's ahead of `<main>`.
+- The nav now has `aria-label="Main"`, and the bottom bar always renders
+  visible text labels (the desktop rail's icon-only collapsed state relies on
+  a `title` tooltip, which touch users don't get).
+- Touch targets are at least 44×44px on coarse-pointer devices (`Button`,
+  header avatar, dropdown items, course "View source" links), and form
+  controls are 16px so iOS Safari doesn't zoom on focus.
+- Page zoom is not disabled. Don't add `maximum-scale` / `user-scalable=no`
+  to the viewport meta tag.
+- On mobile the radar chart moves competence names and scores into a text
+  legend under the chart, so the numbers are readable as text rather than
+  only as SVG geometry.
+
 ## Suggested follow-up (not done here)
 
 - A live tab-through in a real browser before the next demo, since a code

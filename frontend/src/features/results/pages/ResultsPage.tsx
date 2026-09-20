@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
+import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
+import { MOBILE_QUERY } from "@/shared/lib/breakpoints";
 import { CompetenceRadar } from "../components/CompetenceRadar";
 import { WelcomeScreen } from "../components/WelcomeScreen";
 import { getCompetenceScores } from "../api";
@@ -11,30 +13,25 @@ import { RecommendedJourneyCard, getRecommendedJourney } from "@/features/learni
 import type { LearningJourney } from "@/features/learningJourney";
 import styles from "./ResultsPage.module.css";
 
-// Shown while GET /competence-scores isn't implemented on the backend yet.
-const PLACEHOLDER_SCORES: CompetenceScore[] = [
-  { competenceArea: { name: "AI Literacy" }, score: 3, maxScore: 5 },
-  { competenceArea: { name: "Open Science" }, score: 2, maxScore: 5 },
-  { competenceArea: { name: "Data Management" }, score: 4, maxScore: 5 },
-  { competenceArea: { name: "Prompting" }, score: 3, maxScore: 5 },
-  { competenceArea: { name: "Critical Evaluation" }, score: 2, maxScore: 5 },
-  { competenceArea: { name: "Ethics & Bias" }, score: 4, maxScore: 5 },
-];
-
-/** The main dashboard: skill radar chart + entry point into the assessment. */
+/**
+ * The main dashboard: radar chart of the learner's latest SAT competence
+ * scores + entry point into the assessment. The page remounts on every visit,
+ * so retaking the SAT and returning here always fetches the fresh scores.
+ */
 export function ResultsPage() {
   const { learner } = useAuth();
   const navigate = useNavigate();
   const [scores, setScores] = useState<CompetenceScore[] | null>(null);
-  const [isPlaceholder, setIsPlaceholder] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const isMobile = useMediaQuery(MOBILE_QUERY);
   const [journey, setJourney] = useState<LearningJourney | null>(null);
 
   useEffect(() => {
     getCompetenceScores()
       .then(setScores)
       .catch(() => {
-        setScores(PLACEHOLDER_SCORES);
-        setIsPlaceholder(true);
+        setScores([]);
+        setLoadFailed(true);
       });
     getRecommendedJourney()
       .then(setJourney)
@@ -59,15 +56,20 @@ export function ResultsPage() {
       <p className={styles.subheading}>Here&apos;s where your skills stand right now.</p>
 
       <div className={styles.chartCard}>
-        <CompetenceRadar data={scores} />
-        {isPlaceholder && (
-          <p className={styles.note}>Sample data — real scoring isn&apos;t available yet.</p>
+        {loadFailed ? (
+          <p className={styles.note}>
+            Couldn&apos;t load your scores right now. Please try again in a moment.
+          </p>
+        ) : (
+          <CompetenceRadar data={scores} compact={isMobile} />
         )}
       </div>
 
       {journey && <RecommendedJourneyCard journey={journey} />}
 
-      <Button onClick={() => navigate("/assessment")}>Assess yourself</Button>
+      <Button className={styles.cta} onClick={() => navigate("/assessment")}>
+        Assess yourself
+      </Button>
     </div>
   );
 }

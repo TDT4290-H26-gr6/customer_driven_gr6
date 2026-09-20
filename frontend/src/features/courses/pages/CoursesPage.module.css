@@ -18,7 +18,9 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  /* min(100%, 280px): a plain minmax(280px, …) column would overflow on a
+     screen narrower than 280px + padding instead of shrinking. */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   /* start (not the grid default stretch): an expanded card grows the row's
      height and pushes the next row down, without stretching its unexpanded
      row-mates to match it. */
@@ -28,4 +30,22 @@
 
 .empty {
   color: var(--color-text-muted);
+}
+
+@media (max-width: 767px) {
+  .page {
+    gap: 16px;
+  }
+
+  .heading {
+    font-size: 22px;
+  }
+
+  .subheading {
+    margin-top: -8px;
+  }
+
+  .grid {
+    gap: 16px;
+  }
 }

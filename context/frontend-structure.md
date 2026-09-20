@@ -53,7 +53,7 @@ frontend/
     │   ├── layout/
     │   │   ├── AppShell.tsx         # header + sidebar + <Outlet/>, blocks with RoleGateModal if no role
     │   │   ├── Header.tsx           # brand left, signed-in user right
-    │   │   ├── Sidebar.tsx          # collapsible nav
+    │   │   ├── Sidebar.tsx          # collapsible left rail (desktop) / fixed bottom tab bar (mobile)
     │   │   └── RoleGateModal.tsx    # forced role-pick modal — see "Role gating" below
     │   └── guards/
     │       └── RequireAuth.tsx      # no session -> redirect /login
@@ -106,7 +106,7 @@ frontend/
     │   │
     │   ├── results/                # scores + visualisation
     │   │   ├── components/
-    │   │   │   ├── CompetenceRadar.tsx      # radar / spider chart (inline SVG)
+    │   │   │   ├── CompetenceRadar.tsx      # radar / spider chart (inline SVG); `compact` on mobile
     │   │   │   ├── CompetenceBreakdown.tsx
     │   │   │   ├── ScoreTable.tsx
     │   │   │   └── WelcomeScreen.tsx         # first-run state: no assessment taken yet
@@ -135,8 +135,10 @@ frontend/
     │   ├── hooks/
     │   │   ├── useAsync.ts
     │   │   ├── useLocalStorage.ts
+    │   │   ├── useMediaQuery.ts       # live window.matchMedia — only for when the DOM/props differ on mobile
     │   │   └── useSessionStorage.ts   # like useLocalStorage, but cleared when the tab/session ends
     │   ├── lib/
+    │   │   ├── breakpoints.ts         # MOBILE_QUERY — the single mobile/desktop split (see "Responsive")
     │   │   └── format.ts
     │   └── types/
     │       └── common.ts           # ApiError, Nullable, etc.
@@ -315,8 +317,8 @@ places in `globals.css`, right next to each other, so they can't drift):
 `--color-text-muted`, `--color-primary`, `--color-primary-hover`,
 `--color-primary-contrast`, `--color-primary-soft`, `--color-danger`,
 `--color-warning`, `--color-warning-bg`, `--shadow-sm`, `--shadow-md`.
-Non‑color tokens (`--header-height`, `--sidebar-width*`, `--radius-*`) don't
-need a dark variant.
+Non‑color tokens (`--header-height`, `--sidebar-width*`, `--bottom-nav-height`,
+`--radius-*`) don't need a dark variant.
 
 ### Third-party widgets: pie-fixed-player
 
@@ -348,6 +350,125 @@ This is the pattern for any future embedded/third-party widget that ships
 its own styling: isolate it in a small fixed-color container rather than
 hoping it inherits our tokens — don't leave it to blend into whatever
 `--color-surface` happens to resolve to.
+
+### Responsive / mobile layout
+
+- **Related ticket:** CD-40 — _Should have a web-based and mobile-friendly interface_
+
+One codebase, one set of components — no separate mobile app, no `/m` routes.
+Below **768px** the layout switches to a phone layout; from 768px up the
+desktop design is unchanged.
+
+| Viewport         | Layout                                                                                    |
+| ---------------- | ----------------------------------------------------------------------------------------- |
+| ≥ 1024px         | desktop: collapsible left rail, 32px page padding                                         |
+| 768 – 1023px     | same as desktop, 24px page padding                                                        |
+| ≤ 767px (mobile) | fixed bottom tab bar, sticky header, 16px page padding, single column, full-width actions |
+
+**The breakpoint.** `shared/lib/breakpoints.ts` is the single source
+(`MOBILE_MAX_WIDTH = 767`, `MOBILE_QUERY`). CSS can't import it — media
+queries can't use custom properties — so each `.module.css` writes
+`@media (max-width: 767px)` by hand. Grep for `767px` if it ever changes.
+
+**Two kinds of media query — pick by what you mean:**
+
+- `@media (max-width: 767px)` — _layout_ (screen size): spacing, columns,
+  heading sizes, full-width buttons.
+- `@media (pointer: coarse)` — _input_ (touch; also covers tablets and phones
+  in landscape, which the width query misses): 44px minimum hit areas
+  (`Button`, the header avatar, dropdown items, the course "View source"
+  link) and 16px form controls (iOS Safari zooms the whole page when a
+  control under 16px is focused, and never zooms back out). Don't use width
+  as a stand-in for touch, or the reverse.
+
+**Prefer CSS. Use `useMediaQuery(MOBILE_QUERY)` only when the DOM or props
+genuinely differ** — currently exactly two places:
+
+1. `AppShell` renders `<Sidebar layout="side">` _before_ `<main>` on desktop
+   and `<Sidebar layout="bottom">` _after_ it on mobile. It's one or the
+   other, not both and not CSS-reordered, so Tab order always matches what's
+   on screen.
+2. `ResultsPage` passes `compact={isMobile}` to `CompetenceRadar`.
+
+The hook reads synchronously (`useSyncExternalStore`), so there's no flash of
+the wrong layout on first paint. Never use it for spacing or sizing — that's
+what the CSS media queries are for.
+
+**App shell on mobile**
+
+- **Header** is sticky (the account menu stays reachable on long pages) and
+  grows by the notch inset.
+- **Nav** — `Sidebar layout="bottom"`: a fixed tab bar, icon over label,
+  `--bottom-nav-height` (60px) plus the home-indicator inset. It always shows
+  labels; the persisted `aios.sidebarCollapsed` preference is desktop-only
+  and never leaks into it. There's no collapse toggle. Adding a nav item =
+  one entry in `NAV_ITEMS`, and it appears in both layouts. Two to five
+  items fit comfortably; beyond that, redesign (e.g. a "More" sheet) rather
+  than squeezing labels.
+- **Clearance** — `<main>`'s bottom padding reserves the bar's height plus
+  the inset (`AppShell.module.css`), so pages need nothing extra. Anything
+  else you pin to the bottom of the screen must account for the bar itself.
+- **Stacking** — bottom bar `z-index: 20`, header `30`, `RoleGateModal`
+  `1000`. Slot new fixed UI into that order.
+- **Safe areas** — `index.html` sets `viewport-fit=cover`; the header, tab
+  bar and `<main>` add `env(safe-area-inset-*)`. Zoom is **not** disabled (no
+  `maximum-scale` / `user-scalable=no`) — keep it that way (WCAG 1.4.4).
+- **`RoleGateModal`** scrolls internally on a short viewport (phone in
+  landscape) rather than clipping the confirm button. It's still `inert`
+  over the rest of the app, tab bar included.
+
+**Component-level decisions worth knowing**
+
+- `CompetenceRadar` `compact` mode: full competence names can't sit beside
+  the axes on a 320px screen, so axes get numbered tips and the names +
+  scores move into a legend list under the chart (which also gives assistive
+  tech the actual numbers). Desktop keeps inline labels.
+- `PieQuestionPlayer`'s `.canvas` has `overflow-x: auto`: a wide third-party
+  widget scrolls inside its card instead of pushing the whole page sideways.
+- `AppShell`'s `.main` has `min-width: 0`. Without it a flex item grows to
+  fit its widest child and drags the page out to horizontal scroll — reach
+  for `min-width: 0` on any flex/grid child that holds long text.
+- Card grids use `minmax(min(100%, 280px), 1fr)` — a bare `minmax(280px, …)`
+  overflows a screen narrower than the column.
+
+**Checklist for a new screen**
+
+1. Constrain the page (`max-width` + `margin: 0 auto`, like the others); no
+   fixed pixel widths that can exceed ~288px.
+2. Add a `@media (max-width: 767px)` block: smaller padding and headings,
+   stack rows, primary action full width.
+3. Interactive elements ≥ 44px and inputs ≥ 16px under `pointer: coarse`
+   (`Button` already handles it — if you build a bespoke control, you own it).
+4. `min-width: 0` on flex/grid children with long text.
+5. `--color-*` tokens only, so dark mode still works.
+6. Check it at 320, 390, ~768 and desktop, in light and dark, using the
+   browser's device toolbar; confirm no horizontal scroll
+   (`document.documentElement.scrollWidth <= window.innerWidth`).
+
+**What was verified, and what wasn't** (CD-40)
+
+Checked in headless Chrome with mobile emulation — 390×844, 320×568,
+landscape 844×390, desktop 1280×800, light and dark: no horizontal overflow
+on any screen; the last piece of content clears the tab bar when scrolled to
+the bottom; every touch target is ≥ 44px; the account dropdown stays inside
+the viewport; resizing across 767px swaps the nav live (side ↔ bottom, DOM
+order following) with no reload; desktop renders as before.
+
+Not covered, so worth a pass before relying on it:
+
+- **Real devices.** Emulation isn't iOS Safari / Android Chrome — the
+  on-screen keyboard, `dvh` and safe-area behavior in particular.
+- **Other question types.** Only multiple-choice items are seeded, so PIE
+  drag-and-drop / matrix-style widgets haven't been seen at phone width. The
+  `.canvas` scroll is the safety net, not a guarantee they're usable.
+- **Desktop radar with long names.** Inline labels aren't wrapped, and the
+  real competence names ("Reproducibility and Research Workflows", …) are
+  much longer than the placeholder ones. Compact mode sidesteps this; the
+  desktop chart likely needs label wrapping once real scores land.
+- **Landscape phones** lose ~116px to header + tab bar. Hiding the bar on
+  scroll would fix it; not done.
+- **No automated layout tests.** Vitest/RTL can't check layout; a Playwright
+  smoke test at two viewport sizes would be the natural next step.
 
 ---
 

@@ -12,4 +12,9 @@ export const endpoints = {
   courses: "/courses",
   learningJourneys: "/learning-journeys",
   learningJourneyRecommendation: "/learning-journeys/recommendation",
+  assessment: {
+    progress: "/assessment/progress",
+    responses: "/assessment/responses",
+    complete: "/assessment/complete",
+  },
 } as const;
