@@ -11,3 +11,11 @@ export type Question = {
   competenceArea: { name: string };
   content: PieContent;
 };
+
+export type SatInstance = {
+  id: string;
+  learnerId: string;
+  instanceNum: number;
+  startedAt: string;
+  completedAt: string | null;
+};

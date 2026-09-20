@@ -7,21 +7,24 @@ import { Spinner } from "@/shared/components/Spinner";
 import { AssessmentProgress } from "../components/AssessmentProgress";
 import { QuestionCard } from "../components/QuestionCard";
 import type { PieAnswer } from "../components/PieQuestionPlayer";
-import { getQuestions } from "../api";
+import { completeSatInstance, getQuestions, startSatInstance, submitResponse } from "../api";
 import type { Question } from "../types";
 import styles from "./AssessmentRunnerPage.module.css";
 
 /**
  * Runs the questionnaire one question at a time with a progress bar on top.
- * Answers are kept in memory only, keyed by question id, so Back can
+ * Answers are kept in memory locally, keyed by question id, so Back can
  * restore whatever was previously selected and Next/Finish is disabled
  * until the current question is complete (per the widget's own
- * isComplete() — see PieQuestionPlayer). There is no results/scoring step
- * or per-response server-side persistence yet, but finishing the last
- * question does flag the learner as having completed the initial assessment.
+ * isComplete() — see PieQuestionPlayer). Each answer is persisted to the
+ * backend (scored server-side) only once its question is left via Next —
+ * by then hasAnswered has already gated on isComplete(), so the answer is
+ * final. Persistence failures are swallowed: this in-memory run is still
+ * fully usable, it just won't show real results until submission succeeds.
  */
 export function AssessmentRunnerPage() {
   const [questions, setQuestions] = useState<Question[] | null>(null);
+  const [satInstanceId, setSatInstanceId] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, PieAnswer>>({});
   const navigate = useNavigate();
@@ -31,6 +34,11 @@ export function AssessmentRunnerPage() {
     getQuestions()
       .then(setQuestions)
       .catch(() => setQuestions([]));
+    startSatInstance()
+      .then((instance) => setSatInstanceId(instance.id))
+      .catch(() => {
+        /* answers still work locally; they just won't be persisted/scored */
+      });
   }, []);
 
   if (questions === null) return <Spinner />;
@@ -49,9 +57,18 @@ export function AssessmentRunnerPage() {
     setIndex((i) => Math.max(0, i - 1));
   }
 
-  function handleNext() {
+  async function handleNext() {
+    if (satInstanceId) {
+      await submitResponse(satInstanceId, current.id, answers[current.id].session).catch(() => {
+        /* see the persistence-failure note above */
+      });
+    }
+
     if (isLast) {
-      completeInitialAssessment()
+      const finish = satInstanceId ? completeSatInstance(satInstanceId) : Promise.resolve();
+      finish
+        .catch(() => {})
+        .then(completeInitialAssessment)
         .then(markInitialAssessmentComplete)
         .catch(() => {
           /* dashboard falls back to the welcome screen until this succeeds */

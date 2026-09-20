@@ -8,6 +8,9 @@ export const endpoints = {
   },
   roles: "/roles",
   questions: "/questions",
+  satInstances: "/sat-instances",
+  satInstanceComplete: (id: string) => `/sat-instances/${id}/complete`,
+  responses: "/responses",
   competenceScores: "/competence-scores",
   courses: "/courses",
 } as const;

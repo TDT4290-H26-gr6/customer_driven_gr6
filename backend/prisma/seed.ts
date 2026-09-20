@@ -30,6 +30,7 @@ async function main() {
     competenceAreaId: string,
     prompt: string,
     choices: { label: string; correct: boolean }[],
+    choiceMode: "radio" | "checkbox" = "radio",
   ) {
     return {
       competenceAreaId,
@@ -42,7 +43,7 @@ async function main() {
             id: "1",
             element: "multiple-choice",
             prompt,
-            choiceMode: "radio",
+            choiceMode,
             choices: choices.map((c, i) => ({
               value: String(i),
               label: `<div>${c.label}</div>`,
@@ -205,6 +206,270 @@ async function main() {
       {
         text: "Independently repeating a study and getting the same results.",
         term: "Reproducibility",
+      },
+    ]),
+  });
+
+
+  await prisma.question.create({
+    data: mcQuestion(
+      areas.c4.id,
+      "Which law is least likely to be relevant in decisions to make data openly accessible? Assuming that the law is relevant in your jurisdiction.",
+      [
+        { label: "GDPR", correct: true },
+        { label: "AI Act", correct: false },
+        { label: "EU Cyber Resilience Act", correct: false },
+      ],
+    ),
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(
+      areas.c4.id,
+      "Which practices display legality more than ethical adequacy?",
+      [
+        {
+          label:
+            "A company mines data from its users because they have consented to this in the terms and conditions of a particular product.",
+          correct: true,
+        },
+        {
+          label:
+            "A company operates across the US and the EU. It has patented a real-time surveillance mechanism in casinos that monitors facial expressions and can accurately predict organized fraud. It suppresses the roll-out of this mechanism in the EU, where the EU AI Act makes it illegal.",
+          correct: true,
+        },
+        {
+          label:
+            "A company employs \"ethical hackers\" to perform penetration testing of new software. The hackers' scope and behavior is governed by codes of conduct.",
+          correct: false,
+        },
+        { label: "None of the above", correct: false },
+      ],
+      "checkbox",
+    ),
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(
+      areas.c4.id,
+      "What are key elements of the EU Data Governance Act?",
+      [
+        {
+          label: "Focus on protection of non-personal data, as the GDPR covers personal data.",
+          correct: false,
+        },
+        {
+          label: "Provide rules and safeguards to facilitate re-use of data held by the public sector",
+          correct: true,
+        },
+        {
+          label: "Allow public sector bodies to charge fees for allowing the reuse of their data",
+          correct: true,
+        },
+        { label: "Prevent the monetization of publicly held data", correct: false },
+      ],
+      "checkbox",
+    ),
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(
+      areas.c4.id,
+      "What does the Data Governance Act say about data altruism?",
+      [
+        {
+          label:
+            "Data altruism is built into the collection of data from the public, with an opt-out approach",
+          correct: false,
+        },
+        { label: "Consent or permission can be granted by individuals", correct: true },
+        { label: "Consent or permission can be granted by companies", correct: true },
+        {
+          label: "Consent or permission should be given voluntarily and without reward",
+          correct: true,
+        },
+        {
+          label:
+            "A lack of data-sharing tools is more of a barrier than a lack of willingness among the public",
+          correct: true,
+        },
+        { label: "Data intermediaries should be avoided.", correct: false },
+      ],
+      "checkbox",
+    ),
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(
+      areas.c4.id,
+      "What are identified obstacles to data-sharing in the EU?",
+      [
+        { label: "Low trust in data-sharing", correct: true },
+        { label: "Technical and infrastructure", correct: true },
+        { label: "Uncertainty about what type of public data can be collected", correct: true },
+        {
+          label: "No cross-sectoral instrument to regulate publicly held data",
+          correct: false,
+        },
+      ],
+      "checkbox",
+    ),
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(
+      areas.c4.id,
+      "The main difference between the Open Data Directive and the Data Governance Act is:",
+      [
+        {
+          label:
+            "The Open Data Directive regulates the reuse of publicly available information held by the public sector, while the Data Governance Act regulates the use of protected data held by the public sector.",
+          correct: true,
+        },
+        {
+          label:
+            "The Open Data Directive regulates the reuse of protected data held by the public sector, while the Data Governance Act regulates the sharing of publicly available data held by the public sector.",
+          correct: false,
+        },
+        {
+          label:
+            "The Open Data Directive requires certain types of data to be shared, while the Data Governance Act creates the legal infrastructure for these types of data to be safely shared.",
+          correct: false,
+        },
+        {
+          label:
+            "Neither address personal data, but the Open Data Directive focuses on companies that process public data, while the Data Governance Act focuses on the public sector.",
+          correct: false,
+        },
+      ],
+    ),
+  });
+
+  await prisma.question.create({
+    data: {
+      ...mcQuestion(
+        areas.c4.id,
+        "How comfortable are you describing how intellectual property rights and ancillary rights are both enablers and blockers to legal openness?",
+        [
+          { label: "Very uncomfortable describing this", correct: false },
+          { label: "Uncomfortable", correct: false },
+          { label: "In the middle", correct: false },
+          { label: "Comfortable", correct: false },
+          { label: "Very comfortable describing this", correct: false },
+        ],
+      ),
+      questionType: "self_rating",
+    },
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(
+      areas.c4.id,
+      "Which of the following characterize privacy and data protection as rights in the EU?",
+      [
+        { label: "They are fundamental rights", correct: true },
+        { label: "They are automatic", correct: true },
+        { label: "They are non-waivable", correct: true },
+        { label: "They are non-transferrable", correct: true },
+        { label: "None of the above", correct: false },
+      ],
+      "checkbox",
+    ),
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(
+      areas.c4.id,
+      "Which are examples of upstream practices, rather than downstream practices?",
+      [
+        { label: "Getting rights to data before disseminating it", correct: true },
+        { label: "Transfer of intellectual property rights", correct: true },
+        { label: "Moral rights policies", correct: true },
+        { label: "Model licenses", correct: false },
+      ],
+      "checkbox",
+    ),
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(
+      areas.c4.id,
+      "Which are examples of downstream practices, rather than upstream practices?",
+      [
+        { label: "Model licenses such as the CC family", correct: true },
+        { label: "Constraining data usage", correct: true },
+        { label: "Focusing on data output", correct: true },
+        { label: "Transfer of contributor rights", correct: false },
+      ],
+      "checkbox",
+    ),
+  });
+
+  await prisma.question.create({
+    data: {
+      ...mcQuestion(
+        areas.c4.id,
+        "How comfortable would you be to defend your organization's use of APIs in a discussion about intellectual property rights claims and a license dispute?",
+        [
+          { label: "Very uncomfortable", correct: false },
+          { label: "Uncomfortable", correct: false },
+          { label: "In the middle", correct: false },
+          { label: "Comfortable", correct: false },
+          { label: "Very comfortable", correct: false },
+        ],
+      ),
+      questionType: "self_rating",
+    },
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(
+      areas.c4.id,
+      "Which of the following is/are true?",
+      [
+        { label: "APIs are more conducive to establishing data-sharing ecosystems", correct: true },
+        { label: "APIs still depend on intellectual property rights", correct: false },
+        { label: "APIs are not under the scope of the Open Data Directive", correct: false },
+        { label: "APIs are subject to common constraints on data retention", correct: true },
+      ],
+      "checkbox",
+    ),
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(areas.c4.id, "Which main issue was Creative Commons developed to address?", [
+      { label: "The lack of a standard open license", correct: true },
+      { label: "The lack of a machine-readable license", correct: false },
+      {
+        label: "Unclear intellectual property rights of content shared on the internet",
+        correct: false,
+      },
+      { label: "Lack of consensus among national intellectual property experts", correct: false },
+    ]),
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(
+      areas.c4.id,
+      "Which types of creative commons licenses exist?",
+      [
+        { label: "Commercial use allowed", correct: true },
+        { label: "Commercial use not allowed", correct: true },
+        { label: "Derivative works allowed", correct: true },
+        { label: "Downstream use behind paywall", correct: false },
+        { label: "Downstream as upstream", correct: true },
+      ],
+      "checkbox",
+    ),
+  });
+
+  await prisma.question.create({
+    data: mcQuestion(areas.c4.id, "What does licensing have to do with open data?", [
+      { label: "Data which is shared with a license becomes open data.", correct: true },
+      { label: "Licensing is a way to indicate ownership over data.", correct: false },
+      {
+        label: "Licensing prevents data from being publicly shared, but allows for private agreements.",
+        correct: false,
       },
     ]),
   });
