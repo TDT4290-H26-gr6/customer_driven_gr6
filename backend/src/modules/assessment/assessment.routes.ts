@@ -3,6 +3,7 @@ import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
 import { requireRole } from "../../middleware/requireRole";
 import {
   completeActiveInstance,
+  getLatestCompetenceScores,
   getProgress,
   listQuestions,
   saveResponse,
@@ -46,3 +47,7 @@ assessmentRouter.post(
     res.status(204).end();
   },
 );
+
+assessmentRouter.get("/competence-scores", requireAuth, requireRole, async (req: AuthedRequest, res) => {
+  res.json(await getLatestCompetenceScores(req.learnerId!));
+});

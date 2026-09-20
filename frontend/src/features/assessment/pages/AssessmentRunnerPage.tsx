@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { completeInitialAssessment } from "@/features/auth";
@@ -19,12 +19,20 @@ import styles from "./AssessmentRunnerPage.module.css";
  * so leaving mid-assessment and coming back continues where they left off.
  * Back still restores from local state so navigating within the session
  * stays instant. Finishing the last question marks the SAT instance
- * complete and flags the learner as having completed the initial assessment.
+ * complete (which rolls its answers up into the competence scores the
+ * dashboard's radar shows) and flags the learner as having completed the
+ * initial assessment — the dashboard is only shown once both have finished,
+ * so it never loads scores from before this run.
  */
 export function AssessmentRunnerPage() {
   const [questions, setQuestions] = useState<Question[] | null>(null);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, PieAnswer>>({});
+  const [isFinishing, setIsFinishing] = useState(false);
+  // Saves run one after another, in the order the learner made them, and
+  // Finish waits for the queue — otherwise a save still in flight when the
+  // instance is completed would create a brand-new instance for that answer.
+  const pendingSaves = useRef<Promise<unknown>>(Promise.resolve());
   const navigate = useNavigate();
   const { markInitialAssessmentComplete } = useAuth();
 
@@ -58,9 +66,11 @@ export function AssessmentRunnerPage() {
   function handleAnswerChange(answer: PieAnswer) {
     setAnswers((prev) => ({ ...prev, [current.id]: answer }));
     if (answer.complete) {
-      saveResponse(current.id, answer).catch(() => {
-        /* best-effort — Back/Next still work from local state this session */
-      });
+      pendingSaves.current = pendingSaves.current
+        .then(() => saveResponse(current.id, answer))
+        .catch(() => {
+          /* best-effort — Back/Next still work from local state this session */
+        });
     }
   }
 
@@ -70,10 +80,10 @@ export function AssessmentRunnerPage() {
 
   function handleNext() {
     if (isLast) {
-      completeAssessment().catch(() => {
-        /* best-effort, same as the initial-assessment flag below */
-      });
-      completeInitialAssessment()
+      setIsFinishing(true);
+      pendingSaves.current
+        .then(() => completeAssessment())
+        .then(() => completeInitialAssessment())
         .then(markInitialAssessmentComplete)
         .catch(() => {
           /* dashboard falls back to the welcome screen until this succeeds */
@@ -97,7 +107,7 @@ export function AssessmentRunnerPage() {
         <Button variant="secondary" onClick={handleBack} disabled={isFirst}>
           Back
         </Button>
-        <Button onClick={handleNext} disabled={!hasAnswered}>
+        <Button onClick={handleNext} disabled={!hasAnswered || isFinishing}>
           {isLast ? "Finish" : "Next"}
         </Button>
       </div>

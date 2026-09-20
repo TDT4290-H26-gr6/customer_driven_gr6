@@ -6,7 +6,8 @@ model CompetenceArea {
   name        String
   description String? @db.Text
 
-  questions Question[]
+  questions        Question[]
+  competenceScores CompetenceScore[]
 
   @@map("assessment_competence_area")
 }
@@ -46,17 +47,24 @@ model Response {
   question      Question    @relation(fields: [questionId], references: [id])
   answer        Json
   score         Float?
+  maxScore      Float?
   answeredAt    DateTime    @default(now())
 
+  // One response per question per SAT instance — resubmitting (e.g. going
+  // back and changing an answer before finishing) updates it in place.
+  @@unique([satInstanceId, questionId])
   @@map("assessment_response")
 }
 
 model CompetenceScore {
-  id               String      @id @default(uuid())
+  id               String         @id @default(uuid())
   satInstanceId    String
-  satInstance      SatInstance @relation(fields: [satInstanceId], references: [id])
+  satInstance      SatInstance    @relation(fields: [satInstanceId], references: [id])
   competenceAreaId String
+  competenceArea   CompetenceArea @relation(fields: [competenceAreaId], references: [id])
   score            Float
+  maxScore         Float
 
+  @@unique([satInstanceId, competenceAreaId])
   @@map("assessment_competence_score")
 }

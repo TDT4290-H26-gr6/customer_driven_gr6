@@ -11,30 +11,24 @@ import { getCompetenceScores } from "../api";
 import type { CompetenceScore } from "../types";
 import styles from "./ResultsPage.module.css";
 
-// Shown while GET /competence-scores isn't implemented on the backend yet.
-const PLACEHOLDER_SCORES: CompetenceScore[] = [
-  { competenceArea: { name: "AI Literacy" }, score: 3, maxScore: 5 },
-  { competenceArea: { name: "Open Science" }, score: 2, maxScore: 5 },
-  { competenceArea: { name: "Data Management" }, score: 4, maxScore: 5 },
-  { competenceArea: { name: "Prompting" }, score: 3, maxScore: 5 },
-  { competenceArea: { name: "Critical Evaluation" }, score: 2, maxScore: 5 },
-  { competenceArea: { name: "Ethics & Bias" }, score: 4, maxScore: 5 },
-];
-
-/** The main dashboard: skill radar chart + entry point into the assessment. */
+/**
+ * The main dashboard: radar chart of the learner's latest SAT competence
+ * scores + entry point into the assessment. The page remounts on every visit,
+ * so retaking the SAT and returning here always fetches the fresh scores.
+ */
 export function ResultsPage() {
   const { learner } = useAuth();
   const navigate = useNavigate();
   const [scores, setScores] = useState<CompetenceScore[] | null>(null);
-  const [isPlaceholder, setIsPlaceholder] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
 
   useEffect(() => {
     getCompetenceScores()
       .then(setScores)
       .catch(() => {
-        setScores(PLACEHOLDER_SCORES);
-        setIsPlaceholder(true);
+        setScores([]);
+        setLoadFailed(true);
       });
   }, []);
 
@@ -56,9 +50,12 @@ export function ResultsPage() {
       <p className={styles.subheading}>Here&apos;s where your skills stand right now.</p>
 
       <div className={styles.chartCard}>
-        <CompetenceRadar data={scores} compact={isMobile} />
-        {isPlaceholder && (
-          <p className={styles.note}>Sample data — real scoring isn&apos;t available yet.</p>
+        {loadFailed ? (
+          <p className={styles.note}>
+            Couldn&apos;t load your scores right now. Please try again in a moment.
+          </p>
+        ) : (
+          <CompetenceRadar data={scores} compact={isMobile} />
         )}
       </div>
 

@@ -1,8 +1,14 @@
 .chart {
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
   height: auto;
   overflow: visible;
+}
+
+/* The viewBox is sized to fit the wrapped names, so it's wider than tall —
+   let it fill the card rather than the square chart's cap. */
+.chartWithLabels {
+  max-width: 100%;
 }
 
 .ring {
@@ -29,7 +35,6 @@
 
 .label {
   fill: var(--color-text-muted);
-  font-size: 12px;
 }
 
 .empty {
@@ -57,7 +62,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .legendIndex {
@@ -78,10 +83,4 @@
   flex: 1;
   min-width: 0;
   color: var(--color-text);
-}
-
-.legendScore {
-  flex: none;
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
 }
