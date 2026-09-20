@@ -2,16 +2,22 @@ import { useEffect, useRef } from "react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useLocalStorage } from "@/shared/hooks/useLocalStorage";
+import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
+import { MOBILE_QUERY } from "@/shared/lib/breakpoints";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { RoleGateModal } from "./RoleGateModal";
 import styles from "./AppShell.module.css";
 
-/** Authenticated layout: header + collapsible sidebar + routed page. */
+/**
+ * Authenticated layout: header + nav + routed page. The nav is a collapsible
+ * left sidebar on desktop and a bottom tab bar on mobile.
+ */
 export function AppShell() {
   const { learner } = useAuth();
   const needsRole = Boolean(learner && !learner.role);
   const [collapsed, setCollapsed] = useLocalStorage("aios.sidebarCollapsed", false);
+  const isMobile = useMediaQuery(MOBILE_QUERY);
   const appRef = useRef<HTMLDivElement>(null);
 
   // `inert` (not just visually covered) while the role gate is up: blocks
@@ -29,13 +35,25 @@ export function AppShell() {
         </a>
         <Header />
         <div className={styles.body}>
-          <Sidebar collapsed={collapsed} onToggleCollapsed={() => setCollapsed((c) => !c)} />
+          {/* Rendered on one side or the other (not both, not CSS-reordered)
+              so the DOM/tab order always matches what's on screen: the bottom
+              bar sits after <main>, the side rail before it. */}
+          {!isMobile && (
+            <Sidebar collapsed={collapsed} onToggleCollapsed={() => setCollapsed((c) => !c)} />
+          )}
           {/* tabIndex={-1}: not a normal Tab stop, but focusable when the skip
               link above jumps here so keyboard focus actually moves (not just
               the visible scroll position). */}
           <main id="main-content" tabIndex={-1} className={styles.main}>
             {needsRole ? null : <Outlet />}
           </main>
+          {isMobile && (
+            <Sidebar
+              layout="bottom"
+              collapsed={collapsed}
+              onToggleCollapsed={() => setCollapsed((c) => !c)}
+            />
+          )}
         </div>
       </div>
 

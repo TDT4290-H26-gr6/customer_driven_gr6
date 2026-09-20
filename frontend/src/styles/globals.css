@@ -28,6 +28,7 @@
   --header-height: 56px;
   --sidebar-width: 220px;
   --sidebar-width-collapsed: 64px;
+  --bottom-nav-height: 60px; /* mobile tab bar, excluding the safe-area inset */
 
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -92,6 +93,12 @@ body,
   height: 100%;
 }
 
+/* Stops iOS from inflating text on rotate to landscape. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -105,6 +112,14 @@ button {
 
 a {
   color: inherit;
+}
+
+/* Removes the double-tap-to-zoom delay on controls without disabling
+   pinch-zoom of the page. */
+a,
+button,
+select {
+  touch-action: manipulation;
 }
 
 /* <pie-fixed-player> renders via Material-UI in the regular light DOM (not

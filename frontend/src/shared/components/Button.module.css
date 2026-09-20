@@ -16,6 +16,13 @@
   cursor: not-allowed;
 }
 
+/* Touch devices: at least a 44px-tall hit area. */
+@media (pointer: coarse) {
+  .button {
+    min-height: 44px;
+  }
+}
+
 .primary {
   background: var(--color-primary);
   color: var(--color-primary-contrast);

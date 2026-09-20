@@ -61,7 +61,7 @@ export function RoleSelect({
           </option>
         ))}
       </select>
-      <div>
+      <div className={styles.actions}>
         <Button onClick={confirm} disabled={saving || !selected}>
           {saving ? "Saving…" : confirmLabel}
         </Button>
