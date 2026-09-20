@@ -8,22 +8,19 @@ async function main() {
     skipDuplicates: true,
   });
 
+  // Upserted by name (unique) — re-running the seed must reuse the same
+  // rows, not create duplicates, since Question/CompetenceScore/
+  // LearningJourney all reference a competence area by id looked up by name.
+  async function competenceArea(name: string) {
+    return prisma.competenceArea.upsert({ where: { name }, update: {}, create: { name } });
+  }
+
   const areas = {
-    c1: await prisma.competenceArea.create({
-      data: { name: "Open Science Principles and Policy" },
-    }),
-    c2: await prisma.competenceArea.create({
-      data: { name: "Research Data and Metadata Management" },
-    }),
-    c3: await prisma.competenceArea.create({
-      data: { name: "Reproducibility and Research Workflows" },
-    }),
-    c4: await prisma.competenceArea.create({
-      data: { name: "Legal, Ethical, and Governance Aspects" },
-    }),
-    c5: await prisma.competenceArea.create({
-      data: { name: "Use of AI Tools in Open Science" },
-    }),
+    c1: await competenceArea("Open Science Principles and Policy"),
+    c2: await competenceArea("Research Data and Metadata Management"),
+    c3: await competenceArea("Reproducibility and Research Workflows"),
+    c4: await competenceArea("Legal, Ethical, and Governance Aspects"),
+    c5: await competenceArea("Use of AI Tools in Open Science"),
   };
 
   function mcQuestion(

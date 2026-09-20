@@ -32,9 +32,17 @@ export async function recommendJourney(learnerId: string) {
   const scores = await prisma.competenceScore.findMany({
     where: { satInstanceId: latestInstance.id },
   });
-  if (scores.length === 0) return null;
+  // Areas differ in question count (and so in maxScore), so "weakest" has to
+  // compare score/maxScore, not raw score — a 6/31 area isn't actually
+  // stronger than a 2/14 one just because 6 > 2. Areas with no possible
+  // score (maxScore 0, e.g. only self-rating questions) can't be "weak" by
+  // this measure, so they're excluded rather than compared.
+  const scored = scores.filter((s) => s.maxScore > 0);
+  if (scored.length === 0) return null;
 
-  const lowest = scores.reduce((min, s) => (s.score < min.score ? s : min));
+  const lowest = scored.reduce((min, s) =>
+    s.score / s.maxScore < min.score / min.maxScore ? s : min,
+  );
 
   const journey = await prisma.learningJourney.findFirst({
     where: { competenceAreaId: lowest.competenceAreaId },

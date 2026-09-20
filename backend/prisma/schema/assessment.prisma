@@ -3,7 +3,7 @@
 
 model CompetenceArea {
   id          String  @id @default(uuid())
-  name        String
+  name        String  @unique
   description String? @db.Text
 
   questions        Question[]
