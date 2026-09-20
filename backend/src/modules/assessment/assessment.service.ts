@@ -188,12 +188,33 @@ export function getCompetenceScores(satInstanceId: string) {
   });
 }
 
-/** The learner's most recently completed SAT instance's competence scores. */
+/**
+ * The learner's most recently completed SAT instance's competence scores —
+ * one entry per competence area that appears in the SAT (has at least one
+ * question), in a stable order, so the radar keeps the same axes after every
+ * retake. Areas with no scored answers in that instance (e.g. only
+ * self-ratings) come back as 0/0.
+ */
 export async function getLatestCompetenceScores(learnerId: string) {
   const latest = await prisma.satInstance.findFirst({
     where: { learnerId, completedAt: { not: null } },
     orderBy: { completedAt: "desc" },
   });
   if (!latest) return [];
-  return getCompetenceScores(latest.id);
+
+  const [areas, scores] = await Promise.all([
+    prisma.competenceArea.findMany({
+      where: { questions: { some: {} } },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    getCompetenceScores(latest.id),
+  ]);
+  const scoreByArea = new Map(scores.map((s) => [s.competenceAreaId, s]));
+
+  return areas.map((area) => ({
+    competenceArea: { name: area.name },
+    score: scoreByArea.get(area.id)?.score ?? 0,
+    maxScore: scoreByArea.get(area.id)?.maxScore ?? 0,
+  }));
 }
