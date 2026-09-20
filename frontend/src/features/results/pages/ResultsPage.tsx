@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
+import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
+import { MOBILE_QUERY } from "@/shared/lib/breakpoints";
 import { CompetenceRadar } from "../components/CompetenceRadar";
 import { WelcomeScreen } from "../components/WelcomeScreen";
 import { getCompetenceScores } from "../api";
@@ -25,6 +27,7 @@ export function ResultsPage() {
   const navigate = useNavigate();
   const [scores, setScores] = useState<CompetenceScore[] | null>(null);
   const [isPlaceholder, setIsPlaceholder] = useState(false);
+  const isMobile = useMediaQuery(MOBILE_QUERY);
 
   useEffect(() => {
     getCompetenceScores()
@@ -53,13 +56,15 @@ export function ResultsPage() {
       <p className={styles.subheading}>Here&apos;s where your skills stand right now.</p>
 
       <div className={styles.chartCard}>
-        <CompetenceRadar data={scores} />
+        <CompetenceRadar data={scores} compact={isMobile} />
         {isPlaceholder && (
           <p className={styles.note}>Sample data — real scoring isn&apos;t available yet.</p>
         )}
       </div>
 
-      <Button onClick={() => navigate("/assessment")}>Assess yourself</Button>
+      <Button className={styles.cta} onClick={() => navigate("/assessment")}>
+        Assess yourself
+      </Button>
     </div>
   );
 }

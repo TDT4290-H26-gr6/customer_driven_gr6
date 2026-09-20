@@ -34,3 +34,27 @@
   font-size: 13px;
   color: var(--color-text-muted);
 }
+
+@media (max-width: 767px) {
+  .page {
+    gap: 16px;
+  }
+
+  .heading {
+    font-size: 22px;
+  }
+
+  .subheading {
+    margin-top: -8px;
+  }
+
+  .chartCard {
+    padding: 16px;
+  }
+
+  /* The page's align-items:flex-start would otherwise shrink-wrap the primary
+     action; on a phone it should be a full-width thumb target. */
+  .cta {
+    align-self: stretch;
+  }
+}

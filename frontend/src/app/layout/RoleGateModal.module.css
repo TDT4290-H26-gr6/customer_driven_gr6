@@ -21,4 +21,18 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   padding: 32px;
+  /* A phone in landscape is shorter than the dialog — scroll inside it
+     rather than clipping the confirm button off-screen. */
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+@media (max-width: 767px) {
+  .backdrop {
+    padding: 16px;
+  }
+
+  .dialog {
+    padding: 24px 20px;
+  }
 }

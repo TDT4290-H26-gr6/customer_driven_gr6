@@ -1,12 +1,28 @@
 .header {
-  height: var(--header-height);
+  /* The safe-area inset is 0 everywhere except a notched phone in the
+     browser's fullscreen/standalone mode, where it keeps the brand and
+     avatar out from under the notch. */
+  height: calc(var(--header-height) + env(safe-area-inset-top, 0px));
   flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: env(safe-area-inset-top, 0px) max(20px, env(safe-area-inset-right, 0px)) 0
+    max(20px, env(safe-area-inset-left, 0px));
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+}
+
+/* Mobile: keep the header (and its account menu) reachable while scrolling a
+   long page. z-index sits below the role-gate modal (1000) but above cards. */
+@media (max-width: 767px) {
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+  }
 }
 
 .brand {
@@ -45,6 +61,7 @@
   top: calc(100% + 8px);
   right: 0;
   min-width: 200px;
+  max-width: calc(100vw - 32px);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -97,4 +114,17 @@
 .dropdownIcon {
   flex: none;
   color: var(--color-text-muted);
+}
+
+/* Touch devices (any width — includes tablets): finger-sized targets. */
+@media (pointer: coarse) {
+  .avatarButton {
+    width: 44px;
+    height: 44px;
+    font-size: 14px;
+  }
+
+  .dropdownItem {
+    min-height: 44px;
+  }
 }

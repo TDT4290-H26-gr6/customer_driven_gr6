@@ -9,4 +9,17 @@
 .nav {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 767px) {
+  .page {
+    gap: 16px;
+  }
+
+  /* Back / Next split the row evenly — two big thumb targets instead of two
+     small buttons at opposite edges. */
+  .nav > * {
+    flex: 1;
+  }
 }

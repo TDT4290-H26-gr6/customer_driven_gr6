@@ -66,3 +66,17 @@
   background: var(--color-primary-soft);
   color: var(--color-primary);
 }
+
+@media (max-width: 767px) {
+  .page {
+    gap: 16px;
+  }
+
+  .heading {
+    font-size: 22px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+}
