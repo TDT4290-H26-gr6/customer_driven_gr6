@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
+import { prisma as appPrisma } from "../src/db/prisma";
 import { DEFAULT_ROLES } from "../src/modules/identity/roles.bootstrap";
+import { ensureSeedLearningJourneys } from "../src/modules/learningJourney/learningJourney.bootstrap";
 const prisma = new PrismaClient();
 
 async function main() {
@@ -470,6 +472,12 @@ async function main() {
       },
     ]),
   });
+
+  // Learning journeys target the competence areas created above. The backend
+  // also seeds them at boot, but that finds no areas (and skips every journey)
+  // when the areas are seeded after the backend started — so seed them here too,
+  // otherwise no journey can be recommended after the SAT.
+  await ensureSeedLearningJourneys();
 }
 
 main()
@@ -477,4 +485,4 @@ main()
     console.error(e);
     process.exit(1);
   })
-  .finally(() => prisma.$disconnect());
+  .finally(() => Promise.all([prisma.$disconnect(), appPrisma.$disconnect()]));

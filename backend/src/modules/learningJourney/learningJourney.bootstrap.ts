@@ -3,8 +3,9 @@ import { prisma } from "../../db/prisma";
 // Example journeys, one per seeded competence area (see prisma/seed.ts).
 // Looked up by competence area *name*, not id, since competence areas are
 // seeded separately (prisma/seed.ts, run by hand) and may not exist yet on a
-// fresh DB — skipped gracefully until they do. Idempotent (upserted on the
-// journey's unique name): safe to run on every boot, like courses.bootstrap.ts.
+// fresh DB — skipped gracefully until they do, so prisma/seed.ts calls this
+// again right after creating the areas. Idempotent (upserted on the journey's
+// unique name): safe to run on every boot, like courses.bootstrap.ts.
 const SEED_JOURNEYS: {
   areaName: string;
   name: string;
