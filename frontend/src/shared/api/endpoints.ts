@@ -10,6 +10,8 @@ export const endpoints = {
   questions: "/questions",
   competenceScores: "/competence-scores",
   courses: "/courses",
+  learningJourneys: "/learning-journeys",
+  learningJourneyRecommendation: "/learning-journeys/recommendation",
   assessment: {
     progress: "/assessment/progress",
     responses: "/assessment/responses",

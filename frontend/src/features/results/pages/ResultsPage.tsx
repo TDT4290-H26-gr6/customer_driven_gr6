@@ -9,6 +9,8 @@ import { CompetenceRadar } from "../components/CompetenceRadar";
 import { WelcomeScreen } from "../components/WelcomeScreen";
 import { getCompetenceScores } from "../api";
 import type { CompetenceScore } from "../types";
+import { RecommendedJourneyCard, getRecommendedJourney } from "@/features/learningJourney";
+import type { LearningJourney } from "@/features/learningJourney";
 import styles from "./ResultsPage.module.css";
 
 /**
@@ -22,6 +24,7 @@ export function ResultsPage() {
   const [scores, setScores] = useState<CompetenceScore[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
+  const [journey, setJourney] = useState<LearningJourney | null>(null);
 
   useEffect(() => {
     getCompetenceScores()
@@ -30,6 +33,9 @@ export function ResultsPage() {
         setScores([]);
         setLoadFailed(true);
       });
+    getRecommendedJourney()
+      .then(setJourney)
+      .catch(() => setJourney(null));
   }, []);
 
   if (scores === null) {
@@ -58,6 +64,8 @@ export function ResultsPage() {
           <CompetenceRadar data={scores} compact={isMobile} />
         )}
       </div>
+
+      {journey && <RecommendedJourneyCard journey={journey} />}
 
       <Button className={styles.cta} onClick={() => navigate("/assessment")}>
         Assess yourself
