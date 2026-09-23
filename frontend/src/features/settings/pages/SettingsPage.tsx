@@ -4,6 +4,7 @@ import { useTheme, type ThemePreference } from "@/app/providers/ThemeProvider";
 import { MonitorIcon, MoonIcon, SunIcon } from "@/shared/components/icons";
 import { RoleSelect } from "@/features/onboarding";
 import type { Role } from "@/features/onboarding";
+import { ProfileForm } from "@/features/profile";
 import styles from "./SettingsPage.module.css";
 
 const VISUAL_OPTIONS: { value: ThemePreference; label: string; Icon: typeof MonitorIcon }[] = [
@@ -67,6 +68,10 @@ export function SettingsPage() {
         {saved && (
           <p className={styles.confirmation}>Saved — you&apos;re now set as {saved.name}.</p>
         )}
+      </div>
+
+      <div className={styles.card}>
+        <ProfileForm />
       </div>
     </div>
   );

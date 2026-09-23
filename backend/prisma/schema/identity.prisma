@@ -13,6 +13,7 @@ model Learner {
   createdAt                     DateTime @default(now())
 
   satInstances SatInstance[]
+  profile      LearnerProfile?
 
   @@map("identity_learner")
 }
@@ -24,4 +25,20 @@ model Role {
   learners Learner[]
 
   @@map("identity_role")
+}
+
+/// Learner-stated context (SAT23): goals, background, years of experience.
+/// Collected so a future recommendation rule can factor in what the learner
+/// says they want, not just their measured weakest area — data only for
+/// now, recommendJourney() doesn't read this yet (see CD-28).
+model LearnerProfile {
+  id                String   @id @default(uuid())
+  learnerId         String   @unique
+  learner           Learner  @relation(fields: [learnerId], references: [id])
+  goals             String?  @db.Text
+  background        String?  @db.Text
+  yearsOfExperience Int?
+  updatedAt         DateTime @updatedAt
+
+  @@map("identity_learner_profile")
 }
