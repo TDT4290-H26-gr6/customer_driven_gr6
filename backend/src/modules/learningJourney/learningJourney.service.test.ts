@@ -1,5 +1,18 @@
-import { describe, expect, it } from "vitest";
-import { pickWeakestArea } from "./learningJourney.service";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { pickWeakestArea, recommendJourney } from "./learningJourney.service";
+import { prisma } from "../../db/prisma";
+
+vi.mock("../../db/prisma", () => ({
+  prisma: {
+    satInstance: { findFirst: vi.fn() },
+    competenceScore: { findMany: vi.fn() },
+    learningJourney: { findFirst: vi.fn() },
+    journeyRecommendation: { findFirst: vi.fn(), create: vi.fn() },
+    competenceArea: { findUnique: vi.fn() },
+  },
+}));
+
+const mockPrisma = vi.mocked(prisma, true);
 
 describe("pickWeakestArea", () => {
   it("picks the area with the lowest score/maxScore ratio, not the lowest raw score", () => {
@@ -38,5 +51,83 @@ describe("pickWeakestArea", () => {
       { competenceAreaId: "weak", score: 1, maxScore: 5 },
     ]);
     expect(areaId).toBe("weak");
+  });
+});
+
+describe("recommendJourney", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns null when the learner has no completed SAT instance", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValue(null);
+
+    const result = await recommendJourney("learner-1");
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null when no journey targets the learner's weakest area", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValue({ id: "instance-1" } as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceAreaId: "uncovered-area", score: 1, maxScore: 5 },
+    ] as never);
+    mockPrisma.learningJourney.findFirst.mockResolvedValue(null);
+
+    const result = await recommendJourney("learner-1");
+
+    expect(result).toBeNull();
+    expect(mockPrisma.journeyRecommendation.create).not.toHaveBeenCalled();
+  });
+
+  it("logs a new recommendation and returns the matching journey", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValue({ id: "instance-1" } as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceAreaId: "area-a", score: 1, maxScore: 5 },
+    ] as never);
+    mockPrisma.learningJourney.findFirst.mockResolvedValue({
+      id: "journey-1",
+      name: "Journey A",
+    } as never);
+    mockPrisma.journeyRecommendation.findFirst.mockResolvedValue(null);
+    mockPrisma.competenceArea.findUnique.mockResolvedValue({ name: "Area A" } as never);
+
+    const result = await recommendJourney("learner-1");
+
+    expect(result).toEqual({ id: "journey-1", name: "Journey A" });
+    expect(mockPrisma.journeyRecommendation.create).toHaveBeenCalledWith({
+      data: { learnerId: "learner-1", journeyId: "journey-1", reason: "Lowest score in Area A" },
+    });
+  });
+
+  it("does not log a duplicate recommendation when the pick hasn't changed", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValue({ id: "instance-1" } as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceAreaId: "area-a", score: 1, maxScore: 5 },
+    ] as never);
+    mockPrisma.learningJourney.findFirst.mockResolvedValue({ id: "journey-1" } as never);
+    mockPrisma.journeyRecommendation.findFirst.mockResolvedValue({
+      journeyId: "journey-1",
+    } as never);
+
+    await recommendJourney("learner-1");
+
+    expect(mockPrisma.journeyRecommendation.create).not.toHaveBeenCalled();
+  });
+
+  it("logs a fresh recommendation when the pick changed from last time", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValue({ id: "instance-1" } as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceAreaId: "area-a", score: 1, maxScore: 5 },
+    ] as never);
+    mockPrisma.learningJourney.findFirst.mockResolvedValue({ id: "journey-new" } as never);
+    mockPrisma.journeyRecommendation.findFirst.mockResolvedValue({
+      journeyId: "journey-old",
+    } as never);
+    mockPrisma.competenceArea.findUnique.mockResolvedValue({ name: "Area A" } as never);
+
+    await recommendJourney("learner-1");
+
+    expect(mockPrisma.journeyRecommendation.create).toHaveBeenCalledOnce();
   });
 });
