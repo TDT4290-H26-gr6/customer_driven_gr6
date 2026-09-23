@@ -35,7 +35,10 @@ function withShuffledChoices<T extends Pick<Question, "questionType" | "content"
   const firstModel = models?.[0];
   if (!content || !models || !firstModel?.choices) return question;
 
-  const shuffledModels = [{ ...firstModel, choices: shuffle(firstModel.choices) }, ...models.slice(1)];
+  const shuffledModels = [
+    { ...firstModel, choices: shuffle(firstModel.choices) },
+    ...models.slice(1),
+  ];
   return { ...question, content: { ...content, models: shuffledModels } as Prisma.JsonValue };
 }
 
@@ -61,7 +64,10 @@ type PieModel = {
  * PieAnswer wrapper (`{ session, complete }` — see PieQuestionPlayer), not
  * the raw PIE session itself; the session lives at `answer.session`.
  */
-function scoreAnswer(question: Pick<Question, "questionType" | "content">, answer: unknown): ScoreResult | null {
+function scoreAnswer(
+  question: Pick<Question, "questionType" | "content">,
+  answer: unknown,
+): ScoreResult | null {
   if (question.questionType === "self_rating") return null;
 
   const model = (question.content as { models?: PieModel[] } | null)?.models?.[0];
@@ -74,8 +80,15 @@ function scoreAnswer(question: Pick<Question, "questionType" | "content">, answe
   }
 
   if (model.choices && model.choiceMode) {
-    const choices = model.choices.map((c) => ({ value: String(c.value), correct: Boolean(c.correct) }));
-    return scoreMultipleChoice(choices, model.choiceMode, extractMultipleChoiceValues(session, modelId));
+    const choices = model.choices.map((c) => ({
+      value: String(c.value),
+      correct: Boolean(c.correct),
+    }));
+    return scoreMultipleChoice(
+      choices,
+      model.choiceMode,
+      extractMultipleChoiceValues(session, modelId),
+    );
   }
 
   return null;
@@ -123,7 +136,11 @@ export async function getProgress(learnerId: string) {
  * Upserts one answer against the learner's active instance, creating the
  * instance on the first call, and scores it against the question.
  */
-export async function saveResponse(learnerId: string, questionId: string, answer: Prisma.InputJsonValue) {
+export async function saveResponse(
+  learnerId: string,
+  questionId: string,
+  answer: Prisma.InputJsonValue,
+) {
   const instance = await getOrCreateActiveInstance(learnerId);
   const question = await prisma.question.findUnique({ where: { id: questionId } });
   if (!question) throw new Error(`Question not found: ${questionId}`);

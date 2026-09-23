@@ -109,6 +109,9 @@ export function extractDragAndDropBlanks(
 ): Record<string, string | undefined> {
   const value = (findModelSession(session, modelId)?.value ?? {}) as Record<string, unknown>;
   return Object.fromEntries(
-    Object.entries(value).map(([blank, v]) => [blank, Array.isArray(v) ? v[0] : (v as string | undefined)]),
+    Object.entries(value).map(([blank, v]) => [
+      blank,
+      Array.isArray(v) ? v[0] : (v as string | undefined),
+    ]),
   );
 }

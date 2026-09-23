@@ -51,7 +51,10 @@ const SEED_JOURNEYS: {
     description: "Get comfortable with the legal and governance rules that shape open science.",
     modules: [
       { title: "Data Protection Basics", description: "GDPR and what it means for research data." },
-      { title: "Research Ethics & Governance", description: "Consent, oversight, and accountability." },
+      {
+        title: "Research Ethics & Governance",
+        description: "Consent, oversight, and accountability.",
+      },
     ],
   },
   {
@@ -59,8 +62,14 @@ const SEED_JOURNEYS: {
     name: "Reproducible Research Practices",
     description: "Build workflows that make your research easy to verify and repeat.",
     modules: [
-      { title: "What Makes Research Reproducible?", description: "Common failure points and fixes." },
-      { title: "Documenting a Workflow", description: "Version control, provenance, and pipelines." },
+      {
+        title: "What Makes Research Reproducible?",
+        description: "Common failure points and fixes.",
+      },
+      {
+        title: "Documenting a Workflow",
+        description: "Version control, provenance, and pipelines.",
+      },
     ],
   },
 ];

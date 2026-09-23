@@ -48,6 +48,11 @@ assessmentRouter.post(
   },
 );
 
-assessmentRouter.get("/competence-scores", requireAuth, requireRole, async (req: AuthedRequest, res) => {
-  res.json(await getLatestCompetenceScores(req.learnerId!));
-});
+assessmentRouter.get(
+  "/competence-scores",
+  requireAuth,
+  requireRole,
+  async (req: AuthedRequest, res) => {
+    res.json(await getLatestCompetenceScores(req.learnerId!));
+  },
+);

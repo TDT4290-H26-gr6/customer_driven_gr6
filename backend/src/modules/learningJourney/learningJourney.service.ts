@@ -11,6 +11,34 @@ export function listJourneys() {
   });
 }
 
+export type CompetenceAreaScore = {
+  competenceAreaId: string;
+  score: number;
+  maxScore: number;
+};
+
+/**
+ * Picks the competence area a learner is weakest in, out of their scores for
+ * one SAT instance. Pure (no Prisma) so it's unit-testable directly — see
+ * assessment.scoring.ts for the same pattern.
+ *
+ * Areas differ in question count (and so in maxScore), so "weakest" has to
+ * compare score/maxScore, not raw score — a 6/31 area isn't actually
+ * stronger than a 2/14 one just because 6 > 2. Areas with no possible score
+ * (maxScore 0, e.g. only self-rating questions) can't be "weak" by this
+ * measure, so they're excluded rather than compared. Returns null when no
+ * area qualifies.
+ */
+export function pickWeakestArea(scores: CompetenceAreaScore[]): string | null {
+  const scored = scores.filter((s) => s.maxScore > 0);
+  if (scored.length === 0) return null;
+
+  const lowest = scored.reduce((min, s) =>
+    s.score / s.maxScore < min.score / min.maxScore ? s : min,
+  );
+  return lowest.competenceAreaId;
+}
+
 /**
  * v0 recommendation rule (Sprint 2, score-only — see AIOS Sprint Plan LJ03).
  * Recommends the journey targeting the learner's single lowest-scoring
@@ -32,20 +60,11 @@ export async function recommendJourney(learnerId: string) {
   const scores = await prisma.competenceScore.findMany({
     where: { satInstanceId: latestInstance.id },
   });
-  // Areas differ in question count (and so in maxScore), so "weakest" has to
-  // compare score/maxScore, not raw score — a 6/31 area isn't actually
-  // stronger than a 2/14 one just because 6 > 2. Areas with no possible
-  // score (maxScore 0, e.g. only self-rating questions) can't be "weak" by
-  // this measure, so they're excluded rather than compared.
-  const scored = scores.filter((s) => s.maxScore > 0);
-  if (scored.length === 0) return null;
-
-  const lowest = scored.reduce((min, s) =>
-    s.score / s.maxScore < min.score / min.maxScore ? s : min,
-  );
+  const weakestAreaId = pickWeakestArea(scores);
+  if (!weakestAreaId) return null;
 
   const journey = await prisma.learningJourney.findFirst({
-    where: { competenceAreaId: lowest.competenceAreaId },
+    where: { competenceAreaId: weakestAreaId },
     include: { modules: { orderBy: { order: "asc" } } },
   });
   if (!journey) return null;
@@ -60,7 +79,7 @@ export async function recommendJourney(learnerId: string) {
 
   if (lastRecommendation?.journeyId !== journey.id) {
     const area = await prisma.competenceArea.findUnique({
-      where: { id: lowest.competenceAreaId },
+      where: { id: weakestAreaId },
     });
 
     await prisma.journeyRecommendation.create({

@@ -209,7 +209,6 @@ async function main() {
     ]),
   });
 
-
   await prisma.question.create({
     data: mcQuestion(
       areas.c4.id,
@@ -239,7 +238,7 @@ async function main() {
         },
         {
           label:
-            "A company employs \"ethical hackers\" to perform penetration testing of new software. The hackers' scope and behavior is governed by codes of conduct.",
+            'A company employs "ethical hackers" to perform penetration testing of new software. The hackers\' scope and behavior is governed by codes of conduct.',
           correct: false,
         },
         { label: "None of the above", correct: false },
@@ -258,7 +257,8 @@ async function main() {
           correct: false,
         },
         {
-          label: "Provide rules and safeguards to facilitate re-use of data held by the public sector",
+          label:
+            "Provide rules and safeguards to facilitate re-use of data held by the public sector",
           correct: true,
         },
         {
@@ -467,7 +467,8 @@ async function main() {
       { label: "Data which is shared with a license becomes open data.", correct: true },
       { label: "Licensing is a way to indicate ownership over data.", correct: false },
       {
-        label: "Licensing prevents data from being publicly shared, but allows for private agreements.",
+        label:
+          "Licensing prevents data from being publicly shared, but allows for private agreements.",
         correct: false,
       },
     ]),
