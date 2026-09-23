@@ -1,5 +1,5 @@
 export type CompetenceScore = {
-  competenceArea: { name: string };
+  competence: { name: string };
   score: number;
   maxScore: number;
 };

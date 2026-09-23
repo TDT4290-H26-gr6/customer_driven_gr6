@@ -11,7 +11,7 @@ type Props = {
 export function QuestionCard({ question, answer, onAnswerChange }: Props) {
   return (
     <div className={styles.card}>
-      <span className={styles.badge}>{question.competenceArea.name}</span>
+      <span className={styles.badge}>{question.competence.name}</span>
       {/* <p className={styles.prompt}>{question.prompt}</p> */}
       <PieQuestionPlayer
         content={question.content}

@@ -1,11 +1,12 @@
-export type Course = {
+export type Source = {
   id: string;
   institution: string;
   country: string;
-  name: string;
+  courseName: string;
   type: string;
   level: string | null;
   degreeProgramme: string | null;
+  /** A decimal, so it arrives as a string (e.g. "7.50"). */
   credits: string | null;
   language: string | null;
   instructor: string | null;
@@ -15,5 +16,6 @@ export type Course = {
   prerequisites: string | null;
   description: string | null;
   sourceUrl: string;
-  confidence: string | null;
+  /** 0..1 — how sure we are the source is real and current. */
+  confidence: number | null;
 };

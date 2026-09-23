@@ -1,26 +1,32 @@
-/// Courses module — third-party learning resources (formal courses, training
-/// programmes, institutional initiatives) a learner can take to build a
-/// competence area. Tables: courses_*.
+/// Sources module — third-party learning resources (formal courses, training
+/// programmes, institutional initiatives) that build a competence. A source is
+/// a competence's primary or secondary source and can be the content behind a
+/// learning-journey step. Tables: sources_*.
 
-model Course {
+model Source {
   id              String   @id @default(uuid())
   institution     String
   country         String
-  name            String
-  type            String // "Formal university course" | "Support service / training programme" | "Institutional initiative" | "Research group / EU project involvement" | ...
-  level           String? // e.g. "Master's (Laurea Magistrale)", "N/A (open to all researchers)"
+  courseName      String
+  type            String // "course" | "Formal university course" | "Support service / training programme" | ...
+  level           String? // e.g. "bachelor", "master"
   degreeProgramme String?
-  credits         String? // free text, e.g. "6 ECTS"
+  credits         Decimal? @db.Decimal(5, 2)
   language        String?
   instructor      String?
   format          String?
-  topics          String? @db.Text // comma-separated
-  prerequisites   String? @db.Text
-  description     String? @db.Text
-  sourceUrl       String  @unique @db.VarChar(512)
-  confidence      String? @db.Text // data-quality note, e.g. "Confirmed — named, credit-bearing course"
+  topics          String?  @db.Text // comma-separated
+  prerequisites   String?  @db.Text
+  description     String?  @db.Text
+  sourceUrl       String   @unique @db.VarChar(512)
+  confidence      Float? // 0..1 — how sure we are the source is real / still current
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("courses_course")
+  primaryForCompetences   Competence[]
+  secondaryForCompetences CompetenceSecondarySource[]
+  learningModules         LearningModule[]
+
+  @@map("sources_source")
 }

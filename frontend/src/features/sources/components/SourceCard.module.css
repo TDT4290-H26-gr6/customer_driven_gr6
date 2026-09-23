@@ -142,12 +142,6 @@
   color: var(--color-text);
 }
 
-.confidenceNote {
-  font-size: 12px;
-  font-style: italic;
-  color: var(--color-text-muted);
-}
-
 .expandHint {
   display: inline-block;
   /* Pins to the bottom of .body's flex column, so it lines up at the same

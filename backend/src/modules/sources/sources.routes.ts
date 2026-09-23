@@ -1,10 +1,16 @@
 import { Router } from "express";
 import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
 import { requireRole } from "../../middleware/requireRole";
-import { listCourses } from "./courses.service";
+import { asyncHandler } from "../../lib/asyncHandler";
+import { listSources } from "./sources.service";
 
-export const coursesRouter = Router();
+export const sourcesRouter = Router();
 
-coursesRouter.get("/courses", requireAuth, requireRole, async (_req: AuthedRequest, res) => {
-  res.json(await listCourses());
-});
+sourcesRouter.get(
+  "/sources",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (_req, res) => {
+    res.json(await listSources());
+  }),
+);

@@ -1,7 +1,7 @@
 import { prisma } from "../../db/prisma";
 
-// All Prisma access for courses_* tables lives here.
+// All Prisma access for sources_* tables lives here.
 
-export function listCourses() {
-  return prisma.course.findMany({ orderBy: [{ institution: "asc" }, { name: "asc" }] });
+export function listSources() {
+  return prisma.source.findMany({ orderBy: [{ institution: "asc" }, { courseName: "asc" }] });
 }

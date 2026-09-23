@@ -6,7 +6,8 @@ import { LoginPage } from "@/features/auth";
 import { AssessmentRunnerPage } from "@/features/assessment";
 import { ResultsPage } from "@/features/results";
 import { SettingsPage } from "@/features/settings";
-import { CoursesPage } from "@/features/courses";
+import { SourcesPage } from "@/features/sources";
+import { AdminPage } from "@/features/admin";
 import { Spinner } from "@/shared/components/Spinner";
 
 /**
@@ -32,7 +33,8 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/results" element={<ResultsPage />} />
-          <Route path="/courses" element={<CoursesPage />} />
+          <Route path="/sources" element={<SourcesPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           {/* Not in the sidebar — only reachable via the dashboard's
               "Assess yourself" button. */}
           <Route path="/assessment" element={<AssessmentRunnerPage />} />
