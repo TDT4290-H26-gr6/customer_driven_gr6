@@ -1,6 +1,7 @@
 import { prisma } from "../../db/prisma";
 import { ensureDefaultRoles } from "./roles.bootstrap";
 import type { LearnerProfileInput } from "./identity.types";
+import { deleteRecommendationsForLearner } from "../learningJourney/learningJourney.service";
 
 // All Prisma access for identity_* tables lives here.
 
@@ -52,4 +53,17 @@ export function saveLearnerProfile(learnerId: string, data: LearnerProfileInput)
     update: data,
     create: { learnerId, ...data },
   });
+}
+
+/**
+ * GDPR account deletion (CD-60). SatInstance/Response/CompetenceScore and
+ * LearnerProfile cascade at the DB level (onDelete: Cascade — see
+ * assessment.prisma/identity.prisma). JourneyRecommendation doesn't: it
+ * references learnerId as a plain field, not a real relation (see
+ * learningJourney.prisma), so it's cleaned up explicitly through that
+ * module's own service first.
+ */
+export async function deleteLearner(learnerId: string) {
+  await deleteRecommendationsForLearner(learnerId);
+  await prisma.learner.delete({ where: { id: learnerId } });
 }

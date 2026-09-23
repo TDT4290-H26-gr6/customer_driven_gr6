@@ -11,6 +11,15 @@ export function listJourneys() {
   });
 }
 
+/**
+ * Called from identity.service.ts when a learner deletes their account
+ * (CD-60) — learnerId here is a plain field, not a real FK (see the schema
+ * comment on JourneyRecommendation), so it doesn't cascade on its own.
+ */
+export function deleteRecommendationsForLearner(learnerId: string) {
+  return prisma.journeyRecommendation.deleteMany({ where: { learnerId } });
+}
+
 export type CompetenceAreaScore = {
   competenceAreaId: string;
   score: number;

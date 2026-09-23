@@ -1,0 +1,62 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.heading {
+  margin: 0;
+  font-size: 18px;
+  color: var(--color-danger);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Element selector, not just a class: Button's own .secondary sets
+   border-color/color too, same specificity as a bare class — this has to
+   win regardless of CSS source order. */
+button.dangerButton {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+button.dangerButton:hover:not(:disabled) {
+  background: var(--color-danger);
+  color: var(--color-danger-contrast, #fff);
+}
+
+.confirmBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-sm);
+}
+
+.confirmText {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+@media (max-width: 767px) {
+  .actions > button {
+    width: 100%;
+  }
+}

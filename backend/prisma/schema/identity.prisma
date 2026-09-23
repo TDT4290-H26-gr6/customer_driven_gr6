@@ -34,7 +34,7 @@ model Role {
 model LearnerProfile {
   id                String   @id @default(uuid())
   learnerId         String   @unique
-  learner           Learner  @relation(fields: [learnerId], references: [id])
+  learner           Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
   goals             String?  @db.Text
   background        String?  @db.Text
   yearsOfExperience Int?

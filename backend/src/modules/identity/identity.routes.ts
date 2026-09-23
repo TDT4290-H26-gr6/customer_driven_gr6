@@ -6,6 +6,7 @@ import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
 import { requireRole } from "../../middleware/requireRole";
 import {
   completeInitialAssessment,
+  deleteLearner,
   findLearnerById,
   findRole,
   getLearnerProfile,
@@ -88,4 +89,9 @@ identityRouter.put("/auth/me/profile", requireAuth, async (req: AuthedRequest, r
 
   const profile = await saveLearnerProfile(req.learnerId!, result.data);
   res.json(profile);
+});
+
+identityRouter.delete("/auth/me", requireAuth, async (req: AuthedRequest, res) => {
+  await deleteLearner(req.learnerId!);
+  res.status(204).end();
 });
