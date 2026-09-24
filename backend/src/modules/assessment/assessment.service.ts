@@ -235,3 +235,41 @@ export async function getLatestCompetenceScores(learnerId: string) {
     maxScore: scoreByArea.get(area.id)?.maxScore ?? 0,
   }));
 }
+
+/**
+ * Every completed SAT instance for a learner, oldest first, with a summed
+ * score and the per-area breakdown — so a History page can show how they've
+ * progressed over retakes (CD-21). Unlike getLatestCompetenceScores, this
+ * only lists the areas actually covered by that specific instance (no
+ * padding to every area in the bank) — if a role change ever narrows which
+ * questions a learner sees, this naturally shows exactly what that
+ * instance tested, without needing to know why.
+ */
+export async function getSatHistory(learnerId: string) {
+  const instances = await prisma.satInstance.findMany({
+    where: { learnerId, completedAt: { not: null } },
+    orderBy: { instanceNum: "asc" },
+    include: {
+      competenceScores: {
+        include: { competenceArea: { select: { name: true } } },
+        orderBy: { competenceArea: { name: "asc" } },
+      },
+    },
+  });
+
+  return instances.map((instance) => {
+    const areas = instance.competenceScores.map((s) => ({
+      name: s.competenceArea.name,
+      score: s.score,
+      maxScore: s.maxScore,
+    }));
+
+    return {
+      instanceNum: instance.instanceNum,
+      completedAt: instance.completedAt,
+      sumScore: areas.reduce((sum, a) => sum + a.score, 0),
+      sumMaxScore: areas.reduce((sum, a) => sum + a.maxScore, 0),
+      areas,
+    };
+  });
+}

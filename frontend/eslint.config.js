@@ -11,7 +11,7 @@ import prettier from "eslint-config-prettier";
 // they catch things like a clickable element with no keyboard handler
 // (click-events-have-key-events) or a positive tabIndex before they land.
 export default tseslint.config(
-  { ignores: ["dist", "node_modules"] },
+  { ignores: ["dist", "node_modules", "coverage"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

@@ -5,6 +5,7 @@ import {
   completeActiveInstance,
   getLatestCompetenceScores,
   getProgress,
+  getSatHistory,
   listQuestions,
   saveResponse,
 } from "./assessment.service";
@@ -54,5 +55,14 @@ assessmentRouter.get(
   requireRole,
   async (req: AuthedRequest, res) => {
     res.json(await getLatestCompetenceScores(req.learnerId!));
+  },
+);
+
+assessmentRouter.get(
+  "/assessment/history",
+  requireAuth,
+  requireRole,
+  async (req: AuthedRequest, res) => {
+    res.json(await getSatHistory(req.learnerId!));
   },
 );

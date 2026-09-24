@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { completeActiveInstance, saveResponse } from "./assessment.service";
+import { completeActiveInstance, getSatHistory, saveResponse } from "./assessment.service";
 import { prisma } from "../../db/prisma";
 
 vi.mock("../../db/prisma", () => ({
   prisma: {
-    satInstance: { findFirst: vi.fn(), create: vi.fn(), count: vi.fn(), update: vi.fn() },
+    satInstance: {
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      create: vi.fn(),
+      count: vi.fn(),
+      update: vi.fn(),
+    },
     question: { findUnique: vi.fn() },
     response: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
     competenceScore: { upsert: vi.fn() },
@@ -145,5 +151,80 @@ describe("completeActiveInstance", () => {
 
     expect(result).toBeNull();
     expect(mockPrisma.satInstance.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("getSatHistory", () => {
+  it("returns each completed instance with a summed score and its own area breakdown", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([
+      {
+        instanceNum: 1,
+        completedAt: new Date("2026-01-01"),
+        competenceScores: [
+          { score: 2, maxScore: 5, competenceArea: { name: "Open Science" } },
+          { score: 1, maxScore: 3, competenceArea: { name: "Data Management" } },
+        ],
+      },
+      {
+        instanceNum: 2,
+        completedAt: new Date("2026-02-01"),
+        competenceScores: [{ score: 4, maxScore: 5, competenceArea: { name: "Open Science" } }],
+      },
+    ] as never);
+
+    const history = await getSatHistory("learner-1");
+
+    expect(history).toEqual([
+      {
+        instanceNum: 1,
+        completedAt: new Date("2026-01-01"),
+        sumScore: 3,
+        sumMaxScore: 8,
+        areas: [
+          { name: "Open Science", score: 2, maxScore: 5 },
+          { name: "Data Management", score: 1, maxScore: 3 },
+        ],
+      },
+      {
+        instanceNum: 2,
+        completedAt: new Date("2026-02-01"),
+        sumScore: 4,
+        sumMaxScore: 5,
+        areas: [{ name: "Open Science", score: 4, maxScore: 5 }],
+      },
+    ]);
+  });
+
+  it("only lists the areas that specific instance actually covered, not every area in the bank", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([
+      {
+        instanceNum: 1,
+        completedAt: new Date("2026-01-01"),
+        competenceScores: [{ score: 1, maxScore: 1, competenceArea: { name: "Only This One" } }],
+      },
+    ] as never);
+
+    const [entry] = await getSatHistory("learner-1");
+
+    expect(entry.areas).toHaveLength(1);
+    expect(entry.areas[0].name).toBe("Only This One");
+  });
+
+  it("returns an empty list when the learner has no completed instances", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([]);
+    expect(await getSatHistory("learner-1")).toEqual([]);
+  });
+
+  it("queries only completed instances, ordered oldest first", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([]);
+
+    await getSatHistory("learner-1");
+
+    expect(mockPrisma.satInstance.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { learnerId: "learner-1", completedAt: { not: null } },
+        orderBy: { instanceNum: "asc" },
+      }),
+    );
   });
 });
