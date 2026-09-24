@@ -1,9 +1,9 @@
 import { BookIcon } from "@/shared/components/icons";
-import type { Course } from "../types";
-import styles from "./CourseCard.module.css";
+import type { Source } from "../types";
+import styles from "./SourceCard.module.css";
 
-// Deterministic banner colour per course — a stand-in "picture" until real
-// course artwork exists.
+// Deterministic banner colour per source — a stand-in "picture" until real
+// artwork exists.
 const PALETTE: [string, string][] = [
   ["#6366f1", "#8b5cf6"],
   ["#0ea5e9", "#06b6d4"],
@@ -11,6 +11,9 @@ const PALETTE: [string, string][] = [
   ["#10b981", "#14b8a6"],
   ["#ec4899", "#f43f5e"],
 ];
+
+/** At or above this confidence a source is shown as "confirmed"; below it, as a warning. */
+const CONFIRMED_CONFIDENCE = 0.9;
 
 function bannerGradient(seed: string): string {
   let hash = 0;
@@ -20,87 +23,88 @@ function bannerGradient(seed: string): string {
 }
 
 type Props = {
-  course: Course;
+  source: Source;
   expanded: boolean;
   onToggle: () => void;
 };
 
 /** Controlled by the page so only one card expands at a time. */
-export function CourseCard({ course, expanded, onToggle }: Props) {
-  const topics = course.topics
-    ? course.topics
+export function SourceCard({ source, expanded, onToggle }: Props) {
+  const topics = source.topics
+    ? source.topics
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean)
     : [];
-  const isConfirmed = course.confidence?.toLowerCase().startsWith("confirmed") ?? false;
+  const hasConfidence = source.confidence !== null;
+  const isConfirmed = (source.confidence ?? 0) >= CONFIRMED_CONFIDENCE;
 
   return (
     <article className={styles.card}>
       <button type="button" className={styles.toggle} onClick={onToggle} aria-expanded={expanded}>
         <div
           className={styles.banner}
-          style={{ backgroundImage: bannerGradient(course.institution) }}
+          style={{ backgroundImage: bannerGradient(source.institution) }}
         >
           <BookIcon className={styles.bannerIcon} width={32} height={32} />
         </div>
 
         <div className={styles.body}>
           <div className={styles.badgeRow}>
-            <span className={styles.typeBadge}>{course.type}</span>
-            {course.confidence && (
+            <span className={styles.typeBadge}>{source.type}</span>
+            {hasConfidence && (
               <span className={isConfirmed ? styles.confirmedBadge : styles.unconfirmedBadge}>
-                {isConfirmed ? "Confirmed" : "Unconfirmed"}
+                {Math.round((source.confidence ?? 0) * 100)}% confidence
               </span>
             )}
           </div>
 
-          <h3 className={styles.name}>{course.name}</h3>
+          <h3 className={styles.name}>{source.courseName}</h3>
           <p className={styles.institution}>
-            {course.institution} · {course.country}
+            {source.institution} · {source.country}
           </p>
 
           <dl className={styles.factRow}>
-            {course.level && (
+            {source.level && (
               <div className={styles.fact}>
                 <dt>Level</dt>
-                <dd>{course.level}</dd>
+                <dd>{source.level}</dd>
               </div>
             )}
-            {course.credits && (
+            {source.credits && (
               <div className={styles.fact}>
                 <dt>Credits</dt>
-                <dd>{course.credits}</dd>
+                <dd>{Number(source.credits)}</dd>
               </div>
             )}
           </dl>
 
           {expanded && (
             <div className={styles.details}>
-              {course.description && <p className={styles.description}>{course.description}</p>}
-              {course.degreeProgramme && (
+              {source.description && <p className={styles.description}>{source.description}</p>}
+              {source.degreeProgramme && (
                 <p>
-                  <strong>Programme:</strong> {course.degreeProgramme}
+                  <strong>Programme:</strong> {source.degreeProgramme}
                 </p>
               )}
-              {course.instructor && (
+              {source.instructor && (
                 <p>
-                  <strong>Instructor:</strong> {course.instructor}
+                  <strong>Instructor:</strong> {source.instructor}
                 </p>
               )}
-              {course.format && (
+              {source.format && (
                 <p>
-                  <strong>Format:</strong> {course.format}
+                  <strong>Format:</strong> {source.format}
                 </p>
               )}
-              {course.language && (
+              {source.language && (
                 <p>
-                  <strong>Language:</strong> {course.language}
+                  <strong>Language:</strong> {source.language}
                 </p>
               )}
-              {course.prerequisites && (
+              {source.prerequisites && (
                 <p>
-                  <strong>Prerequisites:</strong> {course.prerequisites}
+                  <strong>Prerequisites:</strong> {source.prerequisites}
                 </p>
               )}
               {topics.length > 0 && (
@@ -112,7 +116,6 @@ export function CourseCard({ course, expanded, onToggle }: Props) {
                   ))}
                 </div>
               )}
-              {course.confidence && <p className={styles.confidenceNote}>{course.confidence}</p>}
             </div>
           )}
 
@@ -123,7 +126,7 @@ export function CourseCard({ course, expanded, onToggle }: Props) {
       {/* Always visible, independent of expand state and of the toggle button above. */}
       <div className={styles.footer}>
         <a
-          href={course.sourceUrl}
+          href={source.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
           className={styles.externalLink}

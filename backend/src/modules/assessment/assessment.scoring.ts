@@ -42,6 +42,20 @@ export function scoreMultipleChoice(
 }
 
 /**
+ * Scores a likert (self-rated) response. There is no right answer: the score
+ * is the scale value the learner picked, out of the top of the scale. Each
+ * choice's `value` is that scale number (see assessment.pie.ts).
+ */
+export function scoreLikert(choiceValues: string[], selectedValues: string[]): ScoreResult {
+  const scale = choiceValues.map(Number).filter(Number.isFinite);
+  const picked = Number(selectedValues[0]);
+  return {
+    score: Number.isFinite(picked) ? picked : 0,
+    maxScore: scale.length > 0 ? Math.max(...scale) : 0,
+  };
+}
+
+/**
  * Scores a drag-and-drop response (seed.ts's `dragQuestion`): each blank is
  * an "option" in the same sense as a multiple-choice choice, so the same
  * rule applies per blank — +1 for the correct term dropped in, -1 for an
