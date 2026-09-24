@@ -46,7 +46,11 @@ function wrapLabel(name: string): string[] {
   return best;
 }
 
-/** Radar / spider chart of skill levels, one axis per competence. */
+/**
+ * Radar / spider chart of skill levels, one axis per competence. An entry with
+ * an empty name is a padding axis (kept so the shape has at least three
+ * corners): it is drawn but carries no label.
+ */
 export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
   const labelsRef = useRef<SVGGElement>(null);
   const [measured, setMeasured] = useState<Bounds | null>(null);
@@ -201,7 +205,8 @@ export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
         ))}
 
         {compact &&
-          data.map((_, i) => {
+          data.map((d, i) => {
+            if (!d.competence.name) return null;
             const tip = pointAt(i, 1.14);
             return (
               <text
@@ -220,42 +225,46 @@ export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
 
         {!compact && (
           <g ref={labelsRef}>
-            {labels.map(({ pos, anchor, lines }, i) => (
-              <text
-                key={i}
-                x={pos.x}
-                y={pos.y}
-                textAnchor={anchor}
-                dominantBaseline="middle"
-                fontSize={LABEL_FONT_SIZE}
-                className={styles.label}
-              >
-                {lines.map((line, lineIndex) => (
-                  <tspan
-                    key={lineIndex}
-                    x={pos.x}
-                    // Centre the whole block on the label position, not just its first line.
-                    dy={`${lineIndex === 0 ? (-(lines.length - 1) * LABEL_LINE_HEIGHT) / 2 : LABEL_LINE_HEIGHT}em`}
-                  >
-                    {line}
-                  </tspan>
-                ))}
-              </text>
-            ))}
+            {labels.map(({ pos, anchor, lines }, i) =>
+              !data[i].competence.name ? null : (
+                <text
+                  key={i}
+                  x={pos.x}
+                  y={pos.y}
+                  textAnchor={anchor}
+                  dominantBaseline="middle"
+                  fontSize={LABEL_FONT_SIZE}
+                  className={styles.label}
+                >
+                  {lines.map((line, lineIndex) => (
+                    <tspan
+                      key={lineIndex}
+                      x={pos.x}
+                      // Centre the whole block on the label position, not just its first line.
+                      dy={`${lineIndex === 0 ? (-(lines.length - 1) * LABEL_LINE_HEIGHT) / 2 : LABEL_LINE_HEIGHT}em`}
+                    >
+                      {line}
+                    </tspan>
+                  ))}
+                </text>
+              ),
+            )}
           </g>
         )}
       </svg>
 
       {compact && (
         <ol className={styles.legend}>
-          {data.map((d, i) => (
-            <li key={i} className={styles.legendItem}>
-              <span className={styles.legendIndex} aria-hidden="true">
-                {i + 1}
-              </span>
-              <span className={styles.legendName}>{d.competence.name}</span>
-            </li>
-          ))}
+          {data.map((d, i) =>
+            !d.competence.name ? null : (
+              <li key={i} className={styles.legendItem}>
+                <span className={styles.legendIndex} aria-hidden="true">
+                  {i + 1}
+                </span>
+                <span className={styles.legendName}>{d.competence.name}</span>
+              </li>
+            ),
+          )}
         </ol>
       )}
     </>

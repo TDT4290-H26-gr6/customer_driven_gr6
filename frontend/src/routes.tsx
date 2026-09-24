@@ -4,7 +4,7 @@ import { RequireAuth } from "@/app/guards/RequireAuth";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { LoginPage } from "@/features/auth";
 import { AssessmentRunnerPage } from "@/features/assessment";
-import { ResultsPage } from "@/features/results";
+import { ResultsPage, SectionDetailsPage } from "@/features/results";
 import { SettingsPage } from "@/features/settings";
 import { SourcesPage } from "@/features/sources";
 import { AdminPage } from "@/features/admin";
@@ -33,6 +33,7 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/results" element={<ResultsPage />} />
+          <Route path="/results/details" element={<SectionDetailsPage />} />
           <Route path="/sources" element={<SourcesPage />} />
           <Route path="/admin" element={<AdminPage />} />
           {/* Not in the sidebar — only reachable via the dashboard's
