@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { LogoutIcon, SettingsIcon } from "@/shared/components/icons";
+import { LogoutIcon, SettingsIcon, ShieldIcon } from "@/shared/components/icons";
 import styles from "./Header.module.css";
 
 /** Top bar: brand on the left, an initials avatar + account dropdown on the right. */
@@ -39,6 +39,11 @@ export function Header() {
     navigate("/settings");
   }
 
+  function goToAdmin() {
+    setOpen(false);
+    navigate("/admin");
+  }
+
   function handleLogout() {
     setOpen(false);
     logout();
@@ -74,6 +79,15 @@ export function Header() {
               >
                 <SettingsIcon className={styles.dropdownIcon} />
                 Settings
+              </button>
+              <button
+                type="button"
+                className={styles.dropdownItem}
+                role="menuitem"
+                onClick={goToAdmin}
+              >
+                <ShieldIcon className={styles.dropdownIcon} />
+                Admin mode
               </button>
               <button
                 type="button"

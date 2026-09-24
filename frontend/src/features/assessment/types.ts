@@ -8,6 +8,6 @@ export type Question = {
   id: string;
   prompt: string;
   questionType: string;
-  competenceArea: { name: string };
+  competence: { id: string; name: string };
   content: PieContent;
 };

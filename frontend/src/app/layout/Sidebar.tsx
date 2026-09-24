@@ -6,7 +6,7 @@ import styles from "./Sidebar.module.css";
 // dashboard's "Assess yourself" button, not as a page someone browses to.
 const NAV_ITEMS = [
   { to: "/results", label: "Dashboard", Icon: HomeIcon },
-  { to: "/courses", label: "Courses", Icon: BookIcon },
+  { to: "/sources", label: "Sources", Icon: BookIcon },
 ];
 
 type Props = {

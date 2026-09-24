@@ -9,12 +9,19 @@ export const endpoints = {
   roles: "/roles",
   questions: "/questions",
   competenceScores: "/competence-scores",
-  courses: "/courses",
+  sources: "/sources",
   learningJourneys: "/learning-journeys",
   learningJourneyRecommendation: "/learning-journeys/recommendation",
   assessment: {
     progress: "/assessment/progress",
     responses: "/assessment/responses",
     complete: "/assessment/complete",
+  },
+  admin: {
+    visibility: "/admin/visibility",
+    roleSection: (roleId: string, sectionId: string) =>
+      `/admin/roles/${encodeURIComponent(roleId)}/sections/${encodeURIComponent(sectionId)}`,
+    roleCompetence: (roleId: string, competenceId: string) =>
+      `/admin/roles/${encodeURIComponent(roleId)}/competences/${encodeURIComponent(competenceId)}`,
   },
 } as const;
