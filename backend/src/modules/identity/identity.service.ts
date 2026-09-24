@@ -1,5 +1,4 @@
 import { prisma } from "../../db/prisma";
-import { ensureDefaultRoles } from "./roles.bootstrap";
 import type { LearnerProfileInput } from "./identity.types";
 
 // All Prisma access for identity_* tables lives here.
@@ -17,8 +16,7 @@ export function upsertLearnerFromGoogle(sub: string, email: string, name?: strin
   });
 }
 
-export async function listRoles() {
-  if ((await prisma.role.count()) === 0) await ensureDefaultRoles();
+export function listRoles() {
   return prisma.role.findMany({ orderBy: { name: "asc" } });
 }
 
@@ -52,4 +50,65 @@ export function saveLearnerProfile(learnerId: string, data: LearnerProfileInput)
     update: data,
     create: { learnerId, ...data },
   });
+}
+
+// --- Role visibility allow-lists (identity_role_section / identity_role_competence) ---
+
+/** What one role is allowed to see. Used by the assessment module to filter questions. */
+export async function getRoleGrants(roleId: string) {
+  const [sections, competences] = await Promise.all([
+    prisma.roleSection.findMany({ where: { roleId }, select: { sectionId: true } }),
+    prisma.roleCompetence.findMany({ where: { roleId }, select: { competenceId: true } }),
+  ]);
+  return {
+    sectionIds: sections.map((s) => s.sectionId),
+    competenceIds: competences.map((c) => c.competenceId),
+  };
+}
+
+/**
+ * Everything the admin screen needs in one read: every role, every section
+ * and competence, and every grant. Sections and competences belong to the
+ * assessment module — reading them here is the read-only cross-module access
+ * context/backend-structure.md allows.
+ */
+export async function getVisibilityMatrix() {
+  const [roles, sections, competences, roleSections, roleCompetences] = await Promise.all([
+    prisma.role.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    prisma.section.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, description: true },
+    }),
+    prisma.competence.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, description: true },
+    }),
+    prisma.roleSection.findMany({ select: { roleId: true, sectionId: true } }),
+    prisma.roleCompetence.findMany({ select: { roleId: true, competenceId: true } }),
+  ]);
+  return { roles, sections, competences, roleSections, roleCompetences };
+}
+
+export function grantSection(roleId: string, sectionId: string, grantedByLearnerId: string) {
+  return prisma.roleSection.upsert({
+    where: { roleId_sectionId: { roleId, sectionId } },
+    update: {},
+    create: { roleId, sectionId, grantedByLearnerId },
+  });
+}
+
+export function revokeSection(roleId: string, sectionId: string) {
+  return prisma.roleSection.deleteMany({ where: { roleId, sectionId } });
+}
+
+export function grantCompetence(roleId: string, competenceId: string, grantedByLearnerId: string) {
+  return prisma.roleCompetence.upsert({
+    where: { roleId_competenceId: { roleId, competenceId } },
+    update: {},
+    create: { roleId, competenceId, grantedByLearnerId },
+  });
+}
+
+export function revokeCompetence(roleId: string, competenceId: string) {
+  return prisma.roleCompetence.deleteMany({ where: { roleId, competenceId } });
 }

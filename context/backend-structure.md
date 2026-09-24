@@ -40,10 +40,11 @@ possible without a rewrite.
 
 | Module | Responsibility | Tables (target names) | Routes |
 | --- | --- | --- | --- |
-| **`identity`** | who the user is: accounts, Google sign‑in, the persona role picked at onboarding, initial-assessment completion | `identity_learner`, `identity_role`, *(later)* `identity_session` | `POST /auth/google`, `GET /auth/me`, `PUT /auth/me/role`, `PUT /auth/me/initial-assessment`, `GET /roles` |
-| **`assessment`** | the question bank, self‑assessment runs, answers, scores | `assessment_competence_area`, `assessment_question`, `assessment_sat_instance`, `assessment_response`, `assessment_competence_score` | `GET /questions`, *(later)* `POST /sat-instances`, `POST /responses`, `GET /results` |
-| **`courses`** | third‑party learning resources (courses, training programmes, institutional initiatives) that build a competence area | `courses_course` | `GET /courses` |
-| **`security`** | privileged access and traceability | *(later)* `security_admin`, `security_audit_event`, `security_api_key` | *(later)* `GET/POST /admin/*` |
+| **`identity`** | who the user is: accounts, Google sign‑in, the persona role picked at onboarding, initial-assessment completion, and which sections / competences each role may see (the allow-lists managed in admin mode) | `identity_learner`, `identity_role`, `identity_role_section`, `identity_role_competence`, *(later)* `identity_session` | `POST /auth/google`, `GET /auth/me`, `PUT /auth/me/role`, `PUT /auth/me/initial-assessment`, `GET /roles`, `GET /admin/visibility`, `PUT/DELETE /admin/roles/:roleId/sections/:sectionId`, `PUT/DELETE /admin/roles/:roleId/competences/:competenceId` |
+| **`assessment`** | the content hierarchy (competence, section, module), the question bank, self‑assessment runs, answers, scores | `assessment_competence`, `assessment_competence_secondary_source`, `assessment_section`, `assessment_section_module`, `assessment_section_module_secondary_competence`, `assessment_question`, `assessment_sat_instance`, `assessment_response`, `assessment_competence_score` | `GET /questions`, `GET /assessment/progress`, `POST /assessment/responses`, `POST /assessment/complete`, `GET /competence-scores` |
+| **`sources`** | third‑party learning resources (courses, training programmes, institutional initiatives) that build a competence | `sources_source` | `GET /sources` |
+| **`learningJourney`** | curated step-by-step journeys, the sections each covers, and the score-based recommendation | `learning_journey_journey`, `learning_journey_journey_section`, `learning_journey_learning_module`, `learning_journey_recommendation` | `GET /learning-journeys`, `GET /learning-journeys/recommendation` |
+| **`security`** | privileged access and traceability | *(later)* `security_admin`, `security_audit_event`, `security_api_key` | *(later)* real admin access. Until then the `/admin/*` routes live in `identity` (§11) and should move here |
 | **`platform`** | cross‑cutting config | *(later)* `platform_app_setting`, `platform_feature_flag` | — |
 | **`health`** | liveness / readiness for ops | — | `GET /health` |
 
@@ -71,8 +72,10 @@ Split the single `prisma/schema.prisma` into a folder (Prisma's
 backend/prisma/
 ├── schema/
 │   ├── schema.prisma        # generator + datasource ONLY
-│   ├── identity.prisma      # Learner, Role, (Session)
-│   ├── assessment.prisma    # CompetenceArea, Question, SatInstance, Response, CompetenceScore
+│   ├── identity.prisma      # Learner, Role, RoleSection, RoleCompetence, (Session)
+│   ├── assessment.prisma    # Competence, Section, SectionModule, Question, SatInstance, Response, CompetenceScore + join tables
+│   ├── sources.prisma       # Source
+│   ├── learningJourney.prisma  # LearningJourney, JourneySection, LearningModule, JourneyRecommendation
 │   ├── security.prisma      # (Admin, AuditEvent)  — added when the module lands
 │   └── platform.prisma      # (AppSetting, FeatureFlag) — later
 ├── migrations/              # created when we switch to Prisma Migrate (§7)
@@ -111,7 +114,7 @@ backend/prisma/
 | Table (`@@map`) | `snake_case`, module prefix | `assessment_sat_instance` |
 | Columns | Prisma default camelCase (unchanged for now) | `completedAt` |
 | Enum‑like `String` | document allowed values in a `//` comment | `// "self_rating" \| "rubric"` |
-| Join / FK field | `<thing>Id` | `competenceAreaId` |
+| Join / FK field | `<thing>Id` | `competenceId` |
 
 ---
 
@@ -121,28 +124,35 @@ Mirror the modules; keep framework wiring thin.
 
 ```
 backend/src/
-├── index.ts                 # process entry: start server, run bootstraps
-├── server.ts                # buildServer(): express app + router registration
+├── index.ts                 # process entry: seed a fresh database, then start the server
+├── server.ts                # buildServer(): express app + router registration + error handler
 ├── db/
 │   └── prisma.ts            # the single shared PrismaClient
 ├── middleware/
 │   ├── requireAuth.ts       # JWT -> req.learnerId
 │   └── requireRole.ts       # requires req.learnerId's persona to be set (403 otherwise)
-├── lib/                     # framework-agnostic helpers (jwt, errors, ...)
+├── lib/
+│   └── asyncHandler.ts      # forwards a rejected async route handler to the error handler
+├── seed/                    # dev dataset, loaded on an empty DB — see §11
+│   ├── fakeFoodSeed.ts      # seedFakeFood() / seedIfEmpty()
+│   └── data/aios_fake_food_seed.json
 ├── modules/
 │   ├── identity/
-│   │   ├── identity.routes.ts     # /auth/*, /roles, /auth/me/role
-│   │   ├── identity.service.ts    # all Prisma access for identity_* tables
-│   │   ├── identity.types.ts
-│   │   └── roles.bootstrap.ts     # ensureDefaultRoles() — idempotent seed
+│   │   ├── identity.routes.ts       # /auth/*, /roles, /auth/me/role
+│   │   ├── identity.admin.routes.ts # /admin/* — role visibility grants (admin mode)
+│   │   ├── identity.service.ts      # all Prisma access for identity_* tables
+│   │   └── identity.types.ts
 │   ├── assessment/
-│   │   ├── assessment.routes.ts   # /questions (requireRole), (later) /responses, /sat-instances
-│   │   ├── assessment.service.ts
-│   │   └── assessment.types.ts
-│   ├── courses/
-│   │   ├── courses.routes.ts      # /courses (requireRole)
-│   │   ├── courses.service.ts
-│   │   └── courses.bootstrap.ts   # ensureSeedCourses() — idempotent example data
+│   │   ├── assessment.routes.ts   # /questions, /assessment/*, /competence-scores (all requireRole)
+│   │   ├── assessment.service.ts  # role-filtered questions, saving/scoring answers, score roll-up
+│   │   ├── assessment.scoring.ts  # pure scoring rules (multiple choice, likert, drag-and-drop)
+│   │   └── assessment.pie.ts      # authored question -> PIE item content
+│   ├── sources/
+│   │   ├── sources.routes.ts      # /sources (requireRole)
+│   │   └── sources.service.ts
+│   ├── learningJourney/
+│   │   ├── learningJourney.routes.ts   # /learning-journeys, /learning-journeys/recommendation
+│   │   └── learningJourney.service.ts  # journeys + the recommendation rule
 │   ├── security/                  # (added with the module)
 │   │   ├── security.routes.ts
 │   │   ├── security.service.ts
@@ -159,8 +169,9 @@ backend/src/
 - `*.service.ts` — the module's logic and the **only** place its tables are
   queried. Exposes plain typed functions.
 - `*.types.ts` — request/response and domain types for the module.
-- `*.bootstrap.ts` — idempotent startup data (`ensureDefaultRoles`, future
-  `ensureAdmin`), invoked from `index.ts`.
+- `*.bootstrap.ts` — idempotent startup data for a single module (e.g. a
+  future `ensureAdmin`), invoked from `index.ts`. No module has one today: the
+  dev dataset spans every module, so it lives in `src/seed/` instead (§11).
 - `server.ts` — imports each module's router and `app.use()`s it. Adding a
   module = one import + one line here.
 
@@ -193,8 +204,14 @@ backend/src/
   every endpoint it's meant to protect must carry `requireRole` itself.
   Privileged (admin) access is a separate concern and still belongs in
   `security`.
-- **Errors**: services throw typed errors from `lib/errors.ts`; a single Express
-  error handler in `server.ts` maps them to status codes.
+- **Errors**: a single Express error handler in `server.ts` turns anything a
+  route throws into a `500` instead of a crashed process. Express 4 does not
+  catch a rejected promise from an `async` handler by itself, so **wrap every
+  async route handler in `asyncHandler` (`lib/asyncHandler.ts`)** — without it a
+  failed database call becomes an unhandled rejection that kills the backend.
+  Known, expected failures (e.g. an unknown id → `404`) are still answered in
+  the route itself. Mapping *typed* service errors (`lib/errors.ts`) to status
+  codes is still to do.
 - **Config**: one `src/config.ts` reads `process.env` once (`DATABASE_URL`,
   `JWT_SECRET`, `GOOGLE_CLIENT_ID`, `BACKEND_PORT`). Nothing else reads
   `process.env`.
@@ -265,3 +282,124 @@ its own service), that module gets:
 
 Not planned now. The module structure in this document is precisely what keeps
 that option cheap later.
+
+---
+
+## 11. Content model, role visibility, scoring and seeding (schema v3)
+
+The shape of what the assessment is *about*, and how it reaches a learner. The
+diagram this came from is the "AIOS DB Schema — Role Visibility" Lucidchart.
+For what changed on the way there, and why, see
+[`schema-v3-changes.md`](./schema-v3-changes.md).
+
+### Content hierarchy
+
+```
+Section 1───* SectionModule *───1 Competence (mainCompetenceId)
+                    │  *───* Competence          (secondary, via ..._secondary_competence)
+                    1
+                    │
+                    * Question *───1 Competence   (competenceId — the one it assesses)
+
+Competence *───1 Source (primarySourceId);  *───* Source (secondary, via ..._secondary_source)
+```
+
+- A **Section** contains **SectionModules**; each module has exactly one *main*
+  competence (a plain FK) plus any number of *secondary* ones (a join table).
+- A **Question** belongs to a module **and** names the competence it assesses
+  (`competenceId`) directly. Scores roll up by that `competenceId`, **not**
+  through the section/module hierarchy — sections and modules organise content
+  and gate visibility; they don't compute scores.
+- Many-to-many links are join tables with composite keys, never JSON id lists:
+  the database can then enforce them and join across them.
+
+### Who sees which questions (role visibility)
+
+Two allow-lists on the learner's **role** (`identity_role_section`,
+`identity_role_competence`). A question is visible to a role if **either**
+
+- its competence is granted (`identity_role_competence`), **or**
+- its module's section is granted (`identity_role_section`).
+
+A role with no grants sees **nothing** (deny by default). The filter lives in
+`assessment.service.ts` (`visibleQuestionFilter`) and drives both
+`GET /questions` and the radar's axes, so a learner is only asked — and only
+scored on — what their role can see. Because the rule is OR, revoking a section
+does not hide its questions while their competences are still granted.
+
+**Admin mode** (`/admin/*`, `identity.admin.routes.ts`) edits these allow-lists;
+each grant is stamped with `grantedByLearnerId`. **It is not secured yet** — any
+signed-in learner who has picked a role can call it. That is a demo-stage
+decision; gate it on a real admin check (the planned `security` module) before
+real users exist.
+
+### Question types and scoring
+
+Authored simply, stored as PIE. A question's `questionType` decides how
+`assessment.pie.ts` builds its PIE item; **all four use PIE's `multiple-choice`
+element** (already rendered and scored by the app):
+
+| `questionType` | Authored `content` | PIE | Score |
+| --- | --- | --- | --- |
+| `single_choice` | `options[]`, one id in `correctOptionIds` | radio | 1 if correct, else 0 |
+| `true_false` | two options, one correct | radio, order kept | 1 if correct, else 0 |
+| `multi_choice` | `options[]`, several correct ids | checkbox | +1 per correct pick, −1 per wrong pick, floored at 0; max = number correct |
+| `likert` | `scale {min,max,minLabel,maxLabel}` | radio, ordered `min..max` | the scale value picked; max = top of the scale |
+
+- Each choice's `value` is what gets scored: the option id, or for likert the
+  scale number itself. `withShuffledChoices` shuffles answer order, except for
+  `likert` and `true_false` where the order is the point.
+- The seed data's own notes describe `multi_choice` as "1 point per correct
+  pick". We kept the existing penalty for wrong picks (it stops "tick
+  everything" from scoring full marks). If you want no penalty, change the
+  `checkbox` branch of `scoreMultipleChoice` in `assessment.scoring.ts`.
+- `completeActiveInstance` sums a finished run's `Response.score` / `maxScore`
+  per `question.competenceId` into `assessment_competence_score`.
+
+### Recommendation
+
+`recommendJourney` (learningJourney): take the learner's most recent completed
+run, find the competence with the lowest `score / maxScore` (competences with
+`maxScore` 0 are skipped), then
+
+1. find the sections that competence is taught in — modules whose **main**
+   competence it is, or, if none, modules listing it as **secondary**;
+2. find journeys covering those sections through `journey_section`, whose
+   `coverageLevel` is **M**ain, **R**ecommended or **S**upplementary;
+3. pick the best coverage (M beats R beats S), then the journey covering the
+   most of those sections, then by name.
+
+A recommendation row is logged only when the recommended journey changes.
+
+### Seeding
+
+`src/seed/fakeFoodSeed.ts` loads `src/seed/data/aios_fake_food_seed.json` — a
+**fake**, food-themed dataset covering every table except those a learner fills
+in (`sat_instance`, `response`, `competence_score`, `recommendation`). It is
+inserted in dependency order with `createMany({ skipDuplicates: true })`, so
+running it again never duplicates or overwrites.
+
+- **Automatically:** `index.ts` runs `seedIfEmpty()` before the server starts —
+  when the database has no questions, it loads the dataset. A fresh database
+  therefore opens with questions and needs no manual step.
+- **By hand:** `npx prisma db seed` runs the same loader.
+- The seed authors questions in the simple shape above; the loader converts them
+  with `buildPieContent`. To add or change questions, edit the JSON (a new
+  question needs a real `sectionModuleId` and `competenceId`).
+- There is no longer a default-roles bootstrap: roles come from the seed, so the
+  role picker lists the seed's roles.
+
+### Resetting the database
+
+The stack still uses `prisma db push` (§7), which cannot rename tables or
+tighten a unique constraint over existing duplicates. When the schema changes
+in a way `db push` refuses, wipe the local volume and start over:
+
+```
+docker compose down
+docker volume rm customer_driven_gr6_mysql_data
+docker compose up -d --build     # rebuild: prisma/ is baked into the image, not bind-mounted
+```
+
+The backend recreates the tables and seeds itself on the next start. This
+deletes all local data, including your own learner account and answers.
