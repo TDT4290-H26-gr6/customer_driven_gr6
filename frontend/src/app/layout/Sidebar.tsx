@@ -7,7 +7,7 @@ import styles from "./Sidebar.module.css";
 const NAV_ITEMS = [
   { to: "/results", label: "Dashboard", Icon: HomeIcon },
   { to: "/history", label: "History", Icon: ClipboardIcon },
-  { to: "/courses", label: "Courses", Icon: BookIcon },
+  { to: "/sources", label: "Sources", Icon: BookIcon },
 ];
 
 type Props = {

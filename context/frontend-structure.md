@@ -52,7 +52,7 @@ frontend/
     │   │   └── AuthProvider.tsx     # session/token state + refresh
     │   ├── layout/
     │   │   ├── AppShell.tsx         # header + sidebar + <Outlet/>, blocks with RoleGateModal if no role
-    │   │   ├── Header.tsx           # brand left, signed-in user right
+    │   │   ├── Header.tsx           # brand left, account menu right (Settings, Admin mode, Sign out)
     │   │   ├── Sidebar.tsx          # collapsible left rail (desktop) / fixed bottom tab bar (mobile)
     │   │   └── RoleGateModal.tsx    # forced role-pick modal — see "Role gating" below
     │   └── guards/
@@ -95,13 +95,13 @@ frontend/
     │   │   ├── types.ts             # Question, PieContent, Response, SatInstance
     │   │   └── index.ts
     │   │
-    │   ├── courses/                # partner-institution courses/resources
+    │   ├── sources/                # partner-institution courses/resources
     │   │   ├── components/
-    │   │   │   └── CourseCard.tsx        # expandable stat-card, always shows the source link
+    │   │   │   └── SourceCard.tsx        # expandable stat-card, always shows the source link
     │   │   ├── pages/
-    │   │   │   └── CoursesPage.tsx
-    │   │   ├── api.ts               # GET /courses
-    │   │   ├── types.ts             # Course
+    │   │   │   └── SourcesPage.tsx
+    │   │   ├── api.ts               # GET /sources
+    │   │   ├── types.ts             # Source
     │   │   └── index.ts
     │   │
     │   ├── results/                # scores + visualisation
@@ -115,6 +115,22 @@ frontend/
     │   │   ├── api.ts               # GET /results, GET /competence-scores
     │   │   ├── hooks.ts             # useResults()
     │   │   ├── types.ts             # CompetenceScore, ResultSummary
+    │   │   └── index.ts
+    │   │
+    │   ├── learningJourney/        # the journey recommended on the dashboard
+    │   │   ├── components/
+    │   │   │   └── RecommendedJourneyCard.tsx
+    │   │   ├── api.ts               # GET /learning-journeys/recommendation
+    │   │   ├── types.ts             # LearningJourney, LearningJourneyModule
+    │   │   └── index.ts
+    │   │
+    │   ├── admin/                  # admin mode: which sections/competences each role may see
+    │   │   ├── components/
+    │   │   │   └── GrantChecklist.tsx   # one card of checkboxes — the selected role's grants
+    │   │   ├── pages/
+    │   │   │   └── AdminPage.tsx        # role picker + Sections / Competences checklists
+    │   │   ├── api.ts               # GET /admin/visibility, PUT/DELETE grants
+    │   │   ├── types.ts             # VisibilityMatrix, Grantable
     │   │   └── index.ts
     │   │
     │   └── settings/                # account settings — role change for now, more later
@@ -228,7 +244,8 @@ is given everything it needs via props and stays reusable. A feature's
 /login        -> LoginPage        (public)
 /settings     -> SettingsPage     (RequireAuth) — reached from the header's account dropdown
 /results      -> ResultsPage      (RequireAuth)
-/courses      -> CoursesPage      (RequireAuth)
+/sources      -> SourcesPage      (RequireAuth)
+/admin        -> AdminPage        (RequireAuth) — admin mode, reached from the header's account dropdown
 /assessment   -> AssessmentRunnerPage (RequireAuth) — not in the sidebar; only reached via
                                         the dashboard's "Assess yourself" button
 /             -> redirect to /login or /results based on session
@@ -260,9 +277,27 @@ stays mounted underneath, blocked:
   amount of frontend hardening changes that for a browser they control. The
   actual enforcement is server-side: `requireRole` middleware (see
   `context/backend-structure.md`) sits on every endpoint that assumes a
-  persona (`GET /questions`, `GET /courses`) and returns 403 regardless of
+  persona (`GET /questions`, `GET /sources`) and returns 403 regardless of
   what the page renders. Add it to any new endpoint that shouldn't work
   before onboarding.
+
+### Admin mode
+
+Reached from the account menu ("Admin mode", next to Settings) and left with the
+"Exit admin mode" button — it is a route (`/admin`), not a hidden app state. The
+page (`features/admin`) picks a role and shows two checklists, Sections and
+Competences; each tick is a `PUT` / `DELETE` to `/admin/roles/...`, applied
+optimistically and rolled back with an error message if the request fails.
+
+It edits the role visibility allow-lists described in
+`context/backend-structure.md` §11: a role sees a question if it is granted the
+question's competence **or** the section its module sits in, and nothing until
+something is granted.
+
+**Not secured yet.** Any signed-in learner with a role sees the menu item and
+can use the page — a demo-stage decision. Hiding the button later would only be
+UX; the real gate has to be server-side, like `requireRole`. See
+[`schema-v3-changes.md`](./schema-v3-changes.md) for the wider change.
 
 ---
 
@@ -277,7 +312,7 @@ stays mounted underneath, blocked:
   dark mode automatic instead of a per‑component chore. `npx grep` for
   `#[0-9a-f]{3,8}|rgba?\(` under `src/` before merging a new screen; a hit
   in a `.module.css` (as opposed to `styles/globals.css` itself, or a
-  deliberately theme‑agnostic decorative color, e.g. `CourseCard`'s banner
+  deliberately theme‑agnostic decorative color, e.g. `SourceCard`'s banner
   gradients) means a token got skipped.
 
 ### Theming: Default / Light / Dark

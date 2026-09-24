@@ -24,9 +24,9 @@ describe("wrapLabel", () => {
 });
 
 const SCORES: CompetenceScore[] = [
-  { competenceArea: { name: "Open Science" }, score: 2, maxScore: 7 },
-  { competenceArea: { name: "Data Management" }, score: 4, maxScore: 5 },
-  { competenceArea: { name: "Legal & Ethics" }, score: 6, maxScore: 31 },
+  { competence: { name: "Open Science" }, score: 2, maxScore: 7 },
+  { competence: { name: "Data Management" }, score: 4, maxScore: 5 },
+  { competence: { name: "Legal & Ethics" }, score: 6, maxScore: 31 },
 ];
 
 describe("CompetenceRadar", () => {
@@ -42,7 +42,7 @@ describe("CompetenceRadar", () => {
     expect(chart.querySelectorAll("circle")).toHaveLength(SCORES.length);
 
     for (const s of SCORES) {
-      expect(screen.getByText(s.competenceArea.name)).toBeInTheDocument();
+      expect(screen.getByText(s.competence.name)).toBeInTheDocument();
     }
   });
 });
