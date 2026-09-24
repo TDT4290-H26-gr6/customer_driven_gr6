@@ -7,11 +7,16 @@ function learner(overrides: Partial<LearnerWithRole> = {}): LearnerWithRole {
     email: "learner@example.com",
     name: "Ada Lovelace",
     googleSubId: "sub-1",
-    role: "learner",
     roleId: "role-1",
-    userRole: { id: "role-1", name: "Student" },
+    userRole: {
+      id: "role-1",
+      name: "Student",
+      createdAt: new Date("2026-01-01"),
+      updatedAt: new Date("2026-01-01"),
+    },
     hasCompletedInitialAssessment: false,
     createdAt: new Date("2026-01-01"),
+    updatedAt: new Date("2026-01-01"),
     ...overrides,
   };
 }
@@ -24,7 +29,12 @@ describe("toLearnerDto", () => {
       id: "learner-1",
       email: "learner@example.com",
       name: "Ada Lovelace",
-      role: { id: "role-1", name: "Student" },
+      role: {
+        id: "role-1",
+        name: "Student",
+        createdAt: new Date("2026-01-01"),
+        updatedAt: new Date("2026-01-01"),
+      },
       hasCompletedInitialAssessment: false,
     });
   });

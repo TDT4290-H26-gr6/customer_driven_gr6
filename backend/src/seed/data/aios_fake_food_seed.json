@@ -1,0 +1,1613 @@
+{
+  "_meta": {
+    "description": "FAKE food-themed seed data for AIOS (schema v3, role visibility). Everything here is obviously fake. No SAT instances, responses, scores or recommendations are included, so a freshly logged-in learner starts with all questions unanswered.",
+    "insertOrder": [
+      "aios.sources.source",
+      "aios.identity.role",
+      "aios.assessment.competence",
+      "aios.assessment.competence_secondary_source",
+      "aios.assessment.section",
+      "aios.assessment.section_module",
+      "aios.assessment.section_module_secondary_competence",
+      "aios.assessment.question",
+      "aios.learningJourney.journey",
+      "aios.learningJourney.journey_section",
+      "aios.learningJourney.learning_module",
+      "aios.identity.learner",
+      "aios.identity.role_section",
+      "aios.identity.role_competence"
+    ],
+    "questionTypes": {
+      "likert": "content.scale {min,max,minLabel,maxLabel}; self-rated, score = chosen value",
+      "single_choice": "content.options[] + correctOptionIds (one)",
+      "multi_choice": "content.options[] + correctOptionIds (several), 1 point per correct pick",
+      "true_false": "content.options true/false + correctOptionIds"
+    },
+    "intentionallyEmpty": [
+      "aios.assessment.sat_instance",
+      "aios.assessment.response",
+      "aios.assessment.competence_score",
+      "aios.learningJourney.recommendation"
+    ]
+  },
+  "aios.sources.source": [
+    {
+      "id": "src-fake-spaghetti-u",
+      "institution": "University of Spaghetti (FAKE)",
+      "country": "Pastaland",
+      "courseName": "Advanced Noodle Theory",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": "BSc Carbohydrate Engineering",
+      "credits": 7.5,
+      "language": "Italian-ish",
+      "instructor": "Prof. Al Dente",
+      "format": "in-person",
+      "topics": "boiling, twirling, sauce adhesion",
+      "prerequisites": "Must own a fork",
+      "description": "Totally fake course for seeding test data.",
+      "sourceUrl": "https://example.com/fake/advanced-noodle-theory",
+      "confidence": 0.99,
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-croissant-academy",
+      "institution": "Croissant Academy of Butter (FAKE)",
+      "country": "Laminatia",
+      "courseName": "Lamination for Beginners",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": "BA Flaky Arts",
+      "credits": 5.0,
+      "language": "French (croissant dialect)",
+      "instructor": "Dr. Beurre Doux",
+      "format": "online",
+      "topics": "folding, chilling, more butter",
+      "prerequisites": "None, except butter",
+      "description": "Fake course about folding butter 27 times.",
+      "sourceUrl": "https://example.com/fake/lamination-101",
+      "confidence": 0.95,
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-knife-dojo",
+      "institution": "Knife Dojo Institute (FAKE)",
+      "country": "Slicistan",
+      "courseName": "Onion Tears Management",
+      "type": "course",
+      "level": "master",
+      "degreeProgramme": "MSc Chopping",
+      "credits": 10.0,
+      "language": "English",
+      "instructor": "Sensei Julienne",
+      "format": "hybrid",
+      "topics": "dice, brunoise, emotional resilience",
+      "prerequisites": "10 fingers (please keep them)",
+      "description": "Fake course on cutting onions without crying.",
+      "sourceUrl": "https://example.com/fake/onion-tears",
+      "confidence": 0.9,
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-sauce-college",
+      "institution": "Saucy Community College (FAKE)",
+      "country": "Gravy Islands",
+      "courseName": "Emulsions and You",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": "BSc Saucery",
+      "credits": 7.5,
+      "language": "English",
+      "instructor": "Ms. Holland Daise",
+      "format": "in-person",
+      "topics": "mayonnaise, hollandaise, broken sauce therapy",
+      "prerequisites": "Whisk",
+      "description": "Fake course on keeping oil and water friends.",
+      "sourceUrl": "https://example.com/fake/emulsions-and-you",
+      "confidence": 0.88,
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-fridge-uni",
+      "institution": "Fridge Safety University (FAKE)",
+      "country": "Coldland",
+      "courseName": "What Is That Smell? 101",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": "BSc Leftover Forensics",
+      "credits": 2.5,
+      "language": "English",
+      "instructor": "Dr. Mold E. Cheese",
+      "format": "online",
+      "topics": "expiry dates, sniff tests, labelling",
+      "prerequisites": "A nose",
+      "description": "Fake course on identifying mystery containers.",
+      "sourceUrl": "https://example.com/fake/what-is-that-smell",
+      "confidence": 0.8,
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-snack-review",
+      "institution": "Institute of Snack Criticism (FAKE)",
+      "country": "Crunchovia",
+      "courseName": "Describing Crisps Eloquently",
+      "type": "course",
+      "level": "master",
+      "degreeProgramme": "MA Snack Rhetoric",
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Sir Pringle Stack",
+      "format": "online",
+      "topics": "crunch vocabulary, mouthfeel, dramatic sighs",
+      "prerequisites": "Has eaten a crisp",
+      "description": "Fake course on writing reviews of snacks.",
+      "sourceUrl": "https://example.com/fake/crisp-eloquence",
+      "confidence": 0.92,
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.identity.role": [
+    {
+      "id": "role-fake-everything",
+      "name": "FAKE Everything Taster (sees all)",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "role-fake-line-cook",
+      "name": "FAKE Line Cook",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "role-fake-pastry",
+      "name": "FAKE Pastry Wizard",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "role-fake-critic",
+      "name": "FAKE Professional Snack Critic",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.assessment.competence": [
+    {
+      "id": "comp-fake-onion-dicing",
+      "name": "FAKE Onion Dicing",
+      "description": "Cutting onions into small cubes without crying.",
+      "primarySourceId": "src-fake-knife-dojo",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-finger-keeping",
+      "name": "FAKE Finger Keeping",
+      "description": "Retaining all ten fingers after knife work.",
+      "primarySourceId": "src-fake-knife-dojo",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-dough-proofing",
+      "name": "FAKE Dough Proofing",
+      "description": "Knowing when bread dough has risen enough.",
+      "primarySourceId": "src-fake-croissant-academy",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-butter-lamination",
+      "name": "FAKE Butter Lamination",
+      "description": "Folding butter into dough an unreasonable number of times.",
+      "primarySourceId": "src-fake-croissant-academy",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-emulsion-wrangling",
+      "name": "FAKE Emulsion Wrangling",
+      "description": "Keeping mayonnaise from splitting.",
+      "primarySourceId": "src-fake-sauce-college",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-pasta-timing",
+      "name": "FAKE Pasta Timing",
+      "description": "Cooking pasta al dente instead of mush.",
+      "primarySourceId": "src-fake-spaghetti-u",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-fridge-forensics",
+      "name": "FAKE Fridge Forensics",
+      "description": "Identifying the contents and age of mystery containers.",
+      "primarySourceId": "src-fake-fridge-uni",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-hand-washing",
+      "name": "FAKE Hand Washing",
+      "description": "Washing hands for longer than 2 seconds.",
+      "primarySourceId": "src-fake-fridge-uni",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-crunch-vocabulary",
+      "name": "FAKE Crunch Vocabulary",
+      "description": "Describing crunch with words other than 'crunchy'.",
+      "primarySourceId": "src-fake-snack-review",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-garnish-placement",
+      "name": "FAKE Garnish Placement",
+      "description": "Placing a single parsley leaf with dramatic intent.",
+      "primarySourceId": "src-fake-snack-review",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.assessment.competence_secondary_source": [
+    {
+      "competenceId": "comp-fake-onion-dicing",
+      "sourceId": "src-fake-spaghetti-u",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-dough-proofing",
+      "sourceId": "src-fake-spaghetti-u",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-emulsion-wrangling",
+      "sourceId": "src-fake-croissant-academy",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-pasta-timing",
+      "sourceId": "src-fake-sauce-college",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-hand-washing",
+      "sourceId": "src-fake-knife-dojo",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-garnish-placement",
+      "sourceId": "src-fake-sauce-college",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.assessment.section": [
+    {
+      "id": "sec-fake-knife",
+      "name": "FAKE Knife Skills",
+      "description": "Pointy things and how not to lose fingers.",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "sec-fake-baking",
+      "name": "FAKE Baking & Pastry",
+      "description": "Bread, butter, and patience.",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "sec-fake-sauces",
+      "name": "FAKE Sauces & Pasta",
+      "description": "Wet food and noodles.",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "sec-fake-safety",
+      "name": "FAKE Kitchen Safety",
+      "description": "Fridges, hands, and mystery smells.",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "sec-fake-critique",
+      "name": "FAKE Snack Critique & Plating",
+      "description": "Judging food and making it look fancy.",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.assessment.section_module": [
+    {
+      "id": "mod-fake-onions",
+      "name": "FAKE Onion Module",
+      "description": "Everything about onions.",
+      "mainCompetenceId": "comp-fake-onion-dicing",
+      "sectionId": "sec-fake-knife",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "mod-fake-fingers",
+      "name": "FAKE Finger Retention Module",
+      "description": "Keep them attached.",
+      "mainCompetenceId": "comp-fake-finger-keeping",
+      "sectionId": "sec-fake-knife",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "mod-fake-proofing",
+      "name": "FAKE Proofing Module",
+      "description": "Watching dough grow.",
+      "mainCompetenceId": "comp-fake-dough-proofing",
+      "sectionId": "sec-fake-baking",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "mod-fake-croissants",
+      "name": "FAKE Croissant Module",
+      "description": "Butter. More butter.",
+      "mainCompetenceId": "comp-fake-butter-lamination",
+      "sectionId": "sec-fake-baking",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "mod-fake-mayo",
+      "name": "FAKE Mayonnaise Module",
+      "description": "Oil + egg = drama.",
+      "mainCompetenceId": "comp-fake-emulsion-wrangling",
+      "sectionId": "sec-fake-sauces",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "mod-fake-pasta",
+      "name": "FAKE Pasta Module",
+      "description": "Boil water, add noodles, panic.",
+      "mainCompetenceId": "comp-fake-pasta-timing",
+      "sectionId": "sec-fake-sauces",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "mod-fake-fridge",
+      "name": "FAKE Fridge Module",
+      "description": "What is in the blue tub?",
+      "mainCompetenceId": "comp-fake-fridge-forensics",
+      "sectionId": "sec-fake-safety",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "mod-fake-hands",
+      "name": "FAKE Hand Hygiene Module",
+      "description": "Soap exists.",
+      "mainCompetenceId": "comp-fake-hand-washing",
+      "sectionId": "sec-fake-safety",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "mod-fake-crisps",
+      "name": "FAKE Crisp Review Module",
+      "description": "Crunch, described.",
+      "mainCompetenceId": "comp-fake-crunch-vocabulary",
+      "sectionId": "sec-fake-critique",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "mod-fake-parsley",
+      "name": "FAKE Parsley Placement Module",
+      "description": "One leaf. Perfect.",
+      "mainCompetenceId": "comp-fake-garnish-placement",
+      "sectionId": "sec-fake-critique",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.assessment.section_module_secondary_competence": [
+    {
+      "moduleId": "mod-fake-onions",
+      "competenceId": "comp-fake-finger-keeping",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "moduleId": "mod-fake-fingers",
+      "competenceId": "comp-fake-hand-washing",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "moduleId": "mod-fake-croissants",
+      "competenceId": "comp-fake-dough-proofing",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "moduleId": "mod-fake-pasta",
+      "competenceId": "comp-fake-emulsion-wrangling",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "moduleId": "mod-fake-fridge",
+      "competenceId": "comp-fake-hand-washing",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "moduleId": "mod-fake-parsley",
+      "competenceId": "comp-fake-crunch-vocabulary",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.assessment.question": [
+    {
+      "id": "q-fake-onions-1",
+      "prompt": "How confident are you at dicing an onion without crying?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "I weep openly",
+          "maxLabel": "Tearless legend"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-onions",
+      "competenceId": "comp-fake-onion-dicing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-onions-2",
+      "prompt": "[FAKE] Which cut is the smallest?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Rough chop"
+          },
+          {
+            "id": "b",
+            "text": "Brunoise"
+          },
+          {
+            "id": "c",
+            "text": "Whole onion"
+          },
+          {
+            "id": "d",
+            "text": "Onion ring"
+          }
+        ],
+        "correctOptionIds": ["b"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-onions",
+      "competenceId": "comp-fake-onion-dicing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-onions-3",
+      "prompt": "[FAKE] Chilling an onion before cutting reduces tears.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["true"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-onions",
+      "competenceId": "comp-fake-onion-dicing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-fingers-1",
+      "prompt": "How many fingers do you currently have? (Be honest, this is fake.)",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "10"
+          },
+          {
+            "id": "b",
+            "text": "9"
+          },
+          {
+            "id": "c",
+            "text": "'It depends on the day'"
+          },
+          {
+            "id": "d",
+            "text": "I use a food processor"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-fingers",
+      "competenceId": "comp-fake-finger-keeping",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-fingers-2",
+      "prompt": "[FAKE] Which grip keeps your fingertips safest?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "The claw"
+          },
+          {
+            "id": "b",
+            "text": "The jazz hands"
+          },
+          {
+            "id": "c",
+            "text": "The thumbs-up"
+          },
+          {
+            "id": "d",
+            "text": "The prayer"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-fingers",
+      "competenceId": "comp-fake-finger-keeping",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-fingers-3",
+      "prompt": "How comfortable are you with a very sharp knife?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "I use a spoon",
+          "maxLabel": "Samurai"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-fingers",
+      "competenceId": "comp-fake-finger-keeping",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-proofing-1",
+      "prompt": "[FAKE] The 'poke test' tells you whether dough is proofed.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["true"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-proofing",
+      "competenceId": "comp-fake-dough-proofing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-proofing-2",
+      "prompt": "How well can you tell when dough has doubled in size?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Dough is a mystery",
+          "maxLabel": "I speak yeast"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-proofing",
+      "competenceId": "comp-fake-dough-proofing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-proofing-3",
+      "prompt": "[FAKE] Which of these help dough rise? (select all)",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Warmth"
+          },
+          {
+            "id": "b",
+            "text": "Yeast"
+          },
+          {
+            "id": "c",
+            "text": "Yelling at it"
+          },
+          {
+            "id": "d",
+            "text": "Time"
+          }
+        ],
+        "correctOptionIds": ["a", "b", "d"],
+        "maxScore": 3
+      },
+      "sectionModuleId": "mod-fake-proofing",
+      "competenceId": "comp-fake-dough-proofing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-croissants-1",
+      "prompt": "[FAKE] How many layers should a croissant have, roughly?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "1"
+          },
+          {
+            "id": "b",
+            "text": "About 27"
+          },
+          {
+            "id": "c",
+            "text": "Infinity"
+          },
+          {
+            "id": "d",
+            "text": "Croissants are flat"
+          }
+        ],
+        "correctOptionIds": ["b"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-croissants",
+      "competenceId": "comp-fake-butter-lamination",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-croissants-2",
+      "prompt": "How confident are you folding butter into dough?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Butter everywhere",
+          "maxLabel": "Flawless folds"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-croissants",
+      "competenceId": "comp-fake-butter-lamination",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-croissants-3",
+      "prompt": "[FAKE] Warm butter is ideal for lamination.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["false"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-croissants",
+      "competenceId": "comp-fake-butter-lamination",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-mayo-1",
+      "prompt": "[FAKE] What makes mayonnaise an emulsion?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Oil dispersed in egg yolk"
+          },
+          {
+            "id": "b",
+            "text": "Magic"
+          },
+          {
+            "id": "c",
+            "text": "It comes in a jar"
+          },
+          {
+            "id": "d",
+            "text": "Mustard vibes only"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-mayo",
+      "competenceId": "comp-fake-emulsion-wrangling",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-mayo-2",
+      "prompt": "How often does your mayonnaise split?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Every single time",
+          "maxLabel": "Never, I am the whisk"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-mayo",
+      "competenceId": "comp-fake-emulsion-wrangling",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-mayo-3",
+      "prompt": "[FAKE] Which can rescue a broken emulsion? (select all)",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "A new egg yolk"
+          },
+          {
+            "id": "b",
+            "text": "A splash of water"
+          },
+          {
+            "id": "c",
+            "text": "Throwing it away"
+          },
+          {
+            "id": "d",
+            "text": "Crying into it"
+          }
+        ],
+        "correctOptionIds": ["a", "b"],
+        "maxScore": 2
+      },
+      "sectionModuleId": "mod-fake-mayo",
+      "competenceId": "comp-fake-emulsion-wrangling",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-pasta-1",
+      "prompt": "[FAKE] 'Al dente' means…",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "To the tooth"
+          },
+          {
+            "id": "b",
+            "text": "With the dentist"
+          },
+          {
+            "id": "c",
+            "text": "Extra soft"
+          },
+          {
+            "id": "d",
+            "text": "Burnt"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-pasta",
+      "competenceId": "comp-fake-pasta-timing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-pasta-2",
+      "prompt": "How good are you at not overcooking pasta?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Pasta soup",
+          "maxLabel": "Perfect bite"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-pasta",
+      "competenceId": "comp-fake-pasta-timing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-pasta-3",
+      "prompt": "[FAKE] You should add oil to pasta water to stop sticking.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["false"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-pasta",
+      "competenceId": "comp-fake-pasta-timing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-fridge-1",
+      "prompt": "[FAKE] You find an unlabeled container from an unknown era. You should…",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Eat it"
+          },
+          {
+            "id": "b",
+            "text": "Sniff it deeply"
+          },
+          {
+            "id": "c",
+            "text": "Throw it out"
+          },
+          {
+            "id": "d",
+            "text": "Serve it to guests"
+          }
+        ],
+        "correctOptionIds": ["c"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-fridge",
+      "competenceId": "comp-fake-fridge-forensics",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-fridge-2",
+      "prompt": "How well do you know what's in your fridge right now?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "There are things in there",
+          "maxLabel": "Full inventory"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-fridge",
+      "competenceId": "comp-fake-fridge-forensics",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-fridge-3",
+      "prompt": "[FAKE] Which should be labelled with a date? (select all)",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Leftovers"
+          },
+          {
+            "id": "b",
+            "text": "Opened sauces"
+          },
+          {
+            "id": "c",
+            "text": "The fridge itself"
+          },
+          {
+            "id": "d",
+            "text": "Prepped veg"
+          }
+        ],
+        "correctOptionIds": ["a", "b", "d"],
+        "maxScore": 3
+      },
+      "sectionModuleId": "mod-fake-fridge",
+      "competenceId": "comp-fake-fridge-forensics",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-hands-1",
+      "prompt": "[FAKE] How long should you wash your hands?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "2 seconds"
+          },
+          {
+            "id": "b",
+            "text": "About 20 seconds"
+          },
+          {
+            "id": "c",
+            "text": "5 minutes"
+          },
+          {
+            "id": "d",
+            "text": "Only on Sundays"
+          }
+        ],
+        "correctOptionIds": ["b"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-hands",
+      "competenceId": "comp-fake-hand-washing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-hands-2",
+      "prompt": "How consistently do you wash hands after handling raw chicken?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "What's soap?",
+          "maxLabel": "Every time"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-hands",
+      "competenceId": "comp-fake-hand-washing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-hands-3",
+      "prompt": "[FAKE] Wiping hands on your apron counts as washing.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["false"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-hands",
+      "competenceId": "comp-fake-hand-washing",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-crisps-1",
+      "prompt": "[FAKE] Which is the most sophisticated crunch descriptor?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Crunchy"
+          },
+          {
+            "id": "b",
+            "text": "Shatteringly crisp"
+          },
+          {
+            "id": "c",
+            "text": "Loud"
+          },
+          {
+            "id": "d",
+            "text": "Yes"
+          }
+        ],
+        "correctOptionIds": ["b"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-crisps",
+      "competenceId": "comp-fake-crunch-vocabulary",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-crisps-2",
+      "prompt": "How eloquently can you describe a crisp?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "'It's good'",
+          "maxLabel": "Poet laureate of crisps"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-crisps",
+      "competenceId": "comp-fake-crunch-vocabulary",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-crisps-3",
+      "prompt": "[FAKE] Which words describe texture? (select all)",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Brittle"
+          },
+          {
+            "id": "b",
+            "text": "Airy"
+          },
+          {
+            "id": "c",
+            "text": "Purple"
+          },
+          {
+            "id": "d",
+            "text": "Crackly"
+          }
+        ],
+        "correctOptionIds": ["a", "b", "d"],
+        "maxScore": 3
+      },
+      "sectionModuleId": "mod-fake-crisps",
+      "competenceId": "comp-fake-crunch-vocabulary",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-parsley-1",
+      "prompt": "[FAKE] How many parsley leaves make a plate 'fancy'?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Exactly one"
+          },
+          {
+            "id": "b",
+            "text": "A whole bush"
+          },
+          {
+            "id": "c",
+            "text": "Zero"
+          },
+          {
+            "id": "d",
+            "text": "Depends on your mood"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-parsley",
+      "competenceId": "comp-fake-garnish-placement",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-parsley-2",
+      "prompt": "How confident are you at placing garnish with dramatic intent?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Parsley avalanche",
+          "maxLabel": "Tweezers master"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-parsley",
+      "competenceId": "comp-fake-garnish-placement",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-parsley-3",
+      "prompt": "[FAKE] Garnish should be edible.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["true"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-parsley",
+      "competenceId": "comp-fake-garnish-placement",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.learningJourney.journey": [
+    {
+      "id": "journey-fake-knife-ninja",
+      "name": "FAKE Knife Ninja Journey",
+      "description": "From onion tears to samurai.",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "journey-fake-butter-baron",
+      "name": "FAKE Butter Baron Journey",
+      "description": "Become one with the croissant.",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "journey-fake-snack-sommelier",
+      "name": "FAKE Snack Sommelier Journey",
+      "description": "Judge crisps professionally.",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.learningJourney.journey_section": [
+    {
+      "journeyId": "journey-fake-knife-ninja",
+      "sectionId": "sec-fake-knife",
+      "coverageLevel": "M",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "journeyId": "journey-fake-knife-ninja",
+      "sectionId": "sec-fake-safety",
+      "coverageLevel": "S",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "journeyId": "journey-fake-butter-baron",
+      "sectionId": "sec-fake-baking",
+      "coverageLevel": "M",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "journeyId": "journey-fake-butter-baron",
+      "sectionId": "sec-fake-sauces",
+      "coverageLevel": "R",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "journeyId": "journey-fake-snack-sommelier",
+      "sectionId": "sec-fake-critique",
+      "coverageLevel": "M",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "journeyId": "journey-fake-snack-sommelier",
+      "sectionId": "sec-fake-sauces",
+      "coverageLevel": "S",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.learningJourney.learning_module": [
+    {
+      "id": "lm-fake-knife-ninja-1",
+      "journeyId": "journey-fake-knife-ninja",
+      "order": 1,
+      "title": "FAKE Crying Less 101",
+      "description": "Onion basics.",
+      "sourceId": "src-fake-knife-dojo",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "lm-fake-knife-ninja-2",
+      "journeyId": "journey-fake-knife-ninja",
+      "order": 2,
+      "title": "FAKE Finger Census",
+      "description": "Counting to ten, every day.",
+      "sourceId": "src-fake-knife-dojo",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "lm-fake-knife-ninja-3",
+      "journeyId": "journey-fake-knife-ninja",
+      "order": 3,
+      "title": "FAKE Soap Appreciation",
+      "description": "Hands, but clean.",
+      "sourceId": "src-fake-fridge-uni",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "lm-fake-butter-baron-1",
+      "journeyId": "journey-fake-butter-baron",
+      "order": 1,
+      "title": "FAKE Yeast Whispering",
+      "description": "Talk to your dough.",
+      "sourceId": "src-fake-croissant-academy",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "lm-fake-butter-baron-2",
+      "journeyId": "journey-fake-butter-baron",
+      "order": 2,
+      "title": "FAKE 27 Folds",
+      "description": "Fold. Chill. Repeat.",
+      "sourceId": "src-fake-croissant-academy",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "lm-fake-butter-baron-3",
+      "journeyId": "journey-fake-butter-baron",
+      "order": 3,
+      "title": "FAKE Hollandaise Hugs",
+      "description": "Emulsions for bakers.",
+      "sourceId": "src-fake-sauce-college",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "lm-fake-snack-sommelier-1",
+      "journeyId": "journey-fake-snack-sommelier",
+      "order": 1,
+      "title": "FAKE Crunch Thesaurus",
+      "description": "Beyond 'crunchy'.",
+      "sourceId": "src-fake-snack-review",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "lm-fake-snack-sommelier-2",
+      "journeyId": "journey-fake-snack-sommelier",
+      "order": 2,
+      "title": "FAKE The Single Leaf",
+      "description": "Parsley philosophy.",
+      "sourceId": "src-fake-snack-review",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "lm-fake-snack-sommelier-3",
+      "journeyId": "journey-fake-snack-sommelier",
+      "order": 3,
+      "title": "FAKE Pasta Judging",
+      "description": "Al dente or al dunno.",
+      "sourceId": "src-fake-spaghetti-u",
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.identity.learner": [
+    {
+      "id": "learner-fake-chef-admin",
+      "email": "chef.admin@fake-kitchen.example",
+      "name": "FAKE Chef Admin",
+      "googleSubId": "fake-google-sub-000000001",
+      "roleId": "role-fake-everything",
+      "hasCompletedInitialAssessment": 0,
+      "createdAt": "2026-09-23T12:00:00.000Z",
+      "updatedAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.identity.role_section": [
+    {
+      "roleId": "role-fake-everything",
+      "sectionId": "sec-fake-knife",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "sectionId": "sec-fake-baking",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "sectionId": "sec-fake-sauces",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "sectionId": "sec-fake-safety",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "sectionId": "sec-fake-critique",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "sectionId": "sec-fake-knife",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "sectionId": "sec-fake-sauces",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "sectionId": "sec-fake-safety",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "sectionId": "sec-fake-baking",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "sectionId": "sec-fake-sauces",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "sectionId": "sec-fake-safety",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-critic",
+      "sectionId": "sec-fake-critique",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-critic",
+      "sectionId": "sec-fake-sauces",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    }
+  ],
+  "aios.identity.role_competence": [
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-butter-lamination",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-crunch-vocabulary",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-dough-proofing",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-emulsion-wrangling",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-finger-keeping",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-fridge-forensics",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-garnish-placement",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-hand-washing",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-onion-dicing",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-pasta-timing",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-emulsion-wrangling",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-finger-keeping",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-fridge-forensics",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-hand-washing",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-onion-dicing",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-pasta-timing",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-butter-lamination",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-dough-proofing",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-emulsion-wrangling",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-fridge-forensics",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-hand-washing",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-pasta-timing",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-critic",
+      "competenceId": "comp-fake-crunch-vocabulary",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-critic",
+      "competenceId": "comp-fake-emulsion-wrangling",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-critic",
+      "competenceId": "comp-fake-garnish-placement",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-critic",
+      "competenceId": "comp-fake-pasta-timing",
+      "grantedByLearnerId": "learner-fake-chef-admin",
+      "createdAt": "2026-09-23T12:00:00.000Z"
+    }
+  ]
+}

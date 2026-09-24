@@ -1,24 +1,101 @@
-/// Assessment module — the question bank, self-assessment runs, answers and
-/// derived scores. Tables: assessment_*.
+/// Assessment module — the content hierarchy (competence, section, module),
+/// the question bank, self-assessment runs, answers and derived scores.
+/// Tables: assessment_*.
+///
+/// Hierarchy: a Section contains SectionModules; each SectionModule has one
+/// main Competence plus any number of secondary ones (join table). Questions
+/// hang off a SectionModule and name the Competence they assess directly —
+/// scores roll up by that competenceId, not through the hierarchy.
 
-model CompetenceArea {
+model Competence {
+  id              String  @id @default(uuid())
+  name            String  @unique
+  description     String? @db.Text
+  primarySourceId String
+  primarySource   Source  @relation(fields: [primarySourceId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  secondarySources    CompetenceSecondarySource[]
+  mainForModules      SectionModule[]
+  secondaryForModules SectionModuleSecondaryCompetence[]
+  questions           Question[]
+  competenceScores    CompetenceScore[]
+  roleGrants          RoleCompetence[]
+
+  @@map("assessment_competence")
+}
+
+/// Extra sources that also build a competence (the primary one is a plain FK).
+model CompetenceSecondarySource {
+  competenceId String
+  competence   Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade)
+  sourceId     String
+  source       Source     @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@id([competenceId, sourceId])
+  @@map("assessment_competence_secondary_source")
+}
+
+model Section {
   id          String  @id @default(uuid())
   name        String  @unique
   description String? @db.Text
 
-  questions        Question[]
-  competenceScores CompetenceScore[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@map("assessment_competence_area")
+  modules         SectionModule[]
+  roleGrants      RoleSection[]
+  journeySections JourneySection[]
+
+  @@map("assessment_section")
+}
+
+model SectionModule {
+  id               String     @id @default(uuid())
+  name             String     @unique
+  description      String?    @db.Text
+  mainCompetenceId String
+  mainCompetence   Competence @relation(fields: [mainCompetenceId], references: [id])
+  sectionId        String
+  section          Section    @relation(fields: [sectionId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  secondaryCompetences SectionModuleSecondaryCompetence[]
+  questions            Question[]
+
+  @@map("assessment_section_module")
+}
+
+/// Extra competences a module also touches (the main one is a plain FK).
+model SectionModuleSecondaryCompetence {
+  moduleId     String
+  module       SectionModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  competenceId String
+  competence   Competence    @relation(fields: [competenceId], references: [id], onDelete: Cascade)
+  createdAt    DateTime      @default(now())
+
+  @@id([moduleId, competenceId])
+  @@map("assessment_section_module_secondary_competence")
 }
 
 model Question {
-  id               String         @id @default(uuid())
-  competenceAreaId String
-  competenceArea   CompetenceArea @relation(fields: [competenceAreaId], references: [id])
-  prompt           String         @db.Text
-  questionType     String // "multiple_choice" | "self_rating" | "behavioral_anchor" | "rubric" | "drag_and_drop"
-  content          Json // PIE item content (elements / models / markup)
+  id              String        @id @default(uuid())
+  prompt          String        @db.Text
+  questionType    String // "likert" | "single_choice" | "multi_choice" | "true_false" — see assessment.pie.ts
+  content         Json // PIE item content (elements / models / markup)
+  sectionModuleId String
+  sectionModule   SectionModule @relation(fields: [sectionModuleId], references: [id])
+  competenceId    String
+  competence      Competence    @relation(fields: [competenceId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   responses Response[]
 
@@ -29,13 +106,14 @@ model SatInstance {
   id          String    @id @default(uuid())
   learnerId   String
   learner     Learner   @relation(fields: [learnerId], references: [id], onDelete: Cascade)
-  instanceNum Int // 1 = before curriculum, 2 = after (SAT16)
+  instanceNum Int // sequence number for this learner: 1 = initial, 2+ = retakes
   startedAt   DateTime  @default(now())
   completedAt DateTime?
 
   responses        Response[]
   competenceScores CompetenceScore[]
 
+  @@unique([learnerId, instanceNum])
   @@map("assessment_sat_instance")
 }
 
@@ -57,14 +135,17 @@ model Response {
 }
 
 model CompetenceScore {
-  id               String         @id @default(uuid())
-  satInstanceId    String
-  satInstance      SatInstance    @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
-  competenceAreaId String
-  competenceArea   CompetenceArea @relation(fields: [competenceAreaId], references: [id])
-  score            Float
-  maxScore         Float
+  id            String      @id @default(uuid())
+  satInstanceId String
+  satInstance   SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
+  competenceId  String
+  competence    Competence  @relation(fields: [competenceId], references: [id])
+  score         Float
+  maxScore      Float
 
-  @@unique([satInstanceId, competenceAreaId])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([satInstanceId, competenceId])
   @@map("assessment_competence_score")
 }

@@ -46,7 +46,7 @@ export function wrapLabel(name: string): string[] {
   return best;
 }
 
-/** Radar / spider chart of skill levels, one axis per competence area. */
+/** Radar / spider chart of skill levels, one axis per competence. */
 export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
   const labelsRef = useRef<SVGGElement>(null);
   const [measured, setMeasured] = useState<Bounds | null>(null);
@@ -128,7 +128,7 @@ export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
         const cos = Math.cos(angleFor(i));
         const anchor: "start" | "middle" | "end" =
           cos > 0.3 ? "start" : cos < -0.3 ? "end" : "middle";
-        const lines = wrapLabel(d.competenceArea.name);
+        const lines = wrapLabel(d.competence.name);
         const width = Math.max(...lines.map((line) => line.length)) * LABEL_CHAR_WIDTH;
         const height = lines.length * LABEL_FONT_SIZE * LABEL_LINE_HEIGHT;
         const left =
@@ -253,7 +253,7 @@ export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
               <span className={styles.legendIndex} aria-hidden="true">
                 {i + 1}
               </span>
-              <span className={styles.legendName}>{d.competenceArea.name}</span>
+              <span className={styles.legendName}>{d.competence.name}</span>
             </li>
           ))}
         </ol>
