@@ -495,9 +495,7 @@
             "text": "Onion ring"
           }
         ],
-        "correctOptionIds": [
-          "b"
-        ],
+        "correctOptionIds": ["b"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-onions",
@@ -520,9 +518,7 @@
             "text": "False"
           }
         ],
-        "correctOptionIds": [
-          "true"
-        ],
+        "correctOptionIds": ["true"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-onions",
@@ -553,9 +549,7 @@
             "text": "I use a food processor"
           }
         ],
-        "correctOptionIds": [
-          "a"
-        ],
+        "correctOptionIds": ["a"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-fingers",
@@ -586,9 +580,7 @@
             "text": "The prayer"
           }
         ],
-        "correctOptionIds": [
-          "a"
-        ],
+        "correctOptionIds": ["a"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-fingers",
@@ -629,9 +621,7 @@
             "text": "False"
           }
         ],
-        "correctOptionIds": [
-          "true"
-        ],
+        "correctOptionIds": ["true"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-proofing",
@@ -680,11 +670,7 @@
             "text": "Time"
           }
         ],
-        "correctOptionIds": [
-          "a",
-          "b",
-          "d"
-        ],
+        "correctOptionIds": ["a", "b", "d"],
         "maxScore": 3
       },
       "sectionModuleId": "mod-fake-proofing",
@@ -715,9 +701,7 @@
             "text": "Croissants are flat"
           }
         ],
-        "correctOptionIds": [
-          "b"
-        ],
+        "correctOptionIds": ["b"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-croissants",
@@ -758,9 +742,7 @@
             "text": "False"
           }
         ],
-        "correctOptionIds": [
-          "false"
-        ],
+        "correctOptionIds": ["false"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-croissants",
@@ -791,9 +773,7 @@
             "text": "Mustard vibes only"
           }
         ],
-        "correctOptionIds": [
-          "a"
-        ],
+        "correctOptionIds": ["a"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-mayo",
@@ -842,10 +822,7 @@
             "text": "Crying into it"
           }
         ],
-        "correctOptionIds": [
-          "a",
-          "b"
-        ],
+        "correctOptionIds": ["a", "b"],
         "maxScore": 2
       },
       "sectionModuleId": "mod-fake-mayo",
@@ -876,9 +853,7 @@
             "text": "Burnt"
           }
         ],
-        "correctOptionIds": [
-          "a"
-        ],
+        "correctOptionIds": ["a"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-pasta",
@@ -919,9 +894,7 @@
             "text": "False"
           }
         ],
-        "correctOptionIds": [
-          "false"
-        ],
+        "correctOptionIds": ["false"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-pasta",
@@ -952,9 +925,7 @@
             "text": "Serve it to guests"
           }
         ],
-        "correctOptionIds": [
-          "c"
-        ],
+        "correctOptionIds": ["c"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-fridge",
@@ -1003,11 +974,7 @@
             "text": "Prepped veg"
           }
         ],
-        "correctOptionIds": [
-          "a",
-          "b",
-          "d"
-        ],
+        "correctOptionIds": ["a", "b", "d"],
         "maxScore": 3
       },
       "sectionModuleId": "mod-fake-fridge",
@@ -1038,9 +1005,7 @@
             "text": "Only on Sundays"
           }
         ],
-        "correctOptionIds": [
-          "b"
-        ],
+        "correctOptionIds": ["b"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-hands",
@@ -1081,9 +1046,7 @@
             "text": "False"
           }
         ],
-        "correctOptionIds": [
-          "false"
-        ],
+        "correctOptionIds": ["false"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-hands",
@@ -1114,9 +1077,7 @@
             "text": "Yes"
           }
         ],
-        "correctOptionIds": [
-          "b"
-        ],
+        "correctOptionIds": ["b"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-crisps",
@@ -1165,11 +1126,7 @@
             "text": "Crackly"
           }
         ],
-        "correctOptionIds": [
-          "a",
-          "b",
-          "d"
-        ],
+        "correctOptionIds": ["a", "b", "d"],
         "maxScore": 3
       },
       "sectionModuleId": "mod-fake-crisps",
@@ -1200,9 +1157,7 @@
             "text": "Depends on your mood"
           }
         ],
-        "correctOptionIds": [
-          "a"
-        ],
+        "correctOptionIds": ["a"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-parsley",
@@ -1243,9 +1198,7 @@
             "text": "False"
           }
         ],
-        "correctOptionIds": [
-          "true"
-        ],
+        "correctOptionIds": ["true"],
         "maxScore": 1
       },
       "sectionModuleId": "mod-fake-parsley",

@@ -29,7 +29,7 @@ const MAX_SINGLE_LINE_CHARS = 18;
 const VIEWBOX_PADDING = 6;
 
 /** Keeps short names on one line; splits longer ones over two, as evenly as the word breaks allow. */
-function wrapLabel(name: string): string[] {
+export function wrapLabel(name: string): string[] {
   if (name.length <= MAX_SINGLE_LINE_CHARS) return [name];
 
   const words = name.split(" ");
