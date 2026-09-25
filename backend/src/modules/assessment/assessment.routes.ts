@@ -66,6 +66,15 @@ assessmentRouter.get(
 );
 
 assessmentRouter.get(
+  "/competence-scores/by-section",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    res.json(await getLatestSectionCompetenceScores(req.learnerId!));
+  }),
+);
+
+assessmentRouter.get(
   "/assessment/history",
   requireAuth,
   requireRole,

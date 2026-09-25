@@ -341,3 +341,84 @@ export async function getSatHistory(learnerId: string) {
     };
   });
 }
+
+/**
+ * The latest completed SAT's scores broken down per section: for each section
+ * the learner was actually assessed in, one entry per competence its modules
+ * cover (main or secondary) or its visible questions name, whether or not it
+ * was scored there (0/0 if not). Sections with no scored answers in the
+ * instance are left out entirely. Scores are grouped by each question's own section and
+ * competence, so a competence appearing in several sections is scored
+ * separately in each.
+ */
+export async function getLatestSectionCompetenceScores(learnerId: string) {
+  const latest = await prisma.satInstance.findFirst({
+    where: { learnerId, completedAt: { not: null } },
+    orderBy: { completedAt: "desc" },
+  });
+  if (!latest) return [];
+
+  const where = await visibleQuestionFilter(learnerId);
+  if (!where) return [];
+
+  const responses = await prisma.response.findMany({
+    where: { satInstanceId: latest.id, maxScore: { gt: 0 }, question: where },
+    select: {
+      score: true,
+      maxScore: true,
+      question: { select: { competenceId: true, sectionModule: { select: { sectionId: true } } } },
+    },
+  });
+
+  const totals = new Map<string, { score: number; maxScore: number }>(); // "sectionId:competenceId"
+  const assessedSectionIds = new Set<string>();
+  for (const r of responses) {
+    const sectionId = r.question.sectionModule.sectionId;
+    const key = `${sectionId}:${r.question.competenceId}`;
+    const entry = totals.get(key) ?? { score: 0, maxScore: 0 };
+    entry.score += r.score ?? 0;
+    entry.maxScore += r.maxScore ?? 0;
+    totals.set(key, entry);
+    assessedSectionIds.add(sectionId);
+  }
+
+  // A section's axes are every competence its modules cover (main or
+  // secondary) plus any a question in it names — whether or not it was scored.
+  const modules = await prisma.sectionModule.findMany({
+    where: { sectionId: { in: [...assessedSectionIds] } },
+    select: {
+      section: { select: { id: true, name: true } },
+      mainCompetence: { select: { id: true, name: true } },
+      secondaryCompetences: { select: { competence: { select: { id: true, name: true } } } },
+      questions: { where, select: { competence: { select: { id: true, name: true } } } },
+    },
+  });
+
+  const sections = new Map<
+    string,
+    { section: { id: string; name: string }; competences: Map<string, string> }
+  >();
+  for (const m of modules) {
+    const entry = sections.get(m.section.id) ?? { section: m.section, competences: new Map() };
+    const covered = [
+      m.mainCompetence,
+      ...m.secondaryCompetences.map((c) => c.competence),
+      ...m.questions.map((q) => q.competence),
+    ];
+    for (const c of covered) entry.competences.set(c.id, c.name);
+    sections.set(m.section.id, entry);
+  }
+
+  return Array.from(sections.values())
+    .sort((a, b) => a.section.name.localeCompare(b.section.name))
+    .map(({ section, competences }) => ({
+      section,
+      competences: Array.from(competences.entries())
+        .sort((a, b) => a[1].localeCompare(b[1]))
+        .map(([competenceId, name]) => ({
+          competence: { name },
+          score: totals.get(`${section.id}:${competenceId}`)?.score ?? 0,
+          maxScore: totals.get(`${section.id}:${competenceId}`)?.maxScore ?? 0,
+        })),
+    }));
+}
