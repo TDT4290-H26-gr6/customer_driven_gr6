@@ -63,6 +63,15 @@ export function ResultsPage() {
         ) : (
           <CompetenceRadar data={scores} compact={isMobile} />
         )}
+        {!loadFailed && (
+          <Button
+            variant="secondary"
+            className={styles.details}
+            onClick={() => navigate("/results/details")}
+          >
+            More details
+          </Button>
+        )}
       </div>
 
       {journey && <RecommendedJourneyCard journey={journey} />}

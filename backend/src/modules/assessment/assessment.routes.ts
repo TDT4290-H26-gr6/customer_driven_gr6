@@ -5,6 +5,7 @@ import { asyncHandler } from "../../lib/asyncHandler";
 import {
   completeActiveInstance,
   getLatestCompetenceScores,
+  getLatestSectionCompetenceScores,
   getProgress,
   getSatHistory,
   listQuestions,
@@ -61,6 +62,15 @@ assessmentRouter.get(
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
     res.json(await getLatestCompetenceScores(req.learnerId!));
+  }),
+);
+
+assessmentRouter.get(
+  "/competence-scores/by-section",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    res.json(await getLatestSectionCompetenceScores(req.learnerId!));
   }),
 );
 

@@ -29,6 +29,10 @@
   box-shadow: var(--shadow-sm);
 }
 
+.details {
+  margin-top: 16px;
+}
+
 .note {
   margin: 12px 0 0;
   font-size: 13px;
