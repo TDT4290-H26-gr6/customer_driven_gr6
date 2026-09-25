@@ -17,6 +17,7 @@ export const endpoints = {
     progress: "/assessment/progress",
     responses: "/assessment/responses",
     complete: "/assessment/complete",
+    history: "/assessment/history",
   },
   admin: {
     visibility: "/admin/visibility",
