@@ -52,6 +52,17 @@ export function saveLearnerProfile(learnerId: string, data: LearnerProfileInput)
   });
 }
 
+/**
+ * GDPR account deletion (CD-60). Everything the learner owns — SAT
+ * instances/responses/scores, their profile, their journey
+ * recommendations, and any grants they made — cascades at the DB level
+ * (onDelete: Cascade throughout assessment.prisma/identity.prisma/
+ * learningJourney.prisma), so this is just the one delete.
+ */
+export function deleteLearner(learnerId: string) {
+  return prisma.learner.delete({ where: { id: learnerId } });
+}
+
 // --- Role visibility allow-lists (identity_role_section / identity_role_competence) ---
 
 /** What one role is allowed to see. Used by the assessment module to filter questions. */

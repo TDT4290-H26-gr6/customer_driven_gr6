@@ -5,6 +5,7 @@ import { MonitorIcon, MoonIcon, SunIcon } from "@/shared/components/icons";
 import { RoleSelect } from "@/features/onboarding";
 import type { Role } from "@/features/onboarding";
 import { ProfileForm } from "@/features/profile";
+import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import styles from "./SettingsPage.module.css";
 
 const VISUAL_OPTIONS: { value: ThemePreference; label: string; Icon: typeof MonitorIcon }[] = [
@@ -72,6 +73,10 @@ export function SettingsPage() {
 
       <div className={styles.card}>
         <ProfileForm />
+      </div>
+
+      <div className={styles.card}>
+        <DeleteAccountSection />
       </div>
     </div>
   );

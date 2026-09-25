@@ -105,7 +105,7 @@ model Question {
 model SatInstance {
   id          String    @id @default(uuid())
   learnerId   String
-  learner     Learner   @relation(fields: [learnerId], references: [id])
+  learner     Learner   @relation(fields: [learnerId], references: [id], onDelete: Cascade)
   instanceNum Int // sequence number for this learner: 1 = initial, 2+ = retakes
   startedAt   DateTime  @default(now())
   completedAt DateTime?
@@ -120,7 +120,7 @@ model SatInstance {
 model Response {
   id            String      @id @default(uuid())
   satInstanceId String
-  satInstance   SatInstance @relation(fields: [satInstanceId], references: [id])
+  satInstance   SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
   questionId    String
   question      Question    @relation(fields: [questionId], references: [id])
   answer        Json
@@ -137,7 +137,7 @@ model Response {
 model CompetenceScore {
   id            String      @id @default(uuid())
   satInstanceId String
-  satInstance   SatInstance @relation(fields: [satInstanceId], references: [id])
+  satInstance   SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
   competenceId  String
   competence    Competence  @relation(fields: [competenceId], references: [id])
   score         Float
