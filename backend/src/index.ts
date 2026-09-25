@@ -1,6 +1,7 @@
 import { buildServer } from "./server";
 import { config } from "./config";
 import { seedIfEmpty } from "./seed/fakeFoodSeed";
+import { seedOpenScienceContent } from "./seed/openScienceSeed";
 
 async function main() {
   // A fresh database starts with the fake dataset (roles, questions, sources,
@@ -11,6 +12,17 @@ async function main() {
     if (await seedIfEmpty()) console.log("Database had no questions — loaded the fake seed data.");
   } catch (err) {
     console.error("Startup seeding failed:", err);
+  }
+
+  // The real open-science content (CD-74) is seeded unconditionally, every
+  // boot — every insert skips rows that already exist, so this is a no-op
+  // once it has run, and it fills in the real content even on a database
+  // that already has the fake dataset (or came from before this seed
+  // existed).
+  try {
+    await seedOpenScienceContent();
+  } catch (err) {
+    console.error("Startup seeding of open-science content failed:", err);
   }
 
   buildServer().listen(config.port, () => {

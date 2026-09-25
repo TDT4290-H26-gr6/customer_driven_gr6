@@ -1,0 +1,660 @@
+{
+  "aios.sources.source": [
+    {
+      "id": "src-real-unibo-open-science",
+      "institution": "University of Bologna (UNIBO)",
+      "country": "Italy",
+      "courseName": "Open Science (1) (LM)",
+      "type": "Formal university course",
+      "level": "master",
+      "degreeProgramme": "Digital Humanities and Digital Knowledge",
+      "credits": 6,
+      "language": "English",
+      "instructor": "Silvio Peroni",
+      "format": "in-person",
+      "topics": "Introduction to Open Science, Reproducibility, FAIR and Open Data, Open Methodology, Open Peer Review, Open Source Software, Open Access, Open Metrics, Open Infrastructures",
+      "prerequisites": "Basic programming (Python/JavaScript) recommended",
+      "description": null,
+      "sourceUrl": "https://www.unibo.it/en/study/course-units-transferable-skills-moocs/course-unit-catalogue/course-unit/2025/443753",
+      "confidence": 0.95,
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "src-real-unibo-data-steward",
+      "institution": "University of Bologna (UNIBO)",
+      "country": "Italy",
+      "courseName": "Data Steward@Unibo",
+      "type": "Support service / training programme",
+      "level": null,
+      "degreeProgramme": null,
+      "credits": null,
+      "language": null,
+      "instructor": null,
+      "format": null,
+      "topics": null,
+      "prerequisites": null,
+      "description": "Personalized guidance on Data Management Plans and producing FAIR data; includes an \"Open Science Corner\" recurring meeting series and library information-literacy training.",
+      "sourceUrl": "https://www.unibo.it/en/research/open-science",
+      "confidence": 0.8,
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "src-real-uth-open-access",
+      "institution": "University of Thessaly (UTH)",
+      "country": "Greece",
+      "courseName": "Open Access and Science",
+      "type": "Institutional initiative",
+      "level": null,
+      "degreeProgramme": null,
+      "credits": null,
+      "language": null,
+      "instructor": null,
+      "format": null,
+      "topics": null,
+      "prerequisites": null,
+      "description": "Programme run by the Library & Information Centre with the Research Committee (dissertation repository, publications, data repository). A separate general \"Open Courses\" lifelong-learning platform exists, but no open-science-specific course is confirmed in it.",
+      "sourceUrl": "https://www.uth.gr/en/ereyna/open-access-and-science",
+      "confidence": 0.3,
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "src-real-hou-daissy",
+      "institution": "Hellenic Open University (HOU)",
+      "country": "Greece",
+      "courseName": "DAISSy Research Group — Open Education & MOOC Quality",
+      "type": "Research group / EU project involvement",
+      "level": null,
+      "degreeProgramme": null,
+      "credits": null,
+      "language": null,
+      "instructor": null,
+      "format": null,
+      "topics": null,
+      "prerequisites": null,
+      "description": "DAISSy research group at HOU participates as a partner in EU-funded projects on open education/MOOC quality (e.g. MOOQ) — not a standalone open-science course for enrolled students.",
+      "sourceUrl": "http://mooc-quality.eu/about/hellenic-open-university",
+      "confidence": 0.25,
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    }
+  ],
+
+  "aios.assessment.competence": [
+    {
+      "id": "comp-real-open-science-policy",
+      "name": "Open Science Principles and Policy",
+      "description": "Foundational open-science concepts: FAIR principles, open data, open access, and the policy case for open science.",
+      "primarySourceId": "src-real-unibo-open-science",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "comp-real-data-management",
+      "name": "Research Data and Metadata Management",
+      "description": "Data management plans, metadata, and producing FAIR data. No question bank has been authored for this competence yet.",
+      "primarySourceId": "src-real-unibo-data-steward",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "comp-real-reproducibility",
+      "name": "Reproducibility and Research Workflows",
+      "description": "Reproducible research practices and workflows. No question bank has been authored for this competence yet.",
+      "primarySourceId": "src-real-unibo-open-science",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "comp-real-legal-ethics-governance",
+      "name": "Legal, Ethical, and Governance Aspects",
+      "description": "GDPR, the EU Data Governance Act and Open Data Directive, IP/licensing (incl. Creative Commons), and the legal vs. ethical distinction in data practices. Primary source is an approximate fit — no dedicated legal/governance course has been confirmed yet.",
+      "primarySourceId": "src-real-uth-open-access",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "comp-real-ai-tools",
+      "name": "Use of AI Tools in Open Science",
+      "description": "Evaluating and using generative AI tools as part of open-science work. Primary source is an approximate fit — no dedicated AI-tools course has been confirmed yet.",
+      "primarySourceId": "src-real-unibo-open-science",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    }
+  ],
+
+  "aios.assessment.section": [
+    {
+      "id": "section-real-open-science-policy",
+      "name": "Open Science Principles and Policy",
+      "description": "What open science is, why it matters, and the FAIR/open-data vocabulary underpinning it.",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "section-real-legal-ethics-governance",
+      "name": "Legal, Ethical, and Governance Aspects",
+      "description": "The legal and governance framework around sharing and reusing data in the EU.",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "section-real-ai-tools",
+      "name": "Use of AI Tools in Open Science",
+      "description": "Judging and using generative AI tools in an open-science context.",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    }
+  ],
+
+  "aios.assessment.section_module": [
+    {
+      "id": "module-real-open-science-policy",
+      "name": "Open Science Foundations",
+      "description": "FAIR data, open data, and the case for open science.",
+      "mainCompetenceId": "comp-real-open-science-policy",
+      "sectionId": "section-real-open-science-policy",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "module-real-legal-ethics-governance",
+      "name": "Legal & Governance Foundations",
+      "description": "GDPR, the Data Governance Act, the Open Data Directive, IP rights, and licensing.",
+      "mainCompetenceId": "comp-real-legal-ethics-governance",
+      "sectionId": "section-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "module-real-ai-tools",
+      "name": "AI Tools for Open Science",
+      "description": "Self-assessing comfort evaluating and using generative AI tools.",
+      "mainCompetenceId": "comp-real-ai-tools",
+      "sectionId": "section-real-ai-tools",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    }
+  ],
+
+  "aios.assessment.question": [
+    {
+      "id": "q-real-os-1",
+      "prompt": "Which article of the UN Declaration of Human Rights does Open Science most directly support?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Article 27.1 — the right of everyone to share in scientific advancement and its benefits"
+          },
+          {
+            "id": "b",
+            "text": "Article 26.3 — parents' right to choose the kind of education their children receive"
+          },
+          {
+            "id": "c",
+            "text": "Article 27.2 — protection of material interests resulting from individuals' scientific production"
+          }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "module-real-open-science-policy",
+      "competenceId": "comp-real-open-science-policy",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-os-2",
+      "prompt": "What does FAIR stand for in FAIR data?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "Findable, Accessible, Interoperable, Reusable" },
+          { "id": "b", "text": "Function, Access, Infrastructure, Rich" },
+          { "id": "c", "text": "Findable, Applicable, Interoperable, Rich" },
+          { "id": "d", "text": "Fair, Applicable, Inter-cultural, ..." }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "module-real-open-science-policy",
+      "competenceId": "comp-real-open-science-policy",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-os-3",
+      "prompt": "Is data that follows the FAIR principles automatically 'open data'?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "No. FAIR data focuses on interoperability and re-usability with minimum manual work, while open data usually refers to open access."
+          },
+          {
+            "id": "b",
+            "text": "Yes; following the FAIR principles includes trying to make data as publicly available as possible."
+          },
+          {
+            "id": "c",
+            "text": "Yes; following the FAIR principles includes removing proprietary restrictions on that data."
+          },
+          {
+            "id": "d",
+            "text": "No; FAIR data is specific to privacy-sensitive data, for which open access is not appropriate."
+          }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "module-real-open-science-policy",
+      "competenceId": "comp-real-open-science-policy",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-os-4",
+      "prompt": "Which of the following is not a key attribute of open data?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "Available" },
+          { "id": "b", "text": "Accessible" },
+          { "id": "c", "text": "Re-usable" },
+          { "id": "d", "text": "Described" },
+          { "id": "e", "text": "De-anonymized" }
+        ],
+        "correctOptionIds": ["e"]
+      },
+      "sectionModuleId": "module-real-open-science-policy",
+      "competenceId": "comp-real-open-science-policy",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-os-5",
+      "prompt": "Which term matches this definition: \"Findable, Accessible, Interoperable, and Reusable — guiding principles for research data.\"?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "FAIR" },
+          { "id": "b", "text": "Open Data" },
+          { "id": "c", "text": "Reproducibility" }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "module-real-open-science-policy",
+      "competenceId": "comp-real-open-science-policy",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-os-6",
+      "prompt": "Which term matches this definition: \"Data anyone can access, use, and share without restriction.\"?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "FAIR" },
+          { "id": "b", "text": "Open Data" },
+          { "id": "c", "text": "Reproducibility" }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "module-real-open-science-policy",
+      "competenceId": "comp-real-open-science-policy",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-os-7",
+      "prompt": "Which term matches this definition: \"Independently repeating a study and getting the same results.\"?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "FAIR" },
+          { "id": "b", "text": "Open Data" },
+          { "id": "c", "text": "Reproducibility" }
+        ],
+        "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "module-real-open-science-policy",
+      "competenceId": "comp-real-open-science-policy",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-ai-1",
+      "prompt": "As an open science officer, how comfortable would you be evaluating whether your institute's current generative AI tool suffices, or whether to purchase another?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Very uncomfortable making this evaluation myself",
+          "maxLabel": "Very comfortable making this evaluation myself"
+        }
+      },
+      "sectionModuleId": "module-real-ai-tools",
+      "competenceId": "comp-real-ai-tools",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-1",
+      "prompt": "Which law is least likely to be relevant in decisions to make data openly accessible? Assuming that the law is relevant in your jurisdiction.",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "GDPR" },
+          { "id": "b", "text": "AI Act" },
+          { "id": "c", "text": "EU Cyber Resilience Act" }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-2",
+      "prompt": "Which practices display legality more than ethical adequacy?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "A company mines data from its users because they have consented to this in the terms and conditions of a particular product."
+          },
+          {
+            "id": "b",
+            "text": "A company operates across the US and the EU. It has patented a real-time surveillance mechanism in casinos that monitors facial expressions and can accurately predict organized fraud. It suppresses the roll-out of this mechanism in the EU, where the EU AI Act makes it illegal."
+          },
+          {
+            "id": "c",
+            "text": "A company employs \"ethical hackers\" to perform penetration testing of new software. The hackers' scope and behavior is governed by codes of conduct."
+          },
+          { "id": "d", "text": "None of the above" }
+        ],
+        "correctOptionIds": ["a", "b"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-3",
+      "prompt": "What are key elements of the EU Data Governance Act?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Focus on protection of non-personal data, as the GDPR covers personal data."
+          },
+          {
+            "id": "b",
+            "text": "Provide rules and safeguards to facilitate re-use of data held by the public sector"
+          },
+          {
+            "id": "c",
+            "text": "Allow public sector bodies to charge fees for allowing the reuse of their data"
+          },
+          { "id": "d", "text": "Prevent the monetization of publicly held data" }
+        ],
+        "correctOptionIds": ["b", "c"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-4",
+      "prompt": "What does the Data Governance Act say about data altruism?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Data altruism is built into the collection of data from the public, with an opt-out approach"
+          },
+          { "id": "b", "text": "Consent or permission can be granted by individuals" },
+          { "id": "c", "text": "Consent or permission can be granted by companies" },
+          {
+            "id": "d",
+            "text": "Consent or permission should be given voluntarily and without reward"
+          },
+          {
+            "id": "e",
+            "text": "A lack of data-sharing tools is more of a barrier than a lack of willingness among the public"
+          },
+          { "id": "f", "text": "Data intermediaries should be avoided." }
+        ],
+        "correctOptionIds": ["b", "c", "d", "e"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-5",
+      "prompt": "What are identified obstacles to data-sharing in the EU?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "Low trust in data-sharing" },
+          { "id": "b", "text": "Technical and infrastructure" },
+          { "id": "c", "text": "Uncertainty about what type of public data can be collected" },
+          { "id": "d", "text": "No cross-sectoral instrument to regulate publicly held data" }
+        ],
+        "correctOptionIds": ["a", "b", "c"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-6",
+      "prompt": "The main difference between the Open Data Directive and the Data Governance Act is:",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "The Open Data Directive regulates the reuse of publicly available information held by the public sector, while the Data Governance Act regulates the use of protected data held by the public sector."
+          },
+          {
+            "id": "b",
+            "text": "The Open Data Directive regulates the reuse of protected data held by the public sector, while the Data Governance Act regulates the sharing of publicly available data held by the public sector."
+          },
+          {
+            "id": "c",
+            "text": "The Open Data Directive requires certain types of data to be shared, while the Data Governance Act creates the legal infrastructure for these types of data to be safely shared."
+          },
+          {
+            "id": "d",
+            "text": "Neither address personal data, but the Open Data Directive focuses on companies that process public data, while the Data Governance Act focuses on the public sector."
+          }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-7",
+      "prompt": "How comfortable are you describing how intellectual property rights and ancillary rights are both enablers and blockers to legal openness?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Very uncomfortable describing this",
+          "maxLabel": "Very comfortable describing this"
+        }
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-8",
+      "prompt": "Which of the following characterize privacy and data protection as rights in the EU?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "They are fundamental rights" },
+          { "id": "b", "text": "They are automatic" },
+          { "id": "c", "text": "They are non-waivable" },
+          { "id": "d", "text": "They are non-transferrable" },
+          { "id": "e", "text": "None of the above" }
+        ],
+        "correctOptionIds": ["a", "b", "c", "d"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-9",
+      "prompt": "Which are examples of upstream practices, rather than downstream practices?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "Getting rights to data before disseminating it" },
+          { "id": "b", "text": "Transfer of intellectual property rights" },
+          { "id": "c", "text": "Moral rights policies" },
+          { "id": "d", "text": "Model licenses" }
+        ],
+        "correctOptionIds": ["a", "b", "c"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-10",
+      "prompt": "Which are examples of downstream practices, rather than upstream practices?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "Model licenses such as the CC family" },
+          { "id": "b", "text": "Constraining data usage" },
+          { "id": "c", "text": "Focusing on data output" },
+          { "id": "d", "text": "Transfer of contributor rights" }
+        ],
+        "correctOptionIds": ["a", "b", "c"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-11",
+      "prompt": "How comfortable would you be to defend your organization's use of APIs in a discussion about intellectual property rights claims and a license dispute?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Very uncomfortable",
+          "maxLabel": "Very comfortable"
+        }
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-12",
+      "prompt": "Which of the following is/are true?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "APIs are more conducive to establishing data-sharing ecosystems" },
+          { "id": "b", "text": "APIs still depend on intellectual property rights" },
+          { "id": "c", "text": "APIs are not under the scope of the Open Data Directive" },
+          { "id": "d", "text": "APIs are subject to common constraints on data retention" }
+        ],
+        "correctOptionIds": ["a", "d"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-13",
+      "prompt": "Which main issue was Creative Commons developed to address?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "The lack of a standard open license" },
+          { "id": "b", "text": "The lack of a machine-readable license" },
+          {
+            "id": "c",
+            "text": "Unclear intellectual property rights of content shared on the internet"
+          },
+          { "id": "d", "text": "Lack of consensus among national intellectual property experts" }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-14",
+      "prompt": "Which types of creative commons licenses exist?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "Commercial use allowed" },
+          { "id": "b", "text": "Commercial use not allowed" },
+          { "id": "c", "text": "Derivative works allowed" },
+          { "id": "d", "text": "Downstream use behind paywall" },
+          { "id": "e", "text": "Downstream as upstream" }
+        ],
+        "correctOptionIds": ["a", "b", "c", "e"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    },
+    {
+      "id": "q-real-legal-15",
+      "prompt": "What does licensing have to do with open data?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "Data which is shared with a license becomes open data." },
+          { "id": "b", "text": "Licensing is a way to indicate ownership over data." },
+          {
+            "id": "c",
+            "text": "Licensing prevents data from being publicly shared, but allows for private agreements."
+          }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "module-real-legal-ethics-governance",
+      "competenceId": "comp-real-legal-ethics-governance",
+      "createdAt": "2026-09-25T00:00:00.000Z",
+      "updatedAt": "2026-09-25T00:00:00.000Z"
+    }
+  ]
+}
