@@ -8,11 +8,13 @@ import {
   completeInitialAssessment,
   findLearnerById,
   findRole,
+  getLearnerProfile,
   listRoles,
+  saveLearnerProfile,
   setLearnerRole,
   upsertLearnerFromGoogle,
 } from "./identity.service";
-import { toLearnerDto } from "./identity.types";
+import { toLearnerDto, validateProfileInput } from "./identity.types";
 
 export const identityRouter = Router();
 
@@ -74,3 +76,16 @@ identityRouter.put(
     res.json(toLearnerDto(learner));
   },
 );
+
+identityRouter.get("/auth/me/profile", requireAuth, async (req: AuthedRequest, res) => {
+  const profile = await getLearnerProfile(req.learnerId!);
+  res.json(profile);
+});
+
+identityRouter.put("/auth/me/profile", requireAuth, async (req: AuthedRequest, res) => {
+  const result = validateProfileInput(req.body);
+  if ("error" in result) return res.status(400).json({ error: result.error });
+
+  const profile = await saveLearnerProfile(req.learnerId!, result.data);
+  res.json(profile);
+});

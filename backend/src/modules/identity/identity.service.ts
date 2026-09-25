@@ -1,4 +1,5 @@
 import { prisma } from "../../db/prisma";
+import type { LearnerProfileInput } from "./identity.types";
 
 // All Prisma access for identity_* tables lives here.
 
@@ -36,6 +37,18 @@ export function completeInitialAssessment(learnerId: string) {
     where: { id: learnerId },
     data: { hasCompletedInitialAssessment: true },
     include: { userRole: true },
+  });
+}
+
+export function getLearnerProfile(learnerId: string) {
+  return prisma.learnerProfile.findUnique({ where: { learnerId } });
+}
+
+export function saveLearnerProfile(learnerId: string, data: LearnerProfileInput) {
+  return prisma.learnerProfile.upsert({
+    where: { learnerId },
+    update: data,
+    create: { learnerId, ...data },
   });
 }
 

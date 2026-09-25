@@ -5,6 +5,7 @@ export const endpoints = {
     me: "/auth/me",
     myRole: "/auth/me/role",
     myInitialAssessment: "/auth/me/initial-assessment",
+    myProfile: "/auth/me/profile",
   },
   roles: "/roles",
   questions: "/questions",
