@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
 
 jobs:
   backend:
@@ -23,6 +23,7 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npx prisma generate
+      - run: npm run test
       - run: npm run build
 
   frontend:
@@ -40,4 +41,5 @@ jobs:
       - run: npm install
       - run: npm run format:check
       - run: npm run lint
+      - run: npm run test
       - run: npm run build

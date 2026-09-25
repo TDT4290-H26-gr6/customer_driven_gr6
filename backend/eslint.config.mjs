@@ -8,7 +8,7 @@ import prettier from "eslint-config-prettier";
 // changing that would affect how the rest of the backend is loaded, so the
 // config file opts into ESM on its own instead).
 export default tseslint.config(
-  { ignores: ["dist", "node_modules"] },
+  { ignores: ["dist", "node_modules", "coverage"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

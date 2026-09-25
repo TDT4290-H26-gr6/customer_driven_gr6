@@ -16,6 +16,33 @@ export function listJourneys() {
   return prisma.learningJourney.findMany({ include: journeyInclude, orderBy: { name: "asc" } });
 }
 
+export type CompetenceScoreInput = {
+  competenceId: string;
+  score: number;
+  maxScore: number;
+};
+
+/**
+ * Picks the competence a learner is weakest in, out of their scores for one
+ * SAT instance. Pure (no Prisma) so it's unit-testable directly — see
+ * assessment.scoring.ts for the same pattern.
+ *
+ * Competences differ in question count (and so in maxScore), so "weakest"
+ * has to compare score/maxScore, not raw score — a 6/31 competence isn't
+ * actually stronger than a 2/14 one just because 6 > 2. Competences with
+ * nothing scorable (maxScore 0) can't be weak and are skipped. Returns null
+ * when none qualify.
+ */
+export function pickWeakestCompetence(scores: CompetenceScoreInput[]): string | null {
+  const scored = scores.filter((s) => s.maxScore > 0);
+  if (scored.length === 0) return null;
+
+  const lowest = scored.reduce((min, s) =>
+    s.score / s.maxScore < min.score / min.maxScore ? s : min,
+  );
+  return lowest.competenceId;
+}
+
 /**
  * The sections a competence is taught in: those holding a module whose main
  * competence it is, or — if none does — a module that lists it as secondary.
@@ -93,14 +120,10 @@ export async function recommendJourney(learnerId: string) {
   const scores = await prisma.competenceScore.findMany({
     where: { satInstanceId: latestInstance.id },
   });
-  const scored = scores.filter((s) => s.maxScore > 0);
-  if (scored.length === 0) return null;
+  const weakestCompetenceId = pickWeakestCompetence(scores);
+  if (!weakestCompetenceId) return null;
 
-  const lowest = scored.reduce((min, s) =>
-    s.score / s.maxScore < min.score / min.maxScore ? s : min,
-  );
-
-  const journey = await bestJourneyForSections(await sectionIdsForCompetence(lowest.competenceId));
+  const journey = await bestJourneyForSections(await sectionIdsForCompetence(weakestCompetenceId));
   if (!journey) return null;
 
   // Log a new recommendation event only when it actually changed — otherwise
@@ -112,7 +135,7 @@ export async function recommendJourney(learnerId: string) {
   });
 
   if (lastRecommendation?.journeyId !== journey.id) {
-    const competence = await prisma.competence.findUnique({ where: { id: lowest.competenceId } });
+    const competence = await prisma.competence.findUnique({ where: { id: weakestCompetenceId } });
 
     await prisma.journeyRecommendation.create({
       data: {

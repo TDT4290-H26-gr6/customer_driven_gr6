@@ -23,3 +23,8 @@ export function getMe(): Promise<Learner> {
 export function completeInitialAssessment(): Promise<Learner> {
   return apiFetch<Learner>(endpoints.auth.myInitialAssessment, { method: "PUT" });
 }
+
+/** Permanently deletes the signed-in learner's account and all their data (CD-60, GDPR). */
+export function deleteAccount(): Promise<void> {
+  return apiFetch<void>(endpoints.auth.me, { method: "DELETE" });
+}

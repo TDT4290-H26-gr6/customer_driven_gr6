@@ -6,6 +6,7 @@ import { LoginPage } from "@/features/auth";
 import { AssessmentRunnerPage } from "@/features/assessment";
 import { ResultsPage, SectionDetailsPage } from "@/features/results";
 import { SettingsPage } from "@/features/settings";
+import { HistoryPage } from "@/features/history";
 import { SourcesPage } from "@/features/sources";
 import { AdminPage } from "@/features/admin";
 import { Spinner } from "@/shared/components/Spinner";
@@ -33,6 +34,7 @@ export function AppRoutes() {
         <Route element={<AppShell />}>
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/results" element={<ResultsPage />} />
+          <Route path="/history" element={<HistoryPage />} />
           <Route path="/results/details" element={<SectionDetailsPage />} />
           <Route path="/sources" element={<SourcesPage />} />
           <Route path="/admin" element={<AdminPage />} />

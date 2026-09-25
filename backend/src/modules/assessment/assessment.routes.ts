@@ -7,6 +7,7 @@ import {
   getLatestCompetenceScores,
   getLatestSectionCompetenceScores,
   getProgress,
+  getSatHistory,
   listQuestions,
   saveResponse,
 } from "./assessment.service";
@@ -65,10 +66,10 @@ assessmentRouter.get(
 );
 
 assessmentRouter.get(
-  "/competence-scores/by-section",
+  "/assessment/history",
   requireAuth,
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
-    res.json(await getLatestSectionCompetenceScores(req.learnerId!));
+    res.json(await getSatHistory(req.learnerId!));
   }),
 );

@@ -1,4 +1,5 @@
 import { prisma } from "../../db/prisma";
+import type { LearnerProfileInput } from "./identity.types";
 
 // All Prisma access for identity_* tables lives here.
 
@@ -37,6 +38,29 @@ export function completeInitialAssessment(learnerId: string) {
     data: { hasCompletedInitialAssessment: true },
     include: { userRole: true },
   });
+}
+
+export function getLearnerProfile(learnerId: string) {
+  return prisma.learnerProfile.findUnique({ where: { learnerId } });
+}
+
+export function saveLearnerProfile(learnerId: string, data: LearnerProfileInput) {
+  return prisma.learnerProfile.upsert({
+    where: { learnerId },
+    update: data,
+    create: { learnerId, ...data },
+  });
+}
+
+/**
+ * GDPR account deletion (CD-60). Everything the learner owns — SAT
+ * instances/responses/scores, their profile, their journey
+ * recommendations, and any grants they made — cascades at the DB level
+ * (onDelete: Cascade throughout assessment.prisma/identity.prisma/
+ * learningJourney.prisma), so this is just the one delete.
+ */
+export function deleteLearner(learnerId: string) {
+  return prisma.learner.delete({ where: { id: learnerId } });
 }
 
 // --- Role visibility allow-lists (identity_role_section / identity_role_competence) ---
