@@ -53,13 +53,12 @@ const REAL_ROLE_NAMES = [
   "Student",
 ] as const;
 
-async function ensureRealRoleIds(): Promise<string[]> {
-  const roles = await Promise.all(
+async function ensureRealRoles() {
+  return Promise.all(
     REAL_ROLE_NAMES.map((name) =>
       prisma.role.upsert({ where: { name }, update: {}, create: { name } }),
     ),
   );
-  return roles.map((role) => role.id);
 }
 
 const REAL_SECTION_IDS = [
@@ -73,6 +72,14 @@ export async function seedOpenScienceContent() {
   const insert = async (name: string, run: () => Promise<{ count: number }>) => {
     counts[name] = (await run()).count;
   };
+
+  // What already existed before this run — see the role_section insert below.
+  const [existingSections, existingRoles] = await Promise.all([
+    prisma.section.findMany({ where: { id: { in: REAL_SECTION_IDS } }, select: { id: true } }),
+    prisma.role.findMany({ where: { name: { in: [...REAL_ROLE_NAMES] } }, select: { name: true } }),
+  ]);
+  const sectionExisted = new Set(existingSections.map((s) => s.id));
+  const roleExisted = new Set(existingRoles.map((r) => r.name));
 
   // Order matters: a table is inserted only after every table it points at.
   await insert("source", () =>
@@ -113,11 +120,16 @@ export async function seedOpenScienceContent() {
     }),
   );
 
-  const roleIds = await ensureRealRoleIds();
+  // Grant a real section to a real role only when one of them is new in
+  // this run. This seed runs on every boot, so re-granting existing pairs
+  // would silently undo any grant an admin revoked in admin mode.
+  const roles = await ensureRealRoles();
   await insert("role_section", () =>
     prisma.roleSection.createMany({
-      data: roleIds.flatMap((roleId) =>
-        REAL_SECTION_IDS.map((sectionId) => ({ roleId, sectionId })),
+      data: roles.flatMap((role) =>
+        REAL_SECTION_IDS.filter(
+          (sectionId) => !roleExisted.has(role.name) || !sectionExisted.has(sectionId),
+        ).map((sectionId) => ({ roleId: role.id, sectionId })),
       ),
       skipDuplicates: true,
     }),

@@ -205,16 +205,26 @@ export async function getProgress(learnerId: string) {
  * instance on the first call, and scores it against the question. An atomic
  * upsert on (satInstanceId, questionId), so two saves arriving together
  * can't collide on the unique constraint.
+ *
+ * Returns null — and saves nothing — when the question doesn't exist or
+ * isn't one the learner's role may see: a learner can only answer the
+ * questions listQuestions would have given them. Checked before the
+ * instance is created, so a bad id never leaves an empty instance behind.
  */
 export async function saveResponse(
   learnerId: string,
   questionId: string,
   answer: Prisma.InputJsonValue,
 ) {
-  const instance = await getOrCreateActiveInstance(learnerId);
-  const question = await prisma.question.findUnique({ where: { id: questionId } });
-  if (!question) throw new Error(`Question not found: ${questionId}`);
+  const visible = await visibleQuestionFilter(learnerId);
+  if (!visible) return null;
 
+  const question = await prisma.question.findFirst({
+    where: { AND: [{ id: questionId }, visible] },
+  });
+  if (!question) return null;
+
+  const instance = await getOrCreateActiveInstance(learnerId);
   const result = scoreAnswer(question, answer);
   const data = { answer, score: result?.score ?? null, maxScore: result?.maxScore ?? null };
 

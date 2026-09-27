@@ -1,4 +1,5 @@
 import type { Learner, Role } from "@prisma/client";
+import { isAdminEmail } from "./identity.admin";
 
 export type LearnerWithRole = Learner & { userRole: Role | null };
 
@@ -8,6 +9,8 @@ export type LearnerDto = {
   name: string | null;
   role: Role | null;
   hasCompletedInitialAssessment: boolean;
+  /** May use admin mode — so the frontend can hide it; requireAdmin is the real check. */
+  isAdmin: boolean;
 };
 
 export function toLearnerDto(learner: LearnerWithRole): LearnerDto {
@@ -17,6 +20,7 @@ export function toLearnerDto(learner: LearnerWithRole): LearnerDto {
     name: learner.name,
     role: learner.userRole,
     hasCompletedInitialAssessment: learner.hasCompletedInitialAssessment,
+    isAdmin: isAdminEmail(learner.email),
   };
 }
 

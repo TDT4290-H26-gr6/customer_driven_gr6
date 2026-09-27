@@ -1,10 +1,13 @@
 import type { CoverageLevel } from "@prisma/client";
 import { prisma } from "../../db/prisma";
+import { createKeyedLock } from "../../lib/keyedLock";
 
 // All Prisma access for learning_journey_* tables lives here. Reads of
 // assessment_* tables (SatInstance, CompetenceScore, Competence, SectionModule)
 // below are read-only cross-module queries — allowed per
 // context/backend-structure.md §5 ("reads, never writes, via Prisma").
+
+const recommendationLock = createKeyedLock();
 
 const journeyInclude = { modules: { orderBy: { order: "asc" as const } } };
 
@@ -129,12 +132,16 @@ export async function recommendJourney(learnerId: string) {
   // Log a new recommendation event only when it actually changed — otherwise
   // every dashboard visit would insert a duplicate row and inflate the
   // Sprint 5 "recommendations given per user" stat this table feeds.
-  const lastRecommendation = await prisma.journeyRecommendation.findFirst({
-    where: { learnerId },
-    orderBy: { createdAt: "desc" },
-  });
+  // Serialized per learner: two requests at once (React StrictMode mounts
+  // the dashboard twice in development) would otherwise both read the same
+  // "last recommendation" and both insert.
+  await recommendationLock(learnerId, async () => {
+    const lastRecommendation = await prisma.journeyRecommendation.findFirst({
+      where: { learnerId },
+      orderBy: { createdAt: "desc" },
+    });
+    if (lastRecommendation?.journeyId === journey.id) return;
 
-  if (lastRecommendation?.journeyId !== journey.id) {
     const competence = await prisma.competence.findUnique({ where: { id: weakestCompetenceId } });
 
     await prisma.journeyRecommendation.create({
@@ -144,7 +151,7 @@ export async function recommendJourney(learnerId: string) {
         reason: competence ? `Lowest score in ${competence.name}` : null,
       },
     });
-  }
+  });
 
   return journey;
 }

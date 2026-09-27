@@ -42,7 +42,7 @@ describe("requireRole", () => {
     expect(next).not.toHaveBeenCalled();
   });
 
-  it("403s when the learner can't be found", async () => {
+  it("401s when the learner can't be found (token outlived a deleted account)", async () => {
     vi.mocked(findLearnerById).mockResolvedValue(null as never);
     const req = { learnerId: "learner-1" } as AuthedRequest;
     const res = mockRes();
@@ -50,7 +50,20 @@ describe("requireRole", () => {
 
     await requireRole(req, res as never, next);
 
-    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
+  });
+
+  it("passes a failed lookup to next(err) instead of rejecting unhandled", async () => {
+    const dbError = new Error("Can't reach database server");
+    vi.mocked(findLearnerById).mockRejectedValue(dbError);
+    const req = { learnerId: "learner-1" } as AuthedRequest;
+    const res = mockRes();
+    const next = vi.fn();
+
+    await requireRole(req, res as never, next);
+
+    expect(next).toHaveBeenCalledWith(dbError);
+    expect(res.status).not.toHaveBeenCalled();
   });
 });

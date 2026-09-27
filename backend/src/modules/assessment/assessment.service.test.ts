@@ -2,11 +2,12 @@ import { Prisma } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { completeActiveInstance, getSatHistory, saveResponse } from "./assessment.service";
 import { prisma } from "../../db/prisma";
+import { findLearnerById, getRoleGrants } from "../identity/identity.service";
 
 vi.mock("../../db/prisma", () => ({
   prisma: {
     satInstance: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() },
-    question: { findUnique: vi.fn() },
+    question: { findFirst: vi.fn() },
     response: { findMany: vi.fn(), upsert: vi.fn() },
     competenceScore: { upsert: vi.fn() },
     $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
@@ -42,9 +43,15 @@ const radioQuestion = {
 };
 
 describe("saveResponse", () => {
+  // A learner whose role can see section-1, which holds the question.
+  beforeEach(() => {
+    vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);
+    vi.mocked(getRoleGrants).mockResolvedValue({ sectionIds: ["section-1"], competenceIds: [] });
+  });
+
   it("upserts the Response scored against the question, reusing an existing active instance", async () => {
     mockPrisma.satInstance.findFirst.mockResolvedValueOnce({ id: "instance-1" } as never);
-    mockPrisma.question.findUnique.mockResolvedValue(radioQuestion as never);
+    mockPrisma.question.findFirst.mockResolvedValue(radioQuestion as never);
 
     const answer = { session: { id: "", data: [{ id: "1", value: ["0"] }] }, complete: true };
     await saveResponse("learner-1", "q1", answer);
@@ -62,7 +69,7 @@ describe("saveResponse", () => {
       .mockResolvedValueOnce(null) // no active instance
       .mockResolvedValueOnce({ instanceNum: 2 } as never); // latest instanceNum so far
     mockPrisma.satInstance.create.mockResolvedValue({ id: "instance-3" } as never);
-    mockPrisma.question.findUnique.mockResolvedValue(radioQuestion as never);
+    mockPrisma.question.findFirst.mockResolvedValue(radioQuestion as never);
 
     await saveResponse("learner-1", "q1", { session: {}, complete: true });
 
@@ -74,7 +81,7 @@ describe("saveResponse", () => {
   it("starts at instanceNum 1 for a learner with no prior instances at all", async () => {
     mockPrisma.satInstance.findFirst.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
     mockPrisma.satInstance.create.mockResolvedValue({ id: "instance-1" } as never);
-    mockPrisma.question.findUnique.mockResolvedValue(radioQuestion as never);
+    mockPrisma.question.findFirst.mockResolvedValue(radioQuestion as never);
 
     await saveResponse("learner-1", "q1", { session: {}, complete: true });
 
@@ -93,7 +100,7 @@ describe("saveResponse", () => {
       clientVersion: "5.22.0",
     });
     mockPrisma.satInstance.create.mockRejectedValue(uniqueViolation);
-    mockPrisma.question.findUnique.mockResolvedValue(radioQuestion as never);
+    mockPrisma.question.findFirst.mockResolvedValue(radioQuestion as never);
 
     await saveResponse("learner-1", "q1", { session: {}, complete: true });
 
@@ -109,13 +116,47 @@ describe("saveResponse", () => {
     );
   });
 
-  it("throws when the question doesn't exist", async () => {
+  it("only looks the question up among those the learner's role can see", async () => {
     mockPrisma.satInstance.findFirst.mockResolvedValueOnce({ id: "instance-1" } as never);
-    mockPrisma.question.findUnique.mockResolvedValue(null);
+    mockPrisma.question.findFirst.mockResolvedValue(radioQuestion as never);
 
-    await expect(
-      saveResponse("learner-1", "missing", { session: {}, complete: true }),
-    ).rejects.toThrow("Question not found: missing");
+    await saveResponse("learner-1", "q1", { session: {}, complete: true });
+
+    expect(mockPrisma.question.findFirst).toHaveBeenCalledWith({
+      where: {
+        AND: [
+          { id: "q1" },
+          {
+            OR: [
+              { competenceId: { in: [] } },
+              { sectionModule: { sectionId: { in: ["section-1"] } } },
+            ],
+          },
+        ],
+      },
+    });
+  });
+
+  it("returns null and saves nothing when the question is unknown or not visible to the role", async () => {
+    mockPrisma.question.findFirst.mockResolvedValue(null);
+
+    const result = await saveResponse("learner-1", "missing", { session: {}, complete: true });
+
+    expect(result).toBeNull();
+    // Checked before the instance is touched, so a bad id leaves no empty instance behind.
+    expect(mockPrisma.satInstance.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.satInstance.create).not.toHaveBeenCalled();
+    expect(mockPrisma.response.upsert).not.toHaveBeenCalled();
+  });
+
+  it("returns null and saves nothing for a learner without a role", async () => {
+    vi.mocked(findLearnerById).mockResolvedValue({ roleId: null } as never);
+
+    const result = await saveResponse("learner-1", "q1", { session: {}, complete: true });
+
+    expect(result).toBeNull();
+    expect(mockPrisma.question.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.response.upsert).not.toHaveBeenCalled();
   });
 });
 

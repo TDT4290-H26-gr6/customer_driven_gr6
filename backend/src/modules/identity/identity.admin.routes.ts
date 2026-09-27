@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
-import { requireRole } from "../../middleware/requireRole";
+import { requireAdmin } from "../../middleware/requireAdmin";
 import { asyncHandler } from "../../lib/asyncHandler";
 import {
   getVisibilityMatrix,
@@ -13,10 +13,9 @@ import {
 /**
  * Admin mode: managing which sections / competences each role may see.
  *
- * For now any signed-in learner who has picked a role can reach these — that
- * is a deliberate demo-stage decision, not a security boundary. Before real
- * users exist, gate them on a real admin check (the planned `security`
- * module in context/backend-structure.md).
+ * Gated by requireAdmin — learners listed in ADMIN_EMAILS (everyone in
+ * development when it's unset; see config.ts). A stopgap until the planned
+ * `security` module in context/backend-structure.md has real admin accounts.
  */
 export const identityAdminRouter = Router();
 
@@ -28,7 +27,7 @@ function isForeignKeyError(err: unknown) {
 identityAdminRouter.get(
   "/admin/visibility",
   requireAuth,
-  requireRole,
+  requireAdmin,
   asyncHandler<AuthedRequest>(async (_req, res) => {
     res.json(await getVisibilityMatrix());
   }),
@@ -37,7 +36,7 @@ identityAdminRouter.get(
 identityAdminRouter.put(
   "/admin/roles/:roleId/sections/:sectionId",
   requireAuth,
-  requireRole,
+  requireAdmin,
   asyncHandler<AuthedRequest>(async (req, res) => {
     try {
       await grantSection(req.params.roleId, req.params.sectionId, req.learnerId!);
@@ -52,7 +51,7 @@ identityAdminRouter.put(
 identityAdminRouter.delete(
   "/admin/roles/:roleId/sections/:sectionId",
   requireAuth,
-  requireRole,
+  requireAdmin,
   asyncHandler<AuthedRequest>(async (req, res) => {
     await revokeSection(req.params.roleId, req.params.sectionId);
     res.status(204).end();
@@ -62,7 +61,7 @@ identityAdminRouter.delete(
 identityAdminRouter.put(
   "/admin/roles/:roleId/competences/:competenceId",
   requireAuth,
-  requireRole,
+  requireAdmin,
   asyncHandler<AuthedRequest>(async (req, res) => {
     try {
       await grantCompetence(req.params.roleId, req.params.competenceId, req.learnerId!);
@@ -79,7 +78,7 @@ identityAdminRouter.put(
 identityAdminRouter.delete(
   "/admin/roles/:roleId/competences/:competenceId",
   requireAuth,
-  requireRole,
+  requireAdmin,
   asyncHandler<AuthedRequest>(async (req, res) => {
     await revokeCompetence(req.params.roleId, req.params.competenceId);
     res.status(204).end();

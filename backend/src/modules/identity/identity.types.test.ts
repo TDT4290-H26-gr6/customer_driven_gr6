@@ -36,6 +36,8 @@ describe("toLearnerDto", () => {
         updatedAt: new Date("2026-01-01"),
       },
       hasCompletedInitialAssessment: false,
+      // ADMIN_EMAILS is unset under test: everyone is an admin, as in development.
+      isAdmin: true,
     });
   });
 

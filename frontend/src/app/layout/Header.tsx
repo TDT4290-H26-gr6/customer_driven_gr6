@@ -80,15 +80,17 @@ export function Header() {
                 <SettingsIcon className={styles.dropdownIcon} />
                 Settings
               </button>
-              <button
-                type="button"
-                className={styles.dropdownItem}
-                role="menuitem"
-                onClick={goToAdmin}
-              >
-                <ShieldIcon className={styles.dropdownIcon} />
-                Admin mode
-              </button>
+              {learner.isAdmin && (
+                <button
+                  type="button"
+                  className={styles.dropdownItem}
+                  role="menuitem"
+                  onClick={goToAdmin}
+                >
+                  <ShieldIcon className={styles.dropdownIcon} />
+                  Admin mode
+                </button>
+              )}
               <button
                 type="button"
                 className={styles.dropdownItem}

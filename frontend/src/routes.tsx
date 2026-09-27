@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "@/app/layout/AppShell";
 import { RequireAuth } from "@/app/guards/RequireAuth";
+import { RequireAdmin } from "@/app/guards/RequireAdmin";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { LoginPage } from "@/features/auth";
 import { AssessmentRunnerPage } from "@/features/assessment";
@@ -37,7 +38,9 @@ export function AppRoutes() {
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/results/details" element={<SectionDetailsPage />} />
           <Route path="/sources" element={<SourcesPage />} />
-          <Route path="/admin" element={<AdminPage />} />
+          <Route element={<RequireAdmin />}>
+            <Route path="/admin" element={<AdminPage />} />
+          </Route>
           {/* Not in the sidebar — only reachable via the dashboard's
               "Assess yourself" button. */}
           <Route path="/assessment" element={<AssessmentRunnerPage />} />

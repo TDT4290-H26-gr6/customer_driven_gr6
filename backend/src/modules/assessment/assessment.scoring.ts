@@ -44,13 +44,15 @@ export function scoreMultipleChoice(
 /**
  * Scores a likert (self-rated) response. There is no right answer: the score
  * is the scale value the learner picked, out of the top of the scale. Each
- * choice's `value` is that scale number (see assessment.pie.ts).
+ * choice's `value` is that scale number (see assessment.pie.ts). The session
+ * comes from the client, so a value that isn't on the scale (e.g. "1000")
+ * scores 0 rather than inflating the competence score.
  */
 export function scoreLikert(choiceValues: string[], selectedValues: string[]): ScoreResult {
   const scale = choiceValues.map(Number).filter(Number.isFinite);
   const picked = Number(selectedValues[0]);
   return {
-    score: Number.isFinite(picked) ? picked : 0,
+    score: scale.includes(picked) ? picked : 0,
     maxScore: scale.length > 0 ? Math.max(...scale) : 0,
   };
 }
@@ -104,15 +106,25 @@ export function scoreDragAndDrop(
 //   convention); if drag-and-drop scores still look wrong after this fix,
 //   log a real session from the browser (PieQuestionPlayer's
 //   session-changed handler) to check that assumption specifically.
+//
+// The session is whatever the client POSTed, so every step below checks the
+// shape it reads instead of trusting it: a malformed session scores as "no
+// answer" rather than throwing (and failing the save with a 500).
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 function findModelSession(session: unknown, modelId: string): { value?: unknown } | undefined {
-  const data = (session as { data?: { id?: string; value?: unknown }[] } | null | undefined)?.data;
-  return data?.find((d) => d.id === modelId) ?? data?.[0];
+  const data = isRecord(session) ? session.data : undefined;
+  if (!Array.isArray(data)) return undefined;
+  const entries = data.filter(isRecord);
+  return entries.find((d) => d.id === modelId) ?? entries[0];
 }
 
 export function extractMultipleChoiceValues(session: unknown, modelId: string): string[] {
   const value = findModelSession(session, modelId)?.value;
-  if (Array.isArray(value)) return value;
+  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
   if (typeof value === "string") return [value];
   return [];
 }
@@ -121,11 +133,12 @@ export function extractDragAndDropBlanks(
   session: unknown,
   modelId: string,
 ): Record<string, string | undefined> {
-  const value = (findModelSession(session, modelId)?.value ?? {}) as Record<string, unknown>;
+  const value = findModelSession(session, modelId)?.value;
+  if (!isRecord(value)) return {};
   return Object.fromEntries(
-    Object.entries(value).map(([blank, v]) => [
-      blank,
-      Array.isArray(v) ? v[0] : (v as string | undefined),
-    ]),
+    Object.entries(value).map(([blank, v]) => {
+      const filled = Array.isArray(v) ? v[0] : v;
+      return [blank, typeof filled === "string" ? filled : undefined];
+    }),
   );
 }

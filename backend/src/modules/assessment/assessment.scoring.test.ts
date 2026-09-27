@@ -3,6 +3,7 @@ import {
   extractDragAndDropBlanks,
   extractMultipleChoiceValues,
   scoreDragAndDrop,
+  scoreLikert,
   scoreMultipleChoice,
 } from "./assessment.scoring";
 
@@ -113,6 +114,13 @@ describe("extractMultipleChoiceValues", () => {
     expect(extractMultipleChoiceValues(undefined, "1")).toEqual([]);
     expect(extractMultipleChoiceValues({}, "1")).toEqual([]);
     expect(extractMultipleChoiceValues({ data: [] }, "1")).toEqual([]);
+    expect(extractMultipleChoiceValues({ data: "not-an-array" }, "1")).toEqual([]);
+    expect(extractMultipleChoiceValues({ data: [null, 42] }, "1")).toEqual([]);
+  });
+
+  it("drops non-string entries from the client-sent value", () => {
+    const session = { id: "", data: [{ id: "1", value: ["0", 1, { x: 1 }, null] }] };
+    expect(extractMultipleChoiceValues(session, "1")).toEqual(["0"]);
   });
 });
 
@@ -129,5 +137,37 @@ describe("extractDragAndDropBlanks", () => {
 
   it("returns an empty object for a missing session", () => {
     expect(extractDragAndDropBlanks(undefined, "1")).toEqual({});
+  });
+
+  it("returns an empty object when the value isn't a blank->choice map", () => {
+    expect(extractDragAndDropBlanks({ data: [{ id: "1", value: "abc" }] }, "1")).toEqual({});
+    expect(extractDragAndDropBlanks({ data: [{ id: "1", value: ["a"] }] }, "1")).toEqual({});
+  });
+
+  it("treats a non-string blank as empty", () => {
+    const session = { id: "", data: [{ id: "1", value: { "0": 5, "1": { x: 1 }, "2": "c" } }] };
+    expect(extractDragAndDropBlanks(session, "1")).toEqual({
+      "0": undefined,
+      "1": undefined,
+      "2": "c",
+    });
+  });
+});
+
+describe("scoreLikert", () => {
+  const scale = ["1", "2", "3", "4", "5"];
+
+  it("scores the picked scale value out of the top of the scale", () => {
+    expect(scoreLikert(scale, ["4"])).toEqual({ score: 4, maxScore: 5 });
+  });
+
+  it("scores 0 when nothing is picked", () => {
+    expect(scoreLikert(scale, [])).toEqual({ score: 0, maxScore: 5 });
+  });
+
+  it("scores 0 for a value that isn't on the scale, instead of inflating the score", () => {
+    expect(scoreLikert(scale, ["1000"])).toEqual({ score: 0, maxScore: 5 });
+    expect(scoreLikert(scale, ["-3"])).toEqual({ score: 0, maxScore: 5 });
+    expect(scoreLikert(scale, ["abc"])).toEqual({ score: 0, maxScore: 5 });
   });
 });

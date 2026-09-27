@@ -6,6 +6,8 @@ export type Learner = {
   name: string;
   role?: Role | null;
   hasCompletedInitialAssessment: boolean;
+  /** May use admin mode. Only hides the UI — the backend enforces it. */
+  isAdmin: boolean;
 };
 
 export type LoginResult = {

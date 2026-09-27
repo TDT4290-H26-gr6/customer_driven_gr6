@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { getMe, getToken, clearToken } from "@/features/auth";
+import { onUnauthorized } from "@/shared/api/client";
 import type { Learner, Role } from "@/features/auth";
 
 type Status = "loading" | "signedOut" | "signedIn";
@@ -35,6 +36,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus("signedOut");
       });
   }, []);
+
+  // Any request that comes back 401 means the session is dead (expired
+  // token, deleted account). apiFetch already dropped the token; this signs
+  // the app out too, so RequireAuth sends the learner to /login instead of
+  // leaving them on a page where every request keeps failing.
+  useEffect(
+    () =>
+      onUnauthorized(() => {
+        setLearner(null);
+        setStatus("signedOut");
+      }),
+    [],
+  );
 
   function login(me: Learner) {
     setLearner(me);
