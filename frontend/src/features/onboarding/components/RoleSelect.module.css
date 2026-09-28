@@ -1,0 +1,47 @@
+.wrap {
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.heading {
+  margin: 0;
+  font-size: 18px;
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.select {
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+/* Touch devices: iOS Safari zooms the whole page when a form control under
+   16px is focused, and never zooms back out — so no smaller than 16px. */
+@media (pointer: coarse) {
+  .select {
+    font-size: 16px;
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 767px) {
+  .actions > button {
+    width: 100%;
+  }
+}

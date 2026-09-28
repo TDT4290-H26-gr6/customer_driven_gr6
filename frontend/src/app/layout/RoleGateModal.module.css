@@ -1,0 +1,38 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  /* Above the header/sidebar too — this blocks the whole app, not just the
+     routed page. Deliberately a fixed dark scrim regardless of theme, like
+     any modal backdrop (see the "Theming" note in
+     context/frontend-structure.md for when a hardcoded color is fine). */
+  background: rgba(15, 23, 42, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 32px;
+  /* A phone in landscape is shorter than the dialog — scroll inside it
+     rather than clipping the confirm button off-screen. */
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+@media (max-width: 767px) {
+  .backdrop {
+    padding: 16px;
+  }
+
+  .dialog {
+    padding: 24px 20px;
+  }
+}

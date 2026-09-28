@@ -1,0 +1,83 @@
+/// Identity module — accounts, Google sign-in, the persona role a learner
+/// picks during onboarding, and the role visibility allow-lists (which
+/// sections / competences a role may see). Tables: identity_*.
+
+model Learner {
+  id                            String   @id @default(uuid())
+  email                         String   @unique
+  name                          String?
+  googleSubId                   String?  @unique // "sub" claim from Google's ID token
+  roleId                        String? // chosen persona (identity_role)
+  userRole                      Role?    @relation(fields: [roleId], references: [id])
+  hasCompletedInitialAssessment Boolean  @default(false) // true once every visible question in the first SAT instance is answered
+  createdAt                     DateTime @default(now())
+  updatedAt                     DateTime @updatedAt
+
+  satInstances     SatInstance[]
+  profile          LearnerProfile?
+  recommendations  JourneyRecommendation[]
+  sectionGrants    RoleSection[]
+  competenceGrants RoleCompetence[]
+
+  @@map("identity_learner")
+}
+
+/// Persona a learner selects after signing in, before starting a journey. Also
+/// the subject of the visibility allow-lists below: a role only sees what it
+/// has been granted.
+model Role {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  learners         Learner[]
+  sectionGrants    RoleSection[]
+  competenceGrants RoleCompetence[]
+
+  @@map("identity_role")
+}
+
+/// Learner-stated context (SAT23): goals, background, years of experience.
+/// Collected so a future recommendation rule can factor in what the learner
+/// says they want, not just their measured weakest area — data only for
+/// now, recommendJourney() doesn't read this yet (see CD-28).
+model LearnerProfile {
+  id                String   @id @default(uuid())
+  learnerId         String   @unique
+  learner           Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  goals             String?  @db.Text
+  background        String?  @db.Text
+  yearsOfExperience Int?
+  updatedAt         DateTime @updatedAt
+
+  @@map("identity_learner_profile")
+}
+
+/// Allow-list: this role may see the questions inside this section's modules.
+model RoleSection {
+  roleId             String
+  role               Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  sectionId          String
+  section            Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  grantedByLearnerId String?
+  grantedBy          Learner? @relation(fields: [grantedByLearnerId], references: [id], onDelete: SetNull)
+  createdAt          DateTime @default(now())
+
+  @@id([roleId, sectionId])
+  @@map("identity_role_section")
+}
+
+/// Allow-list: this role may see the questions that assess this competence.
+model RoleCompetence {
+  roleId             String
+  role               Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  competenceId       String
+  competence         Competence @relation(fields: [competenceId], references: [id], onDelete: Cascade)
+  grantedByLearnerId String?
+  grantedBy          Learner?   @relation(fields: [grantedByLearnerId], references: [id], onDelete: SetNull)
+  createdAt          DateTime   @default(now())
+
+  @@id([roleId, competenceId])
+  @@map("identity_role_competence")
+}

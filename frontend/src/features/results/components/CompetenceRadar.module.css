@@ -1,0 +1,86 @@
+.chart {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  overflow: visible;
+}
+
+/* The viewBox is sized to fit the wrapped names, so it's wider than tall —
+   let it fill the card rather than the square chart's cap. */
+.chartWithLabels {
+  max-width: 100%;
+}
+
+.ring {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.axis {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.area {
+  fill: var(--color-primary);
+  fill-opacity: 0.25;
+  stroke: var(--color-primary);
+  stroke-width: 2;
+}
+
+.point {
+  fill: var(--color-primary);
+}
+
+.label {
+  fill: var(--color-text-muted);
+}
+
+.empty {
+  color: var(--color-text-muted);
+}
+
+/* Compact (mobile) mode: numbered axis tips + a legend list below. */
+.tipNumber {
+  fill: var(--color-primary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.legend {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.legendIndex {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.legendName {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text);
+}
