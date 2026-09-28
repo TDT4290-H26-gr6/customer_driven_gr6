@@ -50,16 +50,29 @@ export function Sidebar({ collapsed, onToggleCollapsed, layout = "side" }: Props
         ))}
       </nav>
 
-      {/* Always anchored to the sidebar's right edge, no label — icon only. */}
+      {/* Pinned to the sidebar's own bottom-right corner, whatever the nav's
+          length — same collapse toggle as the header's icon button, as a
+          chevron instead of an icon-swap: it points right (there's more to
+          reveal in that direction — the labels sit to the right of the
+          icons) while collapsed, and flips to point left (tuck it back
+          away) once labels are showing, so the glyph itself says what a
+          click does, in the same direction the rail actually resizes. The
+          native `title` carries the same explanation on hover, since
+          there's no text label left on the button to read. */}
       {!isBottom && (
         <button
           type="button"
-          className={styles.toggle}
+          className={styles.labelToggle}
           onClick={onToggleCollapsed}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Show labels next to the icons" : "Hide labels, icons only"}
+          aria-label={collapsed ? "Show labels" : "Hide labels"}
           aria-expanded={!collapsed}
         >
-          <ChevronIcon className={collapsed ? styles.chevronCollapsed : styles.chevronExpanded} />
+          {/* Right-pointing by default (per its own doc comment, meant to be
+              rotated via CSS) — that's exactly "expand rightward", so it
+              needs no rotation while collapsed; flipped 180deg to point
+              left once expanded. */}
+          <ChevronIcon style={{ transform: collapsed ? undefined : "rotate(180deg)" }} />
         </button>
       )}
     </aside>

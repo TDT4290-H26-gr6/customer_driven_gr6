@@ -116,3 +116,26 @@ export function MessageIcon(props: IconProps) {
     </svg>
   );
 }
+
+type SidebarToggleIconProps = IconProps & {
+  /**
+   * Whether the sidebar is currently showing. The left panel is drawn solid
+   * when it is (there's a rail to hide) and left hollow when it isn't (there
+   * isn't), so the icon depicts the *current* state rather than a generic
+   * toggle glyph — clicking always does the opposite of what's drawn.
+   */
+  open?: boolean;
+};
+
+/** A rectangle with a divider near the left edge — the conventional "toggle sidebar" glyph. */
+export function SidebarToggleIcon({ open = true, ...props }: SidebarToggleIconProps) {
+  return (
+    <svg {...defaults} {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="9" y1="4" x2="9" y2="20" />
+      {open && (
+        <rect x="4.3" y="5.3" width="4" height="13.4" rx="1" fill="currentColor" stroke="none" />
+      )}
+    </svg>
+  );
+}

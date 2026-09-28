@@ -1,6 +1,8 @@
 .sidebar {
   position: relative;
   flex: none;
+  display: flex;
+  flex-direction: column;
   width: var(--sidebar-width);
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
@@ -50,36 +52,43 @@
   text-overflow: ellipsis;
 }
 
-/* Pinned to the sidebar's own right edge — its position on that edge never
-   moves, whether the panel is expanded or collapsed. */
-.toggle {
-  position: absolute;
-  top: 20px;
-  right: -14px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
+/* Pushed to the bottom of the sidebar's own box by margin-top:auto (the
+   sidebar is a flex column filling .body's full height — see AppShell), and
+   to its right edge by align-self, regardless of how many nav items sit
+   above it or whether the panel is expanded or collapsed. */
+.labelToggle {
+  margin-top: auto;
+  align-self: flex-end;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  z-index: 1;
 }
 
-.toggle:hover {
+.labelToggle:hover {
+  background: var(--color-bg);
   color: var(--color-text);
 }
 
-.chevronExpanded {
-  transform: rotate(180deg);
+/* The chevron itself flips via a CSS transform (see ChevronIcon); give that
+   flip the same easing as the rail's own width transition instead of
+   snapping instantly. */
+.labelToggle svg {
+  transition: transform 0.18s ease;
 }
 
-.chevronCollapsed {
-  transform: rotate(0deg);
+@media (pointer: coarse) {
+  .labelToggle {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 /* Mobile (< 768px): AppShell renders <Sidebar layout="bottom"> after <main>,

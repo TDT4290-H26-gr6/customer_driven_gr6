@@ -13,6 +13,48 @@ docs describe the result; this one describes the move.
 
 ---
 
+## Update — 2026-09-28: a full-bank, no-guessing initial assessment
+
+**Branch:** `CD-8-Present-no-more-than-50-questions-to-each-user`
+
+- **Dataset grown 5×2×3 → 5×4×3:** the fake food dataset now has 20
+  competences (4 per section, up from 10) and 60 questions (up from 30), 3 per
+  competence. 6 sources → 26: every competence gets its own primary source
+  plus 1–2 secondary ones, and every source (old and new) links to a
+  placeholder Moodle course (`moodleCourseId` in the seed JSON, resolved to a
+  URL by `MOODLE_BASE_URL` in `fakeFoodSeed.ts`).
+- **Everyone's initial assessment is now the whole bank, regardless of role.**
+  `isInitialAssessment` (no completed `SatInstance` yet) makes
+  `visibleQuestionFilter` return "everything" instead of the role allow-list
+  until a learner finishes their first run; the role filter applies to every
+  run after that. The two score views (`getLatestCompetenceScores`,
+  `getLatestSectionCompetenceScores`) no longer re-apply the _current_ role
+  filter at all — they show whatever a past instance actually covered.
+- **A no-penalty "I don't know" choice on every question.** Appended by
+  `assessment.pie.ts` to every generated PIE model (not authored per
+  question); selecting it always scores `0/0` for that question, checked in
+  `scoreAnswer` before any type-specific scoring, so it overrides other ticks
+  on a `multi_choice` too. It's still a real choice, so it still counts as
+  _answered_.
+- **Dashboard overview is now per-section, not per-competence.** 20
+  competences don't fit as one radar's axes; `ResultsPage` now shows 5 section
+  axes (`results/sectionAxes.ts` sums each section's competences into one
+  score), and "More details" (`SectionDetailsPage`, pre-existing) is now the
+  only per-competence view. `GET /competence-scores` and the frontend's
+  `getCompetenceScores` are removed as now-unused (the by-section endpoint
+  covers both views).
+- **The real open-science seed is dormant, not deleted.**
+  `openScienceSeed.ts` / `aios_open_science_seed.json` are untouched; nothing
+  calls `seedOpenScienceContent()` any more. See backend-structure.md §11 for
+  how to re-enable it.
+- CD-8's "no more than 50 questions" cap is **not implemented** — the team
+  agreed 60 (5×4×3) was fine instead.
+
+Existing databases need the same reset as before (see backend-structure.md
+§11, "Resetting the database") — the new dataset only loads into an empty one.
+
+---
+
 ## 1. What changed
 
 ### Database

@@ -2,7 +2,6 @@ import { buildServer } from "./server";
 import { config } from "./config";
 import { prisma } from "./db/prisma";
 import { seedIfEmpty } from "./seed/fakeFoodSeed";
-import { seedOpenScienceContent } from "./seed/openScienceSeed";
 
 /** How long in-flight requests get to finish on shutdown before we exit anyway. */
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -30,16 +29,10 @@ async function main() {
     console.error("Startup seeding failed:", err);
   }
 
-  // The real open-science content (CD-74) is seeded unconditionally, every
-  // boot — every insert skips rows that already exist, so this is a no-op
-  // once it has run, and it fills in the real content even on a database
-  // that already has the fake dataset (or came from before this seed
-  // existed).
-  try {
-    await seedOpenScienceContent();
-  } catch (err) {
-    console.error("Startup seeding of open-science content failed:", err);
-  }
+  // The real open-science seed (CD-74, seed/openScienceSeed.ts) is currently
+  // dormant: everyone's initial assessment is the fake dataset for now (see
+  // assessment.service.ts's isInitialAssessment). To bring the real content
+  // back, import seedOpenScienceContent and call it here again.
 
   const server = buildServer().listen(config.port, () => {
     console.log(`AIOS backend listening on http://localhost:${config.port}`);
