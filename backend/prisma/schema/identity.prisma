@@ -18,6 +18,7 @@ model Learner {
   recommendations  JourneyRecommendation[]
   sectionGrants    RoleSection[]
   competenceGrants RoleCompetence[]
+  feedback         Feedback[]
 
   @@map("identity_learner")
 }

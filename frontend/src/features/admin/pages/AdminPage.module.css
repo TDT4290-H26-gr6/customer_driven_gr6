@@ -14,6 +14,12 @@
   gap: 12px;
 }
 
+.titleActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .heading {
   margin: 0;
   font-size: 24px;
