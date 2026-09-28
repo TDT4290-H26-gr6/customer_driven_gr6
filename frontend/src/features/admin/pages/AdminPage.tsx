@@ -101,9 +101,14 @@ export function AdminPage() {
     <div className={styles.page}>
       <div className={styles.titleRow}>
         <h1 className={styles.heading}>Admin mode</h1>
-        <Button variant="secondary" onClick={() => navigate("/results")}>
-          Exit admin mode
-        </Button>
+        <div className={styles.titleActions}>
+          <Button variant="secondary" onClick={() => navigate("/admin/feedback")}>
+            View tester feedback
+          </Button>
+          <Button variant="secondary" onClick={() => navigate("/results")}>
+            Exit admin mode
+          </Button>
+        </div>
       </div>
       <p className={styles.subheading}>
         Choose what each role can see. A role sees a question if it&apos;s granted the

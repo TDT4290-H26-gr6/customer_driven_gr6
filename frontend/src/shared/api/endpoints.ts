@@ -14,6 +14,7 @@ export const endpoints = {
   sources: "/sources",
   learningJourneys: "/learning-journeys",
   learningJourneyRecommendation: "/learning-journeys/recommendation",
+  feedback: "/feedback",
   assessment: {
     progress: "/assessment/progress",
     responses: "/assessment/responses",
@@ -22,6 +23,7 @@ export const endpoints = {
   },
   admin: {
     visibility: "/admin/visibility",
+    feedback: "/admin/feedback",
     roleSection: (roleId: string, sectionId: string) =>
       `/admin/roles/${encodeURIComponent(roleId)}/sections/${encodeURIComponent(sectionId)}`,
     roleCompetence: (roleId: string, competenceId: string) =>

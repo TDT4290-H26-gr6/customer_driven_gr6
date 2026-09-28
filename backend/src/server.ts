@@ -10,6 +10,7 @@ import { identityAdminRouter } from "./modules/identity/identity.admin.routes";
 import { assessmentRouter } from "./modules/assessment/assessment.routes";
 import { sourcesRouter } from "./modules/sources/sources.routes";
 import { learningJourneyRouter } from "./modules/learningJourney/learningJourney.routes";
+import { feedbackRouter } from "./modules/feedback/feedback.routes";
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
@@ -59,6 +60,7 @@ export function buildServer() {
   app.use(assessmentRouter);
   app.use(sourcesRouter);
   app.use(learningJourneyRouter);
+  app.use(feedbackRouter);
 
   // Unknown paths get JSON like every other error, not Express's HTML page.
   app.use((_req: Request, res: Response) => {
