@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { FeedbackWidget } from "@/features/feedback";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { useLocalStorage } from "@/shared/hooks/useLocalStorage";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
@@ -12,7 +13,8 @@ import styles from "./AppShell.module.css";
 
 /**
  * Authenticated layout: header + nav + routed page. The nav is a collapsible
- * left sidebar on desktop and a bottom tab bar on mobile.
+ * left sidebar on desktop and a bottom tab bar on mobile. A floating
+ * "Feedback" button sits on top of every page while the app is in testing.
  */
 export function AppShell() {
   const { learner } = useAuth();
@@ -63,6 +65,8 @@ export function AppShell() {
             />
           )}
         </div>
+        {/* Inside the inert wrapper: unreachable while the role gate is up. */}
+        <FeedbackWidget />
       </div>
 
       {needsRole && <RoleGateModal />}

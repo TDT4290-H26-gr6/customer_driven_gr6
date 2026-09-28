@@ -24,22 +24,26 @@
      page sideways instead of letting that content scroll/wrap in place. */
   min-width: 0;
   padding: 32px;
+  /* Clear the floating Feedback button so it never covers the end of a page. */
+  padding-bottom: 96px;
   overflow-y: auto;
 }
 
 @media (max-width: 1023px) {
   .main {
     padding: 24px;
+    padding-bottom: 96px;
   }
 }
 
 /* Mobile (< 768px, see shared/lib/breakpoints.ts): the nav is a fixed bottom
    tab bar, so the page needs bottom clearance for it plus the home-indicator
-   inset — otherwise the last piece of content sits underneath it. */
+   inset, plus the Feedback button floating above it — otherwise the last
+   piece of content sits underneath them. */
 @media (max-width: 767px) {
   .main {
     padding: 16px max(16px, env(safe-area-inset-right, 0px))
-      calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 16px)
+      calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 72px)
       max(16px, env(safe-area-inset-left, 0px));
   }
 }

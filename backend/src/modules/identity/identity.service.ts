@@ -55,9 +55,10 @@ export function saveLearnerProfile(learnerId: string, data: LearnerProfileInput)
 /**
  * GDPR account deletion (CD-60). Everything the learner owns — SAT
  * instances/responses/scores, their profile, their journey
- * recommendations, and any grants they made — cascades at the DB level
- * (onDelete: Cascade throughout assessment.prisma/identity.prisma/
- * learningJourney.prisma), so this is just the one delete.
+ * recommendations, any grants they made, and feedback they sent — cascades
+ * at the DB level (onDelete: Cascade throughout assessment.prisma/
+ * identity.prisma/learningJourney.prisma/feedback.prisma), so this is just
+ * the one delete.
  */
 export function deleteLearner(learnerId: string) {
   return prisma.learner.delete({ where: { id: learnerId } });

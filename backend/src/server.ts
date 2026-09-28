@@ -10,6 +10,7 @@ import { identityAdminRouter } from "./modules/identity/identity.admin.routes";
 import { assessmentRouter } from "./modules/assessment/assessment.routes";
 import { sourcesRouter } from "./modules/sources/sources.routes";
 import { learningJourneyRouter } from "./modules/learningJourney/learningJourney.routes";
+import { feedbackRouter } from "./modules/feedback/feedback.routes";
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
@@ -37,6 +38,11 @@ const loginLimiter = rateLimit({
 export function buildServer() {
   const app = express();
 
+  // On the VM, nginx sits in front and forwards the visitor's IP in
+  // X-Forwarded-For. Trust exactly that one hop so the rate limiters key on
+  // the real client instead of lumping everyone under nginx's address.
+  app.set("trust proxy", 1);
+
   // Standard security headers (no sniffing, no framing, etc.) — this API
   // serves JSON only, so helmet's defaults fit as-is.
   app.use(helmet());
@@ -54,6 +60,7 @@ export function buildServer() {
   app.use(assessmentRouter);
   app.use(sourcesRouter);
   app.use(learningJourneyRouter);
+  app.use(feedbackRouter);
 
   // Unknown paths get JSON like every other error, not Express's HTML page.
   app.use((_req: Request, res: Response) => {
