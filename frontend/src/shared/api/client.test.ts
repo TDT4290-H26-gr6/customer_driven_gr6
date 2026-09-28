@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { apiFetch } from "./client";
+import { apiFetch, onUnauthorized } from "./client";
 import { clearToken, getToken } from "./token";
 
 vi.mock("./token", () => ({
@@ -104,4 +104,91 @@ describe("apiFetch", () => {
       message: "Server Error",
     });
   });
+
+  it("uses the `error` field of a JSON error body as the message", async () => {
+    vi.mocked(getToken).mockReturnValue(null);
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse({ error: "Unknown question" }, { status: 404 }),
+    );
+
+    await expect(apiFetch("/assessment/responses")).rejects.toEqual({
+      status: 404,
+      message: "Unknown question",
+    });
+  });
+
+  it("turns a network failure into an ApiError with status 0", async () => {
+    vi.mocked(getToken).mockReturnValue(null);
+    vi.mocked(fetch).mockRejectedValue(new TypeError("Failed to fetch"));
+
+    await expect(apiFetch("/questions")).rejects.toEqual({
+      status: 0,
+      message: "Couldn't reach the server. Check your connection.",
+    });
+  });
+
+  it("times out a request that never answers", async () => {
+    vi.mocked(getToken).mockReturnValue(null);
+    vi.mocked(fetch).mockImplementation(neverAnswers);
+
+    await expect(apiFetch("/questions", { timeoutMs: 10 })).rejects.toEqual({
+      status: 0,
+      message: "The server took too long to respond.",
+    });
+  });
+
+  it("rethrows the caller's own AbortError when the caller cancels", async () => {
+    vi.mocked(getToken).mockReturnValue(null);
+    vi.mocked(fetch).mockImplementation(neverAnswers);
+    const controller = new AbortController();
+
+    const request = apiFetch("/questions", { signal: controller.signal });
+    controller.abort();
+
+    await expect(request).rejects.toMatchObject({ name: "AbortError" });
+  });
+
+  it("turns an unparsable success body into an ApiError", async () => {
+    vi.mocked(getToken).mockReturnValue(null);
+    vi.mocked(fetch).mockResolvedValue(new Response("<html>", { status: 200 }));
+
+    await expect(apiFetch("/questions")).rejects.toEqual({
+      status: 200,
+      message: "The server sent an invalid response.",
+    });
+  });
+
+  it("notifies onUnauthorized listeners on a 401 for a request that carried the token", async () => {
+    vi.mocked(getToken).mockReturnValue("stale-token");
+    vi.mocked(fetch).mockResolvedValue(new Response("", { status: 401 }));
+    const listener = vi.fn();
+    const unsubscribe = onUnauthorized(listener);
+
+    await expect(apiFetch("/auth/me")).rejects.toBeTruthy();
+    unsubscribe();
+
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  it("leaves the session alone on a 401 for a request sent without the token", async () => {
+    vi.mocked(getToken).mockReturnValue("valid-token");
+    vi.mocked(fetch).mockResolvedValue(new Response("", { status: 401 }));
+    const listener = vi.fn();
+    const unsubscribe = onUnauthorized(listener);
+
+    await expect(apiFetch("/auth/google", { auth: false })).rejects.toBeTruthy();
+    unsubscribe();
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(clearToken).not.toHaveBeenCalled();
+  });
 });
+
+/** A fetch that only settles when its signal aborts — like a server that never answers. */
+function neverAnswers(_url: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  return new Promise((_resolve, reject) => {
+    init?.signal?.addEventListener("abort", () =>
+      reject(new DOMException("Aborted", "AbortError")),
+    );
+  });
+}

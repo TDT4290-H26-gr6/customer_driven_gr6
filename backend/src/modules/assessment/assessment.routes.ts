@@ -1,7 +1,9 @@
 import { Router } from "express";
+import type { Prisma } from "@prisma/client";
 import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
 import { requireRole } from "../../middleware/requireRole";
 import { asyncHandler } from "../../lib/asyncHandler";
+import { requireObject, requireString } from "../../lib/validate";
 import {
   completeActiveInstance,
   getLatestCompetenceScores,
@@ -37,11 +39,12 @@ assessmentRouter.post(
   requireAuth,
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
-    const { questionId, answer } = req.body ?? {};
-    if (!questionId || answer === undefined) {
-      return res.status(400).json({ error: "Missing questionId or answer" });
-    }
-    await saveResponse(req.learnerId!, questionId, answer);
+    const questionId = requireString(req.body?.questionId, "questionId");
+    // The frontend's PieAnswer wrapper ({ session, complete }) — always an object.
+    const answer = requireObject(req.body?.answer, "answer") as Prisma.InputJsonObject;
+
+    const saved = await saveResponse(req.learnerId!, questionId, answer);
+    if (!saved) return res.status(404).json({ error: "Unknown question" });
     res.status(204).end();
   }),
 );

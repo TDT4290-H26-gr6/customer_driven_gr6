@@ -242,4 +242,32 @@ describe("recommendJourney", () => {
 
     expect(mockPrisma.journeyRecommendation.create).toHaveBeenCalledOnce();
   });
+
+  it("logs only once when two requests for the same learner arrive at the same time", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValue({ id: "instance-1" } as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceId: "weak", score: 1, maxScore: 5 },
+    ] as never);
+    mockPrisma.journeySection.findMany.mockResolvedValue([
+      { journeyId: "journey-1", coverageLevel: "M" },
+    ] as never);
+    mockPrisma.learningJourney.findMany.mockResolvedValue([
+      { id: "journey-1", name: "Journey A" },
+    ] as never);
+    // A tiny stand-in for the table: what create writes, findFirst reads back.
+    let logged: { journeyId: string } | null = null;
+    mockPrisma.journeyRecommendation.findFirst.mockImplementation((async () => logged) as never);
+    mockPrisma.journeyRecommendation.create.mockImplementation((async ({
+      data,
+    }: {
+      data: { journeyId: string };
+    }) => {
+      logged = { journeyId: data.journeyId };
+      return logged;
+    }) as never);
+
+    await Promise.all([recommendJourney("learner-1"), recommendJourney("learner-1")]);
+
+    expect(mockPrisma.journeyRecommendation.create).toHaveBeenCalledOnce();
+  });
 });

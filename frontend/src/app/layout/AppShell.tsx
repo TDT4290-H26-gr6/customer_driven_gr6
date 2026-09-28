@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { useLocalStorage } from "@/shared/hooks/useLocalStorage";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import { MOBILE_QUERY } from "@/shared/lib/breakpoints";
@@ -19,6 +20,7 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useLocalStorage("aios.sidebarCollapsed", false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const appRef = useRef<HTMLDivElement>(null);
+  const { pathname } = useLocation();
 
   // `inert` (not just visually covered) while the role gate is up: blocks
   // clicks AND removes everything underneath from the tab order, so there's
@@ -45,7 +47,13 @@ export function AppShell() {
               link above jumps here so keyboard focus actually moves (not just
               the visible scroll position). */}
           <main id="main-content" tabIndex={-1} className={styles.main}>
-            {needsRole ? null : <Outlet />}
+            {/* A page that crashes while rendering shows a fallback here while
+                the header and nav keep working; navigating away resets it. */}
+            {needsRole ? null : (
+              <ErrorBoundary resetKey={pathname}>
+                <Outlet />
+              </ErrorBoundary>
+            )}
           </main>
           {isMobile && (
             <Sidebar

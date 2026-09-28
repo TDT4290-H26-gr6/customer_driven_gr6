@@ -8,9 +8,12 @@ import seedData from "./data/aios_fake_food_seed.json";
 // (sat_instance, response, competence_score, recommendation), so a freshly
 // signed-in learner starts with all questions unanswered.
 //
-// Runs automatically at backend start when the database has no questions
-// (see index.ts) and by hand via `npx prisma db seed`. Every insert skips rows
-// that already exist, so it is safe to run again.
+// Runs automatically at backend start when this dataset's questions are
+// missing (see seedIfEmpty and index.ts) and by hand via `npx prisma db seed`. Every insert skips rows
+// that already exist, so it is safe to run again. The whole load is one
+// transaction: if any table fails, nothing is kept — otherwise a failure
+// after the questions went in would leave the rest (journeys, grants)
+// missing for good, since seedIfEmpty would never run again.
 
 type Row = Record<string, unknown>;
 
@@ -29,7 +32,14 @@ function table<T>(name: string, map: (row: Row) => Row = (row) => row): T[] {
   return (tables[name] ?? []).map((row) => map(withDates(row))) as unknown as T[];
 }
 
-export async function seedFakeFood() {
+/** Generous: the default 5 s interactive-transaction timeout is too short for the full dataset. */
+const SEED_TIMEOUT_MS = 60_000;
+
+export function seedFakeFood() {
+  return prisma.$transaction(seedTables, { timeout: SEED_TIMEOUT_MS, maxWait: SEED_TIMEOUT_MS });
+}
+
+async function seedTables(tx: Prisma.TransactionClient) {
   const counts: Record<string, number> = {};
   const insert = async (name: string, run: () => Promise<{ count: number }>) => {
     counts[name] = (await run()).count;
@@ -37,25 +47,25 @@ export async function seedFakeFood() {
 
   // Order matters: a table is inserted only after every table it points at.
   await insert("source", () =>
-    prisma.source.createMany({
+    tx.source.createMany({
       data: table<Prisma.SourceCreateManyInput>("aios.sources.source"),
       skipDuplicates: true,
     }),
   );
   await insert("role", () =>
-    prisma.role.createMany({
+    tx.role.createMany({
       data: table<Prisma.RoleCreateManyInput>("aios.identity.role"),
       skipDuplicates: true,
     }),
   );
   await insert("competence", () =>
-    prisma.competence.createMany({
+    tx.competence.createMany({
       data: table<Prisma.CompetenceCreateManyInput>("aios.assessment.competence"),
       skipDuplicates: true,
     }),
   );
   await insert("competence_secondary_source", () =>
-    prisma.competenceSecondarySource.createMany({
+    tx.competenceSecondarySource.createMany({
       data: table<Prisma.CompetenceSecondarySourceCreateManyInput>(
         "aios.assessment.competence_secondary_source",
       ),
@@ -63,19 +73,19 @@ export async function seedFakeFood() {
     }),
   );
   await insert("section", () =>
-    prisma.section.createMany({
+    tx.section.createMany({
       data: table<Prisma.SectionCreateManyInput>("aios.assessment.section"),
       skipDuplicates: true,
     }),
   );
   await insert("section_module", () =>
-    prisma.sectionModule.createMany({
+    tx.sectionModule.createMany({
       data: table<Prisma.SectionModuleCreateManyInput>("aios.assessment.section_module"),
       skipDuplicates: true,
     }),
   );
   await insert("section_module_secondary_competence", () =>
-    prisma.sectionModuleSecondaryCompetence.createMany({
+    tx.sectionModuleSecondaryCompetence.createMany({
       data: table<Prisma.SectionModuleSecondaryCompetenceCreateManyInput>(
         "aios.assessment.section_module_secondary_competence",
       ),
@@ -83,7 +93,7 @@ export async function seedFakeFood() {
     }),
   );
   await insert("question", () =>
-    prisma.question.createMany({
+    tx.question.createMany({
       data: table<Prisma.QuestionCreateManyInput>("aios.assessment.question", (row) => ({
         ...row,
         // The seed authors questions in a simple shape; the app stores (and
@@ -98,25 +108,25 @@ export async function seedFakeFood() {
     }),
   );
   await insert("journey", () =>
-    prisma.learningJourney.createMany({
+    tx.learningJourney.createMany({
       data: table<Prisma.LearningJourneyCreateManyInput>("aios.learningJourney.journey"),
       skipDuplicates: true,
     }),
   );
   await insert("journey_section", () =>
-    prisma.journeySection.createMany({
+    tx.journeySection.createMany({
       data: table<Prisma.JourneySectionCreateManyInput>("aios.learningJourney.journey_section"),
       skipDuplicates: true,
     }),
   );
   await insert("learning_module", () =>
-    prisma.learningModule.createMany({
+    tx.learningModule.createMany({
       data: table<Prisma.LearningModuleCreateManyInput>("aios.learningJourney.learning_module"),
       skipDuplicates: true,
     }),
   );
   await insert("learner", () =>
-    prisma.learner.createMany({
+    tx.learner.createMany({
       data: table<Prisma.LearnerCreateManyInput>("aios.identity.learner", (row) => ({
         ...row,
         hasCompletedInitialAssessment: Boolean(row.hasCompletedInitialAssessment),
@@ -125,13 +135,13 @@ export async function seedFakeFood() {
     }),
   );
   await insert("role_section", () =>
-    prisma.roleSection.createMany({
+    tx.roleSection.createMany({
       data: table<Prisma.RoleSectionCreateManyInput>("aios.identity.role_section"),
       skipDuplicates: true,
     }),
   );
   await insert("role_competence", () =>
-    prisma.roleCompetence.createMany({
+    tx.roleCompetence.createMany({
       data: table<Prisma.RoleCompetenceCreateManyInput>("aios.identity.role_competence"),
       skipDuplicates: true,
     }),
@@ -140,9 +150,15 @@ export async function seedFakeFood() {
   return counts;
 }
 
-/** Seeds only when the question bank is empty — a fresh database. Returns whether it seeded. */
+/**
+ * Seeds only when none of this dataset's own questions are in the database
+ * yet. Deliberately not "the question bank is empty": the open-science seed
+ * (openScienceSeed.ts) inserts real questions on every boot, so a fake load
+ * that failed once would otherwise never be retried. Returns whether it seeded.
+ */
 export async function seedIfEmpty() {
-  if ((await prisma.question.count()) > 0) return false;
+  const fakeQuestionIds = (tables["aios.assessment.question"] ?? []).map((row) => String(row.id));
+  if ((await prisma.question.count({ where: { id: { in: fakeQuestionIds } } })) > 0) return false;
   await seedFakeFood();
   return true;
 }

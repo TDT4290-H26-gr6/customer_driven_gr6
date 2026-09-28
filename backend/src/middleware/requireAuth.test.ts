@@ -87,4 +87,43 @@ describe("requireAuth", () => {
     expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
   });
+
+  it("401s for a correctly signed token with no learnerId", () => {
+    const token = jwt.sign({ email: "someone@example.com" }, config.jwtSecret);
+    const req = mockReq(`Bearer ${token}`);
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireAuth(req, res as never, next);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("doesn't turn an error thrown downstream of next() into a 401", () => {
+    const token = jwt.sign({ learnerId: "learner-123" }, config.jwtSecret);
+    const req = mockReq(`Bearer ${token}`);
+    const res = mockRes();
+    const downstreamError = new Error("route handler bug");
+    const next = vi.fn(() => {
+      throw downstreamError;
+    });
+
+    // The route's own error must surface (for the error handler), not be
+    // swallowed and reported as a bad token.
+    expect(() => requireAuth(req, res as never, next)).toThrow(downstreamError);
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it("401s for a token signed with an algorithm other than HS256", () => {
+    const token = jwt.sign({ learnerId: "learner-123" }, config.jwtSecret, { algorithm: "HS512" });
+    const req = mockReq(`Bearer ${token}`);
+    const res = mockRes();
+    const next = vi.fn();
+
+    requireAuth(req, res as never, next);
+
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
+  });
 });
