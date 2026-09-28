@@ -37,6 +37,11 @@ const loginLimiter = rateLimit({
 export function buildServer() {
   const app = express();
 
+  // On the VM, nginx sits in front and forwards the visitor's IP in
+  // X-Forwarded-For. Trust exactly that one hop so the rate limiters key on
+  // the real client instead of lumping everyone under nginx's address.
+  app.set("trust proxy", 1);
+
   // Standard security headers (no sniffing, no framing, etc.) — this API
   // serves JSON only, so helmet's defaults fit as-is.
   app.use(helmet());
