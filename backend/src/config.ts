@@ -65,10 +65,30 @@ function adminEmails(): string[] | "everyone" {
   return "everyone";
 }
 
+/**
+ * The NTNU IDUN LLM (OpenAI-compatible API) behind the AI advice on the
+ * results page. Optional: with no LLM_API_KEY the feature is simply off, so
+ * local development and CI don't need a key. Only reachable from NTNU's
+ * network or VPN.
+ */
+function llm() {
+  const apiKey = process.env.LLM_API_KEY;
+  if (!apiKey || isPlaceholder(apiKey)) {
+    console.warn("LLM_API_KEY is not set — AI advice on the results page is turned off.");
+    return null;
+  }
+  return {
+    apiKey,
+    baseUrl: (process.env.LLM_BASE_URL || "https://llm.hpc.ntnu.no/v1").replace(/\/+$/, ""),
+    model: process.env.LLM_MODEL || "openai/gpt-oss-120b",
+  };
+}
+
 export const config = {
   port: port("BACKEND_PORT", 4000),
   jwtSecret: required("JWT_SECRET", "dev-secret-change-me"),
   googleClientId: required("GOOGLE_CLIENT_ID", ""),
   corsOrigins: corsOrigins(),
   adminEmails: adminEmails(),
+  llm: llm(),
 };

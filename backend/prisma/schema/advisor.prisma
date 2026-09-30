@@ -1,0 +1,20 @@
+/// Advisor module — AI-written advice shown on the results page. It adds to
+/// the score-based journey recommendation (learningJourney) and explains it;
+/// it never replaces it. Generated once per completed SAT instance by the
+/// NTNU IDUN LLM and stored, so revisiting the page doesn't call the LLM
+/// again. Tables: advisor_*.
+
+model Advice {
+  id            String      @id @default(uuid())
+  satInstanceId String      @unique
+  satInstance   SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
+  summary       String      @db.Text
+  /// The recommended next steps, resolved when generated so later catalogue
+  /// edits don't rewrite past advice:
+  /// [{ kind: "module" | "source", id, title, url: string | null, reason }]
+  steps         Json
+  model         String // which LLM wrote it, e.g. "openai/gpt-oss-120b"
+  createdAt     DateTime    @default(now())
+
+  @@map("advisor_advice")
+}

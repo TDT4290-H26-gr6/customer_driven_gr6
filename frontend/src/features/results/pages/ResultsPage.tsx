@@ -12,14 +12,17 @@ import { sectionAxes } from "../sectionAxes";
 import type { SectionCompetenceScores } from "../types";
 import { RecommendedJourneyCard, getRecommendedJourney } from "@/features/learningJourney";
 import type { LearningJourney } from "@/features/learningJourney";
+import { AdviceCard, getAdvice } from "@/features/advisor";
+import type { AdviceState } from "@/features/advisor";
 import styles from "./ResultsPage.module.css";
 
 /**
  * The main dashboard: an overview radar with one axis per section (each
  * rolling up that section's own competences — see sectionAxes.ts; a section
  * has too many competences to chart individually here) + entry point into
- * the assessment. The page remounts on every visit, so retaking the SAT and
- * returning here always fetches the fresh scores.
+ * the assessment, the score-based journey recommendation, and AI advice that
+ * explains it. The page remounts on every visit, so retaking the SAT and
+ * returning here always fetches the fresh scores (and new advice).
  */
 export function ResultsPage() {
   const { learner } = useAuth();
@@ -28,6 +31,8 @@ export function ResultsPage() {
   const [loadFailed, setLoadFailed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const [journey, setJourney] = useState<LearningJourney | null>(null);
+  // null: no advice to show (no completed assessment, or the feature is off).
+  const [advice, setAdvice] = useState<AdviceState | null>({ status: "loading" });
 
   useEffect(() => {
     getSectionCompetenceScores()
@@ -39,6 +44,11 @@ export function ResultsPage() {
     getRecommendedJourney()
       .then(setJourney)
       .catch(() => setJourney(null));
+    // Slower than the rest (an LLM call the first time), so it fills in on
+    // its own instead of holding up the page.
+    getAdvice()
+      .then((loaded) => setAdvice(loaded ? { status: "ready", advice: loaded } : null))
+      .catch(() => setAdvice({ status: "unavailable" }));
   }, []);
 
   if (sections === null) {
@@ -78,6 +88,8 @@ export function ResultsPage() {
       </div>
 
       {journey && <RecommendedJourneyCard journey={journey} />}
+
+      {advice && <AdviceCard state={advice} />}
 
       <Button className={styles.cta} onClick={() => navigate("/assessment")}>
         Assess yourself

@@ -14,6 +14,7 @@ export const endpoints = {
   learningJourneys: "/learning-journeys",
   learningJourneyRecommendation: "/learning-journeys/recommendation",
   feedback: "/feedback",
+  advice: "/advice",
   assessment: {
     progress: "/assessment/progress",
     responses: "/assessment/responses",
