@@ -5,6 +5,8 @@ import styles from "./WelcomeScreen.module.css";
 
 type Props = {
   name?: string;
+  /** The learner started the assessment and left before finishing it. */
+  hasOngoing?: boolean;
   onStart: () => void;
 };
 
@@ -16,7 +18,7 @@ const SEEN_KEY = "aios.welcomeSeen";
  * shown in a session (sessionStorage, not localStorage — it should replay
  * next time the learner signs in), then stays static on later visits.
  */
-export function WelcomeScreen({ name, onStart }: Props) {
+export function WelcomeScreen({ name, hasOngoing = false, onStart }: Props) {
   const [hasSeen, setHasSeen] = useSessionStorage(SEEN_KEY, false);
   const [animate] = useState(() => !hasSeen);
 
@@ -30,11 +32,12 @@ export function WelcomeScreen({ name, onStart }: Props) {
         <p className={styles.eyebrow}>Welcome{name ? `, ${name}` : ""}</p>
         <h1 className={styles.heading}>Let&apos;s find out where you stand.</h1>
         <p className={styles.subheading}>
-          You haven&apos;t taken the self-assessment yet — it only takes a few minutes and gives you
-          a personal breakdown of your skills.
+          {hasOngoing
+            ? "You've started the self-assessment — your answers are saved, so you can pick up where you left off."
+            : "You haven't taken the self-assessment yet — it only takes a few minutes and gives you a personal breakdown of your skills."}
         </p>
         <Button className={styles.cta} onClick={onStart}>
-          Take self assessment
+          {hasOngoing ? "Continue assessment" : "Take self assessment"}
         </Button>
       </div>
     </div>

@@ -297,6 +297,20 @@ export async function completeActiveInstance(learnerId: string) {
   return active;
 }
 
+/**
+ * Aborts the learner's in-progress SAT: deletes the unfinished instance, and
+ * with it (onDelete: Cascade) every answer saved to it — as if it was never
+ * started. Only ever touches unfinished instances, so completed ones and
+ * their scores can't be deleted through here. No-ops if there isn't one.
+ * Returns how many instances were deleted.
+ */
+export async function discardActiveInstance(learnerId: string) {
+  const { count } = await prisma.satInstance.deleteMany({
+    where: { learnerId, completedAt: null },
+  });
+  return count;
+}
+
 export function getCompetenceScores(satInstanceId: string) {
   return prisma.competenceScore.findMany({
     where: { satInstanceId },

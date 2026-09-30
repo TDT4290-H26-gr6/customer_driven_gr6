@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   completeActiveInstance,
+  discardActiveInstance,
   getLatestCompetenceScores,
   getLatestSectionCompetenceScores,
   getSatHistory,
@@ -19,6 +20,7 @@ vi.mock("../../db/prisma", () => ({
       findMany: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      deleteMany: vi.fn(),
       count: vi.fn(),
     },
     question: { findFirst: vi.fn(), findMany: vi.fn() },
@@ -364,6 +366,19 @@ describe("completeActiveInstance", () => {
 
     expect(result).toBeNull();
     expect(mockPrisma.satInstance.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("discardActiveInstance", () => {
+  it("deletes only the learner's unfinished instances, never a completed one", async () => {
+    mockPrisma.satInstance.deleteMany.mockResolvedValueOnce({ count: 1 });
+
+    const result = await discardActiveInstance("learner-1");
+
+    expect(result).toBe(1);
+    expect(mockPrisma.satInstance.deleteMany).toHaveBeenCalledWith({
+      where: { learnerId: "learner-1", completedAt: null },
+    });
   });
 });
 
