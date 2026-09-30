@@ -12,9 +12,11 @@ import seedData from "./data/aios_open_science_seed.json";
 // are seeded as bare Competence rows only — no section/module/questions have
 // ever been authored for them, in the old schema or this one.
 //
-// Runs on every backend boot (see index.ts) and by hand via
-// `npx prisma db seed`. Every insert skips rows that already exist, so it is
-// safe to run again.
+// Currently DORMANT: neither index.ts nor prisma/seed.ts calls
+// seedOpenScienceContent(); everyone's initial assessment is the fake
+// dataset instead (see assessment.service.ts's isInitialAssessment). Kept
+// here to seed later — call it from either of those two files to re-enable.
+// Every insert skips rows that already exist, so it is safe to run again.
 
 type Row = Record<string, unknown>;
 

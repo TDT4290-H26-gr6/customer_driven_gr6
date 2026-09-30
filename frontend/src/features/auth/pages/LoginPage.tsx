@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { Logo } from "@/shared/components/Logo";
 import { GoogleLoginButton } from "../components/GoogleLoginButton";
 import type { Learner } from "../types";
 import styles from "./LoginPage.module.css";
@@ -23,7 +24,7 @@ export function LoginPage() {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        <h1 className={styles.brand}>AIOS</h1>
+        <Logo className={styles.logo} />
         <p className={styles.tagline}>Assess and grow your AI &amp; open-science skills.</p>
         <GoogleLoginButton onLogin={handleLogin} />
       </div>

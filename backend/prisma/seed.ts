@@ -1,11 +1,11 @@
 import { prisma } from "../src/db/prisma";
 import { seedFakeFood } from "../src/seed/fakeFoodSeed";
-import { seedOpenScienceContent } from "../src/seed/openScienceSeed";
 
-// `npx prisma db seed` — loads the fake dataset and the real open-science
-// content by hand. The backend also does both by itself on start.
-Promise.all([seedFakeFood(), seedOpenScienceContent()])
-  .then(([fake, openScience]) => console.log("Seeded:", { fake, openScience }))
+// `npx prisma db seed` — loads the fake dataset by hand. The backend also
+// does this by itself on start. The real open-science seed
+// (src/seed/openScienceSeed.ts) is currently dormant — see index.ts.
+seedFakeFood()
+  .then((counts) => console.log("Seeded:", counts))
   .catch((err) => {
     console.error(err);
     process.exit(1);

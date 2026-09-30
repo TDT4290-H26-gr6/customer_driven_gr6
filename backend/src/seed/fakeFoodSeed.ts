@@ -19,6 +19,14 @@ type Row = Record<string, unknown>;
 
 const tables = seedData as unknown as Record<string, Row[]>;
 
+// The seed authors a source's Moodle course by id, not a full URL, so the
+// real Moodle base can be swapped in in one place later.
+const MOODLE_BASE_URL = "https://moodle.example.org";
+
+function moodleUrl(courseId: unknown): string {
+  return `${MOODLE_BASE_URL}/course/view.php?id=${courseId}`;
+}
+
 /** The JSON stores timestamps as ISO strings; Prisma wants Dates. */
 function withDates(row: Row): Row {
   const out = { ...row };
@@ -48,7 +56,10 @@ async function seedTables(tx: Prisma.TransactionClient) {
   // Order matters: a table is inserted only after every table it points at.
   await insert("source", () =>
     tx.source.createMany({
-      data: table<Prisma.SourceCreateManyInput>("aios.sources.source"),
+      data: table<Prisma.SourceCreateManyInput>("aios.sources.source", (row) => {
+        const { moodleCourseId, ...rest } = row;
+        return { ...rest, sourceUrl: moodleUrl(moodleCourseId) };
+      }),
       skipDuplicates: true,
     }),
   );
@@ -152,9 +163,11 @@ async function seedTables(tx: Prisma.TransactionClient) {
 
 /**
  * Seeds only when none of this dataset's own questions are in the database
- * yet. Deliberately not "the question bank is empty": the open-science seed
- * (openScienceSeed.ts) inserts real questions on every boot, so a fake load
- * that failed once would otherwise never be retried. Returns whether it seeded.
+ * yet. Deliberately not "the question bank is empty": if the real
+ * open-science seed (openScienceSeed.ts, currently dormant) is ever turned
+ * back on alongside this one, a fake load that failed once should still be
+ * retried rather than mistaken for "already seeded" because real questions
+ * exist. Returns whether it seeded.
  */
 export async function seedIfEmpty() {
   const fakeQuestionIds = (tables["aios.assessment.question"] ?? []).map((row) => String(row.id));

@@ -5,6 +5,7 @@ import { ORDERED_QUESTION_TYPES } from "./assessment.pie";
 import {
   extractDragAndDropBlanks,
   extractMultipleChoiceValues,
+  IDK_VALUE,
   scoreDragAndDrop,
   scoreLikert,
   scoreMultipleChoice,
@@ -28,32 +29,50 @@ function shuffle<T>(items: T[]): T[] {
  * choice keeps its own value/id and correct flag, so this has no effect on
  * scoring (assessment.scoring.ts looks choices up by value/id, never by
  * position) — but ordered scales (likert) and true/false are left alone,
- * since their order is the point, not noise to shuffle.
+ * since their order is the point, not noise to shuffle. The "I don't know"
+ * choice every question carries (IDK_VALUE) is never shuffled in among the
+ * others either — it's held back and always placed last.
  */
 function withShuffledChoices<T extends Pick<Question, "questionType" | "content">>(question: T): T {
   if (ORDERED_QUESTION_TYPES.includes(question.questionType)) return question;
 
-  const content = question.content as { models?: { choices?: unknown[] }[] } | null;
+  const content = question.content as { models?: { choices?: { value?: unknown }[] }[] } | null;
   const models = content?.models;
   const firstModel = models?.[0];
   if (!content || !models || !firstModel?.choices) return question;
 
+  const idk = firstModel.choices.filter((c) => c.value === IDK_VALUE);
+  const rest = firstModel.choices.filter((c) => c.value !== IDK_VALUE);
   const shuffledModels = [
-    { ...firstModel, choices: shuffle(firstModel.choices) },
+    { ...firstModel, choices: [...shuffle(rest), ...idk] },
     ...models.slice(1),
   ];
   return { ...question, content: { ...content, models: shuffledModels } as Prisma.JsonValue };
 }
 
+/** Whether this learner has never finished a SAT instance — their initial assessment is still ahead of them. */
+async function isInitialAssessment(learnerId: string): Promise<boolean> {
+  const completedCount = await prisma.satInstance.count({
+    where: { learnerId, completedAt: { not: null } },
+  });
+  return completedCount === 0;
+}
+
 /**
- * Which questions this learner's role may see: those whose competence has
- * been granted to the role, OR whose module sits in a section granted to the
- * role (identity_role_competence / identity_role_section). A role with no
- * grants sees nothing. Returns null for a learner with no role at all.
+ * Which questions this learner may currently see. Everyone gets the whole
+ * bank for their initial assessment (every section, every competence) —
+ * that's the point of it — regardless of role. Once they've completed at
+ * least one instance, later runs go back to the normal role allow-lists:
+ * those whose competence has been granted to the role, OR whose module sits
+ * in a section granted to the role (identity_role_competence /
+ * identity_role_section). A role with no grants then sees nothing. Returns
+ * null for a learner with no role at all — they can't take anything yet.
  */
 async function visibleQuestionFilter(learnerId: string): Promise<Prisma.QuestionWhereInput | null> {
   const learner = await findLearnerById(learnerId);
   if (!learner?.roleId) return null;
+
+  if (await isInitialAssessment(learnerId)) return {};
 
   const { sectionIds, competenceIds } = await getRoleGrants(learner.roleId);
   return {
@@ -123,9 +142,16 @@ function scoreAnswer(
 
   if (!model.choices) return null;
 
+  const selected = extractMultipleChoiceValues(session, modelId);
+
+  // "I don't know" always zeroes the whole question out — even on a
+  // multi_choice where other boxes were also ticked — rather than scoring it
+  // as a wrong guess.
+  if (selected.includes(IDK_VALUE)) return { score: 0, maxScore: 0 };
+
   if (question.questionType === "likert") {
     const values = model.choices.map((c) => String(c.value));
-    return scoreLikert(values, extractMultipleChoiceValues(session, modelId));
+    return scoreLikert(values, selected);
   }
 
   if (model.choiceMode) {
@@ -133,11 +159,7 @@ function scoreAnswer(
       value: String(c.value),
       correct: Boolean(c.correct),
     }));
-    return scoreMultipleChoice(
-      choices,
-      model.choiceMode,
-      extractMultipleChoiceValues(session, modelId),
-    );
+    return scoreMultipleChoice(choices, model.choiceMode, selected);
   }
 
   return null;
@@ -283,9 +305,13 @@ export function getCompetenceScores(satInstanceId: string) {
 
 /**
  * The learner's most recently completed SAT instance's competence scores —
- * one entry per competence their role can see a question for, in a stable
- * order, so the radar keeps the same axes after every retake. Competences
- * with no scored answers in that instance come back as 0/0.
+ * one entry per competence actually scored in that instance, sorted by name
+ * for a stable axis order. Deliberately not filtered by the learner's
+ * *current* role: an initial assessment covers every competence regardless
+ * of role, and a later retake's own CompetenceScore rows already reflect
+ * whatever was visible when it was taken — re-applying today's role filter
+ * here could hide a competence the learner was genuinely just scored on
+ * (e.g. after a role change since that run).
  */
 export async function getLatestCompetenceScores(learnerId: string) {
   const latest = await prisma.satInstance.findFirst({
@@ -294,24 +320,10 @@ export async function getLatestCompetenceScores(learnerId: string) {
   });
   if (!latest) return [];
 
-  const where = await visibleQuestionFilter(learnerId);
-  if (!where) return [];
-
-  const [competences, scores] = await Promise.all([
-    prisma.competence.findMany({
-      where: { questions: { some: where } },
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
-    getCompetenceScores(latest.id),
-  ]);
-  const scoreByCompetence = new Map(scores.map((s) => [s.competenceId, s]));
-
-  return competences.map((competence) => ({
-    competence: { name: competence.name },
-    score: scoreByCompetence.get(competence.id)?.score ?? 0,
-    maxScore: scoreByCompetence.get(competence.id)?.maxScore ?? 0,
-  }));
+  const scores = await getCompetenceScores(latest.id);
+  return scores
+    .map((s) => ({ competence: { name: s.competence.name }, score: s.score, maxScore: s.maxScore }))
+    .sort((a, b) => a.competence.name.localeCompare(b.competence.name));
 }
 
 /**
@@ -359,7 +371,9 @@ export async function getSatHistory(learnerId: string) {
  * was scored there (0/0 if not). Sections with no scored answers in the
  * instance are left out entirely. Scores are grouped by each question's own section and
  * competence, so a competence appearing in several sections is scored
- * separately in each.
+ * separately in each. Deliberately not filtered by the learner's *current*
+ * role — see the note on getLatestCompetenceScores above; the same reasoning
+ * applies here.
  */
 export async function getLatestSectionCompetenceScores(learnerId: string) {
   const latest = await prisma.satInstance.findFirst({
@@ -368,11 +382,8 @@ export async function getLatestSectionCompetenceScores(learnerId: string) {
   });
   if (!latest) return [];
 
-  const where = await visibleQuestionFilter(learnerId);
-  if (!where) return [];
-
   const responses = await prisma.response.findMany({
-    where: { satInstanceId: latest.id, maxScore: { gt: 0 }, question: where },
+    where: { satInstanceId: latest.id, maxScore: { gt: 0 } },
     select: {
       score: true,
       maxScore: true,
@@ -400,7 +411,7 @@ export async function getLatestSectionCompetenceScores(learnerId: string) {
       section: { select: { id: true, name: true } },
       mainCompetence: { select: { id: true, name: true } },
       secondaryCompetences: { select: { competence: { select: { id: true, name: true } } } },
-      questions: { where, select: { competence: { select: { id: true, name: true } } } },
+      questions: { select: { competence: { select: { id: true, name: true } } } },
     },
   });
 

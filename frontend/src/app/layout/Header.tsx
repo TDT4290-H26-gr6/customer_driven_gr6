@@ -1,11 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { LogoutIcon, SettingsIcon, ShieldIcon } from "@/shared/components/icons";
+import { LogoutIcon, SettingsIcon, ShieldIcon, SidebarToggleIcon } from "@/shared/components/icons";
+import { Logo } from "@/shared/components/Logo";
 import styles from "./Header.module.css";
 
-/** Top bar: brand on the left, an initials avatar + account dropdown on the right. */
-export function Header() {
+type Props = {
+  /**
+   * Whether the desktop side rail is currently hidden entirely, and the
+   * toggle for it — passed only when that rail is the current nav (not on
+   * mobile, which has no such concept). Undefined hides this button
+   * entirely. Distinct from the rail's own bottom-right control, which only
+   * hides its item *labels* (icon-only), not the whole rail.
+   */
+  sidebarHidden?: boolean;
+  onToggleSidebar?: () => void;
+};
+
+/** Top bar: a sidebar show/hide toggle + the AIOS logo on the left, an initials avatar + account dropdown on the right. */
+export function Header({ sidebarHidden, onToggleSidebar }: Props) {
   const { learner, logout } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -51,7 +64,26 @@ export function Header() {
 
   return (
     <header className={styles.header}>
-      <span className={styles.brand}>AIOS</span>
+      <div className={styles.left}>
+        {onToggleSidebar && (
+          // Fixed to the collapsed-sidebar width and centered within it, so
+          // this button sits directly above the sidebar's own icon column
+          // (which is the same width whether the rail is collapsed or not)
+          // instead of just floating next to the logo.
+          <div className={styles.railSlot}>
+            <button
+              type="button"
+              className={styles.sidebarToggle}
+              onClick={onToggleSidebar}
+              aria-label={sidebarHidden ? "Show sidebar" : "Hide sidebar"}
+              aria-expanded={!sidebarHidden}
+            >
+              <SidebarToggleIcon open={!sidebarHidden} />
+            </button>
+          </div>
+        )}
+        <Logo className={styles.logo} />
+      </div>
       {learner && (
         <div className={styles.userMenu} ref={menuRef}>
           <button

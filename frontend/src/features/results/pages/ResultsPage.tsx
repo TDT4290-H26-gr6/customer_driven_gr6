@@ -7,30 +7,33 @@ import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import { MOBILE_QUERY } from "@/shared/lib/breakpoints";
 import { CompetenceRadar } from "../components/CompetenceRadar";
 import { WelcomeScreen } from "../components/WelcomeScreen";
-import { getCompetenceScores } from "../api";
-import type { CompetenceScore } from "../types";
+import { getSectionCompetenceScores } from "../api";
+import { sectionAxes } from "../sectionAxes";
+import type { SectionCompetenceScores } from "../types";
 import { RecommendedJourneyCard, getRecommendedJourney } from "@/features/learningJourney";
 import type { LearningJourney } from "@/features/learningJourney";
 import styles from "./ResultsPage.module.css";
 
 /**
- * The main dashboard: radar chart of the learner's latest SAT competence
- * scores + entry point into the assessment. The page remounts on every visit,
- * so retaking the SAT and returning here always fetches the fresh scores.
+ * The main dashboard: an overview radar with one axis per section (each
+ * rolling up that section's own competences — see sectionAxes.ts; a section
+ * has too many competences to chart individually here) + entry point into
+ * the assessment. The page remounts on every visit, so retaking the SAT and
+ * returning here always fetches the fresh scores.
  */
 export function ResultsPage() {
   const { learner } = useAuth();
   const navigate = useNavigate();
-  const [scores, setScores] = useState<CompetenceScore[] | null>(null);
+  const [sections, setSections] = useState<SectionCompetenceScores[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const [journey, setJourney] = useState<LearningJourney | null>(null);
 
   useEffect(() => {
-    getCompetenceScores()
-      .then(setScores)
+    getSectionCompetenceScores()
+      .then(setSections)
       .catch(() => {
-        setScores([]);
+        setSections([]);
         setLoadFailed(true);
       });
     getRecommendedJourney()
@@ -38,7 +41,7 @@ export function ResultsPage() {
       .catch(() => setJourney(null));
   }, []);
 
-  if (scores === null) {
+  if (sections === null) {
     return (
       <div className={styles.page}>
         <Spinner />
@@ -61,7 +64,7 @@ export function ResultsPage() {
             Couldn&apos;t load your scores right now. Please try again in a moment.
           </p>
         ) : (
-          <CompetenceRadar data={scores} compact={isMobile} />
+          <CompetenceRadar data={sectionAxes(sections)} compact={isMobile} />
         )}
         {!loadFailed && (
           <Button

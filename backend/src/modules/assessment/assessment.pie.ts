@@ -6,6 +6,8 @@
 // The stored `content` is what the frontend feeds the player, and what
 // assessment.service.ts reads back to score answers (choice `value` + `correct`).
 
+import { IDK_LABEL, IDK_VALUE } from "./assessment.scoring";
+
 export type PieContent = {
   elements: Record<string, string>;
   models: unknown[];
@@ -33,14 +35,27 @@ function escapeHtml(text: string): string {
 
 type PieChoice = { value: string; label: string; correct: boolean };
 
+/**
+ * Every question — of any type — gets an extra "I don't know" choice appended
+ * last, so a learner never has to guess (see IDK_VALUE in assessment.scoring.ts).
+ * It's a real PIE choice, so the player's own isComplete() already treats
+ * picking it as answering the question; no frontend change needed.
+ */
 function multipleChoiceContent(
   prompt: string,
   choiceMode: "radio" | "checkbox",
   choices: PieChoice[],
 ): PieContent {
+  const idkChoice: PieChoice = {
+    value: IDK_VALUE,
+    label: `<div>${escapeHtml(IDK_LABEL)}</div>`,
+    correct: false,
+  };
   return {
     elements: { "multiple-choice": "@pie-element/multiple-choice@latest" },
-    models: [{ id: "1", element: "multiple-choice", prompt, choiceMode, choices }],
+    models: [
+      { id: "1", element: "multiple-choice", prompt, choiceMode, choices: [...choices, idkChoice] },
+    ],
     markup: "<multiple-choice id='1'></multiple-choice>",
   };
 }

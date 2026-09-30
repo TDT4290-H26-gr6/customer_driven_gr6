@@ -3,6 +3,15 @@
 // competence-score aggregation (GET /results) land. See backend-structure.md
 // §2 for that rollout.
 
+/**
+ * The choice value/label appended to every question so a learner can decline
+ * to guess. Picking it always scores 0/0 for the whole question (checked in
+ * assessment.service.ts's scoreAnswer, before any type-specific scoring
+ * runs) — genuinely neutral, not a wrong answer.
+ */
+export const IDK_VALUE = "__idk__";
+export const IDK_LABEL = "I don't know";
+
 export type ScorableChoice = { value: string; correct: boolean };
 
 export type ScoreResult = {
