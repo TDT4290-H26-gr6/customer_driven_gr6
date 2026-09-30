@@ -112,6 +112,7 @@ model SatInstance {
 
   responses        Response[]
   competenceScores CompetenceScore[]
+  advice           Advice?
 
   @@unique([learnerId, instanceNum])
   @@map("assessment_sat_instance")

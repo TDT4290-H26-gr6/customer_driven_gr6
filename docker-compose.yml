@@ -28,6 +28,10 @@ services:
       # Optional in development — see .env.example.
       CORS_ORIGIN: ${CORS_ORIGIN:-}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      # AI advice on the results page — off when LLM_API_KEY is unset.
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-}
       # tsx watch's file watcher misses bind-mount changes on Docker
       # Desktop/Windows (native fs events don't cross the mount) — same
       # class of issue the frontend's vite.config.ts already works around
