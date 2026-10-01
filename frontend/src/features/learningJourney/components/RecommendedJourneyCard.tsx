@@ -3,13 +3,17 @@ import styles from "./RecommendedJourneyCard.module.css";
 
 type Props = {
   journey: LearningJourney;
+  /** "selected": the learner chose this journey themselves (CD-33) and it sticks. "recommended" (default): the current score-based pick. */
+  source?: "selected" | "recommended";
 };
 
-/** "What to do next" — the one journey recommended from the learner's latest scores. */
-export function RecommendedJourneyCard({ journey }: Props) {
+/** "What to do next" — the learner's chosen journey, or the one recommended from their latest scores. */
+export function RecommendedJourneyCard({ journey, source = "recommended" }: Props) {
   return (
     <div className={styles.card}>
-      <p className={styles.eyebrow}>Recommended for you</p>
+      <p className={styles.eyebrow}>
+        {source === "selected" ? "Your journey" : "Recommended for you"}
+      </p>
       <h2 className={styles.name}>{journey.name}</h2>
       {journey.description && <p className={styles.description}>{journey.description}</p>}
 

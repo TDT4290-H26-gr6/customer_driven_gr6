@@ -10,8 +10,8 @@ import { WelcomeScreen } from "../components/WelcomeScreen";
 import { getSectionCompetenceScores } from "../api";
 import { sectionAxes } from "../sectionAxes";
 import type { SectionCompetenceScores } from "../types";
-import { RecommendedJourneyCard, getRecommendedJourney } from "@/features/learningJourney";
-import type { LearningJourney } from "@/features/learningJourney";
+import { RecommendedJourneyCard, getCurrentJourney } from "@/features/learningJourney";
+import type { CurrentJourney } from "@/features/learningJourney";
 import { AdviceCard, getAdvice } from "@/features/advisor";
 import type { AdviceState } from "@/features/advisor";
 import styles from "./ResultsPage.module.css";
@@ -30,7 +30,7 @@ export function ResultsPage() {
   const [sections, setSections] = useState<SectionCompetenceScores[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
-  const [journey, setJourney] = useState<LearningJourney | null>(null);
+  const [journey, setJourney] = useState<CurrentJourney | null>(null);
   // null: no advice to show (no completed assessment, or the feature is off).
   const [advice, setAdvice] = useState<AdviceState | null>({ status: "loading" });
 
@@ -41,7 +41,7 @@ export function ResultsPage() {
         setSections([]);
         setLoadFailed(true);
       });
-    getRecommendedJourney()
+    getCurrentJourney()
       .then(setJourney)
       .catch(() => setJourney(null));
     // Slower than the rest (an LLM call the first time), so it fills in on
@@ -87,7 +87,7 @@ export function ResultsPage() {
         )}
       </div>
 
-      {journey && <RecommendedJourneyCard journey={journey} />}
+      {journey && <RecommendedJourneyCard journey={journey.journey} source={journey.source} />}
 
       {advice && <AdviceCard state={advice} />}
 

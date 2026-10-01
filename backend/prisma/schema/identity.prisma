@@ -3,15 +3,17 @@
 /// sections / competences a role may see). Tables: identity_*.
 
 model Learner {
-  id                            String   @id @default(uuid())
-  email                         String   @unique
+  id                            String           @id @default(uuid())
+  email                         String           @unique
   name                          String?
-  googleSubId                   String?  @unique // "sub" claim from Google's ID token
+  googleSubId                   String?          @unique // "sub" claim from Google's ID token
   roleId                        String? // chosen persona (identity_role)
-  userRole                      Role?    @relation(fields: [roleId], references: [id])
-  hasCompletedInitialAssessment Boolean  @default(false) // true once every visible question in the first SAT instance is answered
-  createdAt                     DateTime @default(now())
-  updatedAt                     DateTime @updatedAt
+  userRole                      Role?            @relation(fields: [roleId], references: [id])
+  hasCompletedInitialAssessment Boolean          @default(false) // true once every visible question in the first SAT instance is answered
+  selectedJourneyId             String? // the journey the learner has chosen to follow (CD-33) — overrides the score-based recommendation, if set
+  selectedJourney               LearningJourney? @relation("LearnerSelectedJourney", fields: [selectedJourneyId], references: [id], onDelete: SetNull)
+  createdAt                     DateTime         @default(now())
+  updatedAt                     DateTime         @updatedAt
 
   satInstances     SatInstance[]
   profile          LearnerProfile?
