@@ -108,7 +108,7 @@ export function ResultsPage() {
             className={styles.details}
             onClick={() => navigate("/results/details")}
           >
-            More details
+            See results by section
           </Button>
         )}
       </div>

@@ -9,10 +9,12 @@ import { isProfileComplete } from "../identity/identity.types";
 import {
   completeActiveInstance,
   discardActiveInstance,
+  getAssessmentPath,
   getLatestCompetenceScores,
   getLatestSectionCompetenceScores,
   getProgress,
   getSatHistory,
+  getSkillLevels,
   listAssessableSections,
   listQuestions,
   saveResponse,
@@ -27,6 +29,17 @@ assessmentRouter.get(
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
     res.json(await listQuestions(req.learnerId!));
+  }),
+);
+
+// The adaptive route through the current attempt: answered questions on the
+// path plus the next one (see assessment.path.ts).
+assessmentRouter.get(
+  "/assessment/path",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    res.json(await getAssessmentPath(req.learnerId!));
   }),
 );
 
@@ -98,7 +111,10 @@ assessmentRouter.post(
   requireAuth,
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
-    await completeActiveInstance(req.learnerId!);
+    // "none" is a 204 too: completing twice (a retried request) is harmless.
+    if ((await completeActiveInstance(req.learnerId!)) === "unfinished") {
+      return res.status(409).json({ error: "The assessment isn't finished yet" });
+    }
     res.status(204).end();
   }),
 );
@@ -130,6 +146,16 @@ assessmentRouter.get(
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
     res.json(await getLatestSectionCompetenceScores(req.learnerId!));
+  }),
+);
+
+// The learner's level (A1 … A4) in each section they've been assessed in.
+assessmentRouter.get(
+  "/skill-levels",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    res.json(await getSkillLevels(req.learnerId!));
   }),
 );
 
