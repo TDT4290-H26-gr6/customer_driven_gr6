@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
@@ -26,6 +26,10 @@ import styles from "./ResultsPage.module.css";
  * returning here always fetches the fresh scores (and new advice). The
  * assessment button says "Continue" while the learner has an unfinished
  * attempt (left with Save & exit), so they know their answers weren't lost.
+ *
+ * A new learner fills in their profile first: until they've both completed
+ * it and finished a first assessment, this sends them to /profile, whose
+ * "Done" brings them back to the welcome screen here.
  */
 export function ResultsPage() {
   const { learner } = useAuth();
@@ -59,6 +63,10 @@ export function ResultsPage() {
       .then((loaded) => setAdvice(loaded ? { status: "ready", advice: loaded } : null))
       .catch(() => setAdvice({ status: "unavailable" }));
   }, []);
+
+  if (!learner?.hasCompletedInitialAssessment && !learner?.hasCompletedProfile) {
+    return <Navigate to="/profile" replace />;
+  }
 
   if (sections === null || hasOngoing === null) {
     return (

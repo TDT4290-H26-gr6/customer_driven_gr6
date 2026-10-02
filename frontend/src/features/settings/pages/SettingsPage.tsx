@@ -59,6 +59,10 @@ export function SettingsPage() {
       </div>
 
       <div className={styles.card}>
+        <ProfileForm />
+      </div>
+
+      <div className={styles.card}>
         <RoleSelect
           initialRoleId={learner?.role?.id}
           heading="Your role"
@@ -69,10 +73,6 @@ export function SettingsPage() {
         {saved && (
           <p className={styles.confirmation}>Saved — you&apos;re now set as {saved.name}.</p>
         )}
-      </div>
-
-      <div className={styles.card}>
-        <ProfileForm />
       </div>
 
       <div className={styles.card}>

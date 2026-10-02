@@ -22,7 +22,13 @@ function candidate(overrides: Partial<Candidate> = {}): Candidate {
 function context(overrides: Partial<AdviceContext> = {}): AdviceContext {
   return {
     role: "PhD candidate",
-    profile: { goals: "Publish my data openly", background: "Biology", yearsOfExperience: 3 },
+    profile: {
+      industry: "Higher education",
+      academicDegree: "PhD",
+      background: "PhD candidate in biology",
+      yearsOfExperience: 3,
+      goals: "Publish my data openly",
+    },
     competences: [
       { name: "Data management", section: "Research data", percent: 31.6 },
       { name: "Open access", section: "Publishing", percent: 80 },
@@ -47,6 +53,11 @@ describe("buildAdviceMessages", () => {
     const data = JSON.parse(user.content);
 
     expect(data.role).toBe("PhD candidate");
+    expect(data.industry).toBe("Higher education");
+    expect(data.academicDegree).toBe("PhD");
+    expect(data.background).toBe("PhD candidate in biology");
+    expect(data.yearsOfExperienceInAiOrOpenScience).toBe(3);
+    expect(data.goals).toBe("Publish my data openly");
     expect(data.competenceScoresWeakestFirst[0]).toEqual({
       competence: "Data management",
       section: "Research data",
@@ -61,12 +72,21 @@ describe("buildAdviceMessages", () => {
 
   it("caps long learner-written profile text", () => {
     const [, user] = buildAdviceMessages(
-      context({ profile: { goals: "x".repeat(2000), background: null, yearsOfExperience: null } }),
+      context({
+        profile: {
+          industry: null,
+          academicDegree: null,
+          background: "x".repeat(2000),
+          yearsOfExperience: null,
+          goals: "y".repeat(2000),
+        },
+      }),
     );
     const data = JSON.parse(user.content);
 
+    expect(data.background.length).toBeLessThanOrEqual(501);
     expect(data.goals.length).toBeLessThanOrEqual(501);
-    expect(data.background).toBeNull();
+    expect(data.industry).toBeNull();
   });
 });
 

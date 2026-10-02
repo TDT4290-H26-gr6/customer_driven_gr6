@@ -2,11 +2,13 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "@/app/layout/AppShell";
 import { RequireAuth } from "@/app/guards/RequireAuth";
 import { RequireAdmin } from "@/app/guards/RequireAdmin";
+import { RequireProfile } from "@/app/guards/RequireProfile";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { LoginPage } from "@/features/auth";
 import { AssessmentRunnerPage } from "@/features/assessment";
 import { ResultsPage, SectionDetailsPage } from "@/features/results";
 import { SettingsPage } from "@/features/settings";
+import { ProfilePage } from "@/features/profile";
 import { HistoryPage } from "@/features/history";
 import { SourcesPage } from "@/features/sources";
 import { AdminPage } from "@/features/admin";
@@ -35,6 +37,8 @@ export function AppRoutes() {
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route path="/settings" element={<SettingsPage />} />
+          {/* Not in the sidebar — RequireProfile sends learners here. */}
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/results" element={<ResultsPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/results/details" element={<SectionDetailsPage />} />
@@ -44,8 +48,10 @@ export function AppRoutes() {
             <Route path="/admin/feedback" element={<FeedbackAdminPage />} />
           </Route>
           {/* Not in the sidebar — only reachable via the dashboard's
-              "Assess yourself" button. */}
-          <Route path="/assessment" element={<AssessmentRunnerPage />} />
+              "Assess yourself" button. The profile must be filled in first. */}
+          <Route element={<RequireProfile />}>
+            <Route path="/assessment" element={<AssessmentRunnerPage />} />
+          </Route>
         </Route>
       </Route>
 

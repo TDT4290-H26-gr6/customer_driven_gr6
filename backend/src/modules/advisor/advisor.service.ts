@@ -4,6 +4,7 @@ import { config } from "../../config";
 import { chatJson, type LlmSettings } from "../../lib/llm";
 import { createKeyedLock } from "../../lib/keyedLock";
 import { findLearnerById, getLearnerProfile } from "../identity/identity.service";
+import { ACADEMIC_DEGREE_LABELS, INDUSTRY_LABELS } from "../identity/identity.types";
 import { recommendJourney } from "../learningJourney/learningJourney.service";
 import {
   buildAdviceMessages,
@@ -23,6 +24,11 @@ const WEAK_COMPETENCES_FOR_CANDIDATES = 3;
 const MAX_CANDIDATES = 15;
 
 const adviceLock = createKeyedLock();
+
+/** A stored dropdown key as its readable label; null for a missing or unknown key. */
+function labelFor(labels: Record<string, string>, key: string | null | undefined): string | null {
+  return key && Object.hasOwn(labels, key) ? labels[key] : null;
+}
 
 export type StoredStep = Pick<AdviceStep, "kind" | "id" | "title" | "url" | "reason">;
 
@@ -101,9 +107,11 @@ async function buildContext(learnerId: string, satInstanceId: string): Promise<A
   return {
     role: learner?.userRole?.name ?? null,
     profile: {
-      goals: profile?.goals ?? null,
+      industry: labelFor(INDUSTRY_LABELS, profile?.industry),
+      academicDegree: labelFor(ACADEMIC_DEGREE_LABELS, profile?.academicDegree),
       background: profile?.background ?? null,
       yearsOfExperience: profile?.yearsOfExperience ?? null,
+      goals: profile?.goals ?? null,
     },
     competences: weakestFirst.map((s) => ({
       name: s.competence.name,
