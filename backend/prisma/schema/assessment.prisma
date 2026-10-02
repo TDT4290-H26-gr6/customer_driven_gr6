@@ -9,7 +9,8 @@
 /// also copied onto the instance/score when it's recorded (the *Name
 /// fields below).
 ///
-/// Hierarchy: a Section contains SectionModules; each SectionModule has one
+/// Hierarchy: a Section (A–E) contains SectionModules at levels 1–4 (A1 the
+/// easiest … A4 the most advanced); each SectionModule has one
 /// main Competence plus any number of secondary ones (join table). Questions
 /// hang off a SectionModule and name the Competence they assess directly —
 /// scores roll up by that competenceId, not through the hierarchy.
@@ -48,6 +49,8 @@ model CompetenceSecondarySource {
 
 model Section {
   id          String  @id @default(uuid())
+  /// Short letter, "A"–"E". Nullable only so it could be added to existing rows.
+  code        String? @unique
   name        String  @unique
   description String? @db.Text
 
@@ -70,6 +73,11 @@ model SectionModule {
   mainCompetence   Competence @relation(fields: [mainCompetenceId], references: [id])
   sectionId        String
   section          Section    @relation(fields: [sectionId], references: [id])
+  /// 1 (easiest) to 4 (most advanced) within its section: with the section's
+  /// code, A1 … A4. The assessment only moves up a level after a learner
+  /// gets 2 of 3 right on the one below (see assessment.path.ts). Nullable
+  /// only so it could be added to existing rows; unleveled modules come last.
+  level            Int?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -77,6 +85,7 @@ model SectionModule {
   secondaryCompetences SectionModuleSecondaryCompetence[]
   questions            Question[]
 
+  @@unique([sectionId, level])
   @@map("assessment_section_module")
 }
 
@@ -111,20 +120,20 @@ model Question {
 }
 
 model SatInstance {
-  id                     String           @id @default(uuid())
+  id                     String               @id @default(uuid())
   learnerId              String
-  learner                Learner          @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  learner                Learner              @relation(fields: [learnerId], references: [id], onDelete: Cascade)
   instanceNum            Int // sequence number for this learner: 1 = initial, 2+ = retakes
-  startedAt              DateTime         @default(now())
+  startedAt              DateTime             @default(now())
   completedAt            DateTime?
   completedJourneyId     String?
-  completedJourney       LearningJourney? @relation(fields: [completedJourneyId], references: [id], onDelete: SetNull)
+  completedJourney       LearningJourney?     @relation(fields: [completedJourneyId], references: [id], onDelete: SetNull)
   completedJourneyName   String?
   reassessedSectionNames Json?
-  sections         SatInstanceSection[]
-  responses        Response[]
-  competenceScores CompetenceScore[]
-  advice           Advice?
+  sections               SatInstanceSection[]
+  responses              Response[]
+  competenceScores       CompetenceScore[]
+  advice                 Advice?
 
   @@unique([learnerId, instanceNum])
   @@map("assessment_sat_instance")
