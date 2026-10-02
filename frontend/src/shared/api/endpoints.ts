@@ -20,6 +20,8 @@ export const endpoints = {
     responses: "/assessment/responses",
     complete: "/assessment/complete",
     active: "/assessment/active",
+    sections: "/assessment/sections",
+    start: "/assessment/start",
     history: "/assessment/history",
   },
   admin: {

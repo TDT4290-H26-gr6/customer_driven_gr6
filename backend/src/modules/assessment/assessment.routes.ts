@@ -3,7 +3,7 @@ import type { Prisma } from "@prisma/client";
 import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
 import { requireRole } from "../../middleware/requireRole";
 import { asyncHandler } from "../../lib/asyncHandler";
-import { requireObject, requireString } from "../../lib/validate";
+import { requireObject, requireString, requireStringArray } from "../../lib/validate";
 import { findLearnerById } from "../identity/identity.service";
 import { isProfileComplete } from "../identity/identity.types";
 import {
@@ -13,8 +13,10 @@ import {
   getLatestSectionCompetenceScores,
   getProgress,
   getSatHistory,
+  listAssessableSections,
   listQuestions,
   saveResponse,
+  startReassessment,
 } from "./assessment.service";
 
 export const assessmentRouter = Router();
@@ -55,6 +57,38 @@ assessmentRouter.post(
 
     const saved = await saveResponse(req.learnerId!, questionId, answer);
     if (!saved) return res.status(404).json({ error: "Unknown question" });
+    res.status(204).end();
+  }),
+);
+
+// The sections a reassessment can be limited to.
+assessmentRouter.get(
+  "/assessment/sections",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    res.json(await listAssessableSections(req.learnerId!));
+  }),
+);
+
+// Starts a reassessment after a completed learning journey, limited to the
+// chosen sections. (Without a journey nothing needs starting — the first
+// saved answer creates a normal instance.)
+assessmentRouter.post(
+  "/assessment/start",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const completedJourneyId = requireString(req.body?.completedJourneyId, "completedJourneyId");
+    const sectionIds = requireStringArray(req.body?.sectionIds, "sectionIds");
+
+    const learner = await findLearnerById(req.learnerId!);
+    if (!learner || !isProfileComplete(learner.name, learner.profile)) {
+      return res.status(403).json({ error: "Complete your profile first" });
+    }
+
+    const result = await startReassessment(req.learnerId!, { completedJourneyId, sectionIds });
+    if (!result.ok) return res.status(result.status).json({ error: result.error });
     res.status(204).end();
   }),
 );

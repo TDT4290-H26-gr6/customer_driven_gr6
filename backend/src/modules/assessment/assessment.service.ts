@@ -2,6 +2,7 @@ import { Prisma, type Question } from "@prisma/client";
 import { prisma } from "../../db/prisma";
 import { findLearnerById, getRoleGrants } from "../identity/identity.service";
 import { ORDERED_QUESTION_TYPES } from "./assessment.pie";
+import { completedCompetenceScoresQuery, newestPerCompetence } from "./assessment.newestScores";
 import {
   extractDragAndDropBlanks,
   extractMultipleChoiceValues,
@@ -69,7 +70,7 @@ async function isInitialAssessment(learnerId: string): Promise<boolean> {
  * identity_role_section). A role with no grants then sees nothing. Returns
  * null for a learner with no role at all — they can't take anything yet.
  */
-async function visibleQuestionFilter(learnerId: string): Promise<Prisma.QuestionWhereInput | null> {
+async function roleQuestionFilter(learnerId: string): Promise<Prisma.QuestionWhereInput | null> {
   const learner = await findLearnerById(learnerId);
   if (!learner?.roleId) return null;
 
@@ -82,6 +83,42 @@ async function visibleQuestionFilter(learnerId: string): Promise<Prisma.Question
       { sectionModule: { sectionId: { in: sectionIds } } },
     ],
   };
+}
+
+/**
+ * roleQuestionFilter, narrowed to the sections the learner's in-progress
+ * reassessment is limited to (see startReassessment) — when it's limited at
+ * all. Used both to list questions and to check a saved answer belongs.
+ */
+async function visibleQuestionFilter(learnerId: string): Promise<Prisma.QuestionWhereInput | null> {
+  const roleFilter = await roleQuestionFilter(learnerId);
+  if (!roleFilter) return null;
+
+  const scope = await prisma.satInstanceSection.findMany({
+    where: { satInstance: { learnerId, completedAt: null } },
+    select: { sectionId: true },
+  });
+  if (scope.length === 0) return roleFilter;
+
+  return {
+    AND: [roleFilter, { sectionModule: { sectionId: { in: scope.map((s) => s.sectionId) } } }],
+  };
+}
+
+/**
+ * The sections a reassessment can be limited to: every section with at
+ * least one question the learner's role can see, ignoring any current
+ * limit. Sorted by name.
+ */
+export async function listAssessableSections(learnerId: string) {
+  const roleFilter = await roleQuestionFilter(learnerId);
+  if (!roleFilter) return [];
+
+  return prisma.section.findMany({
+    where: { modules: { some: { questions: { some: roleFilter } } } },
+    select: { id: true, name: true, description: true },
+    orderBy: { name: "asc" },
+  });
 }
 
 /** The questions the learner's role can see, in a stable section → module → question order. */
@@ -178,20 +215,30 @@ function isUniqueViolation(err: unknown) {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
 }
 
-async function getOrCreateActiveInstance(learnerId: string) {
-  const active = await findActiveInstance(learnerId);
-  if (active) return active;
-
+/**
+ * Creates the learner's next instance (instanceNum = their highest + 1).
+ * `extra` carries a reassessment's journey and section limit.
+ */
+async function createInstance(
+  learnerId: string,
+  extra: Omit<Prisma.SatInstanceUncheckedCreateInput, "learnerId" | "instanceNum"> = {},
+) {
   const latest = await prisma.satInstance.findFirst({
     where: { learnerId },
     orderBy: { instanceNum: "desc" },
     select: { instanceNum: true },
   });
+  return prisma.satInstance.create({
+    data: { learnerId, instanceNum: (latest?.instanceNum ?? 0) + 1, ...extra },
+  });
+}
+
+async function getOrCreateActiveInstance(learnerId: string) {
+  const active = await findActiveInstance(learnerId);
+  if (active) return active;
 
   try {
-    return await prisma.satInstance.create({
-      data: { learnerId, instanceNum: (latest?.instanceNum ?? 0) + 1 },
-    });
+    return await createInstance(learnerId);
   } catch (err) {
     // Two first answers arrived at once and the other request created the
     // instance first (unique on learnerId + instanceNum) — use theirs.
@@ -201,6 +248,65 @@ async function getOrCreateActiveInstance(learnerId: string) {
     }
     throw err;
   }
+}
+
+export type StartReassessmentInput = { completedJourneyId: string; sectionIds: string[] };
+
+export type StartReassessmentResult =
+  { ok: true } | { ok: false; status: 400 | 409; error: string };
+
+/**
+ * Starts a reassessment after the learner finished a learning journey: a new
+ * instance that records the journey and is limited to the chosen sections,
+ * so listQuestions only returns those. (A reassessment without a journey
+ * needs no start — the first saved answer creates a normal instance.)
+ * Refused while another instance is in progress, before the first
+ * assessment is done (that one covers everything), for an unknown journey,
+ * and for sections with no question the learner's role can see.
+ */
+export async function startReassessment(
+  learnerId: string,
+  { completedJourneyId, sectionIds }: StartReassessmentInput,
+): Promise<StartReassessmentResult> {
+  if (await findActiveInstance(learnerId)) {
+    return { ok: false, status: 409, error: "An assessment is already in progress" };
+  }
+  if (await isInitialAssessment(learnerId)) {
+    return { ok: false, status: 409, error: "Finish your first assessment before reassessing" };
+  }
+
+  const journey = await prisma.learningJourney.findUnique({
+    where: { id: completedJourneyId },
+    select: { name: true },
+  });
+  if (!journey) return { ok: false, status: 400, error: "Unknown learning journey" };
+
+  const assessable = new Map(
+    (await listAssessableSections(learnerId)).map((s) => [s.id, s.name] as const),
+  );
+  const unique = [...new Set(sectionIds)];
+  if (unique.length === 0 || unique.some((id) => !assessable.has(id))) {
+    return { ok: false, status: 400, error: "Choose one or more sections you can be assessed in" };
+  }
+
+  try {
+    await createInstance(learnerId, {
+      completedJourneyId,
+      // Copies for History, which must outlive the journey and sections.
+      completedJourneyName: journey.name,
+      reassessedSectionNames: unique
+        .map((id) => assessable.get(id)!)
+        .sort((a, b) => a.localeCompare(b)),
+      sections: { create: unique.map((sectionId) => ({ sectionId })) },
+    });
+  } catch (err) {
+    // Another request started an instance at the same moment.
+    if (isUniqueViolation(err)) {
+      return { ok: false, status: 409, error: "An assessment is already in progress" };
+    }
+    throw err;
+  }
+  return { ok: true };
 }
 
 /**
@@ -219,7 +325,10 @@ export async function getProgress(learnerId: string) {
 
   return {
     satInstanceId: active.id,
-    responses: responses.map((r) => ({ questionId: r.questionId, answer: r.answer })),
+    // An answer whose question was deleted has nothing to restore into.
+    responses: responses.flatMap((r) =>
+      r.questionId ? [{ questionId: r.questionId, answer: r.answer }] : [],
+    ),
   };
 }
 
@@ -262,8 +371,10 @@ export async function saveResponse(
  * Marks the learner's active instance complete and rolls its scored
  * responses up into one CompetenceScore row per competence touched — grouped
  * by each question's own competenceId, independent of the section/module
- * hierarchy. Unscored responses are excluded. No-ops if there isn't an
- * active instance.
+ * hierarchy. Unscored responses, and answers whose question has since been
+ * deleted, are excluded. Each score also stores a copy of its competence's
+ * name, so History can still show it if the competence is deleted later.
+ * No-ops if there isn't an active instance.
  */
 export async function completeActiveInstance(learnerId: string) {
   const active = await findActiveInstance(learnerId);
@@ -271,13 +382,23 @@ export async function completeActiveInstance(learnerId: string) {
 
   const responses = await prisma.response.findMany({
     where: { satInstanceId: active.id, score: { not: null } },
-    include: { question: { select: { competenceId: true } } },
+    include: {
+      question: { select: { competenceId: true, competence: { select: { name: true } } } },
+    },
   });
 
-  const byCompetence = new Map<string, { score: number; maxScore: number }>();
+  const byCompetence = new Map<
+    string,
+    { score: number; maxScore: number; competenceName: string }
+  >();
   for (const r of responses) {
+    if (!r.question) continue;
     const competenceId = r.question.competenceId;
-    const totals = byCompetence.get(competenceId) ?? { score: 0, maxScore: 0 };
+    const totals = byCompetence.get(competenceId) ?? {
+      score: 0,
+      maxScore: 0,
+      competenceName: r.question.competence.name,
+    };
     totals.score += r.score ?? 0;
     totals.maxScore += r.maxScore ?? 0;
     byCompetence.set(competenceId, totals);
@@ -311,13 +432,6 @@ export async function discardActiveInstance(learnerId: string) {
   return count;
 }
 
-export function getCompetenceScores(satInstanceId: string) {
-  return prisma.competenceScore.findMany({
-    where: { satInstanceId },
-    include: { competence: { select: { name: true } } },
-  });
-}
-
 /**
  * The learner's most recently completed SAT instance's competence scores —
  * one entry per competence actually scored in that instance, sorted by name
@@ -329,22 +443,34 @@ export function getCompetenceScores(satInstanceId: string) {
  * (e.g. after a role change since that run).
  */
 export async function getLatestCompetenceScores(learnerId: string) {
-  const latest = await prisma.satInstance.findFirst({
-    where: { learnerId, completedAt: { not: null } },
-    orderBy: { completedAt: "desc" },
-  });
-  if (!latest) return [];
-
-  const scores = await getCompetenceScores(latest.id);
+  const scores = newestPerCompetence(
+    await prisma.competenceScore.findMany({
+      ...completedCompetenceScoresQuery(learnerId),
+      include: { competence: true },
+    }),
+  );
   return scores
     .map((s) => ({ competence: { name: s.competence.name }, score: s.score, maxScore: s.maxScore }))
     .sort((a, b) => a.competence.name.localeCompare(b.competence.name));
 }
 
+/** History's label for a score whose competence was deleted before names were copied. */
+const REMOVED_COMPETENCE = "Removed competence";
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((v) => typeof v === "string");
+}
+
 /**
  * Every completed SAT instance for a learner, oldest first, with a summed
  * score and the per-area breakdown — so a History page can show how they've
- * progressed over retakes (CD-21). Unlike getLatestCompetenceScores, this
+ * progressed over retakes (CD-21). A reassessment after a learning journey
+ * also carries that journey's name and the sections the learner ticked
+ * (exactly those — not every section the journey covers); a normal run
+ * has null and an empty list. Built from the copies taken when the
+ * instance started/finished, so it survives later removal of journeys,
+ * sections, competences or questions; rows recorded before those copies
+ * existed fall back to the live content while it's still there. Unlike getLatestCompetenceScores, this
  * only lists the areas actually covered by that specific instance (no
  * padding to every area in the bank) — if a role change ever narrows which
  * questions a learner sees, this naturally shows exactly what that
@@ -355,19 +481,23 @@ export async function getSatHistory(learnerId: string) {
     where: { learnerId, completedAt: { not: null } },
     orderBy: { instanceNum: "asc" },
     include: {
-      competenceScores: {
-        include: { competence: { select: { name: true } } },
-        orderBy: { competence: { name: "asc" } },
+      competenceScores: { include: { competence: { select: { name: true } } } },
+      completedJourney: { select: { name: true } },
+      sections: {
+        select: { section: { select: { name: true } } },
+        orderBy: { section: { name: "asc" } },
       },
     },
   });
 
   return instances.map((instance) => {
-    const areas = instance.competenceScores.map((s) => ({
-      name: s.competence.name,
-      score: s.score,
-      maxScore: s.maxScore,
-    }));
+    const areas = instance.competenceScores
+      .map((s) => ({
+        name: s.competenceName ?? s.competence?.name ?? REMOVED_COMPETENCE,
+        score: s.score,
+        maxScore: s.maxScore,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
     return {
       instanceNum: instance.instanceNum,
@@ -375,6 +505,10 @@ export async function getSatHistory(learnerId: string) {
       sumScore: areas.reduce((sum, a) => sum + a.score, 0),
       sumMaxScore: areas.reduce((sum, a) => sum + a.maxScore, 0),
       areas,
+      completedJourney: instance.completedJourneyName ?? instance.completedJourney?.name ?? null,
+      reassessedSections: isStringArray(instance.reassessedSectionNames)
+        ? instance.reassessedSectionNames
+        : instance.sections.map((s) => s.section.name),
     };
   });
 }
@@ -391,25 +525,36 @@ export async function getSatHistory(learnerId: string) {
  * applies here.
  */
 export async function getLatestSectionCompetenceScores(learnerId: string) {
-  const latest = await prisma.satInstance.findFirst({
-    where: { learnerId, completedAt: { not: null } },
-    orderBy: { completedAt: "desc" },
-  });
-  if (!latest) return [];
-
+  // Newest completed instance first, so the first instance seen for a
+  // section is the newest one that assessed it.
   const responses = await prisma.response.findMany({
-    where: { satInstanceId: latest.id, maxScore: { gt: 0 } },
+    where: { satInstance: { learnerId, completedAt: { not: null } }, maxScore: { gt: 0 } },
+    orderBy: [{ satInstance: { completedAt: "desc" } }, { satInstanceId: "asc" }],
     select: {
+      satInstanceId: true,
       score: true,
       maxScore: true,
       question: { select: { competenceId: true, sectionModule: { select: { sectionId: true } } } },
     },
   });
 
+  // Answers whose question was deleted no longer belong to any section.
+  const live = responses.flatMap((r) => (r.question ? [{ ...r, question: r.question }] : []));
+  if (live.length === 0) return [];
+
+  const newestInstanceForSection = new Map<string, string>(); // sectionId -> satInstanceId
+  for (const r of live) {
+    const sectionId = r.question.sectionModule.sectionId;
+    if (!newestInstanceForSection.has(sectionId)) {
+      newestInstanceForSection.set(sectionId, r.satInstanceId);
+    }
+  }
+
   const totals = new Map<string, { score: number; maxScore: number }>(); // "sectionId:competenceId"
   const assessedSectionIds = new Set<string>();
-  for (const r of responses) {
+  for (const r of live) {
     const sectionId = r.question.sectionModule.sectionId;
+    if (newestInstanceForSection.get(sectionId) !== r.satInstanceId) continue;
     const key = `${sectionId}:${r.question.competenceId}`;
     const entry = totals.get(key) ?? { score: 0, maxScore: 0 };
     entry.score += r.score ?? 0;

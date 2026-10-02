@@ -7,6 +7,10 @@ import { findLearnerById, getLearnerProfile } from "../identity/identity.service
 import { ACADEMIC_DEGREE_LABELS, INDUSTRY_LABELS } from "../identity/identity.types";
 import { recommendJourney } from "../learningJourney/learningJourney.service";
 import {
+  completedCompetenceScoresQuery,
+  newestPerCompetence,
+} from "../assessment/assessment.newestScores";
+import {
   buildAdviceMessages,
   parseAdvice,
   type AdviceContext,
@@ -33,19 +37,21 @@ function labelFor(labels: Record<string, string>, key: string | null | undefined
 export type StoredStep = Pick<AdviceStep, "kind" | "id" | "title" | "url" | "reason">;
 
 /**
- * Everything the LLM gets to see for one completed SAT instance. The
+ * Everything the LLM gets to see, as of the learner's latest completed SAT
+ * instance. Scores are the newest per competence across all completed
+ * instances, since a reassessment may only have covered some sections. The
  * candidates are the recommended journey's steps plus the sources linked to
  * the learner's weakest competences — so whatever the sources table holds
  * (placeholder Moodle links today, the real catalogue later) is what can be
  * recommended.
  */
-async function buildContext(learnerId: string, satInstanceId: string): Promise<AdviceContext> {
-  const [learner, profile, journey, scores] = await Promise.all([
+async function buildContext(learnerId: string): Promise<AdviceContext> {
+  const [learner, profile, journey, allScores] = await Promise.all([
     findLearnerById(learnerId),
     getLearnerProfile(learnerId),
     recommendJourney(learnerId),
     prisma.competenceScore.findMany({
-      where: { satInstanceId },
+      ...completedCompetenceScoresQuery(learnerId),
       include: {
         competence: {
           include: {
@@ -57,6 +63,7 @@ async function buildContext(learnerId: string, satInstanceId: string): Promise<A
       },
     }),
   ]);
+  const scores = newestPerCompetence(allScores);
 
   const weakestFirst = scores
     .filter((s) => s.maxScore > 0)
@@ -128,7 +135,7 @@ async function generateAdvice(
   learnerId: string,
   satInstanceId: string,
 ): Promise<Advice> {
-  const context = await buildContext(learnerId, satInstanceId);
+  const context = await buildContext(learnerId);
   const reply = await chatJson(llm, buildAdviceMessages(context));
   const { summary, steps } = parseAdvice(reply, context.candidates);
 

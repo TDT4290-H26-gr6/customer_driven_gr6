@@ -50,15 +50,15 @@ describe("ResultsPage profile step", () => {
     auth.learner.hasCompletedProfile = false;
     vi.mocked(getProgress).mockResolvedValue(null);
     render(<ResultsPage />);
-    expect(await screen.findByRole("button", { name: "Assess yourself" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Retake assessment" })).toBeInTheDocument();
   });
 });
 
 describe("ResultsPage assessment button", () => {
-  it("says 'Assess yourself' when there's no unfinished assessment", async () => {
+  it("says 'Retake assessment' when there's no unfinished assessment", async () => {
     vi.mocked(getProgress).mockResolvedValue(null);
     render(<ResultsPage />);
-    expect(await screen.findByRole("button", { name: "Assess yourself" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Retake assessment" })).toBeInTheDocument();
   });
 
   it("says 'Continue assessment' while a retake is unfinished", async () => {
@@ -67,10 +67,10 @@ describe("ResultsPage assessment button", () => {
     expect(await screen.findByRole("button", { name: "Continue assessment" })).toBeInTheDocument();
   });
 
-  it("falls back to 'Assess yourself' when progress can't be loaded", async () => {
+  it("falls back to 'Retake assessment' when progress can't be loaded", async () => {
     vi.mocked(getProgress).mockRejectedValue({ status: 0, message: "offline" });
     render(<ResultsPage />);
-    expect(await screen.findByRole("button", { name: "Assess yourself" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Retake assessment" })).toBeInTheDocument();
   });
 
   it("says 'Continue assessment' on the welcome screen for an unfinished first assessment", async () => {
