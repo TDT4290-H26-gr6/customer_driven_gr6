@@ -1,4 +1,5 @@
 import { Prisma, type Question } from "@prisma/client";
+import { config } from "../../config";
 import { prisma } from "../../db/prisma";
 import { findLearnerById, getRoleGrants } from "../identity/identity.service";
 import { ORDERED_QUESTION_TYPES } from "./assessment.pie";
@@ -73,10 +74,15 @@ async function isInitialAssessment(learnerId: string): Promise<boolean> {
  * in a section granted to the role (identity_role_competence /
  * identity_role_section). A role with no grants then sees nothing. Returns
  * null for a learner with no role at all — they can't take anything yet.
+ *
+ * While role selection is turned off (config.roleSelectionEnabled), roles
+ * are ignored: every learner gets the whole bank in every SAT.
  */
 async function roleQuestionFilter(learnerId: string): Promise<Prisma.QuestionWhereInput | null> {
   const learner = await findLearnerById(learnerId);
-  if (!learner?.roleId) return null;
+  if (!learner) return null;
+  if (!config.roleSelectionEnabled) return {};
+  if (!learner.roleId) return null;
 
   if (await isInitialAssessment(learnerId)) return {};
 

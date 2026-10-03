@@ -85,6 +85,16 @@ function llm() {
 }
 
 export const config = {
+  /**
+   * TEMPORARILY OFF. When on, a learner picks a persona role after first
+   * signing in (the frontend's RoleGateModal), role-gated routes refuse
+   * learners without one (requireRole), and retakes only ask the questions
+   * the role has been granted. While off, nobody needs a role and every SAT
+   * covers the whole question bank. Set back to true — together with
+   * ROLE_SELECTION_ENABLED in frontend/src/shared/lib/features.ts — to
+   * bring roles back.
+   */
+  roleSelectionEnabled: false,
   port: port("BACKEND_PORT", 4000),
   jwtSecret: required("JWT_SECRET", "dev-secret-change-me"),
   googleClientId: required("GOOGLE_CLIENT_ID", ""),

@@ -12,6 +12,7 @@ import {
   saveResponse,
   startReassessment,
 } from "./assessment.service";
+import { config } from "../../config";
 import { prisma } from "../../db/prisma";
 import { findLearnerById, getRoleGrants } from "../identity/identity.service";
 import { IDK_VALUE } from "./assessment.scoring";
@@ -46,6 +47,10 @@ const mockPrisma = vi.mocked(prisma, true);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // These tests cover the role-based behaviour, which is switched off for now
+  // (config.roleSelectionEnabled) but kept for when it comes back. The
+  // "role selection off" tests below switch it off themselves.
+  config.roleSelectionEnabled = true;
   // Default: no reassessment in progress, so no section limit.
   mockPrisma.satInstanceSection.findMany.mockResolvedValue([]);
 });
@@ -243,6 +248,43 @@ describe("saveResponse", () => {
     expect(mockPrisma.response.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ update: { answer, score: 0, maxScore: 1 } }),
     );
+  });
+});
+
+describe("with role selection turned off", () => {
+  beforeEach(() => {
+    config.roleSelectionEnabled = false;
+  });
+
+  it("gives every learner the whole bank, even after a completed SAT, without reading the role", async () => {
+    vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);
+    mockPrisma.satInstance.count.mockResolvedValue(3);
+    mockPrisma.question.findMany.mockResolvedValue([]);
+
+    await listQuestions("learner-1");
+
+    expect(getRoleGrants).not.toHaveBeenCalled();
+    expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: {} }),
+    );
+  });
+
+  it("lets a learner without a role take the SAT too", async () => {
+    vi.mocked(findLearnerById).mockResolvedValue({ roleId: null } as never);
+    mockPrisma.question.findMany.mockResolvedValue([]);
+
+    await listQuestions("learner-1");
+
+    expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: {} }),
+    );
+  });
+
+  it("still returns nothing for an account that no longer exists", async () => {
+    vi.mocked(findLearnerById).mockResolvedValue(null);
+
+    expect(await listQuestions("learner-1")).toEqual([]);
+    expect(mockPrisma.question.findMany).not.toHaveBeenCalled();
   });
 });
 

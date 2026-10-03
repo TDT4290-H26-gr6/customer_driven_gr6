@@ -5,6 +5,7 @@ import { MonitorIcon, MoonIcon, SunIcon } from "@/shared/components/icons";
 import { RoleSelect } from "@/features/onboarding";
 import type { Role } from "@/features/onboarding";
 import { ProfileForm } from "@/features/profile";
+import { ROLE_SELECTION_ENABLED } from "@/shared/lib/features";
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import styles from "./SettingsPage.module.css";
 
@@ -15,8 +16,9 @@ const VISUAL_OPTIONS: { value: ThemePreference; label: string; Icon: typeof Moni
 ];
 
 /**
- * Account settings: role, and visuals for now — more sections land here
- * later (see context/frontend-structure.md).
+ * Account settings: visuals, profile, role and account deletion. The role
+ * card is hidden while role selection is temporarily off
+ * (shared/lib/features.ts).
  */
 export function SettingsPage() {
   const { learner, setRole } = useAuth();
@@ -62,18 +64,20 @@ export function SettingsPage() {
         <ProfileForm />
       </div>
 
-      <div className={styles.card}>
-        <RoleSelect
-          initialRoleId={learner?.role?.id}
-          heading="Your role"
-          description="Change the role that best describes you."
-          confirmLabel="Save"
-          onDone={handleRoleChange}
-        />
-        {saved && (
-          <p className={styles.confirmation}>Saved — you&apos;re now set as {saved.name}.</p>
-        )}
-      </div>
+      {ROLE_SELECTION_ENABLED && (
+        <div className={styles.card}>
+          <RoleSelect
+            initialRoleId={learner?.role?.id}
+            heading="Your role"
+            description="Change the role that best describes you."
+            confirmLabel="Save"
+            onDone={handleRoleChange}
+          />
+          {saved && (
+            <p className={styles.confirmation}>Saved — you&apos;re now set as {saved.name}.</p>
+          )}
+        </div>
+      )}
 
       <div className={styles.card}>
         <DeleteAccountSection />

@@ -6,6 +6,7 @@ import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { useLocalStorage } from "@/shared/hooks/useLocalStorage";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import { MOBILE_QUERY } from "@/shared/lib/breakpoints";
+import { ROLE_SELECTION_ENABLED } from "@/shared/lib/features";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { RoleGateModal } from "./RoleGateModal";
@@ -22,7 +23,8 @@ import styles from "./AppShell.module.css";
  */
 export function AppShell() {
   const { learner } = useAuth();
-  const needsRole = Boolean(learner && !learner.role);
+  // Role selection is temporarily off (shared/lib/features.ts): no gate.
+  const needsRole = ROLE_SELECTION_ENABLED && Boolean(learner && !learner.role);
   const [collapsed, setCollapsed] = useLocalStorage("aios.sidebarCollapsed", false);
   const [hidden, setHidden] = useLocalStorage("aios.sidebarHidden", false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
