@@ -10,11 +10,10 @@ import {
   completeActiveInstance,
   discardActiveInstance,
   getAssessmentPath,
+  getAttemptSectionScores,
   getLatestCompetenceScores,
-  getLatestSectionCompetenceScores,
   getProgress,
   getSatHistory,
-  getSkillLevels,
   listAssessableSections,
   listQuestions,
   saveResponse,
@@ -140,22 +139,29 @@ assessmentRouter.get(
   }),
 );
 
+// One completed SAT's results per section, with the skill level in each: the
+// latest SAT, or ?instance=<instanceNum> for an earlier one. 204 before any
+// completed SAT; 404 for an instanceNum the learner hasn't completed.
 assessmentRouter.get(
   "/competence-scores/by-section",
   requireAuth,
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
-    res.json(await getLatestSectionCompetenceScores(req.learnerId!));
-  }),
-);
+    const raw = req.query.instance;
+    let instanceNum: number | undefined;
+    if (raw !== undefined) {
+      instanceNum = Number(raw);
+      if (typeof raw !== "string" || !Number.isInteger(instanceNum) || instanceNum < 1) {
+        return res.status(400).json({ error: "instance must be a positive whole number" });
+      }
+    }
 
-// The learner's level (A1 … A4) in each section they've been assessed in.
-assessmentRouter.get(
-  "/skill-levels",
-  requireAuth,
-  requireRole,
-  asyncHandler<AuthedRequest>(async (req, res) => {
-    res.json(await getSkillLevels(req.learnerId!));
+    const result = await getAttemptSectionScores(req.learnerId!, instanceNum);
+    if (!result) {
+      if (instanceNum !== undefined) return res.status(404).json({ error: "Unknown assessment" });
+      return res.status(204).end();
+    }
+    res.json(result);
   }),
 );
 

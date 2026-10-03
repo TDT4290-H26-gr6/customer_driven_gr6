@@ -336,7 +336,7 @@ question bank the first time, regardless of role — that's the point of it
 `visibleQuestionFilter` returns `{}` (everything) instead of the role filter,
 and `getRoleGrants` is never even called. Once they've completed one, later
 retakes go back to the normal role allow-lists. The score views
-(`getLatestCompetenceScores`, `getLatestSectionCompetenceScores`) never
+(`getLatestCompetenceScores`, `getAttemptSectionScores`) never
 re-apply the _current_ role filter to a past instance's results — that would
 risk hiding a competence the learner was genuinely just scored on (e.g. after
 a role change since that run); they show exactly what that instance actually

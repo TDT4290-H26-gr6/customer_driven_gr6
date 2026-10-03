@@ -1,16 +1,15 @@
-import type { SkillLevel } from "../types";
 import styles from "./SectionLevel.module.css";
 
 type Props =
-  | { skill: SkillLevel }
-  /** A section the learner hasn't answered anything in yet. */
+  | { code: string | null; level: number; levelCount: number }
+  /** A section this SAT didn't touch. */
   | { notAssessed: { code: string | null } };
 
 /**
  * The learner's level in one section (A1 … A4, level 1 the easiest), shown
  * under that section's radar in the detailed view: a badge plus one step
  * per level. Until level 1 is passed it says so instead of showing a level,
- * and a section not assessed yet says that.
+ * and a section the SAT didn't touch says that.
  */
 export function SectionLevel(props: Props) {
   if ("notAssessed" in props) {
@@ -25,8 +24,8 @@ export function SectionLevel(props: Props) {
     );
   }
 
-  const { section, level, levelCount } = props.skill;
-  const code = section.code ?? "";
+  const { level, levelCount } = props;
+  const code = props.code ?? "";
 
   return (
     <div className={styles.box}>

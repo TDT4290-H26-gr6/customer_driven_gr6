@@ -48,8 +48,9 @@ export function ResultsPage() {
   const [hasOngoing, setHasOngoing] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // The latest SAT only — earlier ones are in "See results by section".
     getSectionCompetenceScores()
-      .then(setSections)
+      .then((latest) => setSections(latest?.sections ?? []))
       .catch(() => {
         setSections([]);
         setLoadFailed(true);
