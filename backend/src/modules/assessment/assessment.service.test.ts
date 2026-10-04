@@ -3,9 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   completeActiveInstance,
   discardActiveInstance,
+  getAssessmentPath,
   getLatestCompetenceScores,
   getLatestSectionCompetenceScores,
   getSatHistory,
+  getSkillLevels,
   listAssessableSections,
   listQuestions,
   saveResponse,
@@ -29,7 +31,7 @@ vi.mock("../../db/prisma", () => ({
     satInstanceSection: { findMany: vi.fn() },
     section: { findMany: vi.fn() },
     learningJourney: { findUnique: vi.fn() },
-    response: { findMany: vi.fn(), upsert: vi.fn() },
+    response: { findMany: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
     competenceScore: { findMany: vi.fn(), upsert: vi.fn() },
     sectionModule: { findMany: vi.fn() },
     $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
@@ -349,69 +351,169 @@ describe("listQuestions", () => {
   });
 });
 
+/** Mocks for loadPathInputs: a role, the first assessment (no role filter), no section limit. */
+function mockPathInputs({
+  questions,
+  active,
+  responses,
+}: {
+  questions: { id: string; competenceId: string; level?: number }[];
+  active: { id: string; instanceNum: number } | null;
+  responses: {
+    id: string;
+    questionId: string | null;
+    score: number | null;
+    maxScore: number | null;
+  }[];
+}) {
+  vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);
+  mockPrisma.satInstance.count.mockResolvedValue(0);
+  mockPrisma.satInstance.findFirst.mockReset();
+  mockPrisma.satInstance.findFirst.mockResolvedValue(active as never);
+  mockPrisma.question.findMany.mockResolvedValue(
+    questions.map((q) => ({
+      id: q.id,
+      prompt: `Prompt ${q.id}`,
+      questionType: "single_choice",
+      content: {},
+      competence: { id: q.competenceId, name: q.competenceId },
+      sectionModule: {
+        id: `module-${q.level ?? 1}`,
+        level: q.level ?? 1,
+        section: { id: "section-a", code: "A", name: "Section A" },
+      },
+    })) as never,
+  );
+  mockPrisma.response.findMany.mockReset();
+  // Only read when there's an active instance — don't leave an unused value queued.
+  if (active) {
+    mockPrisma.response.findMany.mockResolvedValueOnce(
+      responses.map((r, i) => ({
+        ...r,
+        answeredAt: new Date(1000 * i), // answered in the order listed
+        answer: { session: {}, complete: true },
+      })) as never,
+    );
+  }
+}
+
+describe("getAssessmentPath", () => {
+  it("returns the answered questions on the path, with answers, then the next one", async () => {
+    mockPathInputs({
+      questions: [
+        { id: "q1", competenceId: "comp-a" },
+        { id: "q2", competenceId: "comp-a" },
+        { id: "q3", competenceId: "comp-a" },
+      ],
+      active: { id: "instance-1", instanceNum: 1 },
+      responses: [{ id: "r1", questionId: "q1", score: 1, maxScore: 1 }],
+    });
+
+    const path = await getAssessmentPath("learner-1");
+
+    expect(path?.done).toBe(false);
+    expect(path?.sectionCount).toBe(1);
+    expect(path?.items.map((i) => i.question.id)).toEqual(["q1", "q2"]);
+    expect(path?.items[0]).toMatchObject({
+      answer: { session: {}, complete: true },
+      section: { code: "A", name: "Section A" },
+      sectionNumber: 1,
+      level: 1,
+    });
+    expect(path?.items[1].answer).toBeNull();
+  });
+
+  it("starts at the first question before any answer (no instance yet)", async () => {
+    mockPathInputs({
+      questions: [{ id: "q1", competenceId: "comp-a" }],
+      active: null,
+      responses: [],
+    });
+
+    const path = await getAssessmentPath("learner-1");
+
+    expect(path?.items.map((i) => i.question.id)).toEqual(["q1"]);
+    expect(path?.done).toBe(false);
+  });
+
+  it("returns null for a learner without a role", async () => {
+    vi.mocked(findLearnerById).mockResolvedValue({ roleId: null } as never);
+    expect(await getAssessmentPath("learner-1")).toBeNull();
+  });
+});
+
 describe("completeActiveInstance", () => {
-  it("sums scored responses per competence and upserts one CompetenceScore each", async () => {
-    mockPrisma.satInstance.findFirst.mockResolvedValueOnce({ id: "instance-1" } as never);
-    mockPrisma.response.findMany.mockResolvedValue([
-      {
-        score: 1,
-        maxScore: 1,
-        question: { competenceId: "competence-a", competence: { name: "A" } },
-      },
-      {
-        score: 0,
-        maxScore: 1,
-        question: { competenceId: "competence-a", competence: { name: "A" } },
-      },
-      {
-        score: 3,
-        maxScore: 4,
-        question: { competenceId: "competence-b", competence: { name: "B" } },
-      },
-      // The question was deleted since — nothing to score it against.
-      { score: 5, maxScore: 5, question: null },
+  it("scores every answered question and deletes answers to questions no longer in the bank", async () => {
+    mockPathInputs({
+      questions: [
+        { id: "q1", competenceId: "comp-a" },
+        { id: "q2", competenceId: "comp-a" },
+      ],
+      active: { id: "instance-1", instanceNum: 1 },
+      responses: [
+        { id: "r1", questionId: "q1", score: 1, maxScore: 1 },
+        { id: "r2", questionId: "q2", score: 0, maxScore: 1 },
+        // Not in the learner's bank any more (hidden, or deleted): must not count.
+        { id: "r3", questionId: "q-elsewhere", score: 1, maxScore: 1 },
+        { id: "r4", questionId: null, score: 1, maxScore: 1 },
+      ],
+    });
+    mockPrisma.response.findMany.mockResolvedValueOnce([
+      { score: 1, maxScore: 1, question: { competenceId: "comp-a", competence: { name: "A" } } },
+      { score: 0, maxScore: 1, question: { competenceId: "comp-a", competence: { name: "A" } } },
     ] as never);
 
-    await completeActiveInstance("learner-1");
+    expect(await completeActiveInstance("learner-1")).toBe("completed");
 
-    expect(mockPrisma.competenceScore.upsert).toHaveBeenCalledTimes(2);
+    expect(mockPrisma.response.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ questionId: { in: ["q1", "q2"] } }),
+      }),
+    );
+    expect(mockPrisma.response.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["r3", "r4"] } },
+    });
+    expect(mockPrisma.competenceScore.upsert).toHaveBeenCalledOnce();
     expect(mockPrisma.competenceScore.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          satInstanceId_competenceId: { satInstanceId: "instance-1", competenceId: "competence-a" },
+          satInstanceId_competenceId: { satInstanceId: "instance-1", competenceId: "comp-a" },
         },
         update: { score: 1, maxScore: 2, competenceName: "A" },
       }),
     );
-    expect(mockPrisma.competenceScore.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: {
-          satInstanceId_competenceId: { satInstanceId: "instance-1", competenceId: "competence-b" },
-        },
-        update: { score: 3, maxScore: 4, competenceName: "B" },
-      }),
-    );
-  });
-
-  it("marks the instance complete even when there's nothing scored", async () => {
-    mockPrisma.satInstance.findFirst.mockResolvedValueOnce({ id: "instance-1" } as never);
-    mockPrisma.response.findMany.mockResolvedValue([]);
-
-    await completeActiveInstance("learner-1");
-
     expect(mockPrisma.satInstance.update).toHaveBeenCalledWith({
       where: { id: "instance-1" },
       data: { completedAt: expect.any(Date) },
     });
+  });
+
+  it("refuses while the path still has a next question", async () => {
+    mockPathInputs({
+      questions: [
+        { id: "q1", competenceId: "comp-a" },
+        { id: "q2", competenceId: "comp-a" },
+      ],
+      active: { id: "instance-1", instanceNum: 1 },
+      responses: [{ id: "r1", questionId: "q1", score: 1, maxScore: 1 }],
+    });
+
+    expect(await completeActiveInstance("learner-1")).toBe("unfinished");
+    expect(mockPrisma.satInstance.update).not.toHaveBeenCalled();
+  });
+
+  it("completes with no scores when there's nothing to ask", async () => {
+    mockPathInputs({ questions: [], active: { id: "instance-1", instanceNum: 1 }, responses: [] });
+    mockPrisma.response.findMany.mockResolvedValueOnce([]);
+
+    expect(await completeActiveInstance("learner-1")).toBe("completed");
     expect(mockPrisma.competenceScore.upsert).not.toHaveBeenCalled();
   });
 
   it("no-ops when the learner has no active instance", async () => {
-    mockPrisma.satInstance.findFirst.mockResolvedValueOnce(null);
+    mockPathInputs({ questions: [], active: null, responses: [] });
 
-    const result = await completeActiveInstance("learner-1");
-
-    expect(result).toBeNull();
+    expect(await completeActiveInstance("learner-1")).toBe("none");
     expect(mockPrisma.satInstance.update).not.toHaveBeenCalled();
   });
 });
@@ -455,10 +557,16 @@ describe("getLatestCompetenceScores", () => {
 });
 
 describe("getLatestSectionCompetenceScores", () => {
-  it("builds section/competence totals from the instance's own responses, without reading the learner's role", async () => {
+  beforeEach(() => {
+    // Default: no role, so no extra untouched sections — overridden where needed.
+    vi.mocked(findLearnerById).mockResolvedValue({ roleId: null } as never);
+  });
+
+  it("builds section/competence totals from the instance's own responses", async () => {
     mockPrisma.response.findMany.mockResolvedValue([
       {
         satInstanceId: "instance-1",
+        satInstance: { completedAt: new Date("2026-01-01") },
         score: 2,
         maxScore: 3,
         question: { competenceId: "comp-a", sectionModule: { sectionId: "section-1" } },
@@ -478,11 +586,61 @@ describe("getLatestSectionCompetenceScores", () => {
     expect(result).toEqual([
       {
         section: { id: "section-1", name: "Section One" },
+        assessed: true,
+        assessedAt: new Date("2026-01-01"),
         competences: [{ competence: { name: "Competence A" }, score: 2, maxScore: 3 }],
       },
     ]);
-    expect(findLearnerById).not.toHaveBeenCalled();
-    expect(getRoleGrants).not.toHaveBeenCalled();
+  });
+
+  it("also lists sections the learner could be assessed in but hasn't touched, at 0 and unassessed", async () => {
+    mockPrisma.response.findMany.mockResolvedValue([
+      {
+        satInstanceId: "instance-1",
+        satInstance: { completedAt: new Date("2026-01-01") },
+        score: 1,
+        maxScore: 1,
+        question: { competenceId: "comp-a", sectionModule: { sectionId: "section-1" } },
+      },
+    ] as never);
+    // The role can see both sections; only section-1 was answered.
+    vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);
+    mockPrisma.satInstance.count.mockResolvedValue(1);
+    vi.mocked(getRoleGrants).mockResolvedValue({
+      sectionIds: ["section-1", "section-2"],
+      competenceIds: [],
+    });
+    mockPrisma.section.findMany.mockResolvedValue([
+      { id: "section-1", name: "Section One" },
+      { id: "section-2", name: "Section Two" },
+    ] as never);
+    mockPrisma.sectionModule.findMany.mockResolvedValue([
+      {
+        section: { id: "section-1", code: "A", name: "Section One" },
+        mainCompetence: { id: "comp-a", name: "Competence A" },
+        secondaryCompetences: [],
+        questions: [],
+      },
+      {
+        section: { id: "section-2", code: "B", name: "Section Two" },
+        mainCompetence: { id: "comp-b", name: "Competence B" },
+        secondaryCompetences: [],
+        questions: [],
+      },
+    ] as never);
+
+    const result = await getLatestSectionCompetenceScores("learner-1");
+
+    expect(mockPrisma.sectionModule.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { sectionId: { in: ["section-1", "section-2"] } } }),
+    );
+    expect(result[1]).toEqual({
+      section: { id: "section-2", code: "B", name: "Section Two" },
+      assessed: false,
+      assessedAt: null,
+      competences: [{ competence: { name: "Competence B" }, score: 0, maxScore: 0 }],
+    });
+    expect(result[0].assessed).toBe(true);
   });
 
   it("uses each section's newest assessment, so a partial reassessment keeps the other sections", async () => {
@@ -490,18 +648,21 @@ describe("getLatestSectionCompetenceScores", () => {
     mockPrisma.response.findMany.mockResolvedValue([
       {
         satInstanceId: "instance-2",
+        satInstance: { completedAt: new Date("2026-02-01") },
         score: 3,
         maxScore: 3,
         question: { competenceId: "comp-a", sectionModule: { sectionId: "section-1" } },
       },
       {
         satInstanceId: "instance-1",
+        satInstance: { completedAt: new Date("2026-01-01") },
         score: 0,
         maxScore: 3,
         question: { competenceId: "comp-a", sectionModule: { sectionId: "section-1" } },
       },
       {
         satInstanceId: "instance-1",
+        satInstance: { completedAt: new Date("2026-01-01") },
         score: 1,
         maxScore: 3,
         question: { competenceId: "comp-b", sectionModule: { sectionId: "section-2" } },
@@ -527,10 +688,15 @@ describe("getLatestSectionCompetenceScores", () => {
     expect(result).toEqual([
       {
         section: { id: "section-1", name: "Section One" },
+        assessed: true,
+        // From the newer attempt, which only retook section-1.
+        assessedAt: new Date("2026-02-01"),
         competences: [{ competence: { name: "Competence A" }, score: 3, maxScore: 3 }],
       },
       {
         section: { id: "section-2", name: "Section Two" },
+        assessed: true,
+        assessedAt: new Date("2026-01-01"),
         competences: [{ competence: { name: "Competence B" }, score: 1, maxScore: 3 }],
       },
     ]);
@@ -539,6 +705,73 @@ describe("getLatestSectionCompetenceScores", () => {
   it("returns an empty list when there's no completed instance yet", async () => {
     mockPrisma.response.findMany.mockResolvedValue([]);
     expect(await getLatestSectionCompetenceScores("learner-1")).toEqual([]);
+  });
+
+  it("orders a section's competences by level, so its radar starts at level 1", async () => {
+    mockPrisma.response.findMany.mockResolvedValue([
+      {
+        satInstanceId: "instance-1",
+        satInstance: { completedAt: new Date("2026-01-01") },
+        score: 1,
+        maxScore: 1,
+        question: { competenceId: "comp-1", sectionModule: { sectionId: "sec-1" } },
+      },
+    ] as never);
+    // Alphabetical order would be Apple (level 4), Mango (2), Zebra (1), and
+    // "Loose" (no module's main competence) — level order is Zebra, Mango, Apple, Loose.
+    const module = (level: number, id: string, name: string, secondary: string[] = []) => ({
+      level,
+      section: { id: "sec-1", code: "A", name: "Section" },
+      mainCompetence: { id, name },
+      secondaryCompetences: secondary.map((n) => ({ competence: { id: `id-${n}`, name: n } })),
+      questions: [],
+    });
+    mockPrisma.sectionModule.findMany.mockResolvedValue([
+      module(4, "comp-4", "Apple", ["Loose"]),
+      module(1, "comp-1", "Zebra"),
+      module(2, "comp-2", "Mango"),
+    ] as never);
+
+    const [section] = await getLatestSectionCompetenceScores("learner-1");
+
+    expect(section.competences.map((c) => c.competence.name)).toEqual([
+      "Zebra",
+      "Mango",
+      "Apple",
+      "Loose",
+    ]);
+  });
+
+  it("lists sections in A–E order by code, not by name", async () => {
+    const answer = (sectionId: string, competenceId: string) => ({
+      satInstanceId: "instance-1",
+      satInstance: { completedAt: new Date("2026-01-01") },
+      score: 1,
+      maxScore: 1,
+      question: { competenceId, sectionModule: { sectionId } },
+    });
+    mockPrisma.response.findMany.mockResolvedValue([
+      answer("sec-1", "comp-1"),
+      answer("sec-2", "comp-2"),
+    ] as never);
+    mockPrisma.sectionModule.findMany.mockResolvedValue([
+      {
+        section: { id: "sec-1", code: "B", name: "Apples" },
+        mainCompetence: { id: "comp-1", name: "One" },
+        secondaryCompetences: [],
+        questions: [],
+      },
+      {
+        section: { id: "sec-2", code: "A", name: "Zebras" },
+        mainCompetence: { id: "comp-2", name: "Two" },
+        secondaryCompetences: [],
+        questions: [],
+      },
+    ] as never);
+
+    const result = await getLatestSectionCompetenceScores("learner-1");
+
+    expect(result.map((s) => s.section.code)).toEqual(["A", "B"]);
   });
 });
 
@@ -639,6 +872,69 @@ describe("startReassessment", () => {
 
     expect(result).toMatchObject({ ok: false, status: 400 });
     expect(mockPrisma.satInstance.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("getSkillLevels", () => {
+  /** A section with levels 1-3 of three questions each: `${code}${level}-${n}`. */
+  function sectionRow(id: string, code: string, name: string) {
+    return {
+      id,
+      code,
+      name,
+      modules: [1, 2, 3].map((level) => ({
+        id: `${code}${level}`,
+        level,
+        questions: [1, 2, 3].map((n) => ({ id: `${code}${level}-${n}` })),
+      })),
+    };
+  }
+
+  function response(instance: string, questionId: string, score: number, sectionId: string) {
+    return {
+      satInstanceId: instance,
+      questionId,
+      score,
+      maxScore: 1,
+      question: { sectionModule: { sectionId } },
+    };
+  }
+
+  it("gives each assessed section its level, from its newest attempt, sorted by code", async () => {
+    // Newest instance first: instance-2 retook only section B.
+    mockPrisma.response.findMany.mockResolvedValue([
+      response("instance-2", "B1-1", 1, "sec-b"),
+      response("instance-2", "B1-2", 1, "sec-b"),
+      response("instance-1", "B1-1", 0, "sec-b"), // older — ignored
+      response("instance-1", "B1-2", 0, "sec-b"),
+      response("instance-1", "A1-1", 1, "sec-a"),
+      response("instance-1", "A1-2", 1, "sec-a"),
+      response("instance-1", "A2-1", 0, "sec-a"),
+      response("instance-1", "A2-2", 0, "sec-a"),
+    ] as never);
+    mockPrisma.section.findMany.mockResolvedValue([
+      sectionRow("sec-b", "B", "Baking"),
+      sectionRow("sec-a", "A", "Knives"),
+    ] as never);
+
+    expect(await getSkillLevels("learner-1")).toEqual([
+      { section: { id: "sec-a", code: "A", name: "Knives" }, level: 1, levelCount: 3 },
+      { section: { id: "sec-b", code: "B", name: "Baking" }, level: 1, levelCount: 3 },
+    ]);
+  });
+
+  it("ignores answers whose question was deleted", async () => {
+    mockPrisma.response.findMany.mockResolvedValue([
+      { satInstanceId: "instance-1", questionId: null, score: 1, maxScore: 1, question: null },
+    ] as never);
+
+    expect(await getSkillLevels("learner-1")).toEqual([]);
+    expect(mockPrisma.section.findMany).not.toHaveBeenCalled();
+  });
+
+  it("returns an empty list before any completed assessment", async () => {
+    mockPrisma.response.findMany.mockResolvedValue([]);
+    expect(await getSkillLevels("learner-1")).toEqual([]);
   });
 });
 

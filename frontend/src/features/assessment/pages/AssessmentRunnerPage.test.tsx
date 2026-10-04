@@ -2,19 +2,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AssessmentRunnerPage } from "./AssessmentRunnerPage";
-import {
-  completeAssessment,
-  discardAssessment,
-  getProgress,
-  getQuestions,
-  saveResponse,
-} from "../api";
+import { completeAssessment, discardAssessment, getAssessmentPath, saveResponse } from "../api";
 import { completeInitialAssessment } from "@/features/auth";
-import type { Question } from "../types";
+import type { AssessmentPath, PathItem, Question } from "../types";
 
 vi.mock("../api", () => ({
-  getQuestions: vi.fn(),
-  getProgress: vi.fn(),
+  getAssessmentPath: vi.fn(),
   saveResponse: vi.fn(),
   completeAssessment: vi.fn(),
   discardAssessment: vi.fn(),
@@ -40,37 +33,54 @@ vi.mock("@/shared/api/retry", () => ({
 }));
 
 // The real card renders the PIE widget; this stand-in shows which question
-// is up and answers it on click.
+// is up, whether it has an answer, and answers it on click.
 vi.mock("../components/QuestionCard", () => ({
   QuestionCard: ({
     question,
+    answer,
     onAnswerChange,
   }: {
     question: Question;
+    answer?: { complete: boolean };
     onAnswerChange: (answer: { session: unknown; complete: boolean }) => void;
   }) => (
     <div>
       <p>{question.prompt}</p>
+      {answer?.complete && <p>answered</p>}
       <button onClick={() => onAnswerChange({ session: {}, complete: true })}>Answer</button>
     </div>
   ),
 }));
 
-function question(id: string): Question {
+const done = { session: {}, complete: true };
+
+function item(
+  id: string,
+  { answered = false, code = "A", level = 1, sectionNumber = 1 } = {},
+): PathItem {
   return {
-    id,
-    prompt: `Question ${id}`,
-    questionType: "likert",
-    competence: { id: "c1", name: "Competence" },
-    content: { elements: {}, models: [], markup: "" },
+    question: {
+      id,
+      prompt: `Question ${id}`,
+      questionType: "single_choice",
+      competence: { id: "c1", name: "Competence" },
+      content: { elements: {}, models: [], markup: "" },
+    },
+    answer: answered ? done : null,
+    section: { code, name: `Section ${code}` },
+    sectionNumber,
+    level,
   };
+}
+
+function path(items: PathItem[], isDone = false, sectionCount = 2): AssessmentPath {
+  return { items, sectionCount, done: isDone };
 }
 
 const networkError = { status: 0, message: "offline" };
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(getProgress).mockResolvedValue(null);
   vi.mocked(saveResponse).mockResolvedValue(undefined);
   vi.mocked(completeAssessment).mockResolvedValue(undefined);
   vi.mocked(discardAssessment).mockResolvedValue(undefined);
@@ -78,78 +88,151 @@ beforeEach(() => {
 });
 
 describe("AssessmentRunnerPage", () => {
-  it("offers a retry when the assessment fails to load, instead of 'no questions'", async () => {
-    vi.mocked(getQuestions)
+  it("offers a retry when the assessment fails to load", async () => {
+    vi.mocked(getAssessmentPath)
       .mockRejectedValueOnce(networkError)
-      .mockResolvedValue([question("1")]);
+      .mockResolvedValue(path([item("1")]));
     const user = userEvent.setup();
 
     render(<AssessmentRunnerPage />);
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't load the assessment");
-    expect(screen.queryByText(/no questions are available/i)).not.toBeInTheDocument();
-
     await user.click(screen.getByRole("button", { name: /try again/i }));
 
     expect(await screen.findByText("Question 1")).toBeInTheDocument();
   });
 
-  it("finishes and goes to the dashboard when every save succeeded", async () => {
-    vi.mocked(getQuestions).mockResolvedValue([question("1")]);
+  it("shows how far through the sections the learner is, but not which section or level", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path([item("1", { code: "C", level: 2, sectionNumber: 3 })], false, 5),
+    );
+
+    render(<AssessmentRunnerPage />);
+
+    expect(await screen.findByText("Section 3 of 5")).toBeInTheDocument();
+    expect(screen.queryByText("C2")).not.toBeInTheDocument();
+    expect(screen.queryByText("Section C")).not.toBeInTheDocument();
+  });
+
+  it("resumes at the next question, after the ones already answered", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path([item("1", { answered: true }), item("2", { answered: true }), item("3")]),
+    );
+
+    render(<AssessmentRunnerPage />);
+
+    expect(await screen.findByText("Question 3")).toBeInTheDocument();
+  });
+
+  it("Next saves the answer, asks for the path again and moves to the question it adds", async () => {
+    vi.mocked(getAssessmentPath)
+      .mockResolvedValueOnce(path([item("1")]))
+      // A1 passed early: the backend skips ahead to A2.
+      .mockResolvedValueOnce(path([item("1", { answered: true }), item("A2-q", { level: 2 })]));
     const user = userEvent.setup();
 
     render(<AssessmentRunnerPage />);
     await user.click(await screen.findByRole("button", { name: "Answer" }));
-    await user.click(screen.getByRole("button", { name: "Finish" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(await screen.findByText("Question A2-q")).toBeInTheDocument();
+    expect(saveResponse).toHaveBeenCalledWith("1", done);
+    expect(getAssessmentPath).toHaveBeenCalledTimes(2);
+  });
+
+  it("finishes and goes to the dashboard when the path ends", async () => {
+    vi.mocked(getAssessmentPath)
+      .mockResolvedValueOnce(path([item("1")]))
+      .mockResolvedValueOnce(path([item("1", { answered: true })], true));
+    const user = userEvent.setup();
+
+    render(<AssessmentRunnerPage />);
+    await user.click(await screen.findByRole("button", { name: "Answer" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/", { replace: true }));
-    expect(saveResponse).toHaveBeenCalledWith("1", { session: {}, complete: true });
     expect(completeAssessment).toHaveBeenCalledOnce();
     expect(markInitialAssessmentComplete).toHaveBeenCalledOnce();
   });
 
-  it("shows an unsaved-answer banner and refuses to finish until the save is retried", async () => {
-    vi.mocked(getQuestions).mockResolvedValue([question("1")]);
+  it("labels the button Finish when resuming a path that's already complete", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1", { answered: true })], true));
+
+    render(<AssessmentRunnerPage />);
+
+    expect(await screen.findByRole("button", { name: "Finish" })).toBeEnabled();
+  });
+
+  it("Back shows the previous question with its saved answer", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path([item("1", { answered: true }), item("2")]),
+    );
+    const user = userEvent.setup();
+
+    render(<AssessmentRunnerPage />);
+    await user.click(await screen.findByRole("button", { name: "Back" }));
+
+    expect(screen.getByText("Question 1")).toBeInTheDocument();
+    expect(screen.getByText("answered")).toBeInTheDocument();
+  });
+
+  it("after changing an earlier answer, Next goes on to the question already shown after it", async () => {
+    const shown = path([item("1", { answered: true }), item("2", { answered: true }), item("3")]);
+    // Answered questions stay put whatever the change, so the path keeps them.
+    vi.mocked(getAssessmentPath).mockResolvedValue(shown);
+    const user = userEvent.setup();
+
+    render(<AssessmentRunnerPage />);
+    await user.click(await screen.findByRole("button", { name: "Back" }));
+    await user.click(screen.getByRole("button", { name: "Back" }));
+    expect(screen.getByText("Question 1")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Answer" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(await screen.findByText("Question 2")).toBeInTheDocument();
+    expect(saveResponse).toHaveBeenCalledWith("1", done);
+  });
+
+  it("refuses to move on while an answer is unsaved, until the save is retried", async () => {
+    vi.mocked(getAssessmentPath)
+      .mockResolvedValueOnce(path([item("1")]))
+      .mockResolvedValueOnce(path([item("1", { answered: true }), item("2")]));
     vi.mocked(saveResponse).mockRejectedValueOnce(networkError);
     const user = userEvent.setup();
 
     render(<AssessmentRunnerPage />);
     await user.click(await screen.findByRole("button", { name: "Answer" }));
-
     expect(await screen.findByText(/1 answer hasn't been saved/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Finish" }));
-
-    expect(await screen.findByText(/some answers haven't been saved yet/i)).toBeInTheDocument();
-    expect(completeAssessment).not.toHaveBeenCalled();
-    expect(navigate).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    expect(await screen.findByText(/haven't been saved yet/i)).toBeInTheDocument();
+    expect(getAssessmentPath).toHaveBeenCalledOnce();
 
     await user.click(screen.getByRole("button", { name: /retry saving/i }));
-
     await waitFor(() => expect(screen.queryByText(/hasn't been saved/i)).not.toBeInTheDocument());
-    await user.click(screen.getByRole("button", { name: "Finish" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/", { replace: true }));
+    expect(await screen.findByText("Question 2")).toBeInTheDocument();
   });
 
   it("stays on the page with an error when completing the assessment fails", async () => {
-    vi.mocked(getQuestions).mockResolvedValue([question("1")]);
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1", { answered: true })], true));
     vi.mocked(completeAssessment).mockRejectedValueOnce(networkError);
     const user = userEvent.setup();
 
     render(<AssessmentRunnerPage />);
-    await user.click(await screen.findByRole("button", { name: "Answer" }));
-    await user.click(screen.getByRole("button", { name: "Finish" }));
+    await user.click(await screen.findByRole("button", { name: "Finish" }));
 
     expect(await screen.findByText(/couldn't finish the assessment/i)).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Finish" })).toBeEnabled();
   });
 
-  it("reloads the questions instead of retrying when a save is rejected with 404", async () => {
-    vi.mocked(getQuestions)
-      .mockResolvedValueOnce([question("1"), question("2")])
-      .mockResolvedValueOnce([question("2")]); // an admin revoked question 1's section
+  it("reloads the path instead of retrying when a save is rejected with 404", async () => {
+    vi.mocked(getAssessmentPath)
+      .mockResolvedValueOnce(path([item("1")]))
+      .mockResolvedValueOnce(path([item("2")])); // an admin hid question 1 from the role
     vi.mocked(saveResponse).mockRejectedValueOnce({ status: 404, message: "Unknown question" });
     const user = userEvent.setup();
 
@@ -161,11 +244,19 @@ describe("AssessmentRunnerPage", () => {
     expect(screen.queryByText(/hasn't been saved/i)).not.toBeInTheDocument();
     expect(saveResponse).toHaveBeenCalledOnce();
   });
+
+  it("says so when there's nothing to ask", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([], true, 0));
+
+    render(<AssessmentRunnerPage />);
+
+    expect(await screen.findByText(/no questions are available/i)).toBeInTheDocument();
+  });
 });
 
 describe("AssessmentRunnerPage exit dialog", () => {
   it("Keep going closes the dialog and stays on the question", async () => {
-    vi.mocked(getQuestions).mockResolvedValue([question("1")]);
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
     const user = userEvent.setup();
 
     render(<AssessmentRunnerPage />);
@@ -181,7 +272,7 @@ describe("AssessmentRunnerPage exit dialog", () => {
   });
 
   it("Save & exit leaves without deleting anything", async () => {
-    vi.mocked(getQuestions).mockResolvedValue([question("1"), question("2")]);
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
     const user = userEvent.setup();
 
     render(<AssessmentRunnerPage />);
@@ -195,7 +286,7 @@ describe("AssessmentRunnerPage exit dialog", () => {
   });
 
   it("Save & exit retries unsaved answers and stays if they still fail", async () => {
-    vi.mocked(getQuestions).mockResolvedValue([question("1"), question("2")]);
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
     vi.mocked(saveResponse).mockRejectedValue(networkError);
     const user = userEvent.setup();
 
@@ -211,7 +302,7 @@ describe("AssessmentRunnerPage exit dialog", () => {
   });
 
   it("Abort waits for a save still in flight before deleting, so it can't recreate the attempt", async () => {
-    vi.mocked(getQuestions).mockResolvedValue([question("1"), question("2")]);
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
     let finishSave!: () => void;
     vi.mocked(saveResponse).mockReturnValueOnce(
       new Promise<void>((resolve) => {
@@ -234,7 +325,7 @@ describe("AssessmentRunnerPage exit dialog", () => {
   });
 
   it("stays with an error when aborting fails", async () => {
-    vi.mocked(getQuestions).mockResolvedValue([question("1")]);
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
     vi.mocked(discardAssessment).mockRejectedValueOnce(networkError);
     const user = userEvent.setup();
 

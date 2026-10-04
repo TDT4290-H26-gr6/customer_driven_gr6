@@ -42,15 +42,27 @@ describe("scoreMultipleChoice", () => {
     });
   });
 
-  it("checkbox: +1/alternatives per alternative handled right, -1/alternatives per one handled wrong", () => {
-    // "0" picked (right), "1" missed (wrong), "2" unpicked (right), "3" unpicked (right)
+  it("checkbox: share of correct choices ticked minus share of incorrect ones ticked", () => {
+    // Found 1 of 2 correct, fell for none.
     expect(scoreMultipleChoice(checkboxChoices, "checkbox", ["0"])).toEqual({
-      score: 0.5, // (3 - 1) / 4
+      score: 0.5, // 1/2 - 0/2
       maxScore: 1,
     });
-    // "0" picked (right), "1" missed (wrong), "2" picked (wrong), "3" unpicked (right)
+    // Found both, fell for 1 of 2 incorrect.
+    expect(scoreMultipleChoice(checkboxChoices, "checkbox", ["0", "1", "2"])).toEqual({
+      score: 0.5, // 2/2 - 1/2
+      maxScore: 1,
+    });
+    // Found 1, fell for 1: cancels out.
     expect(scoreMultipleChoice(checkboxChoices, "checkbox", ["0", "2"])).toEqual({
-      score: 0, // (2 - 2) / 4
+      score: 0, // 1/2 - 1/2
+      maxScore: 1,
+    });
+  });
+
+  it("checkbox: ticking everything scores 0", () => {
+    expect(scoreMultipleChoice(checkboxChoices, "checkbox", ["0", "1", "2", "3"])).toEqual({
+      score: 0,
       maxScore: 1,
     });
   });
@@ -62,10 +74,37 @@ describe("scoreMultipleChoice", () => {
     });
   });
 
-  it("checkbox: doesn't count 'I don't know' as an alternative", () => {
-    // With IDK counted it would be 5 alternatives: (4 - 1) / 5 = 0.6.
+  it("checkbox: one wrong tick costs less when there are more incorrect choices", () => {
+    const sixChoices = [
+      { value: "a", correct: true },
+      { value: "b", correct: true },
+      { value: "c", correct: false },
+      { value: "d", correct: false },
+      { value: "e", correct: false },
+      { value: "f", correct: false },
+    ];
+    expect(scoreMultipleChoice(sixChoices, "checkbox", ["a", "b", "c"])).toEqual({
+      score: 0.75, // 2/2 - 1/4
+      maxScore: 1,
+    });
+  });
+
+  it("checkbox: a question whose choices are all correct scores 1 when all are ticked", () => {
+    const allCorrect = [
+      { value: "a", correct: true },
+      { value: "b", correct: true },
+      { value: "c", correct: true },
+    ];
+    expect(scoreMultipleChoice(allCorrect, "checkbox", ["a", "b", "c"])).toEqual({
+      score: 1,
+      maxScore: 1,
+    });
+  });
+
+  it("checkbox: doesn't count 'I don't know' as an incorrect choice", () => {
+    // Were it counted, 1 of 3 incorrect ticked would score 2/2 - 1/3 ≈ 0.67.
     expect(scoreMultipleChoice(checkboxChoices, "checkbox", ["0", "1", "2"])).toEqual({
-      score: 0.5, // (3 - 1) / 4
+      score: 0.5, // 2/2 - 1/2
       maxScore: 1,
     });
   });

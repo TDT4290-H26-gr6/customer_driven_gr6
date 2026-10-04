@@ -4,6 +4,14 @@ import { findLearnerById, getRoleGrants } from "../identity/identity.service";
 import { ORDERED_QUESTION_TYPES } from "./assessment.pie";
 import { completedCompetenceScoresQuery, newestPerCompetence } from "./assessment.newestScores";
 import {
+  buildPath,
+  seededRandom,
+  shuffle,
+  skillLevel,
+  type PathAnswer,
+  type PathSection,
+} from "./assessment.path";
+import {
   extractDragAndDropBlanks,
   extractMultipleChoiceValues,
   IDK_VALUE,
@@ -16,15 +24,6 @@ import {
 
 // All Prisma access for assessment_* tables lives here.
 
-function shuffle<T>(items: T[]): T[] {
-  const shuffled = [...items];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-}
-
 /**
  * Randomizes the on-screen order of a question's answer choices (Fisher–
  * Yates) so "it's always the 2nd option" never becomes a shortcut. Each
@@ -33,9 +32,13 @@ function shuffle<T>(items: T[]): T[] {
  * position) — but ordered scales (likert) and true/false are left alone,
  * since their order is the point, not noise to shuffle. The "I don't know"
  * choice every question carries (IDK_VALUE) is never shuffled in among the
- * others either — it's held back and always placed last.
+ * others either — it's held back and always placed last. `random` lets the
+ * assessment path keep a question's order stable across fetches.
  */
-function withShuffledChoices<T extends Pick<Question, "questionType" | "content">>(question: T): T {
+function withShuffledChoices<T extends Pick<Question, "questionType" | "content">>(
+  question: T,
+  random: () => number = Math.random,
+): T {
   if (ORDERED_QUESTION_TYPES.includes(question.questionType)) return question;
 
   const content = question.content as { models?: { choices?: { value?: unknown }[] }[] } | null;
@@ -46,7 +49,7 @@ function withShuffledChoices<T extends Pick<Question, "questionType" | "content"
   const idk = firstModel.choices.filter((c) => c.value === IDK_VALUE);
   const rest = firstModel.choices.filter((c) => c.value !== IDK_VALUE);
   const shuffledModels = [
-    { ...firstModel, choices: [...shuffle(rest), ...idk] },
+    { ...firstModel, choices: [...shuffle(rest, random), ...idk] },
     ...models.slice(1),
   ];
   return { ...question, content: { ...content, models: shuffledModels } as Prisma.JsonValue };
@@ -309,6 +312,127 @@ export async function startReassessment(
   return { ok: true };
 }
 
+/** Everything buildPath needs for the learner's current (or upcoming) attempt. */
+async function loadPathInputs(learnerId: string) {
+  const where = await visibleQuestionFilter(learnerId);
+  if (!where) return null;
+
+  const [questions, active] = await Promise.all([
+    prisma.question.findMany({
+      where,
+      include: {
+        competence: { select: { id: true, name: true } },
+        sectionModule: {
+          select: {
+            id: true,
+            level: true,
+            section: { select: { id: true, code: true, name: true } },
+          },
+        },
+      },
+      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+    }),
+    findActiveInstance(learnerId),
+  ]);
+
+  // Before the first answer there's no instance yet; its number will be the
+  // next one, so the order chosen now is the order it keeps once created.
+  const instanceNum =
+    active?.instanceNum ??
+    ((
+      await prisma.satInstance.findFirst({
+        where: { learnerId },
+        orderBy: { instanceNum: "desc" },
+        select: { instanceNum: true },
+      })
+    )?.instanceNum ?? 0) + 1;
+
+  const sectionsById = new Map<string, PathSection>();
+  for (const q of questions) {
+    const { id: moduleId, level, section } = q.sectionModule;
+    const entry = sectionsById.get(section.id) ?? { id: section.id, modules: [] };
+    let module = entry.modules.find((m) => m.id === moduleId);
+    if (!module) {
+      module = { id: moduleId, level, questionIds: [] };
+      entry.modules.push(module);
+    }
+    module.questionIds.push(q.id);
+    sectionsById.set(section.id, entry);
+  }
+  // A random section order per attempt, stable for that attempt.
+  const sections = shuffle(
+    [...sectionsById.values()].sort((a, b) => a.id.localeCompare(b.id)),
+    seededRandom(`${learnerId}:${instanceNum}`),
+  );
+
+  const responses = active
+    ? await prisma.response.findMany({
+        where: { satInstanceId: active.id },
+        select: {
+          id: true,
+          questionId: true,
+          score: true,
+          maxScore: true,
+          answer: true,
+          answeredAt: true,
+        },
+      })
+    : [];
+  const answers = new Map<string, PathAnswer & { answer: Prisma.JsonValue }>();
+  for (const r of responses) if (r.questionId) answers.set(r.questionId, r);
+
+  return {
+    questions: new Map(questions.map((q) => [q.id, q])),
+    sections,
+    active,
+    instanceNum,
+    responses,
+    answers,
+  };
+}
+
+/**
+ * The learner's route through their current (or upcoming) attempt, from
+ * their answers so far (see assessment.path.ts): every question they've
+ * answered, in the order first answered, with their answer, then the next
+ * one to ask — or
+ * `done` when nothing is left. Each item says which section (and section
+ * number, in this attempt's random order) and level it belongs to. Choice
+ * order is shuffled per attempt but stable, so Back and resuming show the
+ * same order. Returns null for a learner without a role.
+ */
+export async function getAssessmentPath(learnerId: string) {
+  const inputs = await loadPathInputs(learnerId);
+  if (!inputs) return null;
+  const { questions, sections, instanceNum, answers } = inputs;
+
+  const { answered, next } = buildPath(sections, answers);
+  const sectionNumberOf = new Map(sections.map((s, i) => [s.id, i + 1]));
+
+  const items = [...answered, ...(next ? [next] : [])].map((id) => {
+    const q = questions.get(id)!;
+    const { section, level } = q.sectionModule;
+    return {
+      question: withShuffledChoices(
+        {
+          id: q.id,
+          prompt: q.prompt,
+          questionType: q.questionType,
+          content: q.content,
+          competence: q.competence,
+        },
+        seededRandom(`${learnerId}:${instanceNum}:${q.id}`),
+      ),
+      answer: answers.get(id)?.answer ?? null,
+      section: { code: section.code, name: section.name },
+      sectionNumber: sectionNumberOf.get(section.id)!,
+      level,
+    };
+  });
+
+  return { items, sectionCount: sections.length, done: next === null };
+}
+
 /**
  * Save/resume (CD-7 / SAT2): the learner's in-progress instance plus every
  * answer saved so far, so the frontend can restore exactly where they left
@@ -367,21 +491,36 @@ export async function saveResponse(
   });
 }
 
+export type CompleteResult = "completed" | "none" | "unfinished";
+
 /**
- * Marks the learner's active instance complete and rolls its scored
- * responses up into one CompetenceScore row per competence touched — grouped
- * by each question's own competenceId, independent of the section/module
- * hierarchy. Unscored responses, and answers whose question has since been
- * deleted, are excluded. Each score also stores a copy of its competence's
- * name, so History can still show it if the competence is deleted later.
- * No-ops if there isn't an active instance.
+ * Marks the learner's active instance complete — only once its path is
+ * finished (assessment.path.ts) — and rolls its scored responses up into
+ * one CompetenceScore row per competence touched, grouped by each
+ * question's own competenceId. Every answered question counts. The only
+ * answers deleted are ones to questions no longer in the learner's bank
+ * (deleted, or hidden from their role since), so every later read of the
+ * responses agrees with the scores. Each score also
+ * stores a copy of its competence's name, so History can still show it if
+ * the competence is deleted later. "none" if there's no active instance.
  */
-export async function completeActiveInstance(learnerId: string) {
-  const active = await findActiveInstance(learnerId);
-  if (!active) return null;
+export async function completeActiveInstance(learnerId: string): Promise<CompleteResult> {
+  const inputs = await loadPathInputs(learnerId);
+  const active = inputs?.active;
+  if (!inputs || !active) return "none";
+
+  const { answered, next } = buildPath(inputs.sections, inputs.answers);
+  if (next) return "unfinished";
+
+  // Answers to questions no longer in the learner's bank (deleted, or
+  // hidden from their role since) — buildPath already left them out.
+  const inBank = new Set(answered);
+  const outsideBankIds = inputs.responses
+    .filter((r) => !r.questionId || !inBank.has(r.questionId))
+    .map((r) => r.id);
 
   const responses = await prisma.response.findMany({
-    where: { satInstanceId: active.id, score: { not: null } },
+    where: { satInstanceId: active.id, score: { not: null }, questionId: { in: answered } },
     include: {
       question: { select: { competenceId: true, competence: { select: { name: true } } } },
     },
@@ -405,6 +544,7 @@ export async function completeActiveInstance(learnerId: string) {
   }
 
   await prisma.$transaction([
+    prisma.response.deleteMany({ where: { id: { in: outsideBankIds } } }),
     prisma.satInstance.update({ where: { id: active.id }, data: { completedAt: new Date() } }),
     ...Array.from(byCompetence.entries()).map(([competenceId, totals]) =>
       prisma.competenceScore.upsert({
@@ -415,7 +555,7 @@ export async function completeActiveInstance(learnerId: string) {
     ),
   ]);
 
-  return active;
+  return "completed";
 }
 
 /**
@@ -514,15 +654,99 @@ export async function getSatHistory(learnerId: string) {
 }
 
 /**
- * The latest completed SAT's scores broken down per section: for each section
- * the learner was actually assessed in, one entry per competence its modules
- * cover (main or secondary) or its visible questions name, whether or not it
- * was scored there (0/0 if not). Sections with no scored answers in the
- * instance are left out entirely. Scores are grouped by each question's own section and
- * competence, so a competence appearing in several sections is scored
- * separately in each. Deliberately not filtered by the learner's *current*
- * role — see the note on getLatestCompetenceScores above; the same reasoning
- * applies here.
+ * The learner's skill level in every section they've been assessed in: how
+ * many of its levels (A1 … A4) they've passed from the bottom up, per the
+ * same 2-of-3 rule the assessment uses (skillLevel in assessment.path.ts).
+ * Each section is judged on the newest completed attempt that assessed it,
+ * like the dashboard's scores, so a partial retake updates just its own
+ * sections. Sorted by section code (A–E), then name.
+ */
+export async function getSkillLevels(learnerId: string) {
+  // Newest completed instance first, so the first instance seen for a
+  // section is the newest one that assessed it.
+  const responses = await prisma.response.findMany({
+    where: { satInstance: { learnerId, completedAt: { not: null } } },
+    orderBy: [{ satInstance: { completedAt: "desc" } }, { satInstanceId: "asc" }],
+    select: {
+      satInstanceId: true,
+      questionId: true,
+      score: true,
+      maxScore: true,
+      question: { select: { sectionModule: { select: { sectionId: true } } } },
+    },
+  });
+
+  const newestInstanceForSection = new Map<string, string>();
+  const answersBySection = new Map<string, Map<string, Pick<PathAnswer, "score" | "maxScore">>>();
+  for (const r of responses) {
+    if (!r.question || !r.questionId) continue; // the question was deleted
+    const sectionId = r.question.sectionModule.sectionId;
+    if (!newestInstanceForSection.has(sectionId)) {
+      newestInstanceForSection.set(sectionId, r.satInstanceId);
+    }
+    if (newestInstanceForSection.get(sectionId) !== r.satInstanceId) continue;
+    const answers = answersBySection.get(sectionId) ?? new Map();
+    answers.set(r.questionId, { score: r.score, maxScore: r.maxScore });
+    answersBySection.set(sectionId, answers);
+  }
+  if (answersBySection.size === 0) return [];
+
+  const sections = await prisma.section.findMany({
+    where: { id: { in: [...answersBySection.keys()] } },
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      modules: {
+        select: {
+          id: true,
+          level: true,
+          questions: { select: { id: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
+        },
+      },
+    },
+  });
+
+  return sections
+    .map((section) => ({
+      section: { id: section.id, code: section.code, name: section.name },
+      level: skillLevel(
+        section.modules.map((m) => ({
+          id: m.id,
+          level: m.level,
+          questionIds: m.questions.map((q) => q.id),
+        })),
+        answersBySection.get(section.id)!,
+      ),
+      levelCount: section.modules.length,
+    }))
+    .sort((a, b) => bySectionCode(a.section, b.section));
+}
+
+/** Sections in A–E order; any without a code go last, by name. */
+function bySectionCode(
+  a: { code: string | null; name: string },
+  b: { code: string | null; name: string },
+): number {
+  return (a.code ?? "~").localeCompare(b.code ?? "~") || a.name.localeCompare(b.name);
+}
+
+/**
+ * The learner's scores broken down per section, each section from the newest
+ * completed attempt that assessed it: one entry per competence its modules
+ * cover (main or secondary) or its questions name, whether or not it was
+ * scored there (0/0 if not). Sections the learner could be assessed in but
+ * hasn't answered anything in yet are included too, all at 0/0, with
+ * `assessed: false` — so the results show every section, not just the
+ * touched ones. Each section's competences come in level order (A1 … A4),
+ * so its radar always starts at level 1. `assessedAt` says when each section's scores were taken —
+ * sections can come from different attempts. Sections already assessed stay
+ * even if the learner's
+ * current role no longer sees them — see the note on
+ * getLatestCompetenceScores above. Scores are grouped by each question's
+ * own section and competence, so a competence appearing in several sections
+ * is scored separately in each. Empty before any completed assessment.
+ * Sections come in A–E order (their code).
  */
 export async function getLatestSectionCompetenceScores(learnerId: string) {
   // Newest completed instance first, so the first instance seen for a
@@ -532,6 +756,7 @@ export async function getLatestSectionCompetenceScores(learnerId: string) {
     orderBy: [{ satInstance: { completedAt: "desc" } }, { satInstanceId: "asc" }],
     select: {
       satInstanceId: true,
+      satInstance: { select: { completedAt: true } },
       score: true,
       maxScore: true,
       question: { select: { competenceId: true, sectionModule: { select: { sectionId: true } } } },
@@ -543,10 +768,12 @@ export async function getLatestSectionCompetenceScores(learnerId: string) {
   if (live.length === 0) return [];
 
   const newestInstanceForSection = new Map<string, string>(); // sectionId -> satInstanceId
+  const assessedAt = new Map<string, Date | null>(); // sectionId -> that instance's completedAt
   for (const r of live) {
     const sectionId = r.question.sectionModule.sectionId;
     if (!newestInstanceForSection.has(sectionId)) {
       newestInstanceForSection.set(sectionId, r.satInstanceId);
+      assessedAt.set(sectionId, r.satInstance.completedAt);
     }
   }
 
@@ -563,12 +790,19 @@ export async function getLatestSectionCompetenceScores(learnerId: string) {
     assessedSectionIds.add(sectionId);
   }
 
+  // Plus every section the learner could be assessed in but hasn't been.
+  const assessable = await listAssessableSections(learnerId);
+  const shownSectionIds = new Set([...assessedSectionIds, ...assessable.map((s) => s.id)]);
+
   // A section's axes are every competence its modules cover (main or
   // secondary) plus any a question in it names — whether or not it was scored.
+  // They go in level order (the level of the module whose main competence it
+  // is), so the radar always draws level 1 north, 2 east, 3 south, 4 west.
   const modules = await prisma.sectionModule.findMany({
-    where: { sectionId: { in: [...assessedSectionIds] } },
+    where: { sectionId: { in: [...shownSectionIds] } },
     select: {
-      section: { select: { id: true, name: true } },
+      level: true,
+      section: { select: { id: true, code: true, name: true } },
       mainCompetence: { select: { id: true, name: true } },
       secondaryCompetences: { select: { competence: { select: { id: true, name: true } } } },
       questions: { select: { competence: { select: { id: true, name: true } } } },
@@ -577,8 +811,13 @@ export async function getLatestSectionCompetenceScores(learnerId: string) {
 
   const sections = new Map<
     string,
-    { section: { id: string; name: string }; competences: Map<string, string> }
+    {
+      section: { id: string; code: string | null; name: string };
+      competences: Map<string, string>;
+    }
   >();
+  // competenceId -> the level of the module it's the main competence of.
+  const levelOf = new Map<string, number>();
   for (const m of modules) {
     const entry = sections.get(m.section.id) ?? { section: m.section, competences: new Map() };
     const covered = [
@@ -587,15 +826,23 @@ export async function getLatestSectionCompetenceScores(learnerId: string) {
       ...m.questions.map((q) => q.competence),
     ];
     for (const c of covered) entry.competences.set(c.id, c.name);
+    if (m.level !== null) levelOf.set(m.mainCompetence.id, m.level);
     sections.set(m.section.id, entry);
   }
+  // Level 1 → 4; a competence that's no module's main one has no level and
+  // goes last. Ties (and unleveled ones) by name.
+  const byLevel = ([idA, nameA]: [string, string], [idB, nameB]: [string, string]) =>
+    (levelOf.get(idA) ?? Infinity) - (levelOf.get(idB) ?? Infinity) || nameA.localeCompare(nameB);
 
   return Array.from(sections.values())
-    .sort((a, b) => a.section.name.localeCompare(b.section.name))
+    .sort((a, b) => bySectionCode(a.section, b.section))
     .map(({ section, competences }) => ({
       section,
+      assessed: assessedSectionIds.has(section.id),
+      // When the attempt these scores come from was completed (null if not assessed).
+      assessedAt: assessedAt.get(section.id) ?? null,
       competences: Array.from(competences.entries())
-        .sort((a, b) => a[1].localeCompare(b[1]))
+        .sort(byLevel)
         .map(([competenceId, name]) => ({
           competence: { name },
           score: totals.get(`${section.id}:${competenceId}`)?.score ?? 0,

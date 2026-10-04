@@ -35,10 +35,25 @@
   box-shadow: var(--shadow-sm);
 }
 
+.cardHeader {
+  align-self: stretch;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+}
+
 .sectionName {
-  align-self: flex-start;
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 18px;
+}
+
+/* When this section's scores were taken — sections can come from different attempts. */
+.date {
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 
 @media (max-width: 767px) {

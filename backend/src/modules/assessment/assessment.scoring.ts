@@ -30,12 +30,13 @@ export const QUESTION_MAX_SCORE = 1;
 /**
  * Scores a multiple-choice response, out of 1.
  *
- * - `choiceMode: "checkbox"` (more than one correct choice): each alternative
- *   (not counting "I don't know") is worth 1/alternatives. An alternative
- *   handled right — a correct choice selected, or an incorrect choice left
- *   unselected — earns +1/alternatives; one handled wrong — an incorrect
- *   choice selected, or a correct choice left unselected — costs
- *   -1/alternatives. Floored at 0.
+ * - `choiceMode: "checkbox"` (more than one correct choice): the share of
+ *   the correct choices the learner ticked, minus the share of the incorrect
+ *   choices they ticked, floored at 0 ("I don't know" is neither). So ticking
+ *   everything — or guessing at random — scores (about) 0, while each
+ *   mistake costs less the more choices of its kind there are: with 2
+ *   correct and 4 incorrect choices, one extra wrong tick still scores 0.75.
+ *   A question whose choices are all correct scores 1 when all are ticked.
  * - `choiceMode: "radio"` (exactly one correct choice): 1 if the selected
  *   choice is correct, 0 otherwise.
  */
@@ -52,13 +53,16 @@ export function scoreMultipleChoice(
 
   const alternatives = choices.filter((c) => c.value !== IDK_VALUE);
   if (alternatives.length === 0) return { score: 0, maxScore: QUESTION_MAX_SCORE };
-  const rawScore = alternatives.reduce((total, c) => {
-    const handledRight = selectedValues.includes(c.value) === c.correct;
-    return total + (handledRight ? 1 : -1);
-  }, 0);
+
+  const correct = alternatives.filter((c) => c.correct);
+  const incorrect = alternatives.filter((c) => !c.correct);
+  const ticked = (c: ScorableChoice) => selectedValues.includes(c.value);
+  // With nothing of a kind there's nothing to find (or to fall for).
+  const found = correct.length ? correct.filter(ticked).length / correct.length : 1;
+  const fellFor = incorrect.length ? incorrect.filter(ticked).length / incorrect.length : 0;
 
   return {
-    score: (Math.max(0, rawScore) / alternatives.length) * QUESTION_MAX_SCORE,
+    score: Math.max(0, found - fellFor) * QUESTION_MAX_SCORE,
     maxScore: QUESTION_MAX_SCORE,
   };
 }

@@ -11,36 +11,40 @@ import { AssessmentProgress } from "../components/AssessmentProgress";
 import { ExitAssessmentDialog, type ExitStatus } from "../components/ExitAssessmentDialog";
 import { QuestionCard } from "../components/QuestionCard";
 import type { PieAnswer } from "../components/PieQuestionPlayer";
-import {
-  completeAssessment,
-  discardAssessment,
-  getProgress,
-  getQuestions,
-  saveResponse,
-} from "../api";
-import type { Question } from "../types";
+import { completeAssessment, discardAssessment, getAssessmentPath, saveResponse } from "../api";
+import type { AssessmentPath } from "../types";
 import styles from "./AssessmentRunnerPage.module.css";
 
+/** The saved answers on a path, keyed by question id. */
+function answersOf(path: AssessmentPath): Record<string, PieAnswer> {
+  return Object.fromEntries(
+    path.items.flatMap((item) => (item.answer ? [[item.question.id, item.answer]] : [])),
+  );
+}
+
 /**
- * Runs the questionnaire one question at a time with a progress bar on top.
+ * Runs the adaptive assessment one question at a time. The backend decides
+ * the route (assessment.path.ts): sections in a random order, levels 1 → 4
+ * within each, moving up a level at 2 of 3 right and on to the next section
+ * once that's out of reach. So the page doesn't hold the whole question list — it
+ * holds the path so far (answered questions + the next one) and refetches it
+ * after every Next. Answered questions are history: Back revisits them and
+ * changing an answer only changes its score — which question comes next is
+ * decided from where the learner is now, so only answering beyond what's
+ * been shown changes the questions.
+ *
  * Each answer is saved to the backend as it changes (CD-7 / SAT2 save &
- * resume), and on mount any previously saved answers are restored and the
- * learner is dropped back at the first question they haven't finished yet —
- * so leaving mid-assessment and coming back continues where they left off.
- * Back still restores from local state so navigating within the session
- * stays instant. Finishing the last question marks the SAT instance
- * complete (which rolls its answers up into the competence scores the
- * dashboard's radar shows) and flags the learner as having completed the
- * initial assessment — the dashboard is only shown once both have finished,
- * so it never loads scores from before this run.
+ * resume); opening the page again resumes at the next question. Finishing
+ * marks the SAT instance complete (which rolls its answers up into the
+ * competence scores the dashboard shows) and flags the learner as having
+ * completed the initial assessment.
  *
  * Nothing fails silently: a failed load offers a retry; a save that still
  * fails after retrying is kept as "unsaved" with a banner to retry it, and
- * Finish refuses to complete the instance while any answer is unsaved (the
- * scores would otherwise be computed without it). A save rejected with 404
- * means the question is no longer visible to the learner's role (an admin
- * changed it mid-assessment) — retrying can't help, so the question list is
- * reloaded instead.
+ * Next/Finish wait for every answer to be saved (the path and the scores
+ * would otherwise be computed without it). A save rejected with 404 means
+ * the question is no longer visible to the learner's role (an admin changed
+ * it mid-assessment) — retrying can't help, so the path is reloaded instead.
  *
  * Exit opens a dialog: "Save & exit" leaves once every answer is saved (the
  * learner resumes later); "Abort" deletes the in-progress instance and all
@@ -49,19 +53,21 @@ import styles from "./AssessmentRunnerPage.module.css";
  * instance holding just that answer.
  */
 export function AssessmentRunnerPage() {
-  const [questions, setQuestions] = useState<Question[] | null>(null);
+  const [path, setPath] = useState<AssessmentPath | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, PieAnswer>>({});
+  const [isMoving, setIsMoving] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
-  const [finishError, setFinishError] = useState<string | null>(null);
+  const [navError, setNavError] = useState<string | null>(null);
   const [questionsRemoved, setQuestionsRemoved] = useState(false);
   // Saves run one after another, in the order the learner made them, and
-  // Finish waits for the queue — otherwise a save still in flight when the
-  // instance is completed would create a brand-new instance for that answer.
+  // Next/Finish wait for the queue — the next question depends on the
+  // answer, and a save still in flight when the instance is completed would
+  // create a brand-new instance for that answer.
   const pendingSaves = useRef<Promise<unknown>>(Promise.resolve());
   // Latest answer per question whose save failed. A ref (read right after
-  // awaiting the queue in handleFinish), mirrored into state for rendering.
+  // awaiting the queue), mirrored into state for rendering.
   const unsaved = useRef(new Map<string, PieAnswer>());
   const [unsavedCount, setUnsavedCount] = useState(0);
   // Set while an abort is deleting the instance: queued saves are skipped
@@ -70,34 +76,19 @@ export function AssessmentRunnerPage() {
   const [exitOpen, setExitOpen] = useState(false);
   const [exitStatus, setExitStatus] = useState<ExitStatus>("idle");
   const [exitError, setExitError] = useState<string | null>(null);
-  // The current question/index, for async code that outlives a render.
-  const latest = useRef({ questions, index });
   const navigate = useNavigate();
   const { markInitialAssessmentComplete } = useAuth();
 
-  useEffect(() => {
-    latest.current = { questions, index };
-  }, [questions, index]);
-
   const load = useCallback(() => {
     setLoadFailed(false);
-    setQuestions(null);
-    Promise.all([getQuestions(), getProgress()]).then(
-      ([loadedQuestions, progress]) => {
-        setQuestions(loadedQuestions);
-
-        if (!progress) return;
-
-        const restored = Object.fromEntries(
-          progress.responses.map((r) => [r.questionId, r.answer]),
-        );
-        setAnswers(restored);
-
-        const firstUnanswered = loadedQuestions.findIndex((q) => !restored[q.id]?.complete);
-        setIndex(firstUnanswered === -1 ? loadedQuestions.length - 1 : firstUnanswered);
+    setPath(null);
+    getAssessmentPath().then(
+      (loaded) => {
+        setPath(loaded);
+        setAnswers(answersOf(loaded));
+        // Resume at the next question (or the last one, if all are answered).
+        setIndex(Math.max(0, loaded.items.length - 1));
       },
-      // Progress failing counts too: starting over without the saved
-      // answers would silently discard where the learner left off.
       () => setLoadFailed(true),
     );
   }, []);
@@ -111,26 +102,17 @@ export function AssessmentRunnerPage() {
     setExitError(null);
   }, []);
 
-  /** Refetches the question list after a 404, keeping the learner on the same question if it survived. */
-  async function dropUnavailableQuestions() {
-    let fresh: Question[];
+  /** Refetches the path after a 404 (a question was hidden from the role), staying as close to the same spot as possible. */
+  async function reloadAfterRemoval() {
+    let fresh: AssessmentPath;
     try {
-      fresh = await getQuestions();
+      fresh = await getAssessmentPath();
     } catch {
-      return; // keep the current list; the next save will surface the problem
+      return; // keep the current path; the next Next will surface the problem
     }
-    const ids = new Set(fresh.map((q) => q.id));
-    for (const id of [...unsaved.current.keys()]) if (!ids.has(id)) unsaved.current.delete(id);
-
-    const { questions: previous, index: previousIndex } = latest.current;
-    const currentId = previous?.[previousIndex]?.id;
-    const stillThere = fresh.findIndex((q) => q.id === currentId);
-
-    setQuestions(fresh);
-    setIndex(
-      stillThere !== -1 ? stillThere : Math.max(0, Math.min(previousIndex, fresh.length - 1)),
-    );
-    setAnswers((prev) => Object.fromEntries(Object.entries(prev).filter(([id]) => ids.has(id))));
+    setPath(fresh);
+    setAnswers((prev) => ({ ...answersOf(fresh), ...prev }));
+    setIndex((i) => Math.max(0, Math.min(i, fresh.items.length - 1)));
     setQuestionsRemoved(true);
   }
 
@@ -146,7 +128,7 @@ export function AssessmentRunnerPage() {
       } catch (err) {
         if (isApiError(err) && err.status === 404) {
           unsaved.current.delete(questionId);
-          await dropUnavailableQuestions();
+          await reloadAfterRemoval();
         } else {
           unsaved.current.set(questionId, answer);
         }
@@ -156,7 +138,7 @@ export function AssessmentRunnerPage() {
   }
 
   function retryUnsaved() {
-    setFinishError(null);
+    setNavError(null);
     for (const [questionId, answer] of unsaved.current) queueSave(questionId, answer);
   }
 
@@ -172,13 +154,15 @@ export function AssessmentRunnerPage() {
       </div>
     );
   }
-  if (questions === null) return <Spinner />;
-  if (questions.length === 0) return <p>No questions are available yet.</p>;
+  if (path === null) return <Spinner />;
+  if (path.items.length === 0) return <p>No questions are available yet.</p>;
 
-  const current = questions[index];
+  const item = path.items[Math.min(index, path.items.length - 1)];
+  const current = item.question;
   const isFirst = index === 0;
-  const isLast = index === questions.length - 1;
+  const isLast = path.done && index === path.items.length - 1;
   const hasAnswered = answers[current.id]?.complete === true;
+  const busy = isMoving || isFinishing;
 
   function handleAnswerChange(answer: PieAnswer) {
     setAnswers((prev) => ({ ...prev, [current.id]: answer }));
@@ -186,20 +170,20 @@ export function AssessmentRunnerPage() {
   }
 
   function handleBack() {
+    setNavError(null);
     setIndex((i) => Math.max(0, i - 1));
   }
 
-  async function handleFinish() {
-    setIsFinishing(true);
-    setFinishError(null);
+  /** Waits for every save; false (with an error shown) if any answer is still unsaved. */
+  async function allSaved(): Promise<boolean> {
     await pendingSaves.current;
+    if (unsaved.current.size === 0) return true;
+    setNavError("Some answers haven't been saved yet. Retry saving them before continuing.");
+    return false;
+  }
 
-    if (unsaved.current.size > 0) {
-      setFinishError("Some answers haven't been saved yet. Retry saving them before finishing.");
-      setIsFinishing(false);
-      return;
-    }
-
+  async function finish() {
+    setIsFinishing(true);
     try {
       await withRetry(() => completeAssessment());
       await withRetry(() => completeInitialAssessment());
@@ -208,8 +192,36 @@ export function AssessmentRunnerPage() {
     } catch {
       // Safe to press Finish again: completing an already-completed
       // instance is a no-op on the backend.
-      setFinishError("Couldn't finish the assessment. Your answers are saved — please try again.");
+      setNavError("Couldn't finish the assessment. Your answers are saved — please try again.");
       setIsFinishing(false);
+    }
+  }
+
+  /**
+   * Saves, asks the backend for the path again (the newest answer decides
+   * what comes after it), then moves one step along it — or finishes when
+   * the path ends here.
+   */
+  async function handleNext() {
+    setIsMoving(true);
+    setNavError(null);
+    try {
+      if (!(await allSaved())) return;
+
+      let fresh: AssessmentPath;
+      try {
+        fresh = await withRetry(() => getAssessmentPath());
+      } catch {
+        setNavError("Couldn't load the next question. Your answers are saved — please try again.");
+        return;
+      }
+      setPath(fresh);
+      setAnswers((prev) => ({ ...answersOf(fresh), ...prev }));
+
+      if (index + 1 < fresh.items.length) setIndex(index + 1);
+      else if (fresh.done) await finish();
+    } finally {
+      setIsMoving(false);
     }
   }
 
@@ -245,11 +257,6 @@ export function AssessmentRunnerPage() {
     }
   }
 
-  function handleNext() {
-    if (isLast) void handleFinish();
-    else setIndex((i) => i + 1);
-  }
-
   return (
     <div className={styles.page}>
       <div className={styles.topRow}>
@@ -260,7 +267,13 @@ export function AssessmentRunnerPage() {
           Exit
         </Button>
         <div className={styles.progress}>
-          <AssessmentProgress current={index + 1} total={questions.length} />
+          {/* Sections are the unit of progress: how many questions a section
+              takes depends on the answers. */}
+          <AssessmentProgress
+            current={item.sectionNumber - 1}
+            total={path.sectionCount}
+            label={`Section ${item.sectionNumber} of ${path.sectionCount}`}
+          />
         </div>
       </div>
 
@@ -288,18 +301,18 @@ export function AssessmentRunnerPage() {
         onAnswerChange={handleAnswerChange}
       />
 
-      {finishError && (
+      {navError && (
         <p className={styles.error} role="alert">
-          {finishError}
+          {navError}
         </p>
       )}
 
       <div className={styles.nav}>
-        <Button variant="secondary" onClick={handleBack} disabled={isFirst}>
+        <Button variant="secondary" onClick={handleBack} disabled={isFirst || busy}>
           Back
         </Button>
-        <Button onClick={handleNext} disabled={!hasAnswered || isFinishing}>
-          {isLast ? "Finish" : "Next"}
+        <Button onClick={() => void handleNext()} disabled={!hasAnswered || busy}>
+          {isFinishing ? "Finishing…" : isLast ? "Finish" : "Next"}
         </Button>
       </div>
 

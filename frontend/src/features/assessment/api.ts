@@ -1,11 +1,11 @@
 import { apiFetch } from "@/shared/api/client";
 import { endpoints } from "@/shared/api/endpoints";
 import type { PieAnswer } from "./components/PieQuestionPlayer";
-import type { Question } from "./types";
+import type { AssessmentPath } from "./types";
 
-/** All questions in the bank, with their competence area and PIE content. */
-export function getQuestions(): Promise<Question[]> {
-  return apiFetch<Question[]>(endpoints.questions);
+/** The learner's route through their current attempt, ending with the next question (if any). */
+export function getAssessmentPath(): Promise<AssessmentPath> {
+  return apiFetch<AssessmentPath>(endpoints.assessment.path);
 }
 
 export type AssessmentProgress = {

@@ -8,8 +8,8 @@ export const endpoints = {
     myProfile: "/auth/me/profile",
   },
   roles: "/roles",
-  questions: "/questions",
   competenceScoresBySection: "/competence-scores/by-section",
+  skillLevels: "/skill-levels",
   sources: "/sources",
   learningJourneys: "/learning-journeys",
   learningJourneyRecommendation: "/learning-journeys/recommendation",
@@ -17,6 +17,7 @@ export const endpoints = {
   advice: "/advice",
   assessment: {
     progress: "/assessment/progress",
+    path: "/assessment/path",
     responses: "/assessment/responses",
     complete: "/assessment/complete",
     active: "/assessment/active",
