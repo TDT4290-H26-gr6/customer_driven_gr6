@@ -3,10 +3,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ResultsPage } from "./ResultsPage";
 import { getProgress } from "@/features/assessment";
 
-const auth = { learner: { name: "Ada", hasCompletedInitialAssessment: true } };
+const auth = {
+  learner: { name: "Ada", hasCompletedInitialAssessment: true, hasCompletedProfile: true },
+};
 vi.mock("@/app/providers/AuthProvider", () => ({ useAuth: () => auth }));
 
-vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
+vi.mock("react-router-dom", () => ({
+  useNavigate: () => vi.fn(),
+  Navigate: ({ to }: { to: string }) => <p>redirected to {to}</p>,
+}));
 
 vi.mock("@/features/assessment", () => ({ getProgress: vi.fn() }));
 vi.mock("../api", () => ({ getSectionCompetenceScores: vi.fn().mockResolvedValue([]) }));
@@ -28,6 +33,25 @@ const ongoing = { satInstanceId: "instance-1", responses: [] };
 beforeEach(() => {
   vi.clearAllMocks();
   auth.learner.hasCompletedInitialAssessment = true;
+  auth.learner.hasCompletedProfile = true;
+});
+
+describe("ResultsPage profile step", () => {
+  it("sends a new learner to fill in their profile before the welcome screen", () => {
+    auth.learner.hasCompletedInitialAssessment = false;
+    auth.learner.hasCompletedProfile = false;
+    vi.mocked(getProgress).mockResolvedValue(null);
+    render(<ResultsPage />);
+    expect(screen.getByText("redirected to /profile")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Take self assessment" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a returning learner on their dashboard even without a complete profile", async () => {
+    auth.learner.hasCompletedProfile = false;
+    vi.mocked(getProgress).mockResolvedValue(null);
+    render(<ResultsPage />);
+    expect(await screen.findByRole("button", { name: "Assess yourself" })).toBeInTheDocument();
+  });
 });
 
 describe("ResultsPage assessment button", () => {

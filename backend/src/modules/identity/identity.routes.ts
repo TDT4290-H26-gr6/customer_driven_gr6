@@ -129,8 +129,10 @@ identityRouter.put(
       return res.status(401).json({ error: "Account not found" });
     }
 
-    const profile = await saveLearnerProfile(req.learnerId!, result.data);
-    res.json(profile);
+    // The learner, not the profile: the name and hasCompletedProfile both
+    // live on the DTO, so the frontend can update its session in one go.
+    const learner = await saveLearnerProfile(req.learnerId!, result.data);
+    res.json(toLearnerDto(learner));
   }),
 );
 
