@@ -11,8 +11,8 @@ import { WelcomeScreen } from "../components/WelcomeScreen";
 import { getDashboardProgress } from "../api";
 import { radarAxes } from "../progressRows";
 import type { DashboardProgress } from "../types";
-import { RecommendedJourneyCard, getRecommendedJourney } from "@/features/learningJourney";
-import type { LearningJourney } from "@/features/learningJourney";
+import { RecommendedJourneyCard, getCurrentJourney } from "@/features/learningJourney";
+import type { CurrentJourney } from "@/features/learningJourney";
 import { AdviceCard, getAdvice } from "@/features/advisor";
 import { getProgress } from "@/features/assessment";
 import type { AdviceState } from "@/features/advisor";
@@ -23,12 +23,13 @@ import styles from "./ResultsPage.module.css";
  * an overview radar with one axis per section (each rolling up that
  * section's own competences; a section has too many competences to chart
  * individually here), a section-by-section summary (ProgressCard), the
- * score-based journey recommendation, AI advice that explains it, and the
- * entry point into the assessment. From a second assessment on, the radar
- * overlays the previous one and the summary shows the change — always the
- * latest two; older ones are in History and "See results by section". The
- * page remounts on every visit, so retaking the SAT and returning here
- * always fetches the fresh scores (and new advice). The
+ * learner's journey (whichever they've explicitly selected, CD-33, else the
+ * score-based recommendation — see getCurrentJourney), AI advice that
+ * explains it, and the entry point into the assessment. From a second
+ * assessment on, the radar overlays the previous one and the summary shows
+ * the change — always the latest two; older ones are in History and "See
+ * results by section". The page remounts on every visit, so retaking the
+ * SAT and returning here always fetches the fresh scores (and new advice). The
  * assessment button says "Continue" while the learner has an unfinished
  * attempt (left with Save & exit), so they know their answers weren't lost;
  * otherwise "Retake assessment", which first asks about completed learning journeys
@@ -47,7 +48,7 @@ export function ResultsPage() {
   const [progress, setProgress] = useState<DashboardProgress | null | undefined>(undefined);
   const [loadFailed, setLoadFailed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
-  const [journey, setJourney] = useState<LearningJourney | null>(null);
+  const [journey, setJourney] = useState<CurrentJourney | null>(null);
   // null: no advice to show (no completed assessment, or the feature is off).
   const [advice, setAdvice] = useState<AdviceState | null>({ status: "loading" });
   // null while loading. A failed load falls back to the "start" wording —
@@ -66,7 +67,7 @@ export function ResultsPage() {
     getProgress()
       .then((progress) => setHasOngoing(progress !== null))
       .catch(() => setHasOngoing(false));
-    getRecommendedJourney()
+    getCurrentJourney()
       .then(setJourney)
       .catch(() => setJourney(null));
     // Slower than the rest (an LLM call the first time), so it fills in on
@@ -146,7 +147,7 @@ export function ResultsPage() {
 
       {!loadFailed && progress && <ProgressCard progress={progress} />}
 
-      {journey && <RecommendedJourneyCard journey={journey} />}
+      {journey && <RecommendedJourneyCard journey={journey.journey} source={journey.source} />}
 
       {advice && <AdviceCard state={advice} />}
 
