@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   extractDragAndDropBlanks,
   extractMultipleChoiceValues,
+  IDK_VALUE,
   scoreDragAndDrop,
   scoreLikert,
   scoreMultipleChoice,
@@ -31,65 +32,77 @@ describe("scoreMultipleChoice", () => {
     { value: "1", correct: true },
     { value: "2", correct: false },
     { value: "3", correct: false },
+    { value: IDK_VALUE, correct: false },
   ];
 
-  it("checkbox: scores maxScore/maxScore when every correct choice is picked and nothing else", () => {
+  it("checkbox: scores 1/1 when every correct choice is picked and nothing else", () => {
     expect(scoreMultipleChoice(checkboxChoices, "checkbox", ["0", "1"])).toEqual({
-      score: 2,
-      maxScore: 2,
+      score: 1,
+      maxScore: 1,
     });
   });
 
-  it("checkbox: +1 per correct pick, -1 per incorrect pick", () => {
+  it("checkbox: +1/alternatives per alternative handled right, -1/alternatives per one handled wrong", () => {
+    // "0" picked (right), "1" missed (wrong), "2" unpicked (right), "3" unpicked (right)
+    expect(scoreMultipleChoice(checkboxChoices, "checkbox", ["0"])).toEqual({
+      score: 0.5, // (3 - 1) / 4
+      maxScore: 1,
+    });
+    // "0" picked (right), "1" missed (wrong), "2" picked (wrong), "3" unpicked (right)
     expect(scoreMultipleChoice(checkboxChoices, "checkbox", ["0", "2"])).toEqual({
-      score: 0, // +1 (correct "0") - 1 (incorrect "2")
-      maxScore: 2,
+      score: 0, // (2 - 2) / 4
+      maxScore: 1,
     });
   });
 
   it("checkbox: never scores below 0, even when every pick is wrong", () => {
     expect(scoreMultipleChoice(checkboxChoices, "checkbox", ["2", "3"])).toEqual({
       score: 0,
-      maxScore: 2,
+      maxScore: 1,
     });
   });
 
-  it("checkbox: unselected choices never contribute, correct or not", () => {
-    expect(scoreMultipleChoice(checkboxChoices, "checkbox", [])).toEqual({
-      score: 0,
-      maxScore: 2,
+  it("checkbox: doesn't count 'I don't know' as an alternative", () => {
+    // With IDK counted it would be 5 alternatives: (4 - 1) / 5 = 0.6.
+    expect(scoreMultipleChoice(checkboxChoices, "checkbox", ["0", "1", "2"])).toEqual({
+      score: 0.5, // (3 - 1) / 4
+      maxScore: 1,
     });
   });
 });
 
 describe("scoreDragAndDrop", () => {
-  const correctResponse = { "0": "a", "1": "b", "2": "c" };
+  const correctResponse = { "0": "a", "1": "b", "2": "c", "3": "d" };
 
-  it("scores maxScore/maxScore when every blank is filled correctly", () => {
-    expect(scoreDragAndDrop(correctResponse, { "0": "a", "1": "b", "2": "c" })).toEqual({
-      score: 3,
-      maxScore: 3,
+  it("scores 1/1 when every blank is filled correctly", () => {
+    expect(scoreDragAndDrop(correctResponse, { "0": "a", "1": "b", "2": "c", "3": "d" })).toEqual({
+      score: 1,
+      maxScore: 1,
     });
   });
 
-  it("+1 per correct blank, -1 per incorrect blank", () => {
-    expect(scoreDragAndDrop(correctResponse, { "0": "a", "1": "wrong", "2": "c" })).toEqual({
-      score: 1, // +1 +1 -1
-      maxScore: 3,
+  it("+1/blanks per correct blank, -1/blanks per incorrect blank", () => {
+    expect(
+      scoreDragAndDrop(correctResponse, { "0": "a", "1": "wrong", "2": "c", "3": "d" }),
+    ).toEqual({
+      score: 0.5, // (3 - 1) / 4
+      maxScore: 1,
     });
   });
 
   it("a blank left empty (undefined) contributes nothing either way", () => {
-    expect(scoreDragAndDrop(correctResponse, { "0": "a", "1": undefined, "2": "c" })).toEqual({
-      score: 2,
-      maxScore: 3,
+    expect(
+      scoreDragAndDrop(correctResponse, { "0": "a", "1": undefined, "2": "c", "3": undefined }),
+    ).toEqual({
+      score: 0.5, // 2 / 4
+      maxScore: 1,
     });
   });
 
   it("never scores below 0, even when every blank is wrong", () => {
-    expect(scoreDragAndDrop(correctResponse, { "0": "x", "1": "y", "2": "z" })).toEqual({
+    expect(scoreDragAndDrop(correctResponse, { "0": "x", "1": "y", "2": "z", "3": "w" })).toEqual({
       score: 0,
-      maxScore: 3,
+      maxScore: 1,
     });
   });
 });
@@ -157,17 +170,18 @@ describe("extractDragAndDropBlanks", () => {
 describe("scoreLikert", () => {
   const scale = ["1", "2", "3", "4", "5"];
 
-  it("scores the picked scale value out of the top of the scale", () => {
-    expect(scoreLikert(scale, ["4"])).toEqual({ score: 4, maxScore: 5 });
+  it("scores the picked scale value divided by the top of the scale, out of 1", () => {
+    expect(scoreLikert(scale, ["4"])).toEqual({ score: 0.8, maxScore: 1 });
+    expect(scoreLikert(scale, ["5"])).toEqual({ score: 1, maxScore: 1 });
   });
 
   it("scores 0 when nothing is picked", () => {
-    expect(scoreLikert(scale, [])).toEqual({ score: 0, maxScore: 5 });
+    expect(scoreLikert(scale, [])).toEqual({ score: 0, maxScore: 1 });
   });
 
   it("scores 0 for a value that isn't on the scale, instead of inflating the score", () => {
-    expect(scoreLikert(scale, ["1000"])).toEqual({ score: 0, maxScore: 5 });
-    expect(scoreLikert(scale, ["-3"])).toEqual({ score: 0, maxScore: 5 });
-    expect(scoreLikert(scale, ["abc"])).toEqual({ score: 0, maxScore: 5 });
+    expect(scoreLikert(scale, ["1000"])).toEqual({ score: 0, maxScore: 1 });
+    expect(scoreLikert(scale, ["-3"])).toEqual({ score: 0, maxScore: 1 });
+    expect(scoreLikert(scale, ["abc"])).toEqual({ score: 0, maxScore: 1 });
   });
 });

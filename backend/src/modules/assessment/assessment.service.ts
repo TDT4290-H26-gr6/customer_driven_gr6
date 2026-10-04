@@ -6,6 +6,7 @@ import {
   extractDragAndDropBlanks,
   extractMultipleChoiceValues,
   IDK_VALUE,
+  QUESTION_MAX_SCORE,
   scoreDragAndDrop,
   scoreLikert,
   scoreMultipleChoice,
@@ -144,10 +145,10 @@ function scoreAnswer(
 
   const selected = extractMultipleChoiceValues(session, modelId);
 
-  // "I don't know" always zeroes the whole question out — even on a
+  // "I don't know" always scores 0 out of the full question — even on a
   // multi_choice where other boxes were also ticked — rather than scoring it
-  // as a wrong guess.
-  if (selected.includes(IDK_VALUE)) return { score: 0, maxScore: 0 };
+  // as a wrong guess (which could cost points on other alternatives).
+  if (selected.includes(IDK_VALUE)) return { score: 0, maxScore: QUESTION_MAX_SCORE };
 
   if (question.questionType === "likert") {
     const values = model.choices.map((c) => String(c.value));

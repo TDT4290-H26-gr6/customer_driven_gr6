@@ -10,6 +10,10 @@ const DATE_FORMAT = new Intl.DateTimeFormat(undefined, {
   day: "numeric",
 });
 
+// Questions can earn fractional points (e.g. 3 of 4 checkbox alternatives
+// right), so show at most two decimals instead of a long float.
+const POINTS_FORMAT = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+
 function percent(score: number, maxScore: number): number {
   return maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
 }
@@ -64,7 +68,7 @@ export function HistoryPage() {
           </div>
 
           <p className={styles.sumScore}>
-            {entry.sumScore} / {entry.sumMaxScore}
+            {POINTS_FORMAT.format(entry.sumScore)} / {POINTS_FORMAT.format(entry.sumMaxScore)}
             <span className={styles.sumPercent}>
               ({percent(entry.sumScore, entry.sumMaxScore)}%)
             </span>
@@ -75,7 +79,7 @@ export function HistoryPage() {
               <li key={area.name} className={styles.areaRow}>
                 <span className={styles.areaName}>{area.name}</span>
                 <span className={styles.areaScore}>
-                  {area.score} / {area.maxScore}
+                  {POINTS_FORMAT.format(area.score)} / {POINTS_FORMAT.format(area.maxScore)}
                 </span>
               </li>
             ))}

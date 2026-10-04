@@ -191,7 +191,7 @@ describe("saveResponse", () => {
     });
   });
 
-  it("scores an 'I don't know' answer as 0/0 instead of a wrong guess", async () => {
+  it("scores an 'I don't know' answer as 0/1 instead of a wrong guess", async () => {
     mockPrisma.satInstance.findFirst.mockResolvedValueOnce({ id: "instance-1" } as never);
     mockPrisma.question.findFirst.mockResolvedValue(radioQuestion as never);
 
@@ -199,7 +199,7 @@ describe("saveResponse", () => {
     await saveResponse("learner-1", "q1", answer);
 
     expect(mockPrisma.response.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ update: { answer, score: 0, maxScore: 0 } }),
+      expect.objectContaining({ update: { answer, score: 0, maxScore: 1 } }),
     );
   });
 
@@ -231,7 +231,7 @@ describe("saveResponse", () => {
     await saveResponse("learner-1", "q2", answer);
 
     expect(mockPrisma.response.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ update: { answer, score: 0, maxScore: 0 } }),
+      expect.objectContaining({ update: { answer, score: 0, maxScore: 1 } }),
     );
   });
 });
