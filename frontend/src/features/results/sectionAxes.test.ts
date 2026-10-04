@@ -7,7 +7,8 @@ describe("sectionAxes", () => {
       {
         section: { id: "s1", name: "Knife Skills" },
         assessed: true,
-        assessedAt: "2026-10-01T12:00:00.000Z",
+        level: 1,
+        levelCount: 4,
         competences: [
           { competence: { name: "Onion Dicing" }, score: 2, maxScore: 5 },
           { competence: { name: "Finger Keeping" }, score: 1, maxScore: 1 },
@@ -16,7 +17,8 @@ describe("sectionAxes", () => {
       {
         section: { id: "s2", name: "Baking & Pastry" },
         assessed: true,
-        assessedAt: "2026-10-01T12:00:00.000Z",
+        level: 1,
+        levelCount: 4,
         competences: [{ competence: { name: "Oven Temperature" }, score: 0, maxScore: 5 }],
       },
     ]);
@@ -33,7 +35,8 @@ describe("sectionAxes", () => {
         {
           section: { id: "s1", name: "Empty" },
           assessed: false,
-          assessedAt: null,
+          level: null,
+          levelCount: 0,
           competences: [],
         },
       ]),

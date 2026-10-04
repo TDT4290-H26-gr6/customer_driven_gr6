@@ -91,7 +91,7 @@ describe("fake food seed data: referential integrity", () => {
   });
 
   it("never gives a module a secondary competence that lives in a different section", () => {
-    // Each section's axis list (getLatestSectionCompetenceScores) is every
+    // Each section's axis list (getAttemptSectionScores) is every
     // competence its own modules cover, main or secondary — a secondary
     // competence borrowed from another section would silently give that
     // section a 5th axis, breaking the "4 competences per section" shape.

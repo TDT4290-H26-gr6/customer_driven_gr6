@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HistoryPage } from "./HistoryPage";
 import { getSatHistory } from "../api";
@@ -18,9 +18,17 @@ const ENTRIES: SatHistoryEntry[] = [
     completedAt: "2026-01-15T00:00:00.000Z",
     sumScore: 4,
     sumMaxScore: 6,
-    areas: [
-      { name: "Open Science", score: 3, maxScore: 3 },
-      { name: "Data Management", score: 1, maxScore: 3 },
+    sections: [
+      {
+        code: "A",
+        name: "Knife Skills",
+        areas: [{ name: "Onion Dicing", score: 3, maxScore: 3 }],
+      },
+      {
+        code: "B",
+        name: "Baking",
+        areas: [{ name: "Dough Proofing", score: 1, maxScore: 3 }],
+      },
     ],
     completedJourney: null,
     reassessedSections: [],
@@ -30,9 +38,17 @@ const ENTRIES: SatHistoryEntry[] = [
     completedAt: "2026-02-15T00:00:00.000Z",
     sumScore: 5,
     sumMaxScore: 6,
-    areas: [
-      { name: "Open Science", score: 2, maxScore: 3 },
-      { name: "Data Management", score: 3, maxScore: 3 },
+    sections: [
+      {
+        code: "A",
+        name: "Knife Skills",
+        areas: [{ name: "Onion Dicing", score: 2, maxScore: 3 }],
+      },
+      {
+        code: "B",
+        name: "Baking",
+        areas: [{ name: "Dough Proofing", score: 3, maxScore: 3 }],
+      },
     ],
     completedJourney: "Knife Ninja Journey",
     reassessedSections: ["Knife Skills", "Kitchen Safety"],
@@ -63,12 +79,18 @@ describe("HistoryPage", () => {
     expect(screen.getByText("Reassessed: Knife Skills, Kitchen Safety")).toBeInTheDocument();
   });
 
-  it("shows each instance's own area breakdown", async () => {
-    vi.mocked(getSatHistory).mockResolvedValue(ENTRIES);
+  it("lists each instance's module scores under the section they belong to", async () => {
+    vi.mocked(getSatHistory).mockResolvedValue([ENTRIES[0]]);
 
     render(<HistoryPage />);
 
-    expect(await screen.findAllByText("Open Science")).toHaveLength(2);
+    const knife = await screen.findByRole("heading", { name: "Section A · Knife Skills" });
+    const baking = screen.getByRole("heading", { name: "Section B · Baking" });
+    // Each module sits right under its own section's heading.
+    expect(within(knife.parentElement!).getByText("Onion Dicing")).toBeInTheDocument();
+    expect(within(knife.parentElement!).queryByText("Dough Proofing")).not.toBeInTheDocument();
+    expect(within(baking.parentElement!).getByText("Dough Proofing")).toBeInTheDocument();
+    expect(within(baking.parentElement!).getByText("1 / 3")).toBeInTheDocument();
   });
 
   it("shows an empty-state message when nothing's been completed yet", async () => {

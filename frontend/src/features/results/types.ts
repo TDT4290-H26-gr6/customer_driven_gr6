@@ -1,32 +1,33 @@
 export type CompetenceScore = {
   competence: { name: string };
+  /**
+   * The level (1 = A1 …) of the module this competence belongs to. Only on
+   * per-section results; null for one that's no module's main competence.
+   */
+  level?: number | null;
   score: number;
   maxScore: number;
 };
 
 /**
- * The learner's level in one section: how many of its levels (A1 … A4) they
- * have passed, from the bottom up — 0 if not even the first.
- */
-export type SkillLevel = {
-  section: { id: string; code: string | null; name: string };
-  level: number;
-  levelCount: number;
-};
-
-/**
- * One section's competence scores, for its own detailed radar. `assessed`
- * is false for a section the learner could be assessed in but hasn't
- * answered anything in yet — every score is then 0/0.
+ * One section's results in one SAT, for its own detailed radar. Competences
+ * come in level order (A1 … A4). `assessed` is false for a section that SAT
+ * didn't touch (e.g. one a journey retake left out) — every score is then
+ * 0/0 and `level` is null. Otherwise `level` is how many of its levels the
+ * learner passed from the bottom up — 0 if not even the first.
  */
 export type SectionCompetenceScores = {
   section: { id: string; code?: string | null; name: string };
   assessed: boolean;
-  /**
-   * When the attempt these scores come from was completed (ISO string), or
-   * null if not assessed. Sections can come from different attempts — a
-   * retake only updates the sections it covered.
-   */
-  assessedAt: string | null;
+  level: number | null;
+  levelCount: number;
   competences: CompetenceScore[];
+};
+
+/** One completed SAT's results, section by section. */
+export type AttemptScores = {
+  instanceNum: number;
+  /** ISO timestamp. */
+  completedAt: string;
+  sections: SectionCompetenceScores[];
 };

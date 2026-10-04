@@ -1,15 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { SectionLevel } from "./SectionLevel";
-import type { SkillLevel } from "../types";
-
-function skill(level: number): SkillLevel {
-  return { section: { id: "sec-a", code: "A", name: "Knife Skills" }, level, levelCount: 4 };
-}
 
 describe("SectionLevel", () => {
   it("shows the level as a code like A2", () => {
-    render(<SectionLevel skill={skill(2)} />);
+    render(<SectionLevel code="A" level={2} levelCount={4} />);
 
     expect(screen.getByText("Your skill level")).toBeInTheDocument();
     expect(screen.getByText("A2")).toBeInTheDocument();
@@ -17,12 +12,12 @@ describe("SectionLevel", () => {
   });
 
   it("fills one step per level passed", () => {
-    render(<SectionLevel skill={skill(3)} />);
+    render(<SectionLevel code="A" level={3} levelCount={4} />);
 
     expect(screen.getByRole("img", { name: "Level 3 of 4" })).toBeInTheDocument();
   });
 
-  it("says when the section hasn't been assessed yet", () => {
+  it("says when the section hasn't been assessed", () => {
     render(<SectionLevel notAssessed={{ code: "C" }} />);
 
     expect(screen.getByText("Not assessed yet")).toBeInTheDocument();
@@ -30,7 +25,7 @@ describe("SectionLevel", () => {
   });
 
   it("says when not even level 1 is passed yet", () => {
-    render(<SectionLevel skill={skill(0)} />);
+    render(<SectionLevel code="A" level={0} levelCount={4} />);
 
     expect(screen.getByText("Not yet at A1")).toBeInTheDocument();
     expect(screen.queryByText("A0")).not.toBeInTheDocument();

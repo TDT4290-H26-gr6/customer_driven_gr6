@@ -173,6 +173,9 @@ model CompetenceScore {
   competenceId   String?
   competence     Competence? @relation(fields: [competenceId], references: [id], onDelete: SetNull)
   competenceName String?
+  sectionCode    String?
+  sectionName    String?
+  level          Int?
   score          Float
   maxScore       Float
 

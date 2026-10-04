@@ -161,19 +161,31 @@ async function seedTables(tx: Prisma.TransactionClient) {
 }
 
 /**
- * Gives existing fake sections their code (A–E) and modules their level
- * (1–4) from the dataset — createMany's skipDuplicates never updates rows
- * that are already there, so a database seeded before codes/levels existed
- * would otherwise keep nulls. Only touches rows whose value differs, so
- * it's a no-op (and leaves updatedAt alone) once they match.
+ * Gives existing fake sections their code (A–E) and name, modules their
+ * level (1–4) and competences their name from the dataset — createMany's skipDuplicates
+ * never updates rows that are already there, so a database seeded earlier
+ * would otherwise keep old values. Only touches rows whose value differs,
+ * so it's a no-op (and leaves updatedAt alone) once they match.
  */
 async function syncCodesAndLevels() {
   let changed = 0;
+  for (const competence of tables["aios.assessment.competence"] ?? []) {
+    const name = competence.name as string;
+    const { count } = await prisma.competence.updateMany({
+      where: { id: String(competence.id), name: { not: name } },
+      data: { name },
+    });
+    changed += count;
+  }
   for (const section of tables["aios.assessment.section"] ?? []) {
     const code = section.code as string;
+    const name = section.name as string;
     const { count } = await prisma.section.updateMany({
-      where: { id: String(section.id), OR: [{ code: null }, { code: { not: code } }] },
-      data: { code },
+      where: {
+        id: String(section.id),
+        OR: [{ code: null }, { code: { not: code } }, { name: { not: name } }],
+      },
+      data: { code, name },
     });
     changed += count;
   }
@@ -191,7 +203,7 @@ async function syncCodesAndLevels() {
 /**
  * Loads the dataset when any of its own questions are missing — a fresh
  * database, or one seeded before questions were added to it — then makes
- * sure section codes and module levels match it. Every insert skips rows
+ * sure section codes and names, module levels and competence names match it. Every insert skips rows
  * that exist, so this only ever adds. Deliberately keyed on this dataset's
  * question ids, not "the question bank is empty": if the real open-science
  * seed (openScienceSeed.ts, currently dormant) is ever turned back on

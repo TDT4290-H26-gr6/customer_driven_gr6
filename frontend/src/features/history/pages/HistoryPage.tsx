@@ -1,18 +1,13 @@
 import { useEffect, useState } from "react";
 import { Spinner } from "@/shared/components/Spinner";
+import { APP_LOCALE, DATE_FORMAT } from "@/shared/lib/format";
 import { getSatHistory } from "../api";
 import type { SatHistoryEntry } from "../types";
 import styles from "./HistoryPage.module.css";
 
-const DATE_FORMAT = new Intl.DateTimeFormat(undefined, {
-  year: "numeric",
-  month: "short",
-  day: "numeric",
-});
-
 // Questions can earn fractional points (e.g. 3 of 4 checkbox alternatives
 // right), so show at most two decimals instead of a long float.
-const POINTS_FORMAT = new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 });
+const POINTS_FORMAT = new Intl.NumberFormat(APP_LOCALE, { maximumFractionDigits: 2 });
 
 function percent(score: number, maxScore: number): number {
   return maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
@@ -87,16 +82,24 @@ export function HistoryPage() {
             </span>
           </p>
 
-          <ul className={styles.areaList}>
-            {entry.areas.map((area) => (
-              <li key={area.name} className={styles.areaRow}>
-                <span className={styles.areaName}>{area.name}</span>
-                <span className={styles.areaScore}>
-                  {POINTS_FORMAT.format(area.score)} / {POINTS_FORMAT.format(area.maxScore)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {/* Each module's score under the section it belongs to, A–E. */}
+          {entry.sections.map((section) => (
+            <div key={`${section.code ?? ""}|${section.name}`} className={styles.sectionGroup}>
+              <h3 className={styles.sectionName}>
+                {section.code ? `Section ${section.code} · ${section.name}` : section.name}
+              </h3>
+              <ul className={styles.areaList}>
+                {section.areas.map((area) => (
+                  <li key={area.name} className={styles.areaRow}>
+                    <span className={styles.areaName}>{area.name}</span>
+                    <span className={styles.areaScore}>
+                      {POINTS_FORMAT.format(area.score)} / {POINTS_FORMAT.format(area.maxScore)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       ))}
     </div>

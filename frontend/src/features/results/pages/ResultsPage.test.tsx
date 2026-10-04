@@ -14,7 +14,7 @@ vi.mock("react-router-dom", () => ({
 }));
 
 vi.mock("@/features/assessment", () => ({ getProgress: vi.fn() }));
-vi.mock("../api", () => ({ getSectionCompetenceScores: vi.fn().mockResolvedValue([]) }));
+vi.mock("../api", () => ({ getSectionCompetenceScores: vi.fn().mockResolvedValue(null) }));
 vi.mock("@/features/learningJourney", () => ({
   getRecommendedJourney: vi.fn().mockResolvedValue(null),
   RecommendedJourneyCard: () => null,
