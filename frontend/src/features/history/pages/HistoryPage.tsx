@@ -67,6 +67,19 @@ export function HistoryPage() {
             <span className={styles.date}>{DATE_FORMAT.format(new Date(entry.completedAt))}</span>
           </div>
 
+          {entry.completedJourney && (
+            <div className={styles.journey}>
+              <p className={styles.journeyLine}>
+                After completing <strong>{entry.completedJourney}</strong>
+              </p>
+              {entry.reassessedSections.length > 0 && (
+                <p className={styles.journeyLine}>
+                  Reassessed: {entry.reassessedSections.join(", ")}
+                </p>
+              )}
+            </div>
+          )}
+
           <p className={styles.sumScore}>
             {POINTS_FORMAT.format(entry.sumScore)} / {POINTS_FORMAT.format(entry.sumMaxScore)}
             <span className={styles.sumPercent}>

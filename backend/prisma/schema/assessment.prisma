@@ -2,6 +2,13 @@
 /// the question bank, self-assessment runs, answers and derived scores.
 /// Tables: assessment_*.
 ///
+/// History outlives content: a learner's completed SATs must stay readable
+/// after questions, competences, sections or journeys are removed. So
+/// answers and scores only *link* to content (set to null when it's
+/// deleted, never blocking the delete), and everything History displays is
+/// also copied onto the instance/score when it's recorded (the *Name
+/// fields below).
+///
 /// Hierarchy: a Section contains SectionModules; each SectionModule has one
 /// main Competence plus any number of secondary ones (join table). Questions
 /// hang off a SectionModule and name the Competence they assess directly —
@@ -50,6 +57,7 @@ model Section {
   modules         SectionModule[]
   roleGrants      RoleSection[]
   journeySections JourneySection[]
+  satInstances    SatInstanceSection[]
 
   @@map("assessment_section")
 }
@@ -103,13 +111,17 @@ model Question {
 }
 
 model SatInstance {
-  id          String    @id @default(uuid())
-  learnerId   String
-  learner     Learner   @relation(fields: [learnerId], references: [id], onDelete: Cascade)
-  instanceNum Int // sequence number for this learner: 1 = initial, 2+ = retakes
-  startedAt   DateTime  @default(now())
-  completedAt DateTime?
-
+  id                     String           @id @default(uuid())
+  learnerId              String
+  learner                Learner          @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  instanceNum            Int // sequence number for this learner: 1 = initial, 2+ = retakes
+  startedAt              DateTime         @default(now())
+  completedAt            DateTime?
+  completedJourneyId     String?
+  completedJourney       LearningJourney? @relation(fields: [completedJourneyId], references: [id], onDelete: SetNull)
+  completedJourneyName   String?
+  reassessedSectionNames Json?
+  sections         SatInstanceSection[]
   responses        Response[]
   competenceScores CompetenceScore[]
   advice           Advice?
@@ -118,12 +130,22 @@ model SatInstance {
   @@map("assessment_sat_instance")
 }
 
+model SatInstanceSection {
+  satInstanceId String
+  satInstance   SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
+  sectionId     String
+  section       Section     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@id([satInstanceId, sectionId])
+  @@map("assessment_sat_instance_section")
+}
+
 model Response {
   id            String      @id @default(uuid())
   satInstanceId String
   satInstance   SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
-  questionId    String
-  question      Question    @relation(fields: [questionId], references: [id])
+  questionId    String?
+  question      Question?   @relation(fields: [questionId], references: [id], onDelete: SetNull)
   answer        Json
   score         Float?
   maxScore      Float?
@@ -136,13 +158,14 @@ model Response {
 }
 
 model CompetenceScore {
-  id            String      @id @default(uuid())
-  satInstanceId String
-  satInstance   SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
-  competenceId  String
-  competence    Competence  @relation(fields: [competenceId], references: [id])
-  score         Float
-  maxScore      Float
+  id             String      @id @default(uuid())
+  satInstanceId  String
+  satInstance    SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
+  competenceId   String?
+  competence     Competence? @relation(fields: [competenceId], references: [id], onDelete: SetNull)
+  competenceName String?
+  score          Float
+  maxScore       Float
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

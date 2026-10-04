@@ -22,6 +22,8 @@ const ENTRIES: SatHistoryEntry[] = [
       { name: "Open Science", score: 3, maxScore: 3 },
       { name: "Data Management", score: 1, maxScore: 3 },
     ],
+    completedJourney: null,
+    reassessedSections: [],
   },
   {
     instanceNum: 2,
@@ -32,6 +34,8 @@ const ENTRIES: SatHistoryEntry[] = [
       { name: "Open Science", score: 2, maxScore: 3 },
       { name: "Data Management", score: 3, maxScore: 3 },
     ],
+    completedJourney: "Knife Ninja Journey",
+    reassessedSections: ["Knife Skills", "Kitchen Safety"],
   },
 ];
 
@@ -47,6 +51,16 @@ describe("HistoryPage", () => {
     expect(screen.getByText("(67%)")).toBeInTheDocument();
     expect(screen.getByText("5 / 6")).toBeInTheDocument();
     expect(screen.getByText("(83%)")).toBeInTheDocument();
+  });
+
+  it("shows the completed journey and the reassessed sections, only on that attempt", async () => {
+    vi.mocked(getSatHistory).mockResolvedValue(ENTRIES);
+
+    render(<HistoryPage />);
+
+    expect(await screen.findByText("Knife Ninja Journey")).toBeInTheDocument();
+    expect(screen.getAllByText(/after completing/i)).toHaveLength(1);
+    expect(screen.getByText("Reassessed: Knife Skills, Kitchen Safety")).toBeInTheDocument();
   });
 
   it("shows each instance's own area breakdown", async () => {

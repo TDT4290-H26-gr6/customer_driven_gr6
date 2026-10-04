@@ -70,6 +70,7 @@ describe("getOrCreateAdvice", () => {
     mockPrisma.advice.findUnique.mockResolvedValue(null as never);
     mockPrisma.competenceScore.findMany.mockResolvedValue([
       {
+        competenceId: "comp-open-access",
         score: 8,
         maxScore: 10,
         competence: {
@@ -80,6 +81,7 @@ describe("getOrCreateAdvice", () => {
         },
       },
       {
+        competenceId: "comp-data-management",
         score: 2,
         maxScore: 10,
         competence: {

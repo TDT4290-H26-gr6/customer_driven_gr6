@@ -15,6 +15,14 @@ export function requireString(value: unknown, field: string, maxLength = MAX_ID_
   return value;
 }
 
+/** A non-empty array of at most `maxItems` id-sized strings. */
+export function requireStringArray(value: unknown, field: string, maxItems = 50): string[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > maxItems) {
+    throw new HttpError(400, `Missing or invalid ${field}`);
+  }
+  return value.map((item) => requireString(item, field));
+}
+
 export function requireObject(value: unknown, field: string): Record<string, unknown> {
   if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new HttpError(400, `Missing or invalid ${field}`);

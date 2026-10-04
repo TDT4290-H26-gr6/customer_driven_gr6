@@ -19,6 +19,7 @@ model LearningJourney {
   modules         LearningModule[]
   sections        JourneySection[]
   recommendations JourneyRecommendation[]
+  satInstances    SatInstance[]
 
   @@map("learning_journey_journey")
 }

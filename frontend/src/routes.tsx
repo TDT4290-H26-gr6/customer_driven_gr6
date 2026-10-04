@@ -5,7 +5,7 @@ import { RequireAdmin } from "@/app/guards/RequireAdmin";
 import { RequireProfile } from "@/app/guards/RequireProfile";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { LoginPage } from "@/features/auth";
-import { AssessmentRunnerPage } from "@/features/assessment";
+import { AssessmentRunnerPage, ReassessPage } from "@/features/assessment";
 import { ResultsPage, SectionDetailsPage } from "@/features/results";
 import { SettingsPage } from "@/features/settings";
 import { ProfilePage } from "@/features/profile";
@@ -48,9 +48,11 @@ export function AppRoutes() {
             <Route path="/admin/feedback" element={<FeedbackAdminPage />} />
           </Route>
           {/* Not in the sidebar — only reachable via the dashboard's
-              "Assess yourself" button. The profile must be filled in first. */}
+              "Retake assessment" button. The profile must be filled in first. */}
           <Route element={<RequireProfile />}>
             <Route path="/assessment" element={<AssessmentRunnerPage />} />
+            {/* The dashboard's "Retake assessment": asks about completed journeys first. */}
+            <Route path="/assessment/reassess" element={<ReassessPage />} />
           </Route>
         </Route>
       </Route>

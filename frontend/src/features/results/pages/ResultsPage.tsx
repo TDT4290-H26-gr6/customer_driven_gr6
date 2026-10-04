@@ -25,7 +25,10 @@ import styles from "./ResultsPage.module.css";
  * explains it. The page remounts on every visit, so retaking the SAT and
  * returning here always fetches the fresh scores (and new advice). The
  * assessment button says "Continue" while the learner has an unfinished
- * attempt (left with Save & exit), so they know their answers weren't lost.
+ * attempt (left with Save & exit), so they know their answers weren't lost;
+ * otherwise "Retake assessment", which first asks about completed learning journeys
+ * (ReassessPage). Scores are the newest per section across all attempts, so
+ * a reassessment of some sections keeps the others on the radar.
  *
  * A new learner fills in their profile first: until they've both completed
  * it and finished a first assessment, this sends them to /profile, whose
@@ -114,8 +117,11 @@ export function ResultsPage() {
 
       {advice && <AdviceCard state={advice} />}
 
-      <Button className={styles.cta} onClick={() => navigate("/assessment")}>
-        {hasOngoing ? "Continue assessment" : "Assess yourself"}
+      <Button
+        className={styles.cta}
+        onClick={() => navigate(hasOngoing ? "/assessment" : "/assessment/reassess")}
+      >
+        {hasOngoing ? "Continue assessment" : "Retake assessment"}
       </Button>
     </div>
   );

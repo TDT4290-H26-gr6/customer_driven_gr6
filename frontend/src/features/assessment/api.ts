@@ -20,6 +20,21 @@ export function getProgress(): Promise<AssessmentProgress | null> {
   );
 }
 
+export type AssessableSection = { id: string; name: string; description: string | null };
+
+/** The sections a reassessment can be limited to. */
+export function getAssessableSections(): Promise<AssessableSection[]> {
+  return apiFetch<AssessableSection[]>(endpoints.assessment.sections);
+}
+
+/** Starts a reassessment after a completed journey, limited to the given sections. */
+export function startReassessment(completedJourneyId: string, sectionIds: string[]): Promise<void> {
+  return apiFetch<void>(endpoints.assessment.start, {
+    method: "POST",
+    body: { completedJourneyId, sectionIds },
+  });
+}
+
 /** Saves (or updates) one answer against the learner's active instance. */
 export function saveResponse(questionId: string, answer: PieAnswer): Promise<void> {
   return apiFetch<void>(endpoints.assessment.responses, {
