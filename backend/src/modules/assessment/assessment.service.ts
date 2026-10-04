@@ -3,6 +3,7 @@ import { config } from "../../config";
 import { prisma } from "../../db/prisma";
 import { findLearnerById, getRoleGrants } from "../identity/identity.service";
 import { ORDERED_QUESTION_TYPES } from "./assessment.pie";
+import { buildSectionProgress, isProgressComplete } from "./assessment.progress";
 import { completedCompetenceScoresQuery, newestPerCompetence } from "./assessment.newestScores";
 import {
   buildPath,
@@ -857,5 +858,39 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
             })),
         };
       }),
+  };
+}
+
+/**
+ * The dashboard's before/after view: every section as of the learner's latest
+ * completed SAT and as of the one before it. A section a SAT didn't cover
+ * (a reassessment after a learning journey) keeps its last known result,
+ * marked with the SAT it comes from. Attempts are read newest first and only
+ * as far back as needed. Null before any completed SAT; `previous` is null
+ * after only one.
+ */
+export async function getDashboardProgress(learnerId: string) {
+  const completed = await prisma.satInstance.findMany({
+    where: { learnerId, completedAt: { not: null } },
+    orderBy: { instanceNum: "desc" },
+    select: { instanceNum: true, completedAt: true },
+  });
+  if (completed.length === 0) return null;
+
+  const [latest, previous = null] = completed;
+  const attempts: NonNullable<Awaited<ReturnType<typeof getAttemptSectionScores>>>[] = [];
+  let sections = buildSectionProgress([], latest.instanceNum, null);
+  for (const { instanceNum } of completed) {
+    const attempt = await getAttemptSectionScores(learnerId, instanceNum);
+    if (attempt) attempts.push(attempt);
+    sections = buildSectionProgress(attempts, latest.instanceNum, previous?.instanceNum ?? null);
+    const loadedBoth = attempts.length >= (previous ? 2 : 1);
+    if (loadedBoth && isProgressComplete(sections, previous !== null)) break;
+  }
+
+  return {
+    latest: { instanceNum: latest.instanceNum, completedAt: latest.completedAt },
+    previous: previous && { instanceNum: previous.instanceNum, completedAt: previous.completedAt },
+    sections,
   };
 }

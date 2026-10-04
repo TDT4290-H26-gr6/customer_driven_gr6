@@ -31,3 +31,29 @@ export type AttemptScores = {
   completedAt: string;
   sections: SectionCompetenceScores[];
 };
+
+/** A section's result as of one assessment, and which SAT it actually comes from. */
+export type SectionSnapshot = {
+  /** Older than the assessment it's shown for when that one didn't retake the section. */
+  instanceNum: number;
+  score: number;
+  maxScore: number;
+  /** Levels passed from the bottom up (0 = not yet at the first). */
+  level: number | null;
+};
+
+export type SectionProgress = {
+  section: { id: string; code: string | null; name: string };
+  levelCount: number;
+  /** As of the latest assessment; null if never assessed. */
+  latest: SectionSnapshot | null;
+  /** As of the assessment before it; null if there's none, or it hadn't covered the section. */
+  previous: SectionSnapshot | null;
+};
+
+/** The dashboard's before/after: the latest completed SAT and the one before it. */
+export type DashboardProgress = {
+  latest: { instanceNum: number; completedAt: string };
+  previous: { instanceNum: number; completedAt: string } | null;
+  sections: SectionProgress[];
+};

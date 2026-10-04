@@ -9,6 +9,7 @@ export const endpoints = {
   },
   roles: "/roles",
   competenceScoresBySection: "/competence-scores/by-section",
+  competenceScoresProgress: "/competence-scores/progress",
   sources: "/sources",
   learningJourneys: "/learning-journeys",
   learningJourneyRecommendation: "/learning-journeys/recommendation",
