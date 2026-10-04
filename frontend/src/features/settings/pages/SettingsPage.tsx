@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ACCENTS, useAccent } from "@/app/providers/AccentProvider";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useTheme, type ThemePreference } from "@/app/providers/ThemeProvider";
 import { MonitorIcon, MoonIcon, SunIcon } from "@/shared/components/icons";
@@ -23,6 +24,7 @@ const VISUAL_OPTIONS: { value: ThemePreference; label: string; Icon: typeof Moni
 export function SettingsPage() {
   const { learner, setRole } = useAuth();
   const { preference, setPreference } = useTheme();
+  const { accent, setAccent } = useAccent();
   const [saved, setSaved] = useState<Role | null>(null);
 
   function handleRoleChange(role: Role) {
@@ -56,6 +58,30 @@ export function SettingsPage() {
               <Icon />
               <span>{label}</span>
             </button>
+          ))}
+        </div>
+      </div>
+
+      <div className={styles.card}>
+        <h2 className={styles.cardHeading}>Choose your accent color</h2>
+        <p className={styles.cardHint}>The colors of the AIOS logo.</p>
+        <div className={styles.accentOptions} role="radiogroup" aria-label="Accent color">
+          {ACCENTS.map(({ value, label, hex }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={accent === value}
+              aria-label={label}
+              title={label}
+              className={
+                accent === value
+                  ? `${styles.accentSwatch} ${styles.accentSwatchActive}`
+                  : styles.accentSwatch
+              }
+              style={{ background: hex }}
+              onClick={() => setAccent(value)}
+            />
           ))}
         </div>
       </div>

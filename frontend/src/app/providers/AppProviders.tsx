@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { AccentProvider } from "./AccentProvider";
 import { AuthProvider } from "./AuthProvider";
 import { ThemeProvider } from "./ThemeProvider";
 
@@ -6,7 +7,9 @@ import { ThemeProvider } from "./ThemeProvider";
 export function AppProviders({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
-      <AuthProvider>{children}</AuthProvider>
+      <AccentProvider>
+        <AuthProvider>{children}</AuthProvider>
+      </AccentProvider>
     </ThemeProvider>
   );
 }

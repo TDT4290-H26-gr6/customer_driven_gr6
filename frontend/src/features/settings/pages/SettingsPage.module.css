@@ -67,6 +67,26 @@
   color: var(--color-primary);
 }
 
+.accentOptions {
+  display: flex;
+  gap: 16px;
+}
+
+.accentSwatch {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  /* A gap between the color and the selection ring. */
+  box-shadow: 0 0 0 2px var(--color-surface) inset;
+}
+
+.accentSwatchActive {
+  border-color: var(--color-text);
+}
+
 @media (max-width: 767px) {
   .page {
     gap: 16px;
