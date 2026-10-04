@@ -3,8 +3,9 @@ import seedData from "./data/aios_fake_food_seed.json";
 
 // Structural checks on the authored dataset itself — no DB, no loader. Catches
 // a broken id reference or a lopsided section/competence/question count
-// before it ever reaches a database. See context/backend-structure.md §11 for
-// the shape this enforces: 5 sections x 4 competences x 3 questions = 60.
+// before it ever reaches a database. The shape this enforces: 5 sections
+// (A–E) x 4 section modules (levels 1–4, one competence each) x 3
+// questions = 60.
 
 type Row = Record<string, unknown>;
 const tables = seedData as unknown as Record<string, Row[]>;
@@ -37,11 +38,27 @@ function countBy<T extends Row>(rows: T[], key: string): Map<unknown, number> {
 }
 
 describe("fake food seed data: shape", () => {
-  it("has 5 sections, 20 competences (4/section), 20 modules, 60 questions (3/competence)", () => {
+  it("has 5 sections, 20 competences (4/section), 20 modules, 60 questions", () => {
     expect(sections).toHaveLength(5);
     expect(competences).toHaveLength(20);
     expect(modules).toHaveLength(20);
     expect(questions).toHaveLength(60);
+  });
+
+  it("codes the sections A–E, once each", () => {
+    expect(sections.map((s) => s.code).sort()).toEqual(["A", "B", "C", "D", "E"]);
+  });
+
+  it("gives each section's modules the levels 1–4, once each", () => {
+    for (const id of sectionIds) {
+      const levels = modules.filter((m) => m.sectionId === id).map((m) => m.level);
+      expect([...levels].sort()).toEqual([1, 2, 3, 4]);
+    }
+  });
+
+  it("gives every module (level) exactly 3 questions", () => {
+    const perModule = countBy(questions, "sectionModuleId");
+    for (const id of moduleIds) expect(perModule.get(id)).toBe(3);
   });
 
   it("gives every section exactly 4 modules", () => {
@@ -49,9 +66,14 @@ describe("fake food seed data: shape", () => {
     for (const id of sectionIds) expect(perSection.get(id)).toBe(4);
   });
 
-  it("gives every competence exactly 3 questions", () => {
+  it("gives every competence exactly 3 questions, all from its own module", () => {
     const perCompetence = countBy(questions, "competenceId");
     for (const id of competenceIds) expect(perCompetence.get(id)).toBe(3);
+
+    const moduleCompetence = new Map(modules.map((m) => [m.id, m.mainCompetenceId]));
+    for (const q of questions) {
+      expect(q.competenceId).toBe(moduleCompetence.get(q.sectionModuleId));
+    }
   });
 
   it("includes all four question types", () => {

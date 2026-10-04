@@ -1,7 +1,7 @@
 import { buildServer } from "./server";
 import { config } from "./config";
 import { prisma } from "./db/prisma";
-import { seedIfEmpty } from "./seed/fakeFoodSeed";
+import { seedIfIncomplete } from "./seed/fakeFoodSeed";
 
 /** How long in-flight requests get to finish on shutdown before we exit anyway. */
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -20,11 +20,13 @@ process.on("uncaughtException", (err) => {
 
 async function main() {
   // A fresh database starts with the fake dataset (roles, questions, sources,
-  // journeys). Awaited before listening so the first request never sees an
-  // empty question bank. A failure here is logged, not fatal — the API still
-  // starts, it just has nothing to show.
+  // journeys), and an older one gets whatever the dataset has gained since.
+  // Awaited before listening so the first request never sees an empty or
+  // half-updated question bank. A failure here is logged, not fatal — the
+  // API still starts, it just has nothing (new) to show.
   try {
-    if (await seedIfEmpty()) console.log("Fake dataset was missing — loaded the fake seed data.");
+    if (await seedIfIncomplete())
+      console.log("Fake dataset was incomplete — loaded the missing seed data.");
   } catch (err) {
     console.error("Startup seeding failed:", err);
   }
