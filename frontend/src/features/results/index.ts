@@ -4,4 +4,4 @@ export { CompetenceRadar } from "./components/CompetenceRadar";
 export { WelcomeScreen } from "./components/WelcomeScreen";
 export { getSectionCompetenceScores } from "./api";
 export { sectionAxes } from "./sectionAxes";
-export type { CompetenceScore, SectionCompetenceScores } from "./types";
+export type { AttemptScores, CompetenceScore, SectionCompetenceScores } from "./types";

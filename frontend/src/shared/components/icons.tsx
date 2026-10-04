@@ -118,6 +118,14 @@ export function ShieldIcon(props: IconProps) {
 }
 
 /** Speech bubble — the "Feedback" button. */
+export function CloseIcon(props: IconProps) {
+  return (
+    <svg {...defaults} {...props}>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 export function MessageIcon(props: IconProps) {
   return (
     <svg {...defaults} {...props}>

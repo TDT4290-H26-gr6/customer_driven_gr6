@@ -20,6 +20,7 @@ model LearningJourney {
   sections           JourneySection[]
   recommendations    JourneyRecommendation[]
   selectedByLearners Learner[]               @relation("LearnerSelectedJourney")
+  satInstances       SatInstance[]
 
   @@map("learning_journey_journey")
 }

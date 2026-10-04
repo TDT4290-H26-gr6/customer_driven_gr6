@@ -2,7 +2,7 @@ import { apiFetch } from "@/shared/api/client";
 import { endpoints } from "@/shared/api/endpoints";
 import type { LearningJourney } from "./types";
 
-/** Every learning journey, each with its own module list. */
+/** Every learning journey, each with its own module list and the sections it covers. */
 export function listJourneys(): Promise<LearningJourney[]> {
   return apiFetch<LearningJourney[]>(endpoints.learningJourneys);
 }

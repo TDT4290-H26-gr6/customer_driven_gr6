@@ -8,12 +8,11 @@ import seedData from "./data/aios_fake_food_seed.json";
 // (sat_instance, response, competence_score, recommendation), so a freshly
 // signed-in learner starts with all questions unanswered.
 //
-// Runs automatically at backend start when this dataset's questions are
-// missing (see seedIfEmpty and index.ts) and by hand via `npx prisma db seed`. Every insert skips rows
-// that already exist, so it is safe to run again. The whole load is one
-// transaction: if any table fails, nothing is kept — otherwise a failure
-// after the questions went in would leave the rest (journeys, grants)
-// missing for good, since seedIfEmpty would never run again.
+// Runs automatically at backend start when any of this dataset's questions
+// are missing (see seedIfIncomplete and index.ts) and by hand via
+// `npx prisma db seed`. Every insert skips rows that already exist, so it is
+// safe to run again. The whole load is one transaction: if any table fails,
+// nothing is kept, and the next start simply tries again.
 
 type Row = Record<string, unknown>;
 
@@ -162,16 +161,60 @@ async function seedTables(tx: Prisma.TransactionClient) {
 }
 
 /**
- * Seeds only when none of this dataset's own questions are in the database
- * yet. Deliberately not "the question bank is empty": if the real
- * open-science seed (openScienceSeed.ts, currently dormant) is ever turned
- * back on alongside this one, a fake load that failed once should still be
- * retried rather than mistaken for "already seeded" because real questions
- * exist. Returns whether it seeded.
+ * Gives existing fake sections their code (A–E) and name, modules their
+ * level (1–4) and competences their name from the dataset — createMany's skipDuplicates
+ * never updates rows that are already there, so a database seeded earlier
+ * would otherwise keep old values. Only touches rows whose value differs,
+ * so it's a no-op (and leaves updatedAt alone) once they match.
  */
-export async function seedIfEmpty() {
+async function syncCodesAndLevels() {
+  let changed = 0;
+  for (const competence of tables["aios.assessment.competence"] ?? []) {
+    const name = competence.name as string;
+    const { count } = await prisma.competence.updateMany({
+      where: { id: String(competence.id), name: { not: name } },
+      data: { name },
+    });
+    changed += count;
+  }
+  for (const section of tables["aios.assessment.section"] ?? []) {
+    const code = section.code as string;
+    const name = section.name as string;
+    const { count } = await prisma.section.updateMany({
+      where: {
+        id: String(section.id),
+        OR: [{ code: null }, { code: { not: code } }, { name: { not: name } }],
+      },
+      data: { code, name },
+    });
+    changed += count;
+  }
+  for (const module of tables["aios.assessment.section_module"] ?? []) {
+    const level = module.level as number;
+    const { count } = await prisma.sectionModule.updateMany({
+      where: { id: String(module.id), OR: [{ level: null }, { level: { not: level } }] },
+      data: { level },
+    });
+    changed += count;
+  }
+  return changed;
+}
+
+/**
+ * Loads the dataset when any of its own questions are missing — a fresh
+ * database, or one seeded before questions were added to it — then makes
+ * sure section codes and names, module levels and competence names match it. Every insert skips rows
+ * that exist, so this only ever adds. Deliberately keyed on this dataset's
+ * question ids, not "the question bank is empty": if the real open-science
+ * seed (openScienceSeed.ts, currently dormant) is ever turned back on
+ * alongside this one, its questions mustn't count as "already seeded".
+ * Returns whether anything was added or changed.
+ */
+export async function seedIfIncomplete() {
   const fakeQuestionIds = (tables["aios.assessment.question"] ?? []).map((row) => String(row.id));
-  if ((await prisma.question.count({ where: { id: { in: fakeQuestionIds } } })) > 0) return false;
-  await seedFakeFood();
-  return true;
+  const present = await prisma.question.count({ where: { id: { in: fakeQuestionIds } } });
+  const seeded = present < fakeQuestionIds.length;
+  if (seeded) await seedFakeFood();
+  const synced = (await syncCodesAndLevels()) > 0;
+  return seeded || synced;
 }

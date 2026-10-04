@@ -336,7 +336,7 @@ question bank the first time, regardless of role — that's the point of it
 `visibleQuestionFilter` returns `{}` (everything) instead of the role filter,
 and `getRoleGrants` is never even called. Once they've completed one, later
 retakes go back to the normal role allow-lists. The score views
-(`getLatestCompetenceScores`, `getLatestSectionCompetenceScores`) never
+(`getLatestCompetenceScores`, `getAttemptSectionScores`) never
 re-apply the _current_ role filter to a past instance's results — that would
 risk hiding a competence the learner was genuinely just scored on (e.g. after
 a role change since that run); they show exactly what that instance actually
@@ -354,12 +354,14 @@ Authored simply, stored as PIE. A question's `questionType` decides how
 `assessment.pie.ts` builds its PIE item; **all four use PIE's `multiple-choice`
 element** (already rendered and scored by the app):
 
-| `questionType`  | Authored `content`                        | PIE                       | Score                                                                      |
-| --------------- | ----------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
-| `single_choice` | `options[]`, one id in `correctOptionIds` | radio                     | 1 if correct, else 0                                                       |
-| `true_false`    | two options, one correct                  | radio, order kept         | 1 if correct, else 0                                                       |
-| `multi_choice`  | `options[]`, several correct ids          | checkbox                  | +1 per correct pick, −1 per wrong pick, floored at 0; max = number correct |
-| `likert`        | `scale {min,max,minLabel,maxLabel}`       | radio, ordered `min..max` | the scale value picked; max = top of the scale                             |
+| `questionType`  | Authored `content`                        | PIE                       | Score                                                                                                  |
+| --------------- | ----------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `single_choice` | `options[]`, one id in `correctOptionIds` | radio                     | 1 if correct, else 0                                                                                   |
+| `true_false`    | two options, one correct                  | radio, order kept         | 1 if correct, else 0                                                                                   |
+| `multi_choice`  | `options[]`, several correct ids          | checkbox                  | share of correct options ticked − share of wrong options ticked, floored at 0 (ticking everything = 0) |
+| `likert`        | `scale {min,max,minLabel,maxLabel}`       | radio, ordered `min..max` | the scale value picked ÷ the top of the scale                                                          |
+
+Every question is out of 1 point; "I don't know" scores 0 out of 1.
 
 - Each choice's `value` is what gets scored: the option id, or for likert the
   scale number itself. `withShuffledChoices` shuffles answer order, except for
@@ -401,22 +403,32 @@ A recommendation row is logged only when the recommended journey changes.
 
 `src/seed/fakeFoodSeed.ts` loads `src/seed/data/aios_fake_food_seed.json` — a
 **fake**, food-themed dataset that _is_ every learner's initial assessment:
-**5 sections × 4 competences × 3 questions = 60 questions**, plus 26
+**5 sections (A–E) × 4 section modules (levels 1–4, one competence each) ×
+3 questions = 60 questions**, plus 26
 Moodle-linked sources (each competence has its own primary source and 1–2
 secondary ones) and 4 fake roles. It covers every table except those a learner
 fills in (`sat_instance`, `response`, `competence_score`, `recommendation`). It
 is inserted in dependency order with `createMany({ skipDuplicates: true })`,
 so running it again never duplicates or overwrites.
 
-- **Automatically:** `index.ts` runs `seedIfEmpty()` before the server starts —
-  when this dataset's questions are missing, it loads the whole thing. A fresh
-  database therefore opens with all 60 questions and needs no manual step.
+- **Automatically:** `index.ts` runs `seedIfIncomplete()` before the server
+  starts — when any of this dataset's questions are missing, it loads the
+  whole thing (adding only what's missing), then makes sure section codes and
+  module levels match the JSON. A fresh database therefore opens with every
+  question, and an older one picks up new questions, codes and levels, with no
+  manual step.
 - **By hand:** `npx prisma db seed` runs the same loader.
 - The seed authors questions in the simple shape above; the loader converts them
   with `buildPieContent` (which also appends the "I don't know" choice — see
   above). To add or change questions, edit the JSON (a new question needs a
-  real `sectionModuleId` and `competenceId`, and there should be exactly 3 per
-  competence to keep the initial assessment even).
+  real `sectionModuleId` and the `competenceId` of that module, and every
+  module (level) has exactly 3 questions — `fakeFoodSeed.data.test.ts` checks
+  this).
+- The assessment is adaptive (`assessment.path.ts`): sections in a random order
+  per attempt, levels 1 → 4 within each, moving up a level at 2 of 3 right
+  (2/3 of the level's points) and on to the next section once that's out of
+  reach. A module's `level` therefore
+  decides when its questions are asked.
 - Sources are authored with a `moodleCourseId`, not a literal URL — the loader
   builds `sourceUrl` from `MOODLE_BASE_URL` (currently a placeholder,
   `fakeFoodSeed.ts`) + that id. Swap the base URL / ids for real Moodle course

@@ -27,6 +27,13 @@
   color: var(--color-text);
 }
 
+.optional {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.input,
+.select,
 .textarea,
 .numberInput {
   padding: 10px 12px;
@@ -36,6 +43,9 @@
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-text);
+}
+
+.textarea {
   resize: vertical;
 }
 
@@ -58,9 +68,15 @@
 /* Touch devices: iOS Safari zooms the whole page when a form control under
    16px is focused, and never zooms back out — so no smaller than 16px. */
 @media (pointer: coarse) {
+  .input,
+  .select,
   .textarea,
   .numberInput {
     font-size: 16px;
+  }
+
+  .select {
+    min-height: 44px;
   }
 }
 

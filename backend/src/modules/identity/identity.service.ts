@@ -3,16 +3,23 @@ import type { LearnerProfileInput } from "./identity.types";
 
 // All Prisma access for identity_* tables lives here.
 
+/** What toLearnerDto needs: the role, and the profile for hasCompletedProfile. */
+const learnerInclude = { userRole: true, profile: true } as const;
+
 export function findLearnerById(id: string) {
-  return prisma.learner.findUnique({ where: { id }, include: { userRole: true } });
+  return prisma.learner.findUnique({ where: { id }, include: learnerInclude });
 }
 
+/**
+ * Google's name is only the starting value: the learner can edit it in their
+ * profile, so a later sign-in must not overwrite it.
+ */
 export function upsertLearnerFromGoogle(sub: string, email: string, name?: string | null) {
   return prisma.learner.upsert({
     where: { googleSubId: sub },
-    update: { email, name },
+    update: { email },
     create: { email, name, googleSubId: sub },
-    include: { userRole: true },
+    include: learnerInclude,
   });
 }
 
@@ -28,7 +35,7 @@ export function setLearnerRole(learnerId: string, roleId: string) {
   return prisma.learner.update({
     where: { id: learnerId },
     data: { roleId },
-    include: { userRole: true },
+    include: learnerInclude,
   });
 }
 
@@ -36,7 +43,7 @@ export function completeInitialAssessment(learnerId: string) {
   return prisma.learner.update({
     where: { id: learnerId },
     data: { hasCompletedInitialAssessment: true },
-    include: { userRole: true },
+    include: learnerInclude,
   });
 }
 
@@ -68,12 +75,22 @@ export function getLearnerProfile(learnerId: string) {
   return prisma.learnerProfile.findUnique({ where: { learnerId } });
 }
 
-export function saveLearnerProfile(learnerId: string, data: LearnerProfileInput) {
-  return prisma.learnerProfile.upsert({
-    where: { learnerId },
-    update: data,
-    create: { learnerId, ...data },
-  });
+/**
+ * Saves the profile form: the name onto the learner, the rest onto their
+ * profile, in one transaction. Returns the updated learner (with profile),
+ * so the caller can send back a fresh LearnerDto.
+ */
+export async function saveLearnerProfile(learnerId: string, input: LearnerProfileInput) {
+  const { name, ...profile } = input;
+  const [, learner] = await prisma.$transaction([
+    prisma.learnerProfile.upsert({
+      where: { learnerId },
+      update: profile,
+      create: { learnerId, ...profile },
+    }),
+    prisma.learner.update({ where: { id: learnerId }, data: { name }, include: learnerInclude }),
+  ]);
+  return learner;
 }
 
 /**

@@ -1,11 +1,15 @@
 import { apiFetch } from "@/shared/api/client";
 import { endpoints } from "@/shared/api/endpoints";
-import type { SectionCompetenceScores } from "./types";
+import type { AttemptScores } from "./types";
 
 /**
- * The latest SAT's competence scores broken down per section. Sections the
- * learner wasn't assessed in at all are omitted.
+ * One completed SAT's results per section — the latest, or the one with the
+ * given instanceNum — or null before any completed SAT (the backend
+ * returns 204).
  */
-export function getSectionCompetenceScores(): Promise<SectionCompetenceScores[]> {
-  return apiFetch<SectionCompetenceScores[]>(endpoints.competenceScoresBySection);
+export function getSectionCompetenceScores(instanceNum?: number): Promise<AttemptScores | null> {
+  const query = instanceNum === undefined ? "" : `?instance=${instanceNum}`;
+  return apiFetch<AttemptScores | undefined>(`${endpoints.competenceScoresBySection}${query}`).then(
+    (scores) => scores ?? null,
+  );
 }

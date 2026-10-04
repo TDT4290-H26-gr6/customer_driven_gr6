@@ -1,11 +1,11 @@
 import { apiFetch } from "@/shared/api/client";
 import { endpoints } from "@/shared/api/endpoints";
 import type { PieAnswer } from "./components/PieQuestionPlayer";
-import type { Question } from "./types";
+import type { AssessmentPath } from "./types";
 
-/** All questions in the bank, with their competence area and PIE content. */
-export function getQuestions(): Promise<Question[]> {
-  return apiFetch<Question[]>(endpoints.questions);
+/** The learner's route through their current attempt, ending with the next question (if any). */
+export function getAssessmentPath(): Promise<AssessmentPath> {
+  return apiFetch<AssessmentPath>(endpoints.assessment.path);
 }
 
 export type AssessmentProgress = {
@@ -20,12 +20,32 @@ export function getProgress(): Promise<AssessmentProgress | null> {
   );
 }
 
+export type AssessableSection = { id: string; name: string; description: string | null };
+
+/** The sections a reassessment can be limited to. */
+export function getAssessableSections(): Promise<AssessableSection[]> {
+  return apiFetch<AssessableSection[]>(endpoints.assessment.sections);
+}
+
+/** Starts a reassessment after a completed journey, limited to the given sections. */
+export function startReassessment(completedJourneyId: string, sectionIds: string[]): Promise<void> {
+  return apiFetch<void>(endpoints.assessment.start, {
+    method: "POST",
+    body: { completedJourneyId, sectionIds },
+  });
+}
+
 /** Saves (or updates) one answer against the learner's active instance. */
 export function saveResponse(questionId: string, answer: PieAnswer): Promise<void> {
   return apiFetch<void>(endpoints.assessment.responses, {
     method: "POST",
     body: { questionId, answer },
   });
+}
+
+/** Aborts the learner's active instance, deleting every answer saved to it. */
+export function discardAssessment(): Promise<void> {
+  return apiFetch<void>(endpoints.assessment.active, { method: "DELETE" });
 }
 
 /** Marks the learner's active instance complete. */

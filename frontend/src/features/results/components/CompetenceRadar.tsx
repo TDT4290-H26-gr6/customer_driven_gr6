@@ -4,13 +4,25 @@ import styles from "./CompetenceRadar.module.css";
 
 type Props = {
   data: CompetenceScore[];
+  /**
+   * Another SAT's scores on the same axes (same length and order as `data`),
+   * drawn as a dashed outline over the main shape so the two can be
+   * compared. Ignored if it doesn't line up with `data`.
+   */
+  compare?: CompetenceScore[];
   size?: number;
   /**
-   * Narrow screens: there's no room beside the chart for long competence
-   * names, so axes get numbered tips and the names move into a legend list
-   * underneath instead.
+   * No full names beside the chart (narrow screens, or names too long for
+   * axis labels): axes get short tips and the names move into a legend list
+   * underneath instead. Always the same frame, so compact charts shown
+   * together all draw at one scale.
    */
   compact?: boolean;
+  /**
+   * Compact mode: each axis tip's short label, e.g. "A1" for a section's
+   * level 1 module. Defaults to the axis number (1, 2, …).
+   */
+  tipLabels?: (string | null)[];
 };
 
 const RINGS = 4;
@@ -24,34 +36,82 @@ type Bounds = { left: number; right: number; top: number; bottom: number };
 const LABEL_FONT_SIZE = 11;
 const LABEL_CHAR_WIDTH = LABEL_FONT_SIZE * 0.6;
 const LABEL_LINE_HEIGHT = 1.2; // em
-/** Names longer than this are split over two lines. */
-const MAX_SINGLE_LINE_CHARS = 18;
+/** No label line is longer than this — longer names wrap onto more lines. */
+const MAX_LINE_CHARS = 14;
 const VIEWBOX_PADDING = 6;
 
-/** Keeps short names on one line; splits longer ones over two, as evenly as the word breaks allow. */
-export function wrapLabel(name: string): string[] {
-  if (name.length <= MAX_SINGLE_LINE_CHARS) return [name];
-
-  const words = name.split(" ");
-  let best = [name];
-  let bestLongest = Infinity;
-  for (let i = 1; i < words.length; i++) {
-    const lines = [words.slice(0, i).join(" "), words.slice(i).join(" ")];
-    const longest = Math.max(lines[0].length, lines[1].length);
-    if (longest < bestLongest) {
-      best = lines;
-      bestLongest = longest;
+/** Fills each line with as many words as fit `width`, in order. */
+function wrapWords(words: string[], width: number): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    if (!line) line = word;
+    else if (line.length + 1 + word.length <= width) line += ` ${word}`;
+    else {
+      lines.push(line);
+      line = word;
     }
   }
-  return best;
+  if (line) lines.push(line);
+  return lines;
+}
+
+/** A word too long for a line: split after its own hyphens first, then into hyphenated chunks. */
+function splitLongWord(word: string): string[] {
+  if (word.length <= MAX_LINE_CHARS) return [word];
+  return word.split(/(?<=-)/).flatMap((part) => {
+    if (part.length <= MAX_LINE_CHARS) return [part];
+    const chunks: string[] = [];
+    for (let i = 0; i < part.length; i += MAX_LINE_CHARS - 1) {
+      const chunk = part.slice(i, i + MAX_LINE_CHARS - 1);
+      chunks.push(i + MAX_LINE_CHARS - 1 < part.length ? `${chunk}-` : chunk);
+    }
+    return chunks;
+  });
+}
+
+/**
+ * The one rule for every axis label: break the name at MAX_LINE_CHARS, word
+ * by word — the same fixed width for every name, no per-name balancing — so
+ * names are split consistently across all charts. Names that fit stay on one
+ * line; a word longer than a line splits at its own hyphens first.
+ */
+export function wrapLabel(name: string): string[] {
+  return wrapWords(name.split(" ").flatMap(splitLongWord), MAX_LINE_CHARS);
+}
+
+type Point = { x: number; y: number };
+
+/**
+ * A closed shape's edges, each drawn once: edges of no length are dropped,
+ * and so is an edge retracing one already listed (A→B after B→A). A shape
+ * with most scores at 0 collapses to lines from the centre and back; drawn
+ * as one polygon, the dashes going out and coming back fill each other's
+ * gaps and the outline looks solid. Drawn edge by edge it stays dashed.
+ */
+export function outlineEdges(points: Point[]): [Point, Point][] {
+  const key = (p: Point) => `${p.x.toFixed(2)},${p.y.toFixed(2)}`;
+  const seen = new Set<string>();
+  const edges: [Point, Point][] = [];
+  points.forEach((from, i) => {
+    const to = points[(i + 1) % points.length];
+    const [a, b] = [key(from), key(to)];
+    if (a === b) return;
+    const edge = a < b ? `${a}|${b}` : `${b}|${a}`;
+    if (seen.has(edge)) return;
+    seen.add(edge);
+    edges.push([from, to]);
+  });
+  return edges;
 }
 
 /**
  * Radar / spider chart of skill levels, one axis per competence. An entry with
  * an empty name is a padding axis (kept so the shape has at least three
- * corners): it is drawn but carries no label.
+ * corners): it is drawn but carries no label. With `compare`, a second SAT is
+ * drawn on top as a dashed, unfilled outline.
  */
-export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
+export function CompetenceRadar({ data, compare, size = 340, compact = false, tipLabels }: Props) {
   const labelsRef = useRef<SVGGElement>(null);
   const [measured, setMeasured] = useState<Bounds | null>(null);
 
@@ -91,7 +151,7 @@ export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
 
   const center = size / 2;
   // Leave room for axis labels — a lot for full names, a little for the
-  // single-digit tips used in compact mode.
+  // short tips used in compact mode.
   const radius = size / 2 - (compact ? 28 : 56);
   const count = data.length;
 
@@ -122,26 +182,52 @@ export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
     d.maxScore > 0 ? Math.max(0, Math.min(1, d.score / d.maxScore)) : 0;
 
   const dataPoints = data.map((d, i) => pointAt(i, fractionOf(d)));
+  // No dot for a 0 score — it would just sit in the centre.
+  const dotted = (scores: CompetenceScore[], points: Point[]) =>
+    points.filter((_, i) => fractionOf(scores[i]) > 0);
+  const comparePoints =
+    compare && compare.length === count ? compare.map((d, i) => pointAt(i, fractionOf(d))) : null;
+  const compareEdges = comparePoints ? outlineEdges(comparePoints) : [];
+  const compareDots = compare && comparePoints ? dotted(compare, comparePoints) : [];
+
+  /** Each axis tip's short label in compact mode. */
+  const tipLabel = (i: number) => tipLabels?.[i] ?? String(i + 1);
 
   // Full-name labels (not compact): wrapped, positioned just outside each axis
   // tip, with an estimated box so the viewBox can be grown to contain them.
+  // A label above the chart grows upwards and one below grows downwards, so
+  // a long, many-line name never runs back into the chart; side labels are
+  // centred on their tip.
+  const lineHeight = LABEL_FONT_SIZE * LABEL_LINE_HEIGHT;
   const labels = compact
     ? []
     : data.map((d, i) => {
         const pos = pointAt(i, 1.18);
         const cos = Math.cos(angleFor(i));
+        const sin = Math.sin(angleFor(i));
         const anchor: "start" | "middle" | "end" =
           cos > 0.3 ? "start" : cos < -0.3 ? "end" : "middle";
+        const placement: "above" | "below" | "centred" =
+          sin < -0.3 ? "above" : sin > 0.3 ? "below" : "centred";
         const lines = wrapLabel(d.competence.name);
+        const span = (lines.length - 1) * lineHeight; // first line's centre to last's
+        // Where the first line's centre sits relative to the tip, in ems.
+        const firstLineEm =
+          placement === "above"
+            ? -(lines.length - 1) * LABEL_LINE_HEIGHT
+            : placement === "below"
+              ? 0
+              : (-(lines.length - 1) * LABEL_LINE_HEIGHT) / 2;
+        const top = pos.y + firstLineEm * LABEL_FONT_SIZE - lineHeight / 2;
         const width = Math.max(...lines.map((line) => line.length)) * LABEL_CHAR_WIDTH;
-        const height = lines.length * LABEL_FONT_SIZE * LABEL_LINE_HEIGHT;
         const left =
           anchor === "start" ? pos.x : anchor === "end" ? pos.x - width : pos.x - width / 2;
         return {
           pos,
           anchor,
           lines,
-          box: { left, right: left + width, top: pos.y - height / 2, bottom: pos.y + height / 2 },
+          firstLineEm,
+          box: { left, right: left + width, top, bottom: top + span + lineHeight },
         };
       });
 
@@ -200,8 +286,30 @@ export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
 
         <polygon points={toPolygon(dataPoints)} className={styles.area} />
 
-        {dataPoints.map((p, i) => (
+        {dotted(data, dataPoints).map((p, i) => (
           <circle key={i} cx={p.x} cy={p.y} r={3.5} className={styles.point} />
+        ))}
+
+        {comparePoints && (
+          <g data-testid="compare-area">
+            {/* Edge by edge (see outlineEdges), so the outline stays dashed.
+                Thinner than the main line, which shows around and between
+                the dashes where the two SATs score the same. */}
+            {compareEdges.map(([from, to], i) => (
+              <line
+                key={`edge-${i}`}
+                x1={from.x}
+                y1={from.y}
+                x2={to.x}
+                y2={to.y}
+                className={styles.compareArea}
+              />
+            ))}
+          </g>
+        )}
+
+        {compareDots.map((p, i) => (
+          <circle key={`compare-${i}`} cx={p.x} cy={p.y} r={3.5} className={styles.comparePoint} />
         ))}
 
         {compact &&
@@ -218,14 +326,14 @@ export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
                 className={styles.tipNumber}
                 aria-hidden="true"
               >
-                {i + 1}
+                {tipLabel(i)}
               </text>
             );
           })}
 
         {!compact && (
           <g ref={labelsRef}>
-            {labels.map(({ pos, anchor, lines }, i) =>
+            {labels.map(({ pos, anchor, lines, firstLineEm }, i) =>
               !data[i].competence.name ? null : (
                 <text
                   key={i}
@@ -240,8 +348,9 @@ export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
                     <tspan
                       key={lineIndex}
                       x={pos.x}
-                      // Centre the whole block on the label position, not just its first line.
-                      dy={`${lineIndex === 0 ? (-(lines.length - 1) * LABEL_LINE_HEIGHT) / 2 : LABEL_LINE_HEIGHT}em`}
+                      // Place the whole block (above, below or centred on the
+                      // tip — see `labels`), not just its first line.
+                      dy={`${lineIndex === 0 ? firstLineEm : LABEL_LINE_HEIGHT}em`}
                     >
                       {line}
                     </tspan>
@@ -259,7 +368,7 @@ export function CompetenceRadar({ data, size = 340, compact = false }: Props) {
             !d.competence.name ? null : (
               <li key={i} className={styles.legendItem}>
                 <span className={styles.legendIndex} aria-hidden="true">
-                  {i + 1}
+                  {tipLabel(i)}
                 </span>
                 <span className={styles.legendName}>{d.competence.name}</span>
               </li>

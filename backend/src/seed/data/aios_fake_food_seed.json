@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "description": "FAKE food-themed seed data for AIOS. This is the app's initial assessment for every learner: 5 sections x 4 competences x 3 questions = 60 questions, covering all sections and competences regardless of role (see assessment.service.ts's isInitialAssessment). Everything here is obviously fake. Source links point at a placeholder Moodle base URL (MOODLE_BASE_URL in fakeFoodSeed.ts) built from each source's moodleCourseId -- swap the base URL / ids for real ones later. No SAT instances, responses, scores or recommendations are included, so a freshly logged-in learner starts with all 60 questions unanswered.",
+    "description": "FAKE food-themed seed data for AIOS. This is the app's initial assessment for every learner: 5 sections (A-E) x 4 section modules (levels 1-4, one competence each) x 3 questions = 60 questions, covering all sections and competences regardless of role (see assessment.service.ts's isInitialAssessment). Everything here is obviously fake. Source links point at a placeholder Moodle base URL (MOODLE_BASE_URL in fakeFoodSeed.ts) built from each source's moodleCourseId -- swap the base URL / ids for real ones later. No SAT instances, responses, scores or recommendations are included, so a freshly logged-in learner starts with every question unanswered.",
     "insertOrder": [
       "aios.sources.source",
       "aios.identity.role",
@@ -20,7 +20,7 @@
     "questionTypes": {
       "likert": "content.scale {min,max,minLabel,maxLabel}; self-rated, score = chosen value",
       "single_choice": "content.options[] + correctOptionIds (one)",
-      "multi_choice": "content.options[] + correctOptionIds (several), 1 point per correct pick",
+      "multi_choice": "content.options[] + correctOptionIds (several); scored as the share of correct options ticked minus the share of wrong ones ticked, out of 1",
       "true_false": "content.options true/false + correctOptionIds"
     },
     "everyQuestionAlsoHas": "An 'I don't know' choice appended by assessment.pie.ts (IDK_VALUE in assessment.scoring.ts) -- not authored here, added automatically at load time.",
@@ -866,6 +866,7 @@
   "aios.assessment.section": [
     {
       "id": "sec-fake-knife",
+      "code": "A",
       "name": "FAKE Knife Skills",
       "description": "Pointy things and how not to lose fingers.",
       "createdAt": "2026-09-23T12:00:00.000Z",
@@ -873,6 +874,7 @@
     },
     {
       "id": "sec-fake-baking",
+      "code": "B",
       "name": "FAKE Baking & Pastry",
       "description": "Bread, butter, and patience.",
       "createdAt": "2026-09-23T12:00:00.000Z",
@@ -880,6 +882,7 @@
     },
     {
       "id": "sec-fake-sauces",
+      "code": "C",
       "name": "FAKE Sauces & Pasta",
       "description": "Wet food and noodles.",
       "createdAt": "2026-09-23T12:00:00.000Z",
@@ -887,6 +890,7 @@
     },
     {
       "id": "sec-fake-safety",
+      "code": "D",
       "name": "FAKE Kitchen Safety",
       "description": "Fridges, hands, and mystery smells.",
       "createdAt": "2026-09-23T12:00:00.000Z",
@@ -894,6 +898,7 @@
     },
     {
       "id": "sec-fake-critique",
+      "code": "E",
       "name": "FAKE Snack Critique & Plating",
       "description": "Judging food and making it look fancy.",
       "createdAt": "2026-09-23T12:00:00.000Z",
@@ -907,6 +912,7 @@
       "description": "Everything about onions.",
       "mainCompetenceId": "comp-fake-onion-dicing",
       "sectionId": "sec-fake-knife",
+      "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -916,6 +922,7 @@
       "description": "Keep them attached.",
       "mainCompetenceId": "comp-fake-finger-keeping",
       "sectionId": "sec-fake-knife",
+      "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -925,6 +932,7 @@
       "description": "Watching dough grow.",
       "mainCompetenceId": "comp-fake-dough-proofing",
       "sectionId": "sec-fake-baking",
+      "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -934,6 +942,7 @@
       "description": "Butter. More butter.",
       "mainCompetenceId": "comp-fake-butter-lamination",
       "sectionId": "sec-fake-baking",
+      "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -943,6 +952,7 @@
       "description": "Oil + egg = drama.",
       "mainCompetenceId": "comp-fake-emulsion-wrangling",
       "sectionId": "sec-fake-sauces",
+      "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -952,6 +962,7 @@
       "description": "Boil water, add noodles, panic.",
       "mainCompetenceId": "comp-fake-pasta-timing",
       "sectionId": "sec-fake-sauces",
+      "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -961,6 +972,7 @@
       "description": "What is in the blue tub?",
       "mainCompetenceId": "comp-fake-fridge-forensics",
       "sectionId": "sec-fake-safety",
+      "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -970,6 +982,7 @@
       "description": "Soap exists.",
       "mainCompetenceId": "comp-fake-hand-washing",
       "sectionId": "sec-fake-safety",
+      "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -979,6 +992,7 @@
       "description": "Crunch, described.",
       "mainCompetenceId": "comp-fake-crunch-vocabulary",
       "sectionId": "sec-fake-critique",
+      "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -988,6 +1002,7 @@
       "description": "One leaf. Perfect.",
       "mainCompetenceId": "comp-fake-garnish-placement",
       "sectionId": "sec-fake-critique",
+      "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -997,6 +1012,7 @@
       "description": "Cutting leafy herbs into thin, even ribbons.",
       "mainCompetenceId": "comp-fake-herb-chiffonade",
       "sectionId": "sec-fake-knife",
+      "level": 3,
       "createdAt": "2026-09-28T12:00:00.000Z",
       "updatedAt": "2026-09-28T12:00:00.000Z"
     },
@@ -1006,6 +1022,7 @@
       "description": "Keeping a blade properly sharp and safe to use.",
       "mainCompetenceId": "comp-fake-knife-sharpening",
       "sectionId": "sec-fake-knife",
+      "level": 4,
       "createdAt": "2026-09-28T12:00:00.000Z",
       "updatedAt": "2026-09-28T12:00:00.000Z"
     },
@@ -1015,6 +1032,7 @@
       "description": "Knowing what your oven is actually doing versus the dial.",
       "mainCompetenceId": "comp-fake-oven-temp",
       "sectionId": "sec-fake-baking",
+      "level": 3,
       "createdAt": "2026-09-28T12:00:00.000Z",
       "updatedAt": "2026-09-28T12:00:00.000Z"
     },
@@ -1024,6 +1042,7 @@
       "description": "Feeding and reading a live sourdough starter.",
       "mainCompetenceId": "comp-fake-sourdough-starter",
       "sectionId": "sec-fake-baking",
+      "level": 4,
       "createdAt": "2026-09-28T12:00:00.000Z",
       "updatedAt": "2026-09-28T12:00:00.000Z"
     },
@@ -1033,6 +1052,7 @@
       "description": "Coaxing a clear, flavorful stock without boiling it.",
       "mainCompetenceId": "comp-fake-stock-simmering",
       "sectionId": "sec-fake-sauces",
+      "level": 3,
       "createdAt": "2026-09-28T12:00:00.000Z",
       "updatedAt": "2026-09-28T12:00:00.000Z"
     },
@@ -1042,6 +1062,7 @@
       "description": "Balancing salt, acid, fat, and sweetness in a dish.",
       "mainCompetenceId": "comp-fake-seasoning-balance",
       "sectionId": "sec-fake-sauces",
+      "level": 4,
       "createdAt": "2026-09-28T12:00:00.000Z",
       "updatedAt": "2026-09-28T12:00:00.000Z"
     },
@@ -1051,6 +1072,7 @@
       "description": "Keeping raw and ready-to-eat food safely apart.",
       "mainCompetenceId": "comp-fake-cross-contamination",
       "sectionId": "sec-fake-safety",
+      "level": 3,
       "createdAt": "2026-09-28T12:00:00.000Z",
       "updatedAt": "2026-09-28T12:00:00.000Z"
     },
@@ -1060,6 +1082,7 @@
       "description": "Responding safely to a small kitchen fire.",
       "mainCompetenceId": "comp-fake-fire-extinguisher",
       "sectionId": "sec-fake-safety",
+      "level": 4,
       "createdAt": "2026-09-28T12:00:00.000Z",
       "updatedAt": "2026-09-28T12:00:00.000Z"
     },
@@ -1069,6 +1092,7 @@
       "description": "Combining flavors that play well (or interestingly) together.",
       "mainCompetenceId": "comp-fake-flavour-pairing",
       "sectionId": "sec-fake-critique",
+      "level": 3,
       "createdAt": "2026-09-28T12:00:00.000Z",
       "updatedAt": "2026-09-28T12:00:00.000Z"
     },
@@ -1078,6 +1102,7 @@
       "description": "Arranging a plate so it looks intentional, not accidental.",
       "mainCompetenceId": "comp-fake-plating-symmetry",
       "sectionId": "sec-fake-critique",
+      "level": 4,
       "createdAt": "2026-09-28T12:00:00.000Z",
       "updatedAt": "2026-09-28T12:00:00.000Z"
     }

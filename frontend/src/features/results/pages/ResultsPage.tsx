@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
@@ -13,6 +13,7 @@ import type { SectionCompetenceScores } from "../types";
 import { RecommendedJourneyCard, getCurrentJourney } from "@/features/learningJourney";
 import type { CurrentJourney } from "@/features/learningJourney";
 import { AdviceCard, getAdvice } from "@/features/advisor";
+import { getProgress } from "@/features/assessment";
 import type { AdviceState } from "@/features/advisor";
 import styles from "./ResultsPage.module.css";
 
@@ -20,9 +21,20 @@ import styles from "./ResultsPage.module.css";
  * The main dashboard: an overview radar with one axis per section (each
  * rolling up that section's own competences — see sectionAxes.ts; a section
  * has too many competences to chart individually here) + entry point into
- * the assessment, the score-based journey recommendation, and AI advice that
- * explains it. The page remounts on every visit, so retaking the SAT and
- * returning here always fetches the fresh scores (and new advice).
+ * the assessment, the learner's journey (whichever they've explicitly
+ * selected, CD-33, else the score-based recommendation — see
+ * getCurrentJourney), and AI advice that explains it. The page remounts on
+ * every visit, so retaking the SAT and
+ * returning here always fetches the fresh scores (and new advice). The
+ * assessment button says "Continue" while the learner has an unfinished
+ * attempt (left with Save & exit), so they know their answers weren't lost;
+ * otherwise "Retake assessment", which first asks about completed learning journeys
+ * (ReassessPage). Scores are the newest per section across all attempts, so
+ * a reassessment of some sections keeps the others on the radar.
+ *
+ * A new learner fills in their profile first: until they've both completed
+ * it and finished a first assessment, this sends them to /profile, whose
+ * "Done" brings them back to the welcome screen here.
  */
 export function ResultsPage() {
   const { learner } = useAuth();
@@ -33,14 +45,21 @@ export function ResultsPage() {
   const [journey, setJourney] = useState<CurrentJourney | null>(null);
   // null: no advice to show (no completed assessment, or the feature is off).
   const [advice, setAdvice] = useState<AdviceState | null>({ status: "loading" });
+  // null while loading. A failed load falls back to the "start" wording —
+  // the runner restores saved answers either way.
+  const [hasOngoing, setHasOngoing] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // The latest SAT only — earlier ones are in "See results by section".
     getSectionCompetenceScores()
-      .then(setSections)
+      .then((latest) => setSections(latest?.sections ?? []))
       .catch(() => {
         setSections([]);
         setLoadFailed(true);
       });
+    getProgress()
+      .then((progress) => setHasOngoing(progress !== null))
+      .catch(() => setHasOngoing(false));
     getCurrentJourney()
       .then(setJourney)
       .catch(() => setJourney(null));
@@ -51,7 +70,11 @@ export function ResultsPage() {
       .catch(() => setAdvice({ status: "unavailable" }));
   }, []);
 
-  if (sections === null) {
+  if (!learner?.hasCompletedInitialAssessment && !learner?.hasCompletedProfile) {
+    return <Navigate to="/profile" replace />;
+  }
+
+  if (sections === null || hasOngoing === null) {
     return (
       <div className={styles.page}>
         <Spinner />
@@ -60,7 +83,13 @@ export function ResultsPage() {
   }
 
   if (!learner?.hasCompletedInitialAssessment) {
-    return <WelcomeScreen name={learner?.name} onStart={() => navigate("/assessment")} />;
+    return (
+      <WelcomeScreen
+        name={learner?.name}
+        hasOngoing={hasOngoing}
+        onStart={() => navigate("/assessment")}
+      />
+    );
   }
 
   return (
@@ -82,7 +111,7 @@ export function ResultsPage() {
             className={styles.details}
             onClick={() => navigate("/results/details")}
           >
-            More details
+            See results by section
           </Button>
         )}
       </div>
@@ -91,8 +120,11 @@ export function ResultsPage() {
 
       {advice && <AdviceCard state={advice} />}
 
-      <Button className={styles.cta} onClick={() => navigate("/assessment")}>
-        Assess yourself
+      <Button
+        className={styles.cta}
+        onClick={() => navigate(hasOngoing ? "/assessment" : "/assessment/reassess")}
+      >
+        {hasOngoing ? "Continue assessment" : "Retake assessment"}
       </Button>
     </div>
   );

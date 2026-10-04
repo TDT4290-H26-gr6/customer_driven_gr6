@@ -33,6 +33,20 @@
   fill: var(--color-primary);
 }
 
+/* A second SAT to compare with: a dashed outline only, in another colour,
+   so it reads apart from the main shape even without colour vision. */
+.compareArea {
+  fill: none;
+  stroke: var(--color-danger);
+  /* Thinner than the main shape's 2, so it reads as the secondary one. */
+  stroke-width: 1.25;
+  stroke-dasharray: 5 3;
+}
+
+.comparePoint {
+  fill: var(--color-danger);
+}
+
 .label {
   fill: var(--color-text-muted);
 }
@@ -65,11 +79,13 @@
   font-size: 13px;
 }
 
+/* A pill rather than a circle, so a two-character tip like "A1" fits too. */
 .legendIndex {
   flex: none;
-  width: 22px;
+  min-width: 22px;
   height: 22px;
-  border-radius: 50%;
+  padding: 0 5px;
+  border-radius: 999px;
   background: var(--color-primary-soft);
   color: var(--color-primary);
   font-size: 12px;
