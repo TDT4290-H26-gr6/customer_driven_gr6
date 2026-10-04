@@ -6,6 +6,7 @@ import { asyncHandler } from "../../lib/asyncHandler";
 import { requireObject, requireString } from "../../lib/validate";
 import {
   completeActiveInstance,
+  discardActiveInstance,
   getLatestCompetenceScores,
   getLatestSectionCompetenceScores,
   getProgress,
@@ -55,6 +56,18 @@ assessmentRouter.post(
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
     await completeActiveInstance(req.learnerId!);
+    res.status(204).end();
+  }),
+);
+
+// Aborts the in-progress assessment, deleting its saved answers. 204 even
+// when there was nothing to abort, so retrying is safe.
+assessmentRouter.delete(
+  "/assessment/active",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    await discardActiveInstance(req.learnerId!);
     res.status(204).end();
   }),
 );

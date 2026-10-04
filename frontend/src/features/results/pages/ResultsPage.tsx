@@ -13,6 +13,7 @@ import type { SectionCompetenceScores } from "../types";
 import { RecommendedJourneyCard, getRecommendedJourney } from "@/features/learningJourney";
 import type { LearningJourney } from "@/features/learningJourney";
 import { AdviceCard, getAdvice } from "@/features/advisor";
+import { getProgress } from "@/features/assessment";
 import type { AdviceState } from "@/features/advisor";
 import styles from "./ResultsPage.module.css";
 
@@ -22,7 +23,9 @@ import styles from "./ResultsPage.module.css";
  * has too many competences to chart individually here) + entry point into
  * the assessment, the score-based journey recommendation, and AI advice that
  * explains it. The page remounts on every visit, so retaking the SAT and
- * returning here always fetches the fresh scores (and new advice).
+ * returning here always fetches the fresh scores (and new advice). The
+ * assessment button says "Continue" while the learner has an unfinished
+ * attempt (left with Save & exit), so they know their answers weren't lost.
  */
 export function ResultsPage() {
   const { learner } = useAuth();
@@ -33,6 +36,9 @@ export function ResultsPage() {
   const [journey, setJourney] = useState<LearningJourney | null>(null);
   // null: no advice to show (no completed assessment, or the feature is off).
   const [advice, setAdvice] = useState<AdviceState | null>({ status: "loading" });
+  // null while loading. A failed load falls back to the "start" wording —
+  // the runner restores saved answers either way.
+  const [hasOngoing, setHasOngoing] = useState<boolean | null>(null);
 
   useEffect(() => {
     getSectionCompetenceScores()
@@ -41,6 +47,9 @@ export function ResultsPage() {
         setSections([]);
         setLoadFailed(true);
       });
+    getProgress()
+      .then((progress) => setHasOngoing(progress !== null))
+      .catch(() => setHasOngoing(false));
     getRecommendedJourney()
       .then(setJourney)
       .catch(() => setJourney(null));
@@ -51,7 +60,7 @@ export function ResultsPage() {
       .catch(() => setAdvice({ status: "unavailable" }));
   }, []);
 
-  if (sections === null) {
+  if (sections === null || hasOngoing === null) {
     return (
       <div className={styles.page}>
         <Spinner />
@@ -60,7 +69,13 @@ export function ResultsPage() {
   }
 
   if (!learner?.hasCompletedInitialAssessment) {
-    return <WelcomeScreen name={learner?.name} onStart={() => navigate("/assessment")} />;
+    return (
+      <WelcomeScreen
+        name={learner?.name}
+        hasOngoing={hasOngoing}
+        onStart={() => navigate("/assessment")}
+      />
+    );
   }
 
   return (
@@ -92,7 +107,7 @@ export function ResultsPage() {
       {advice && <AdviceCard state={advice} />}
 
       <Button className={styles.cta} onClick={() => navigate("/assessment")}>
-        Assess yourself
+        {hasOngoing ? "Continue assessment" : "Assess yourself"}
       </Button>
     </div>
   );

@@ -28,6 +28,11 @@ export function saveResponse(questionId: string, answer: PieAnswer): Promise<voi
   });
 }
 
+/** Aborts the learner's active instance, deleting every answer saved to it. */
+export function discardAssessment(): Promise<void> {
+  return apiFetch<void>(endpoints.assessment.active, { method: "DELETE" });
+}
+
 /** Marks the learner's active instance complete. */
 export function completeAssessment(): Promise<void> {
   return apiFetch<void>(endpoints.assessment.complete, { method: "POST" });

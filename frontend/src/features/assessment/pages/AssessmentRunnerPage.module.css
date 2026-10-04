@@ -6,6 +6,17 @@
   margin: 0 auto;
 }
 
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.progress {
+  flex: 1;
+  min-width: 0;
+}
+
 .nav {
   display: flex;
   justify-content: space-between;

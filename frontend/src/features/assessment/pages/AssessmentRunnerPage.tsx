@@ -5,11 +5,19 @@ import { completeInitialAssessment } from "@/features/auth";
 import { isApiError } from "@/shared/api/client";
 import { withRetry } from "@/shared/api/retry";
 import { Button } from "@/shared/components/Button";
+import { CloseIcon } from "@/shared/components/icons";
 import { Spinner } from "@/shared/components/Spinner";
 import { AssessmentProgress } from "../components/AssessmentProgress";
+import { ExitAssessmentDialog, type ExitStatus } from "../components/ExitAssessmentDialog";
 import { QuestionCard } from "../components/QuestionCard";
 import type { PieAnswer } from "../components/PieQuestionPlayer";
-import { completeAssessment, getProgress, getQuestions, saveResponse } from "../api";
+import {
+  completeAssessment,
+  discardAssessment,
+  getProgress,
+  getQuestions,
+  saveResponse,
+} from "../api";
 import type { Question } from "../types";
 import styles from "./AssessmentRunnerPage.module.css";
 
@@ -33,6 +41,12 @@ import styles from "./AssessmentRunnerPage.module.css";
  * means the question is no longer visible to the learner's role (an admin
  * changed it mid-assessment) — retrying can't help, so the question list is
  * reloaded instead.
+ *
+ * Exit opens a dialog: "Save & exit" leaves once every answer is saved (the
+ * learner resumes later); "Abort" deletes the in-progress instance and all
+ * its answers. Abort first stops queued saves and waits for the one in
+ * flight — a save landing after the delete would otherwise create a new
+ * instance holding just that answer.
  */
 export function AssessmentRunnerPage() {
   const [questions, setQuestions] = useState<Question[] | null>(null);
@@ -50,6 +64,12 @@ export function AssessmentRunnerPage() {
   // awaiting the queue in handleFinish), mirrored into state for rendering.
   const unsaved = useRef(new Map<string, PieAnswer>());
   const [unsavedCount, setUnsavedCount] = useState(0);
+  // Set while an abort is deleting the instance: queued saves are skipped
+  // (kept as unsaved in case the delete fails) instead of recreating it.
+  const discarding = useRef(false);
+  const [exitOpen, setExitOpen] = useState(false);
+  const [exitStatus, setExitStatus] = useState<ExitStatus>("idle");
+  const [exitError, setExitError] = useState<string | null>(null);
   // The current question/index, for async code that outlives a render.
   const latest = useRef({ questions, index });
   const navigate = useNavigate();
@@ -86,6 +106,11 @@ export function AssessmentRunnerPage() {
     load();
   }, [load]);
 
+  const closeExit = useCallback(() => {
+    setExitOpen(false);
+    setExitError(null);
+  }, []);
+
   /** Refetches the question list after a 404, keeping the learner on the same question if it survived. */
   async function dropUnavailableQuestions() {
     let fresh: Question[];
@@ -111,6 +136,10 @@ export function AssessmentRunnerPage() {
 
   function queueSave(questionId: string, answer: PieAnswer) {
     pendingSaves.current = pendingSaves.current.then(async () => {
+      if (discarding.current) {
+        unsaved.current.set(questionId, answer);
+        return;
+      }
       try {
         await withRetry(() => saveResponse(questionId, answer));
         unsaved.current.delete(questionId);
@@ -184,6 +213,38 @@ export function AssessmentRunnerPage() {
     }
   }
 
+  async function handleSaveAndExit() {
+    setExitStatus("leaving");
+    setExitError(null);
+    retryUnsaved();
+    await pendingSaves.current;
+
+    if (unsaved.current.size > 0) {
+      setExitError("Some answers still couldn't be saved. Check your connection and try again.");
+      setExitStatus("idle");
+      return;
+    }
+    navigate("/", { replace: true });
+  }
+
+  async function handleDiscard() {
+    discarding.current = true;
+    setExitStatus("discarding");
+    setExitError(null);
+    await pendingSaves.current;
+
+    try {
+      await withRetry(() => discardAssessment());
+      unsaved.current.clear();
+      navigate("/", { replace: true });
+    } catch {
+      discarding.current = false;
+      setUnsavedCount(unsaved.current.size);
+      setExitError("Couldn't abort the assessment. Check your connection and try again.");
+      setExitStatus("idle");
+    }
+  }
+
   function handleNext() {
     if (isLast) void handleFinish();
     else setIndex((i) => i + 1);
@@ -191,7 +252,17 @@ export function AssessmentRunnerPage() {
 
   return (
     <div className={styles.page}>
-      <AssessmentProgress current={index + 1} total={questions.length} />
+      <div className={styles.topRow}>
+        {/* Left, on the same side as Back — the "leave" side of the page —
+            so the right stays for moving forward (the count, then Next). */}
+        <Button variant="danger" onClick={() => setExitOpen(true)} disabled={isFinishing}>
+          <CloseIcon width={16} height={16} aria-hidden="true" />
+          Exit
+        </Button>
+        <div className={styles.progress}>
+          <AssessmentProgress current={index + 1} total={questions.length} />
+        </div>
+      </div>
 
       {unsavedCount > 0 && (
         <div className={styles.alert} role="alert">
@@ -231,6 +302,17 @@ export function AssessmentRunnerPage() {
           {isLast ? "Finish" : "Next"}
         </Button>
       </div>
+
+      {exitOpen && (
+        <ExitAssessmentDialog
+          unsavedCount={unsavedCount}
+          status={exitStatus}
+          error={exitError}
+          onKeepGoing={closeExit}
+          onSaveAndExit={() => void handleSaveAndExit()}
+          onDiscard={() => void handleDiscard()}
+        />
+      )}
     </div>
   );
 }

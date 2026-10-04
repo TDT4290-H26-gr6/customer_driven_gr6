@@ -41,3 +41,15 @@
 .secondary:hover:not(:disabled) {
   background: var(--color-bg);
 }
+
+/* Destructive actions (e.g. deleting saved answers): outlined in the danger
+   colour rather than filled, so it never outweighs the safe choice beside it. */
+.danger {
+  background: var(--color-surface);
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.danger:hover:not(:disabled) {
+  background: var(--color-bg);
+}
