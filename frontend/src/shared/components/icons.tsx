@@ -53,6 +53,16 @@ export function BookIcon(props: IconProps) {
   );
 }
 
+export function RouteIcon(props: IconProps) {
+  return (
+    <svg {...defaults} {...props}>
+      <circle cx="5" cy="6" r="2.5" />
+      <circle cx="19" cy="18" r="2.5" />
+      <path d="M7.2 7.5C10 10 8 14 12 15.5s6-1 6.8 2" />
+    </svg>
+  );
+}
+
 export function SunIcon(props: IconProps) {
   return (
     <svg {...defaults} {...props}>

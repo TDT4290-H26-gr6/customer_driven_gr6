@@ -31,6 +31,7 @@ function learner(overrides: Partial<LearnerWithRole> = {}): LearnerWithRole {
       updatedAt: new Date("2026-01-01"),
     },
     hasCompletedInitialAssessment: false,
+    selectedJourneyId: null,
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
     profile: completeProfile,

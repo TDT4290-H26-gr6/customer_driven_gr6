@@ -10,8 +10,8 @@ import { WelcomeScreen } from "../components/WelcomeScreen";
 import { getSectionCompetenceScores } from "../api";
 import { sectionAxes } from "../sectionAxes";
 import type { SectionCompetenceScores } from "../types";
-import { RecommendedJourneyCard, getRecommendedJourney } from "@/features/learningJourney";
-import type { LearningJourney } from "@/features/learningJourney";
+import { RecommendedJourneyCard, getCurrentJourney } from "@/features/learningJourney";
+import type { CurrentJourney } from "@/features/learningJourney";
 import { AdviceCard, getAdvice } from "@/features/advisor";
 import { getProgress } from "@/features/assessment";
 import type { AdviceState } from "@/features/advisor";
@@ -21,8 +21,10 @@ import styles from "./ResultsPage.module.css";
  * The main dashboard: an overview radar with one axis per section (each
  * rolling up that section's own competences — see sectionAxes.ts; a section
  * has too many competences to chart individually here) + entry point into
- * the assessment, the score-based journey recommendation, and AI advice that
- * explains it. The page remounts on every visit, so retaking the SAT and
+ * the assessment, the learner's journey (whichever they've explicitly
+ * selected, CD-33, else the score-based recommendation — see
+ * getCurrentJourney), and AI advice that explains it. The page remounts on
+ * every visit, so retaking the SAT and
  * returning here always fetches the fresh scores (and new advice). The
  * assessment button says "Continue" while the learner has an unfinished
  * attempt (left with Save & exit), so they know their answers weren't lost;
@@ -40,7 +42,7 @@ export function ResultsPage() {
   const [sections, setSections] = useState<SectionCompetenceScores[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
-  const [journey, setJourney] = useState<LearningJourney | null>(null);
+  const [journey, setJourney] = useState<CurrentJourney | null>(null);
   // null: no advice to show (no completed assessment, or the feature is off).
   const [advice, setAdvice] = useState<AdviceState | null>({ status: "loading" });
   // null while loading. A failed load falls back to the "start" wording —
@@ -58,7 +60,7 @@ export function ResultsPage() {
     getProgress()
       .then((progress) => setHasOngoing(progress !== null))
       .catch(() => setHasOngoing(false));
-    getRecommendedJourney()
+    getCurrentJourney()
       .then(setJourney)
       .catch(() => setJourney(null));
     // Slower than the rest (an LLM call the first time), so it fills in on
@@ -114,7 +116,7 @@ export function ResultsPage() {
         )}
       </div>
 
-      {journey && <RecommendedJourneyCard journey={journey} />}
+      {journey && <RecommendedJourneyCard journey={journey.journey} source={journey.source} />}
 
       {advice && <AdviceCard state={advice} />}
 

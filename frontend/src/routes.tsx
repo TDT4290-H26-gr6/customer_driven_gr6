@@ -11,6 +11,7 @@ import { SettingsPage } from "@/features/settings";
 import { ProfilePage } from "@/features/profile";
 import { HistoryPage } from "@/features/history";
 import { SourcesPage } from "@/features/sources";
+import { LearningJourneysPage } from "@/features/learningJourney";
 import { AdminPage } from "@/features/admin";
 import { FeedbackAdminPage } from "@/features/feedback";
 import { Spinner } from "@/shared/components/Spinner";
@@ -41,6 +42,7 @@ export function AppRoutes() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/results" element={<ResultsPage />} />
           <Route path="/history" element={<HistoryPage />} />
+          <Route path="/journeys" element={<LearningJourneysPage />} />
           <Route path="/results/details" element={<SectionDetailsPage />} />
           <Route path="/sources" element={<SourcesPage />} />
           <Route element={<RequireAdmin />}>
