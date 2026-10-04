@@ -6,10 +6,11 @@ import { Spinner } from "@/shared/components/Spinner";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import { MOBILE_QUERY } from "@/shared/lib/breakpoints";
 import { CompetenceRadar } from "../components/CompetenceRadar";
+import { ProgressCard } from "../components/ProgressCard";
 import { WelcomeScreen } from "../components/WelcomeScreen";
-import { getSectionCompetenceScores } from "../api";
-import { sectionAxes } from "../sectionAxes";
-import type { SectionCompetenceScores } from "../types";
+import { getDashboardProgress } from "../api";
+import { radarAxes } from "../progressRows";
+import type { DashboardProgress } from "../types";
 import { RecommendedJourneyCard, getRecommendedJourney } from "@/features/learningJourney";
 import type { LearningJourney } from "@/features/learningJourney";
 import { AdviceCard, getAdvice } from "@/features/advisor";
@@ -18,17 +19,22 @@ import type { AdviceState } from "@/features/advisor";
 import styles from "./ResultsPage.module.css";
 
 /**
- * The main dashboard: an overview radar with one axis per section (each
- * rolling up that section's own competences — see sectionAxes.ts; a section
- * has too many competences to chart individually here) + entry point into
- * the assessment, the score-based journey recommendation, and AI advice that
- * explains it. The page remounts on every visit, so retaking the SAT and
- * returning here always fetches the fresh scores (and new advice). The
+ * The main dashboard, shown only once a first assessment has been submitted:
+ * an overview radar with one axis per section (each rolling up that
+ * section's own competences; a section has too many competences to chart
+ * individually here), a section-by-section summary (ProgressCard), the
+ * score-based journey recommendation, AI advice that explains it, and the
+ * entry point into the assessment. From a second assessment on, the radar
+ * overlays the previous one and the summary shows the change — always the
+ * latest two; older ones are in History and "See results by section". The
+ * page remounts on every visit, so retaking the SAT and returning here
+ * always fetches the fresh scores (and new advice). The
  * assessment button says "Continue" while the learner has an unfinished
  * attempt (left with Save & exit), so they know their answers weren't lost;
  * otherwise "Retake assessment", which first asks about completed learning journeys
- * (ReassessPage). Scores are the newest per section across all attempts, so
- * a reassessment of some sections keeps the others on the radar.
+ * (ReassessPage). A section the latest assessment didn't retake keeps its
+ * last known result, so a reassessment of some sections keeps the others on
+ * the radar.
  *
  * A new learner fills in their profile first: until they've both completed
  * it and finished a first assessment, this sends them to /profile, whose
@@ -37,7 +43,8 @@ import styles from "./ResultsPage.module.css";
 export function ResultsPage() {
   const { learner } = useAuth();
   const navigate = useNavigate();
-  const [sections, setSections] = useState<SectionCompetenceScores[] | null>(null);
+  // undefined while loading; null before any completed assessment.
+  const [progress, setProgress] = useState<DashboardProgress | null | undefined>(undefined);
   const [loadFailed, setLoadFailed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const [journey, setJourney] = useState<LearningJourney | null>(null);
@@ -48,11 +55,12 @@ export function ResultsPage() {
   const [hasOngoing, setHasOngoing] = useState<boolean | null>(null);
 
   useEffect(() => {
-    // The latest SAT only — earlier ones are in "See results by section".
-    getSectionCompetenceScores()
-      .then((latest) => setSections(latest?.sections ?? []))
+    // The latest SAT and the one before it — older ones are in History and
+    // "See results by section".
+    getDashboardProgress()
+      .then(setProgress)
       .catch(() => {
-        setSections([]);
+        setProgress(null);
         setLoadFailed(true);
       });
     getProgress()
@@ -72,7 +80,7 @@ export function ResultsPage() {
     return <Navigate to="/profile" replace />;
   }
 
-  if (sections === null || hasOngoing === null) {
+  if (progress === undefined || hasOngoing === null) {
     return (
       <div className={styles.page}>
         <Spinner />
@@ -93,17 +101,39 @@ export function ResultsPage() {
   return (
     <div className={styles.page}>
       <h1 className={styles.heading}>Welcome{learner?.name ? `, ${learner.name}` : ""}</h1>
-      <p className={styles.subheading}>Here&apos;s where your skills stand right now.</p>
+      <p className={styles.subheading}>
+        {progress?.previous
+          ? "Here's where your skills stand now, and how they've changed since last time."
+          : "Here's where your skills stand right now."}
+      </p>
 
       <div className={styles.chartCard}>
-        {loadFailed ? (
+        {loadFailed || !progress ? (
           <p className={styles.note}>
             Couldn&apos;t load your scores right now. Please try again in a moment.
           </p>
         ) : (
-          <CompetenceRadar data={sectionAxes(sections)} compact={isMobile} />
+          <>
+            <CompetenceRadar
+              data={radarAxes(progress, "latest")}
+              compare={progress.previous ? radarAxes(progress, "previous") : undefined}
+              compact={isMobile}
+            />
+            {progress.previous && (
+              <ul className={styles.legend} aria-label="Chart legend">
+                <li>
+                  <span className={styles.swatchLatest} aria-hidden="true" />
+                  Assessment {progress.latest.instanceNum} (latest)
+                </li>
+                <li>
+                  <span className={styles.swatchPrevious} aria-hidden="true" />
+                  Assessment {progress.previous.instanceNum}
+                </li>
+              </ul>
+            )}
+          </>
         )}
-        {!loadFailed && (
+        {!loadFailed && progress && (
           <Button
             variant="secondary"
             className={styles.details}
@@ -113,6 +143,8 @@ export function ResultsPage() {
           </Button>
         )}
       </div>
+
+      {!loadFailed && progress && <ProgressCard progress={progress} />}
 
       {journey && <RecommendedJourneyCard journey={journey} />}
 

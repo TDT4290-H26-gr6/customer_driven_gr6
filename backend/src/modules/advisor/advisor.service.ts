@@ -10,9 +10,11 @@ import {
   completedCompetenceScoresQuery,
   newestPerCompetence,
 } from "../assessment/assessment.newestScores";
+import { getDashboardProgress } from "../assessment/assessment.service";
 import {
   buildAdviceMessages,
   parseAdvice,
+  toAdviceProgress,
   type AdviceContext,
   type AdviceStep,
   type Candidate,
@@ -43,13 +45,15 @@ export type StoredStep = Pick<AdviceStep, "kind" | "id" | "title" | "url" | "rea
  * candidates are the recommended journey's steps plus the sources linked to
  * the learner's weakest competences — so whatever the sources table holds
  * (placeholder Moodle links today, the real catalogue later) is what can be
- * recommended.
+ * recommended. From a second assessment on, it also gets the dashboard's
+ * per-section before/after, so the advice can comment on progress.
  */
 async function buildContext(learnerId: string): Promise<AdviceContext> {
-  const [learner, profile, journey, allScores] = await Promise.all([
+  const [learner, profile, journey, dashboard, allScores] = await Promise.all([
     findLearnerById(learnerId),
     getLearnerProfile(learnerId),
     recommendJourney(learnerId),
+    getDashboardProgress(learnerId),
     prisma.competenceScore.findMany({
       ...completedCompetenceScoresQuery(learnerId),
       include: {
@@ -127,6 +131,14 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
     })),
     journey: journey ? { name: journey.name, description: journey.description } : null,
     candidates,
+    progress:
+      dashboard?.previous != null
+        ? toAdviceProgress(
+            dashboard.latest.instanceNum,
+            dashboard.previous.instanceNum,
+            dashboard.sections,
+          )
+        : null,
   };
 }
 

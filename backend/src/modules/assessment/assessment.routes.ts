@@ -11,6 +11,7 @@ import {
   discardActiveInstance,
   getAssessmentPath,
   getAttemptSectionScores,
+  getDashboardProgress,
   getLatestCompetenceScores,
   getProgress,
   getSatHistory,
@@ -162,6 +163,20 @@ assessmentRouter.get(
       return res.status(204).end();
     }
     res.json(result);
+  }),
+);
+
+// The dashboard's before/after view: each section as of the latest completed
+// SAT and the one before it (sections a SAT skipped keep their last known
+// result). 204 before any completed SAT.
+assessmentRouter.get(
+  "/competence-scores/progress",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const progress = await getDashboardProgress(req.learnerId!);
+    if (!progress) return res.status(204).end();
+    res.json(progress);
   }),
 );
 

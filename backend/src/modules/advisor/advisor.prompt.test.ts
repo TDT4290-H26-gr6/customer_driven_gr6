@@ -3,6 +3,7 @@ import {
   MAX_STEPS,
   buildAdviceMessages,
   parseAdvice,
+  toAdviceProgress,
   type AdviceContext,
   type Candidate,
 } from "./advisor.prompt";
@@ -35,6 +36,7 @@ function context(overrides: Partial<AdviceContext> = {}): AdviceContext {
     ],
     journey: { name: "FAIR foundations", description: "Start with the basics." },
     candidates: [candidate(), candidate({ kind: "module", id: "module-1", title: "Step 1" })],
+    progress: null,
     ...overrides,
   };
 }
@@ -157,5 +159,67 @@ describe("parseAdvice", () => {
     ["a blank summary", { summary: "  ", steps: [] }],
   ])("throws for %s", (_label, reply) => {
     expect(() => parseAdvice(reply, candidates)).toThrow();
+  });
+});
+
+describe("toAdviceProgress", () => {
+  const section = (id: string, code: string | null, name: string) => ({ id, code, name });
+
+  it("turns each section's before/after into percentages and level codes", () => {
+    const progress = toAdviceProgress(3, 2, [
+      {
+        section: section("a", "A", "Data"),
+        levelCount: 4,
+        latest: { instanceNum: 3, score: 7, maxScore: 10, level: 3 },
+        previous: { instanceNum: 2, score: 4, maxScore: 10, level: 0 },
+      },
+    ]);
+
+    expect(progress).toEqual({
+      previousAssessment: 2,
+      latestAssessment: 3,
+      sections: [
+        {
+          section: "Data",
+          previousPercent: 40,
+          latestPercent: 70,
+          previousLevel: "below A1",
+          latestLevel: "A3",
+          retakenThisTime: true,
+        },
+      ],
+    });
+  });
+
+  it("marks a section the latest assessment didn't retake", () => {
+    const carried = { instanceNum: 1, score: 5, maxScore: 10, level: 2 };
+    const [s] = toAdviceProgress(2, 1, [
+      {
+        section: section("b", "B", "Publishing"),
+        levelCount: 4,
+        latest: carried,
+        previous: carried,
+      },
+    ]).sections;
+
+    expect(s.retakenThisTime).toBe(false);
+    expect(s.latestPercent).toBe(s.previousPercent);
+  });
+
+  it("leaves out sections that were never assessed", () => {
+    const progress = toAdviceProgress(2, 1, [
+      { section: section("c", "C", "Ethics"), levelCount: 4, latest: null, previous: null },
+    ]);
+    expect(progress.sections).toEqual([]);
+  });
+});
+
+describe("buildAdviceMessages with progress", () => {
+  it("tells the model how to talk about progress, and sends it", () => {
+    const progress = toAdviceProgress(2, 1, []);
+    const [system, user] = buildAdviceMessages(context({ progress }));
+
+    expect(system.content).toMatch(/Never invent progress/);
+    expect(JSON.parse(user.content).progressSincePreviousAssessment).toEqual(progress);
   });
 });
