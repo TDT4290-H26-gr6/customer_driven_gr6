@@ -83,6 +83,50 @@
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
+/* Accent color (Settings -> "Choose your accent color"): the three colors of
+   the AIOS logo, set as `data-accent` on <html> by AccentProvider (and by the
+   script in index.html before first paint). Overrides the --color-primary*
+   tokens above for every theme, so each use of the primary color follows it.
+   Light mode darkens the accent for contrast on white; dark mode lightens it
+   for contrast on the dark surface. The extra attribute selector gives these
+   rules higher specificity than the theme blocks above, whatever their order. */
+:root[data-accent="purple"] {
+  --accent: #7b3d8d;
+  --accent-contrast: #ffffff;
+}
+
+:root[data-accent="blue"] {
+  --accent: #3386a7;
+  --accent-contrast: #ffffff;
+}
+
+/* White text on olive is too low-contrast, so olive takes dark text. */
+:root[data-accent="olive"] {
+  --accent: #aab627;
+  --accent-contrast: #1c1f26;
+}
+
+:root[data-accent] {
+  --color-primary: color-mix(in srgb, var(--accent) 80%, #000);
+  --color-primary-hover: color-mix(in srgb, var(--accent) 62%, #000);
+  --color-primary-contrast: var(--accent-contrast);
+  --color-primary-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"])[data-accent] {
+    --color-primary: color-mix(in srgb, var(--accent) 75%, #fff);
+    --color-primary-hover: var(--accent);
+    --color-primary-soft: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+}
+
+:root[data-theme="dark"][data-accent] {
+  --color-primary: color-mix(in srgb, var(--accent) 75%, #fff);
+  --color-primary-hover: var(--accent);
+  --color-primary-soft: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
 * {
   box-sizing: border-box;
 }
