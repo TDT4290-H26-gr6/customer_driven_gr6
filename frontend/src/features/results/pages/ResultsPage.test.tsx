@@ -19,7 +19,9 @@ vi.mock("@/features/assessment", () => ({ getProgress: vi.fn() }));
 vi.mock("../api", () => ({ getDashboardProgress: vi.fn() }));
 vi.mock("@/features/learningJourney", () => ({
   getCurrentJourney: vi.fn().mockResolvedValue(null),
+  getWeakCompetences: vi.fn().mockResolvedValue([]),
   RecommendedJourneyCard: () => null,
+  WeakCompetencesSection: () => null,
 }));
 vi.mock("@/features/advisor", () => ({
   getAdvice: vi.fn().mockResolvedValue(null),

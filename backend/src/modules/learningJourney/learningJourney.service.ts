@@ -33,30 +33,34 @@ export type CompetenceScoreInput = {
   maxScore: number;
 };
 
-/** A competence scoring at or below this share of its maxScore counts as weak enough to recommend. */
-const WEAK_THRESHOLD = 0.5;
+/** A competence scoring at or below this share of its maxScore counts as weak enough to flag. */
+const WEAK_THRESHOLD = 0.6;
 
 /**
- * Picks the competence a learner is weakest in, out of their scores for one
- * SAT instance — but only if they're actually struggling: a learner who
- * scored above 50% everywhere shouldn't get pushed into remedial content.
- * Pure (no Prisma) so it's unit-testable directly — see assessment.scoring.ts
- * for the same pattern.
- *
- * Competences differ in question count (and so in maxScore), so "weakest"
- * has to compare score/maxScore, not raw score — a 6/31 competence isn't
- * actually stronger than a 2/14 one just because 6 > 2. Competences with
- * nothing scorable (maxScore 0), or scoring above the 50% threshold, can't
- * be weak and are skipped. Returns null when none qualify.
+ * Competences scoring at or below the 60% threshold, weakest (lowest
+ * score/maxScore) first. Competences differ in question count (and so in
+ * maxScore), so "weakest" has to compare score/maxScore, not raw score — a
+ * 6/31 competence isn't actually stronger than a 2/14 one just because
+ * 6 > 2. Competences with nothing scorable (maxScore 0) can't be weak and
+ * are excluded. `Array.prototype.sort` is stable, so a tie keeps the
+ * original relative order.
+ */
+function weakestFirst(scores: CompetenceScoreInput[]): CompetenceScoreInput[] {
+  return scores
+    .filter((s) => s.maxScore > 0 && s.score / s.maxScore <= WEAK_THRESHOLD)
+    .sort((a, b) => a.score / a.maxScore - b.score / b.maxScore);
+}
+
+/**
+ * Picks the single competence a learner is weakest in, out of their scores
+ * for one SAT instance — but only if they're actually struggling: a learner
+ * who scored above 60% everywhere shouldn't get pushed into remedial
+ * content. Pure (no Prisma) so it's unit-testable directly — see
+ * assessment.scoring.ts for the same pattern. Returns null when nothing
+ * scores at or below the threshold.
  */
 export function pickWeakestCompetence(scores: CompetenceScoreInput[]): string | null {
-  const weak = scores.filter((s) => s.maxScore > 0 && s.score / s.maxScore <= WEAK_THRESHOLD);
-  if (weak.length === 0) return null;
-
-  const lowest = weak.reduce((min, s) =>
-    s.score / s.maxScore < min.score / min.maxScore ? s : min,
-  );
-  return lowest.competenceId;
+  return weakestFirst(scores)[0]?.competenceId ?? null;
 }
 
 /**
@@ -116,7 +120,7 @@ async function bestJourneyForSections(sectionIds: string[]) {
 /**
  * Recommends the journey that best covers the learner's weakest competence,
  * from their most recently completed SAT instance — but only among
- * competences scoring 50% or below (see pickWeakestCompetence); a learner
+ * competences scoring 60% or below (see pickWeakestCompetence); a learner
  * who did fine everywhere gets no recommendation at all, rather than one
  * manufactured from their relatively-weakest-but-still-fine competence. The
  * competence maps to sections via the modules it's the main (else a
@@ -170,4 +174,54 @@ export async function recommendJourney(learnerId: string) {
   });
 
   return journey;
+}
+
+export type WeakCompetence = {
+  competenceId: string;
+  competenceName: string;
+  score: number;
+  maxScore: number;
+  /** The journey that addresses this competence, or null if none covers its sections. */
+  journey: { id: string; name: string } | null;
+};
+
+/**
+ * Every competence at or below the 60% threshold (CD-90), from the learner's
+ * most recently completed SAT instance — not just the single weakest one
+ * recommendJourney() picks. Lets the dashboard show the full picture of
+ * where a learner is lacking, not only the one journey recommended right
+ * now. Weakest first. Empty when nothing qualifies — everything's
+ * sufficient, not an error.
+ */
+export async function weakCompetences(learnerId: string): Promise<WeakCompetence[]> {
+  const latestInstance = await prisma.satInstance.findFirst({
+    where: { learnerId, completedAt: { not: null } },
+    orderBy: { completedAt: "desc" },
+  });
+  if (!latestInstance) return [];
+
+  const scores = newestPerCompetence(
+    await prisma.competenceScore.findMany(completedCompetenceScoresQuery(learnerId)),
+  );
+  const weak = weakestFirst(scores);
+  if (weak.length === 0) return [];
+
+  const competences = await prisma.competence.findMany({
+    where: { id: { in: weak.map((w) => w.competenceId) } },
+    select: { id: true, name: true },
+  });
+  const nameById = new Map(competences.map((c) => [c.id, c.name]));
+
+  return Promise.all(
+    weak.map(async (w) => {
+      const journey = await bestJourneyForSections(await sectionIdsForCompetence(w.competenceId));
+      return {
+        competenceId: w.competenceId,
+        competenceName: nameById.get(w.competenceId) ?? "Unknown competence",
+        score: w.score,
+        maxScore: w.maxScore,
+        journey: journey ? { id: journey.id, name: journey.name } : null,
+      };
+    }),
+  );
 }

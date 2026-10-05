@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { pickWeakestCompetence, recommendJourney } from "./learningJourney.service";
+import {
+  pickWeakestCompetence,
+  recommendJourney,
+  weakCompetences,
+} from "./learningJourney.service";
 import { prisma } from "../../db/prisma";
 
 vi.mock("../../db/prisma", () => ({
@@ -11,7 +15,7 @@ vi.mock("../../db/prisma", () => ({
     journeySection: { findMany: vi.fn() },
     learningJourney: { findMany: vi.fn() },
     journeyRecommendation: { findFirst: vi.fn(), create: vi.fn() },
-    competence: { findUnique: vi.fn() },
+    competence: { findUnique: vi.fn(), findMany: vi.fn() },
   },
 }));
 
@@ -32,20 +36,20 @@ describe("pickWeakestCompetence", () => {
     expect(competenceId).toBe("a");
   });
 
-  it("excludes a competence scoring above 50%, even if it's the only one", () => {
-    const competenceId = pickWeakestCompetence([{ competenceId: "a", score: 3, maxScore: 5 }]);
+  it("excludes a competence scoring above 60%, even if it's the only one", () => {
+    const competenceId = pickWeakestCompetence([{ competenceId: "a", score: 4, maxScore: 5 }]);
     expect(competenceId).toBeNull();
   });
 
-  it("includes a competence scoring exactly 50% (the threshold is inclusive)", () => {
-    const competenceId = pickWeakestCompetence([{ competenceId: "a", score: 2, maxScore: 4 }]);
+  it("includes a competence scoring exactly 60% (the threshold is inclusive)", () => {
+    const competenceId = pickWeakestCompetence([{ competenceId: "a", score: 3, maxScore: 5 }]);
     expect(competenceId).toBe("a");
   });
 
-  it("picks the weakest among several, ignoring ones above 50% even if they'd otherwise be lowest", () => {
-    // "strong" (60%) has a lower raw score than "weak" (40%) but is above the threshold.
+  it("picks the weakest among several, ignoring ones above 60% even if they'd otherwise be lowest", () => {
+    // "strong" (80%) has a lower raw score than "weak" (40%) but is above the threshold.
     const competenceId = pickWeakestCompetence([
-      { competenceId: "strong", score: 3, maxScore: 5 },
+      { competenceId: "strong", score: 4, maxScore: 5 },
       { competenceId: "weak", score: 2, maxScore: 5 },
     ]);
     expect(competenceId).toBe("weak");
@@ -102,11 +106,11 @@ describe("recommendJourney", () => {
     expect(mockPrisma.sectionModule.findMany).not.toHaveBeenCalled();
   });
 
-  it("returns null when every competence scores above 50%, instead of recommending the relatively weakest", async () => {
+  it("returns null when every competence scores above 60%, instead of recommending the relatively weakest", async () => {
     mockPrisma.satInstance.findFirst.mockResolvedValue({ id: "instance-1" } as never);
     mockPrisma.competenceScore.findMany.mockResolvedValue([
-      { competenceId: "a", score: 4, maxScore: 5 },
-      { competenceId: "b", score: 3, maxScore: 5 },
+      { competenceId: "a", score: 9, maxScore: 10 },
+      { competenceId: "b", score: 7, maxScore: 10 },
     ] as never);
 
     expect(await recommendJourney("learner-1")).toBeNull();
@@ -300,5 +304,105 @@ describe("recommendJourney", () => {
     await Promise.all([recommendJourney("learner-1"), recommendJourney("learner-1")]);
 
     expect(mockPrisma.journeyRecommendation.create).toHaveBeenCalledOnce();
+  });
+});
+
+describe("weakCompetences", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPrisma.sectionModule.findMany.mockResolvedValue([{ sectionId: "section-1" }] as never);
+    mockPrisma.sectionModuleSecondaryCompetence.findMany.mockResolvedValue([]);
+  });
+
+  it("returns an empty array when there's no completed instance", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValue(null);
+    expect(await weakCompetences("learner-1")).toEqual([]);
+  });
+
+  it("returns an empty array when nothing is at or below 60%", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValue({ id: "instance-1" } as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceId: "a", score: 9, maxScore: 10 },
+    ] as never);
+
+    expect(await weakCompetences("learner-1")).toEqual([]);
+    expect(mockPrisma.competence.findMany).not.toHaveBeenCalled();
+  });
+
+  it("returns every competence at or below 60%, weakest first, each paired with its score and journey", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValue({ id: "instance-1" } as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceId: "legal", score: 3, maxScore: 10 }, // 30%
+      { competenceId: "open-science", score: 5, maxScore: 10 }, // 50%
+      { competenceId: "ai-tools", score: 9, maxScore: 10 }, // 90% — excluded
+    ] as never);
+    mockPrisma.competence.findMany.mockResolvedValue([
+      { id: "legal", name: "Legal" },
+      { id: "open-science", name: "Open Science" },
+    ] as never);
+    mockPrisma.sectionModule.findMany.mockImplementation((({
+      where,
+    }: {
+      where: { mainCompetenceId: string };
+    }) =>
+      Promise.resolve(
+        where.mainCompetenceId === "legal"
+          ? [{ sectionId: "section-legal" }]
+          : [{ sectionId: "section-os" }],
+      )) as never);
+    mockPrisma.journeySection.findMany.mockImplementation((({
+      where,
+    }: {
+      where: { sectionId: { in: string[] } };
+    }) =>
+      Promise.resolve(
+        where.sectionId.in[0] === "section-legal"
+          ? [{ journeyId: "journey-legal", coverageLevel: "M" }]
+          : [{ journeyId: "journey-os", coverageLevel: "M" }],
+      )) as never);
+    mockPrisma.learningJourney.findMany.mockImplementation((({
+      where,
+    }: {
+      where: { id: { in: string[] } };
+    }) =>
+      Promise.resolve(
+        where.id.in[0] === "journey-legal"
+          ? [{ id: "journey-legal", name: "Legal Journey" }]
+          : [{ id: "journey-os", name: "Open Science Journey" }],
+      )) as never);
+
+    const result = await weakCompetences("learner-1");
+
+    expect(result).toEqual([
+      {
+        competenceId: "legal",
+        competenceName: "Legal",
+        score: 3,
+        maxScore: 10,
+        journey: { id: "journey-legal", name: "Legal Journey" },
+      },
+      {
+        competenceId: "open-science",
+        competenceName: "Open Science",
+        score: 5,
+        maxScore: 10,
+        journey: { id: "journey-os", name: "Open Science Journey" },
+      },
+    ]);
+  });
+
+  it("pairs a competence with a null journey when nothing covers its sections", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValue({ id: "instance-1" } as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceId: "weak", score: 1, maxScore: 5 },
+    ] as never);
+    mockPrisma.competence.findMany.mockResolvedValue([{ id: "weak", name: "Weak" }] as never);
+    mockPrisma.journeySection.findMany.mockResolvedValue([]);
+
+    const result = await weakCompetences("learner-1");
+
+    expect(result).toEqual([
+      { competenceId: "weak", competenceName: "Weak", score: 1, maxScore: 5, journey: null },
+    ]);
   });
 });
