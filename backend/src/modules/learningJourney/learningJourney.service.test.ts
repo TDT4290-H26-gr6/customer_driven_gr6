@@ -28,14 +28,33 @@ describe("pickWeakestCompetence", () => {
   });
 
   it("picks the only scored competence when there's just one", () => {
-    const competenceId = pickWeakestCompetence([{ competenceId: "a", score: 3, maxScore: 5 }]);
+    const competenceId = pickWeakestCompetence([{ competenceId: "a", score: 2, maxScore: 5 }]);
     expect(competenceId).toBe("a");
+  });
+
+  it("excludes a competence scoring above 50%, even if it's the only one", () => {
+    const competenceId = pickWeakestCompetence([{ competenceId: "a", score: 3, maxScore: 5 }]);
+    expect(competenceId).toBeNull();
+  });
+
+  it("includes a competence scoring exactly 50% (the threshold is inclusive)", () => {
+    const competenceId = pickWeakestCompetence([{ competenceId: "a", score: 2, maxScore: 4 }]);
+    expect(competenceId).toBe("a");
+  });
+
+  it("picks the weakest among several, ignoring ones above 50% even if they'd otherwise be lowest", () => {
+    // "strong" (60%) has a lower raw score than "weak" (40%) but is above the threshold.
+    const competenceId = pickWeakestCompetence([
+      { competenceId: "strong", score: 3, maxScore: 5 },
+      { competenceId: "weak", score: 2, maxScore: 5 },
+    ]);
+    expect(competenceId).toBe("weak");
   });
 
   it("excludes competences with maxScore 0 (nothing scorable)", () => {
     const competenceId = pickWeakestCompetence([
       { competenceId: "unscored", score: 0, maxScore: 0 },
-      { competenceId: "scored", score: 4, maxScore: 5 },
+      { competenceId: "scored", score: 2, maxScore: 5 },
     ]);
     expect(competenceId).toBe("scored");
   });
@@ -81,6 +100,18 @@ describe("recommendJourney", () => {
 
     expect(await recommendJourney("learner-1")).toBeNull();
     expect(mockPrisma.sectionModule.findMany).not.toHaveBeenCalled();
+  });
+
+  it("returns null when every competence scores above 50%, instead of recommending the relatively weakest", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValue({ id: "instance-1" } as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceId: "a", score: 4, maxScore: 5 },
+      { competenceId: "b", score: 3, maxScore: 5 },
+    ] as never);
+
+    expect(await recommendJourney("learner-1")).toBeNull();
+    expect(mockPrisma.sectionModule.findMany).not.toHaveBeenCalled();
+    expect(mockPrisma.journeyRecommendation.create).not.toHaveBeenCalled();
   });
 
   it("falls back to the competence's secondary-module sections when it's no module's main competence", async () => {

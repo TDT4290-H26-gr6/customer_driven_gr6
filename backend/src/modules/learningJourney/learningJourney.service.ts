@@ -33,22 +33,27 @@ export type CompetenceScoreInput = {
   maxScore: number;
 };
 
+/** A competence scoring at or below this share of its maxScore counts as weak enough to recommend. */
+const WEAK_THRESHOLD = 0.5;
+
 /**
  * Picks the competence a learner is weakest in, out of their scores for one
- * SAT instance. Pure (no Prisma) so it's unit-testable directly — see
- * assessment.scoring.ts for the same pattern.
+ * SAT instance — but only if they're actually struggling: a learner who
+ * scored above 50% everywhere shouldn't get pushed into remedial content.
+ * Pure (no Prisma) so it's unit-testable directly — see assessment.scoring.ts
+ * for the same pattern.
  *
  * Competences differ in question count (and so in maxScore), so "weakest"
  * has to compare score/maxScore, not raw score — a 6/31 competence isn't
  * actually stronger than a 2/14 one just because 6 > 2. Competences with
- * nothing scorable (maxScore 0) can't be weak and are skipped. Returns null
- * when none qualify.
+ * nothing scorable (maxScore 0), or scoring above the 50% threshold, can't
+ * be weak and are skipped. Returns null when none qualify.
  */
 export function pickWeakestCompetence(scores: CompetenceScoreInput[]): string | null {
-  const scored = scores.filter((s) => s.maxScore > 0);
-  if (scored.length === 0) return null;
+  const weak = scores.filter((s) => s.maxScore > 0 && s.score / s.maxScore <= WEAK_THRESHOLD);
+  if (weak.length === 0) return null;
 
-  const lowest = scored.reduce((min, s) =>
+  const lowest = weak.reduce((min, s) =>
     s.score / s.maxScore < min.score / min.maxScore ? s : min,
   );
   return lowest.competenceId;
@@ -110,16 +115,17 @@ async function bestJourneyForSections(sectionIds: string[]) {
 
 /**
  * Recommends the journey that best covers the learner's weakest competence,
- * from their most recently completed SAT instance. "Weakest" is the lowest
- * score/maxScore — competences differ in question count, so raw scores
- * aren't comparable — and competences with nothing scorable (maxScore 0)
- * can't be weak and are skipped. The competence maps to sections via the
- * modules it's the main (else a secondary) competence of, and those sections
- * to journeys via journey_section coverage.
+ * from their most recently completed SAT instance — but only among
+ * competences scoring 50% or below (see pickWeakestCompetence); a learner
+ * who did fine everywhere gets no recommendation at all, rather than one
+ * manufactured from their relatively-weakest-but-still-fine competence. The
+ * competence maps to sections via the modules it's the main (else a
+ * secondary) competence of, and those sections to journeys via
+ * journey_section coverage.
  *
- * Returns null when there's nothing to recommend yet (no completed
- * instance, or no journey covers that competence's sections) — a real,
- * expected state, not an error.
+ * Returns null when there's nothing to recommend (no completed instance, no
+ * competence at or below the threshold, or no journey covers that
+ * competence's sections) — a real, expected state, not an error.
  */
 export async function recommendJourney(learnerId: string) {
   const latestInstance = await prisma.satInstance.findFirst({
