@@ -1,0 +1,85 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  /* Fixed dark scrim regardless of theme, like FeedbackDialog's. Below the
+     role gate (1000) — that one must always win. */
+  background: rgba(15, 23, 42, 0.6);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 560px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.warning {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: 14px;
+}
+
+.error {
+  margin: 0;
+  color: var(--color-danger);
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* Pushes the safe choices to the right, away from the destructive one. */
+.spacer {
+  flex: 1;
+}
+
+@media (max-width: 767px) {
+  .backdrop {
+    padding: 16px;
+  }
+
+  .dialog {
+    padding: 20px;
+  }
+
+  /* Stacked, safe choices on top and the destructive one last. */
+  .actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .spacer {
+    display: none;
+  }
+}

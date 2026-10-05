@@ -1,6 +1,10 @@
 import type { CoverageLevel } from "@prisma/client";
 import { prisma } from "../../db/prisma";
 import { createKeyedLock } from "../../lib/keyedLock";
+import {
+  completedCompetenceScoresQuery,
+  newestPerCompetence,
+} from "../assessment/assessment.newestScores";
 
 // All Prisma access for learning_journey_* tables lives here. Reads of
 // assessment_* tables (SatInstance, CompetenceScore, Competence, SectionModule)
@@ -15,8 +19,12 @@ const journeyInclude = { modules: { orderBy: { order: "asc" as const } } };
 // recommends it (R) beats one that merely touches it (S).
 const COVERAGE_RANK: Record<CoverageLevel, number> = { M: 0, R: 1, S: 2 };
 
+/** Every journey with its steps and the sections it covers (for picking one before a reassessment). */
 export function listJourneys() {
-  return prisma.learningJourney.findMany({ include: journeyInclude, orderBy: { name: "asc" } });
+  return prisma.learningJourney.findMany({
+    include: { ...journeyInclude, sections: { select: { sectionId: true } } },
+    orderBy: { name: "asc" },
+  });
 }
 
 export type CompetenceScoreInput = {
@@ -126,9 +134,11 @@ export async function recommendJourney(learnerId: string) {
   });
   if (!latestInstance) return null;
 
-  const scores = await prisma.competenceScore.findMany({
-    where: { satInstanceId: latestInstance.id },
-  });
+  // Newest score per competence across completed instances — a
+  // reassessment may only have covered some sections.
+  const scores = newestPerCompetence(
+    await prisma.competenceScore.findMany(completedCompetenceScoresQuery(learnerId)),
+  );
   const weakestCompetenceId = pickWeakestCompetence(scores);
   if (!weakestCompetenceId) return null;
 

@@ -10,4 +10,6 @@ export type LearningJourney = {
   name: string;
   description: string | null;
   modules: LearningJourneyModule[];
+  /** The sections the journey covers. Only included by listJourneys. */
+  sections?: { sectionId: string }[];
 };

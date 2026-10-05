@@ -4,6 +4,7 @@ import { prisma } from "../../db/prisma";
 import { chatJson } from "../../lib/llm";
 import { findLearnerById, getLearnerProfile } from "../identity/identity.service";
 import { recommendJourney } from "../learningJourney/learningJourney.service";
+import { getDashboardProgress } from "../assessment/assessment.service";
 
 vi.mock("../../db/prisma", () => ({
   prisma: {
@@ -19,6 +20,7 @@ vi.mock("../identity/identity.service", () => ({
   getLearnerProfile: vi.fn(),
 }));
 vi.mock("../learningJourney/learningJourney.service", () => ({ recommendJourney: vi.fn() }));
+vi.mock("../assessment/assessment.service", () => ({ getDashboardProgress: vi.fn() }));
 
 const mockPrisma = vi.mocked(prisma, true);
 const llm = { baseUrl: "https://llm.test/v1", apiKey: "sk-test", model: "test-model" };
@@ -39,6 +41,7 @@ beforeEach(() => {
   vi.mocked(findLearnerById).mockResolvedValue({ userRole: { name: "Student" } } as never);
   vi.mocked(getLearnerProfile).mockResolvedValue(null as never);
   vi.mocked(recommendJourney).mockResolvedValue(null as never);
+  vi.mocked(getDashboardProgress).mockResolvedValue(null as never);
   mockPrisma.source.findMany.mockResolvedValue([] as never);
   mockPrisma.advice.create.mockImplementation((({ data }: { data: object }) =>
     Promise.resolve({ id: "advice-1", createdAt: new Date(), ...data })) as never);
@@ -70,6 +73,7 @@ describe("getOrCreateAdvice", () => {
     mockPrisma.advice.findUnique.mockResolvedValue(null as never);
     mockPrisma.competenceScore.findMany.mockResolvedValue([
       {
+        competenceId: "comp-open-access",
         score: 8,
         maxScore: 10,
         competence: {
@@ -80,6 +84,7 @@ describe("getOrCreateAdvice", () => {
         },
       },
       {
+        competenceId: "comp-data-management",
         score: 2,
         maxScore: 10,
         competence: {
@@ -132,5 +137,52 @@ describe("getOrCreateAdvice", () => {
 
     await expect(getOrCreateAdvice("learner-1", llm)).rejects.toThrow("timeout");
     expect(mockPrisma.advice.create).not.toHaveBeenCalled();
+  });
+
+  it("tells the LLM how each section changed since the previous assessment", async () => {
+    mockPrisma.advice.findUnique.mockResolvedValue(null as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([] as never);
+    vi.mocked(getDashboardProgress).mockResolvedValue({
+      latest: { instanceNum: 2, completedAt: new Date() },
+      previous: { instanceNum: 1, completedAt: new Date() },
+      sections: [
+        {
+          section: { id: "sec-a", code: "A", name: "Data" },
+          levelCount: 4,
+          latest: { instanceNum: 2, score: 8, maxScore: 10, level: 2 },
+          previous: { instanceNum: 1, score: 4, maxScore: 10, level: 1 },
+        },
+      ],
+    } as never);
+    vi.mocked(chatJson).mockResolvedValue({ summary: "You improved in Data.", steps: [] });
+
+    await getOrCreateAdvice("learner-1", llm);
+
+    const [, userMessage] = vi.mocked(chatJson).mock.calls[0][1];
+    expect(JSON.parse(userMessage.content).progressSincePreviousAssessment).toEqual({
+      previousAssessment: 1,
+      latestAssessment: 2,
+      sections: [
+        {
+          section: "Data",
+          previousPercent: 40,
+          latestPercent: 80,
+          previousLevel: "A1",
+          latestLevel: "A2",
+          retakenThisTime: true,
+        },
+      ],
+    });
+  });
+
+  it("sends no progress on a first assessment", async () => {
+    mockPrisma.advice.findUnique.mockResolvedValue(null as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([] as never);
+    vi.mocked(chatJson).mockResolvedValue({ summary: "ok", steps: [] });
+
+    await getOrCreateAdvice("learner-1", llm);
+
+    const [, userMessage] = vi.mocked(chatJson).mock.calls[0][1];
+    expect(JSON.parse(userMessage.content)).not.toHaveProperty("progressSincePreviousAssessment");
   });
 });

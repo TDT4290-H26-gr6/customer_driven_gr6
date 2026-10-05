@@ -4,10 +4,17 @@ import { config } from "../../config";
 import { chatJson, type LlmSettings } from "../../lib/llm";
 import { createKeyedLock } from "../../lib/keyedLock";
 import { findLearnerById, getLearnerProfile } from "../identity/identity.service";
+import { ACADEMIC_DEGREE_LABELS, INDUSTRY_LABELS } from "../identity/identity.types";
 import { recommendJourney } from "../learningJourney/learningJourney.service";
+import {
+  completedCompetenceScoresQuery,
+  newestPerCompetence,
+} from "../assessment/assessment.newestScores";
+import { getDashboardProgress } from "../assessment/assessment.service";
 import {
   buildAdviceMessages,
   parseAdvice,
+  toAdviceProgress,
   type AdviceContext,
   type AdviceStep,
   type Candidate,
@@ -24,22 +31,31 @@ const MAX_CANDIDATES = 15;
 
 const adviceLock = createKeyedLock();
 
+/** A stored dropdown key as its readable label; null for a missing or unknown key. */
+function labelFor(labels: Record<string, string>, key: string | null | undefined): string | null {
+  return key && Object.hasOwn(labels, key) ? labels[key] : null;
+}
+
 export type StoredStep = Pick<AdviceStep, "kind" | "id" | "title" | "url" | "reason">;
 
 /**
- * Everything the LLM gets to see for one completed SAT instance. The
+ * Everything the LLM gets to see, as of the learner's latest completed SAT
+ * instance. Scores are the newest per competence across all completed
+ * instances, since a reassessment may only have covered some sections. The
  * candidates are the recommended journey's steps plus the sources linked to
  * the learner's weakest competences — so whatever the sources table holds
  * (placeholder Moodle links today, the real catalogue later) is what can be
- * recommended.
+ * recommended. From a second assessment on, it also gets the dashboard's
+ * per-section before/after, so the advice can comment on progress.
  */
-async function buildContext(learnerId: string, satInstanceId: string): Promise<AdviceContext> {
-  const [learner, profile, journey, scores] = await Promise.all([
+async function buildContext(learnerId: string): Promise<AdviceContext> {
+  const [learner, profile, journey, dashboard, allScores] = await Promise.all([
     findLearnerById(learnerId),
     getLearnerProfile(learnerId),
     recommendJourney(learnerId),
+    getDashboardProgress(learnerId),
     prisma.competenceScore.findMany({
-      where: { satInstanceId },
+      ...completedCompetenceScoresQuery(learnerId),
       include: {
         competence: {
           include: {
@@ -51,6 +67,7 @@ async function buildContext(learnerId: string, satInstanceId: string): Promise<A
       },
     }),
   ]);
+  const scores = newestPerCompetence(allScores);
 
   const weakestFirst = scores
     .filter((s) => s.maxScore > 0)
@@ -101,9 +118,11 @@ async function buildContext(learnerId: string, satInstanceId: string): Promise<A
   return {
     role: learner?.userRole?.name ?? null,
     profile: {
-      goals: profile?.goals ?? null,
+      industry: labelFor(INDUSTRY_LABELS, profile?.industry),
+      academicDegree: labelFor(ACADEMIC_DEGREE_LABELS, profile?.academicDegree),
       background: profile?.background ?? null,
       yearsOfExperience: profile?.yearsOfExperience ?? null,
+      goals: profile?.goals ?? null,
     },
     competences: weakestFirst.map((s) => ({
       name: s.competence.name,
@@ -112,6 +131,14 @@ async function buildContext(learnerId: string, satInstanceId: string): Promise<A
     })),
     journey: journey ? { name: journey.name, description: journey.description } : null,
     candidates,
+    progress:
+      dashboard?.previous != null
+        ? toAdviceProgress(
+            dashboard.latest.instanceNum,
+            dashboard.previous.instanceNum,
+            dashboard.sections,
+          )
+        : null,
   };
 }
 
@@ -120,7 +147,7 @@ async function generateAdvice(
   learnerId: string,
   satInstanceId: string,
 ): Promise<Advice> {
-  const context = await buildContext(learnerId, satInstanceId);
+  const context = await buildContext(learnerId);
   const reply = await chatJson(llm, buildAdviceMessages(context));
   const { summary, steps } = parseAdvice(reply, context.candidates);
 

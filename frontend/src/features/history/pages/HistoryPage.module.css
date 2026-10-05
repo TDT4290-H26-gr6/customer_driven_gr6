@@ -52,6 +52,23 @@
   color: var(--color-text-muted);
 }
 
+/* A reassessment after a learning journey: which one, and what it covered. */
+.journey {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+}
+
+.journeyLine {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
 .sumScore {
   margin: 0;
   font-size: 22px;
@@ -64,6 +81,18 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-muted);
+}
+
+/* One section's modules: a heading, then its module scores. */
+.sectionGroup {
+  margin-top: 8px;
+}
+
+.sectionName {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
 }
 
 .areaList {

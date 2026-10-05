@@ -352,6 +352,15 @@ a single toggle:
 4. The picker itself lives in `features/settings/pages/SettingsPage.tsx`
    ("Choose your visuals"), via `useTheme()`.
 
+**Accent color.** Settings also has "Choose your accent color": the three
+AIOS logo colors (purple default, blue, olive). `app/providers/AccentProvider.tsx`
+(`useAccent()`, `ACCENTS`, storage key `aios.accentColor`) sets
+`data-accent` on `<html>`; `index.html`'s inline script applies it before
+mount too. `globals.css` has `:root[data-accent]` rules (after the theme
+blocks) that override `--color-primary`, `-hover`, `-contrast` and `-soft`
+via `color-mix()` — darkened in light mode, lightened in dark (twice, like
+the theme blocks). Components just keep using the `--color-primary*` tokens.
+
 **Token list** (defined for both light and dark — add new ones to _both_
 places in `globals.css`, right next to each other, so they can't drift):
 `--color-bg`, `--color-surface`, `--color-border`, `--color-text`,

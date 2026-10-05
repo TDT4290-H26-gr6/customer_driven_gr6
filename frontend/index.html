@@ -4,17 +4,24 @@
     <!-- Applies a stored "Light"/"Dark" visuals choice before first paint,
          so there's no flash of the wrong theme. "Default" leaves no
          attribute here and falls through to prefers-color-scheme in
-         styles/globals.css. Kept in sync with ThemeProvider's storage key. -->
+         styles/globals.css. Also applies the stored accent color (default
+         purple). Kept in sync with the storage keys in ThemeProvider and
+         AccentProvider. -->
     <script>
       (function () {
+        var accent = "purple";
         try {
           var pref = localStorage.getItem("aios.themePreference");
           if (pref === "light" || pref === "dark") {
             document.documentElement.setAttribute("data-theme", pref);
           }
+          // useLocalStorage stores JSON, so the value is quoted.
+          var stored = JSON.parse(localStorage.getItem("aios.accentColor"));
+          if (stored === "blue" || stored === "olive") accent = stored;
         } catch (e) {
-          /* storage unavailable — falls back to prefers-color-scheme */
+          /* storage unavailable — falls back to prefers-color-scheme / purple */
         }
+        document.documentElement.setAttribute("data-accent", accent);
       })();
     </script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>

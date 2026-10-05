@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
+import { APP_LOCALE } from "@/shared/lib/format";
 import { getAllFeedback } from "../api";
 import type { Feedback } from "../types";
 import styles from "./FeedbackAdminPage.module.css";
 
-const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
+const dateFormat = new Intl.DateTimeFormat(APP_LOCALE, { dateStyle: "medium", timeStyle: "short" });
 
 /** Admin mode: everything testers have sent through the Feedback button, newest first. */
 export function FeedbackAdminPage() {

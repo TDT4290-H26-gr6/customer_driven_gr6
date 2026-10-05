@@ -5,9 +5,10 @@
 
 /**
  * The choice value/label appended to every question so a learner can decline
- * to guess. Picking it always scores 0/0 for the whole question (checked in
+ * to guess. Picking it always scores 0/1 for the whole question (checked in
  * assessment.service.ts's scoreAnswer, before any type-specific scoring
- * runs) — genuinely neutral, not a wrong answer.
+ * runs) — no points, but the question still counts toward the maximum. It is
+ * never counted as one of a question's alternatives when scoring.
  */
 export const IDK_VALUE = "__idk__";
 export const IDK_LABEL = "I don't know";
@@ -21,12 +22,21 @@ export type ScoreResult = {
 };
 
 /**
- * Scores a multiple-choice response.
+ * Every question is worth at most 1 point, so a SAT's maximum score equals
+ * its number of questions.
+ */
+export const QUESTION_MAX_SCORE = 1;
+
+/**
+ * Scores a multiple-choice response, out of 1.
  *
- * - `choiceMode: "checkbox"` (more than one correct choice): +1 for each
- *   correct choice selected, -1 for each incorrect choice selected. Choices
- *   left unselected never score, correct or not. Floored at 0 — picking
- *   more wrong choices than right never drops the question below 0.
+ * - `choiceMode: "checkbox"` (more than one correct choice): the share of
+ *   the correct choices the learner ticked, minus the share of the incorrect
+ *   choices they ticked, floored at 0 ("I don't know" is neither). So ticking
+ *   everything — or guessing at random — scores (about) 0, while each
+ *   mistake costs less the more choices of its kind there are: with 2
+ *   correct and 4 incorrect choices, one extra wrong tick still scores 0.75.
+ *   A question whose choices are all correct scores 1 when all are ticked.
  * - `choiceMode: "radio"` (exactly one correct choice): 1 if the selected
  *   choice is correct, 0 otherwise.
  */
@@ -38,54 +48,67 @@ export function scoreMultipleChoice(
   if (choiceMode === "radio") {
     const picked = selectedValues[0];
     const isCorrect = choices.some((c) => c.value === picked && c.correct);
-    return { score: isCorrect ? 1 : 0, maxScore: 1 };
+    return { score: isCorrect ? QUESTION_MAX_SCORE : 0, maxScore: QUESTION_MAX_SCORE };
   }
 
-  const maxScore = choices.filter((c) => c.correct).length;
-  const rawScore = choices.reduce((total, c) => {
-    if (!selectedValues.includes(c.value)) return total;
-    return total + (c.correct ? 1 : -1);
-  }, 0);
+  const alternatives = choices.filter((c) => c.value !== IDK_VALUE);
+  if (alternatives.length === 0) return { score: 0, maxScore: QUESTION_MAX_SCORE };
 
-  return { score: Math.max(0, rawScore), maxScore };
-}
+  const correct = alternatives.filter((c) => c.correct);
+  const incorrect = alternatives.filter((c) => !c.correct);
+  const ticked = (c: ScorableChoice) => selectedValues.includes(c.value);
+  // With nothing of a kind there's nothing to find (or to fall for).
+  const found = correct.length ? correct.filter(ticked).length / correct.length : 1;
+  const fellFor = incorrect.length ? incorrect.filter(ticked).length / incorrect.length : 0;
 
-/**
- * Scores a likert (self-rated) response. There is no right answer: the score
- * is the scale value the learner picked, out of the top of the scale. Each
- * choice's `value` is that scale number (see assessment.pie.ts). The session
- * comes from the client, so a value that isn't on the scale (e.g. "1000")
- * scores 0 rather than inflating the competence score.
- */
-export function scoreLikert(choiceValues: string[], selectedValues: string[]): ScoreResult {
-  const scale = choiceValues.map(Number).filter(Number.isFinite);
-  const picked = Number(selectedValues[0]);
   return {
-    score: scale.includes(picked) ? picked : 0,
-    maxScore: scale.length > 0 ? Math.max(...scale) : 0,
+    score: Math.max(0, found - fellFor) * QUESTION_MAX_SCORE,
+    maxScore: QUESTION_MAX_SCORE,
   };
 }
 
 /**
- * Scores a drag-and-drop response (seed.ts's `dragQuestion`): each blank is
- * an "option" in the same sense as a multiple-choice choice, so the same
- * rule applies per blank — +1 for the correct term dropped in, -1 for an
- * incorrect term, 0 for a blank left empty, floored at 0 overall.
- * `correctResponse` maps blank index (as a string key) to the correct
- * choice id, matching the shape `dragQuestion` builds in seed.ts.
+ * Scores a likert (self-rated) response, out of 1. There is no right answer:
+ * the score is the scale value the learner picked divided by the top of the
+ * scale. Each choice's `value` is that scale number (see assessment.pie.ts).
+ * The session comes from the client, so a value that isn't on the scale
+ * (e.g. "1000") scores 0 rather than inflating the competence score.
+ */
+export function scoreLikert(choiceValues: string[], selectedValues: string[]): ScoreResult {
+  const scale = choiceValues.map(Number).filter(Number.isFinite);
+  const picked = Number(selectedValues[0]);
+  const top = scale.length > 0 ? Math.max(...scale) : 0;
+  const onScale = top > 0 && scale.includes(picked);
+  return {
+    score: onScale ? Math.max(0, picked / top) * QUESTION_MAX_SCORE : 0,
+    maxScore: QUESTION_MAX_SCORE,
+  };
+}
+
+/**
+ * Scores a drag-and-drop response (seed.ts's `dragQuestion`), out of 1: each
+ * blank is an "option" in the same sense as a multiple-choice choice, worth
+ * 1/blanks — + for the correct term dropped in, - for an incorrect term, 0
+ * for a blank left empty, floored at 0 overall. `correctResponse` maps blank
+ * index (as a string key) to the correct choice id, matching the shape
+ * `dragQuestion` builds in seed.ts.
  */
 export function scoreDragAndDrop(
   correctResponse: Record<string, string>,
   filledBlanks: Record<string, string | undefined>,
 ): ScoreResult {
   const blankKeys = Object.keys(correctResponse);
+  if (blankKeys.length === 0) return { score: 0, maxScore: QUESTION_MAX_SCORE };
   const rawScore = blankKeys.reduce((total, key) => {
     const filled = filledBlanks[key];
     if (filled === undefined) return total;
     return total + (filled === correctResponse[key] ? 1 : -1);
   }, 0);
 
-  return { score: Math.max(0, rawScore), maxScore: blankKeys.length };
+  return {
+    score: (Math.max(0, rawScore) / blankKeys.length) * QUESTION_MAX_SCORE,
+    maxScore: QUESTION_MAX_SCORE,
+  };
 }
 
 // --- Extracting selections out of the PIE widget's own session payload ---
