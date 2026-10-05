@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import "@pie-framework/pie-fixed-player-static";
 import type { PieContent } from "../types";
+import { clearOthersIfIdk, IDK_VALUE } from "./idkSession";
 import styles from "./PieQuestionPlayer.module.css";
 
 export type PieAnswer = {
@@ -50,17 +51,33 @@ export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
     // `.session` getter, read fresh at the moment the event fires.
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<{ complete?: boolean }>).detail;
-      onAnswerChange?.({
-        session: ref.current?.session,
-        complete: Boolean(detail?.complete),
-      });
+      const current = ref.current?.session;
+      // "I don't know" excludes every other choice: untick them. Assigning
+      // .session re-renders the widget; that may fire another session-changed,
+      // which then finds nothing to clear.
+      const session = clearOthersIfIdk(current);
+      if (session !== current && ref.current) ref.current.session = session;
+      onAnswerChange?.({ session, complete: Boolean(detail?.complete) });
     };
     ref.current.addEventListener("session-changed", handler);
     return () => ref.current?.removeEventListener("session-changed", handler);
   }, [onAnswerChange]);
 
+  // While "I don't know" is ticked, other checkboxes can't be ticked (the CSS
+  // greys them out; this stops the click itself).
+  const blockOthersWhileIdk = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    const input = target.closest("label, .choice-input")?.querySelector("input");
+    if (!input || input.type !== "checkbox" || input.value === IDK_VALUE) return;
+    const idk = e.currentTarget.querySelector<HTMLInputElement>(`input[value="${IDK_VALUE}"]`);
+    if (idk?.checked) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   return (
-    <div className={styles.canvas}>
+    <div className={styles.canvas} onClickCapture={blockOthersWhileIdk}>
       <pie-fixed-player ref={ref}></pie-fixed-player>
     </div>
   );
