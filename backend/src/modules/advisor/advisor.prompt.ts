@@ -5,9 +5,13 @@ import type { SectionProgress, SectionSnapshot } from "../assessment/assessment.
 // network — so both are unit-testable directly. advisor.service.ts gathers
 // the data and calls the LLM.
 
-/** Something the LLM may recommend: a journey step or a learning source. */
+/**
+ * Something the LLM may recommend: a curriculum module in Moodle
+ * ("moodle_module", e.g. "A2 — Introduction to Open Data Management"), a step
+ * in the recommended journey ("module"), or a learning source.
+ */
 export type Candidate = {
-  kind: "module" | "source";
+  kind: "moodle_module" | "module" | "source";
   id: string;
   title: string;
   description: string | null;
@@ -33,6 +37,8 @@ export type AdviceContext = {
   /** The score-based recommendation the advice explains, if there is one. */
   journey: { name: string; description: string | null } | null;
   candidates: Candidate[];
+  /** 1 whenever there's anything to improve; 0 only after a perfect score (see advisor.candidates.ts). */
+  minSteps: 0 | 1;
   /** How each section changed since the previous assessment; null on a first assessment. */
   progress: AdviceProgress | null;
 };
@@ -90,7 +96,7 @@ export function toAdviceProgress(
 export type AdviceStep = Candidate & { reason: string };
 export type ParsedAdvice = { summary: string; steps: AdviceStep[] };
 
-export const MAX_STEPS = 4;
+export const MAX_STEPS = 3;
 const MAX_SUMMARY_LENGTH = 1200;
 const MAX_REASON_LENGTH = 500;
 /** Learner-written profile text is capped before it goes into the prompt. */
@@ -102,11 +108,14 @@ A learner has just completed a self-assessment. Write short, personal advice on 
 How to read the scores:
 - Each competence has a score from 0 to 100 percent.
 - A LOW score means the learner needs the MOST improvement there. A HIGH score is a strength.
-- Always prioritise the lowest-scoring competences. Do not recommend work on strengths unless nothing else fits.
+- Prioritise the lowest-scoring competences that matter for the learner's role. Do not recommend work on strengths unless nothing else fits.
+- Judge the learner's role from their "background" (their occupation/role), industry, academic degree and years of experience. A low score in an area that is clearly unrelated to their role is less urgent than one that is central to it.
 
 Rules:
 - The app has already recommended a learning journey ("recommendedJourney") based on the learner's weakest area. Explain why it fits them. Never contradict it or suggest a different journey.
-- Choose ${MAX_STEPS} or fewer next steps, ONLY from "candidates", referring to them by their "ref". Never invent courses, modules or links.
+- Choose your steps ONLY from "candidates", referring to them by their "ref". Never invent courses, modules or links.
+- "numberOfSteps" gives how many steps to choose: never more than its "max". Choose fewer when only a few weak areas matter for this learner's role, and leave out steps that are irrelevant to it. Still choose at least its "min" — when "min" is 1, give the single most useful step even if no weak area fits their role well.
+- When "candidates" is empty, the learner has a perfect score: return no steps, and congratulate them in the summary.
 - Order the steps from most to least important for this learner.
 - Each reason is 1-2 sentences and says which weak competence the step helps with.
 - The summary is 2-3 sentences (at most 4 with progress, see below): where the learner stands, what to focus on first, and — when there is a recommendedJourney — its name and why it fits them.
@@ -131,6 +140,13 @@ function capText(text: string | null): string | null {
   return trimmed.length > MAX_PROFILE_TEXT ? `${trimmed.slice(0, MAX_PROFILE_TEXT)}…` : trimmed;
 }
 
+/** How each kind of candidate is described to the model. */
+const CANDIDATE_TYPE: Record<Candidate["kind"], string> = {
+  moodle_module: "module in Moodle",
+  module: "step in the recommended journey",
+  source: "learning resource",
+};
+
 /** Short refs ("c1", "c2", …) instead of uuids: fewer tokens, nothing for the model to mangle. */
 export function candidateRef(index: number): string {
   return `c${index + 1}`;
@@ -151,9 +167,10 @@ export function buildAdviceMessages(context: AdviceContext): ChatMessage[] {
       scorePercent: Math.round(c.percent),
     })),
     recommendedJourney: context.journey,
+    numberOfSteps: { min: Math.min(context.minSteps, context.candidates.length), max: MAX_STEPS },
     candidates: context.candidates.map((c, i) => ({
       ref: candidateRef(i),
-      type: c.kind === "module" ? "step in the recommended journey" : "learning resource",
+      type: CANDIDATE_TYPE[c.kind],
       title: c.title,
       description: c.description,
       buildsCompetence: c.competence,
@@ -171,12 +188,30 @@ function clip(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
+/** The step added when the LLM chose none but one is required: the first (most relevant) candidate. */
+function fallbackStep(candidate: Candidate): AdviceStep {
+  const reason =
+    candidate.kind === "module"
+      ? "A step in your recommended learning journey, and a good place to start."
+      : candidate.competence
+        ? `Builds ${candidate.competence}, one of the areas where you can improve the most.`
+        : "Recommended from your assessment results.";
+  return { ...candidate, reason };
+}
+
 /**
  * Checks the LLM's reply and maps its refs back to real candidates. Steps
  * pointing at anything not in the candidate list are dropped — the model
- * can't smuggle in a made-up course. Throws when there's no usable summary.
+ * can't smuggle in a made-up course — and at most MAX_STEPS are kept. With
+ * `minSteps` 1, a reply that leaves no usable step gets the first candidate
+ * added, so the learner always has something to do next. Throws when
+ * there's no usable summary.
  */
-export function parseAdvice(reply: unknown, candidates: Candidate[]): ParsedAdvice {
+export function parseAdvice(
+  reply: unknown,
+  candidates: Candidate[],
+  minSteps: 0 | 1 = 0,
+): ParsedAdvice {
   if (typeof reply !== "object" || reply === null) throw new Error("Advice reply is not an object");
   const { summary, steps } = reply as { summary?: unknown; steps?: unknown };
 
@@ -197,6 +232,12 @@ export function parseAdvice(reply: unknown, candidates: Candidate[]): ParsedAdvi
     if (!candidate || used.has(ref.trim())) continue;
     used.add(ref.trim());
     parsedSteps.push({ ...candidate, reason: clip(reason.trim(), MAX_REASON_LENGTH) });
+  }
+
+  // At least one step whenever there's something to improve, even if the
+  // model judged nothing relevant enough — the rule is ours, not the model's.
+  if (parsedSteps.length < minSteps && candidates.length > 0) {
+    parsedSteps.push(fallbackStep(candidates[0]));
   }
 
   return { summary: clip(summary.trim(), MAX_SUMMARY_LENGTH), steps: parsedSteps };

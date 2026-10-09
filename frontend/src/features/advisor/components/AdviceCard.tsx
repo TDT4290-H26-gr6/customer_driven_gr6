@@ -5,7 +5,11 @@ import styles from "./AdviceCard.module.css";
 export type AdviceState =
   { status: "loading" } | { status: "ready"; advice: Advice } | { status: "unavailable" };
 
-const KIND_LABEL = { module: "Journey step", source: "Learning resource" } as const;
+const KIND_LABEL = {
+  moodle_module: "Module in Moodle",
+  module: "Journey step",
+  source: "Learning resource",
+} as const;
 
 /**
  * "Personalised advice" — the AI's explanation of the learner's results and

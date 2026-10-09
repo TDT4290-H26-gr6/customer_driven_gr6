@@ -34,7 +34,7 @@ export type CompetenceScoreInput = {
 };
 
 /** A competence scoring at or below this share of its maxScore counts as weak enough to recommend. */
-const WEAK_THRESHOLD = 0.5;
+export const WEAK_THRESHOLD = 0.5;
 
 /**
  * Picks the competence a learner is weakest in, out of their scores for one

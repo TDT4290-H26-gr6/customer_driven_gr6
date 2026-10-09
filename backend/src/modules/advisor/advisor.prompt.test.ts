@@ -37,6 +37,7 @@ function context(overrides: Partial<AdviceContext> = {}): AdviceContext {
     journey: { name: "FAIR foundations", description: "Start with the basics." },
     candidates: [candidate(), candidate({ kind: "module", id: "module-1", title: "Step 1" })],
     progress: null,
+    minSteps: 1,
     ...overrides,
   };
 }
@@ -221,5 +222,81 @@ describe("buildAdviceMessages with progress", () => {
 
     expect(system.content).toMatch(/Never invent progress/);
     expect(JSON.parse(user.content).progressSincePreviousAssessment).toEqual(progress);
+  });
+});
+
+describe("number of steps", () => {
+  const candidates = [
+    {
+      kind: "source" as const,
+      id: "s1",
+      title: "First",
+      description: null,
+      competence: "Data",
+      url: null,
+    },
+    {
+      kind: "source" as const,
+      id: "s2",
+      title: "Second",
+      description: null,
+      competence: null,
+      url: null,
+    },
+  ];
+
+  it("recommends at most 3", () => {
+    expect(MAX_STEPS).toBe(3);
+  });
+
+  it("tells the model the min and max, and to weigh relevance to the learner's role", () => {
+    const [system, user] = buildAdviceMessages(context({ minSteps: 1 }));
+
+    expect(JSON.parse(user.content).numberOfSteps).toEqual({ min: 1, max: 3 });
+    expect(system.content).toMatch(/matter for the learner's role/);
+    expect(system.content).toMatch(/at least its "min"/);
+  });
+
+  it("asks for no steps when there are no candidates (a perfect score)", () => {
+    const [system, user] = buildAdviceMessages(context({ minSteps: 0, candidates: [] }));
+
+    expect(JSON.parse(user.content).numberOfSteps).toEqual({ min: 0, max: 3 });
+    expect(system.content).toMatch(/perfect score: return no steps/);
+  });
+
+  it("adds the first candidate when the model chose nothing but one is required", () => {
+    const advice = parseAdvice({ summary: "ok", steps: [] }, candidates, 1);
+
+    expect(advice.steps).toHaveLength(1);
+    expect(advice.steps[0]).toMatchObject({ id: "s1", title: "First" });
+    expect(advice.steps[0].reason).toMatch(/Builds Data/);
+  });
+
+  it("also adds one when every step the model chose was invalid", () => {
+    const advice = parseAdvice(
+      { summary: "ok", steps: [{ ref: "c9", reason: "made up" }] },
+      candidates,
+      1,
+    );
+
+    expect(advice.steps.map((s) => s.id)).toEqual(["s1"]);
+  });
+
+  it("adds nothing when no step is required", () => {
+    expect(parseAdvice({ summary: "Perfect!", steps: [] }, candidates, 0).steps).toEqual([]);
+  });
+
+  it("adds nothing when there's nothing to add (no candidates)", () => {
+    expect(parseAdvice({ summary: "Perfect!", steps: [] }, [], 1).steps).toEqual([]);
+  });
+
+  it("keeps the model's own choice when it chose something", () => {
+    const advice = parseAdvice(
+      { summary: "ok", steps: [{ ref: "c2", reason: "Fits your role." }] },
+      candidates,
+      1,
+    );
+
+    expect(advice.steps.map((s) => [s.id, s.reason])).toEqual([["s2", "Fits your role."]]);
   });
 });

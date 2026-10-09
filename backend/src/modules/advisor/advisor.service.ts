@@ -5,7 +5,7 @@ import { chatJson, type LlmSettings } from "../../lib/llm";
 import { createKeyedLock } from "../../lib/keyedLock";
 import { findLearnerById, getLearnerProfile } from "../identity/identity.service";
 import { ACADEMIC_DEGREE_LABELS, INDUSTRY_LABELS } from "../identity/identity.types";
-import { recommendJourney } from "../learningJourney/learningJourney.service";
+import { recommendJourney, WEAK_THRESHOLD } from "../learningJourney/learningJourney.service";
 import {
   completedCompetenceScoresQuery,
   newestPerCompetence,
@@ -19,14 +19,13 @@ import {
   type AdviceStep,
   type Candidate,
 } from "./advisor.prompt";
+import { selectTargets } from "./advisor.candidates";
 
 // All Prisma access for advisor_* tables lives here. Reads of assessment_*
 // and sources_* tables below are read-only cross-module queries, allowed per
 // context/backend-structure.md; identity and learningJourney data comes
 // through their services.
 
-/** Only the weakest few competences feed the candidate list — that's where advice should point. */
-const WEAK_COMPETENCES_FOR_CANDIDATES = 3;
 const MAX_CANDIDATES = 15;
 
 const adviceLock = createKeyedLock();
@@ -41,11 +40,15 @@ export type StoredStep = Pick<AdviceStep, "kind" | "id" | "title" | "url" | "rea
 /**
  * Everything the LLM gets to see, as of the learner's latest completed SAT
  * instance. Scores are the newest per competence across all completed
- * instances, since a reassessment may only have covered some sections. The
- * candidates are the recommended journey's steps plus the sources linked to
- * the learner's weakest competences — so whatever the sources table holds
- * (placeholder Moodle links today, the real catalogue later) is what can be
- * recommended. From a second assessment on, it also gets the dashboard's
+ * instances, since a reassessment may only have covered some sections.
+ *
+ * The candidates follow the competences the advice targets (every one at or
+ * below the weak threshold, else the single lowest; none after a perfect
+ * score — see advisor.candidates.ts), weakest first: first the curriculum
+ * modules that teach them, linked to their page in Moodle, then the
+ * recommended journey's steps, then any learning sources linked to them. The
+ * Moodle links are placeholders until the real pages exist (MOODLE_BASE_URL
+ * + the seed data's moodleCourseId). From a second assessment on, it also gets the dashboard's
  * per-section before/after, so the advice can comment on progress.
  */
 async function buildContext(learnerId: string): Promise<AdviceContext> {
@@ -61,7 +64,16 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
           include: {
             primarySource: true,
             secondarySources: { include: { source: true } },
-            mainForModules: { select: { section: { select: { name: true } } }, take: 1 },
+            mainForModules: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+                moodleUrl: true,
+                section: { select: { name: true, code: true } },
+                level: true,
+              },
+            },
           },
         },
       },
@@ -83,6 +95,29 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
     candidates.push(candidate);
   }
 
+  const { targets, minSteps } = selectTargets(weakestFirst, WEAK_THRESHOLD);
+
+  // 1. The curriculum modules (A1 … E4) that teach each target competence —
+  //    what the learner actually takes, in Moodle.
+  for (const { competence } of targets) {
+    const modules = [...competence.mainForModules].sort(
+      (a, b) =>
+        (a.section.code ?? "").localeCompare(b.section.code ?? "") ||
+        (a.level ?? Infinity) - (b.level ?? Infinity),
+    );
+    for (const module of modules) {
+      add({
+        kind: "moodle_module",
+        id: module.id,
+        title: module.name,
+        description: module.description,
+        competence: competence.name,
+        url: module.moodleUrl,
+      });
+    }
+  }
+
+  // 2. The recommended journey's steps.
   if (journey) {
     const sourceIds = journey.modules.flatMap((m) => (m.sourceId ? [m.sourceId] : []));
     const sources = await prisma.source.findMany({ where: { id: { in: sourceIds } } });
@@ -99,12 +134,11 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
     }
   }
 
-  for (const { competence } of weakestFirst.slice(0, WEAK_COMPETENCES_FOR_CANDIDATES)) {
-    for (const source of [
-      competence.primarySource,
-      ...competence.secondarySources.map((s) => s.source),
-    ]) {
-      if (!source) continue; // a competence's primary source is optional
+  // 3. Any learning sources linked to the target competences.
+  for (const { competence } of targets) {
+    const sources = [competence.primarySource, ...competence.secondarySources.map((s) => s.source)];
+    for (const source of sources) {
+      if (!source) continue;
       add({
         kind: "source",
         id: source.id,
@@ -132,6 +166,7 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
     })),
     journey: journey ? { name: journey.name, description: journey.description } : null,
     candidates,
+    minSteps,
     progress:
       dashboard?.previous != null
         ? toAdviceProgress(
@@ -150,7 +185,7 @@ async function generateAdvice(
 ): Promise<Advice> {
   const context = await buildContext(learnerId);
   const reply = await chatJson(llm, buildAdviceMessages(context));
-  const { summary, steps } = parseAdvice(reply, context.candidates);
+  const { summary, steps } = parseAdvice(reply, context.candidates, context.minSteps);
 
   const storedSteps: StoredStep[] = steps.map(({ kind, id, title, url, reason }) => ({
     kind,
