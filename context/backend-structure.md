@@ -135,9 +135,12 @@ backend/src/
 │   └── requireRole.ts       # requires req.learnerId's persona to be set (403 otherwise)
 ├── lib/
 │   └── asyncHandler.ts      # forwards a rejected async route handler to the error handler
-├── seed/                    # dev dataset, loaded on an empty DB — see §11
-│   ├── fakeFoodSeed.ts      # seedFakeFood() / seedIfEmpty()
-│   └── data/aios_fake_food_seed.json
+├── seed/                    # content datasets, loaded at start — see §11
+│   ├── index.ts             # seedChosenDataset(): the SEED_DATASET one, never mixed
+│   ├── datasetLoader.ts     # createDatasetLoader(): load / bring up to date one dataset JSON
+│   ├── fakeFoodSeed.ts      # the fake food dataset (default)
+│   ├── wp2Seed.ts           # the real WP2 curriculum (SEED_DATASET=wp2)
+│   └── data/aios_fake_food_seed.json, aios_wp2_seed.json
 ├── modules/
 │   ├── identity/
 │   │   ├── identity.routes.ts       # /auth/*, /roles, /auth/me/role
@@ -401,6 +404,33 @@ A recommendation row is logged only when the recommended journey changes.
 
 ### Seeding
 
+There are two content datasets, and `SEED_DATASET` picks which one the backend
+loads (`src/seed/index.ts`):
+
+| `SEED_DATASET` | File | What it is |
+| --- | --- | --- |
+| `fake` (default) | `data/aios_fake_food_seed.json` | Fake food-themed test data, described below |
+| `wp2` | `data/aios_wp2_seed.json` | The real AIOS WP2 curriculum: sections A–E, 20 modules (A1–E4) with main and secondary competences, 36 competences, the 6 learning journeys, and the self-assessment items delivered so far |
+
+- **Never mixed.** A learner's first assessment covers the whole question bank,
+  so two datasets in one database would hand learners both. If the database
+  already holds the other dataset, the backend refuses to load (logged at start,
+  nothing changed). Switching an existing database = back it up, start from an
+  empty one.
+- **WP2 is not complete yet**, which is why `fake` stays the default: A1 and A4
+  have no items, several modules have 1–2, and items of types the app can't
+  render yet (matrices, ordering, matching) are kept in the file's
+  `_pendingItems` instead of loaded. The file's `_meta` lists the open points
+  (modules stored as levels 1–4 although they're parallel topics; mixed
+  coverage values like "M/S" stored as their first letter until confirmed).
+  `wp2Seed.data.test.ts` checks its structure.
+- **Moodle links ("soft" integration).** Sources, section modules and learning
+  journeys are authored with a placeholder `moodleCourseId`; the loader builds
+  the link from `MOODLE_BASE_URL` + that id (`moodleUrl` on modules and
+  journeys, `sourceUrl` on sources). A row may give a full `moodleUrl` instead,
+  which wins. Changing the base URL or ids updates existing rows on the next
+  start, so swapping the placeholders for real links is a data change.
+
 `src/seed/fakeFoodSeed.ts` loads `src/seed/data/aios_fake_food_seed.json` — a
 **fake**, food-themed dataset that _is_ every learner's initial assessment:
 **5 sections (A–E) × 4 section modules (levels 1–4, one competence each) ×
@@ -411,12 +441,12 @@ fills in (`sat_instance`, `response`, `competence_score`, `recommendation`). It
 is inserted in dependency order with `createMany({ skipDuplicates: true })`,
 so running it again never duplicates or overwrites.
 
-- **Automatically:** `index.ts` runs `seedIfIncomplete()` before the server
-  starts — when any of this dataset's questions are missing, it loads the
-  whole thing (adding only what's missing), then makes sure section codes and
-  module levels match the JSON. A fresh database therefore opens with every
-  question, and an older one picks up new questions, codes and levels, with no
-  manual step.
+- **Automatically:** `index.ts` runs `seedChosenDataset()` before the server
+  starts — when any of the dataset's questions are missing, it loads the
+  whole thing (adding only what's missing), then makes sure section codes,
+  module levels, competence names and Moodle links match the JSON. A fresh
+  database therefore opens with every question, and an older one picks up new
+  questions, codes, levels and links, with no manual step.
 - **By hand:** `npx prisma db seed` runs the same loader.
 - The seed authors questions in the simple shape above; the loader converts them
   with `buildPieContent` (which also appends the "I don't know" choice — see
@@ -429,10 +459,6 @@ so running it again never duplicates or overwrites.
   (2/3 of the level's points) and on to the next section once that's out of
   reach. A module's `level` therefore
   decides when its questions are asked.
-- Sources are authored with a `moodleCourseId`, not a literal URL — the loader
-  builds `sourceUrl` from `MOODLE_BASE_URL` (currently a placeholder,
-  `fakeFoodSeed.ts`) + that id. Swap the base URL / ids for real Moodle course
-  links in that one place when they exist.
 - There is no longer a default-roles bootstrap: roles come from the seed, so the
   role picker lists the seed's (fake) roles.
 - **The real open-science content is dormant, not deleted.**

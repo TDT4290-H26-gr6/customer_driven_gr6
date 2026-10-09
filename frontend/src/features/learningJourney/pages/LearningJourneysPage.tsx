@@ -89,6 +89,16 @@ export function LearningJourneysPage() {
               </ol>
             )}
 
+            {journey.moodleUrl && (
+              <a
+                className={styles.moodleLink}
+                href={journey.moodleUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open in Moodle ↗
+              </a>
+            )}
             <Button
               variant="secondary"
               className={styles.selectButton}

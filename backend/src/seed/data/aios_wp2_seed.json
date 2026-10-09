@@ -1,0 +1,2505 @@
+{
+  "_meta": {
+    "description": "The AIOS WP2 curriculum: sections A–E, their 20 modules (A1–E4) with main and secondary competences, the 36 competences, the six tentative learning journeys, and the self-assessment items delivered so far. Built from 'AIOS competence mapping' and 'AIOS WP 2 Plan to populate the SAT' (last edit 28 Sep 2026). Loaded when SEED_DATASET=wp2.",
+    "moodle": "Every module and journey names a PLACEHOLDER Moodle course (moodleCourseId); links are built from MOODLE_BASE_URL. Replace with the real ids — or give a full moodleUrl — once the Moodle pages exist.",
+    "levels": "Each section's four modules are stored as levels 1–4 (A1 = level 1), as the current adaptive assessment expects. In the curriculum they are parallel topics, not difficulty levels — open question for the team.",
+    "coverage": "Mixed coverage values in the source are stored as their first letter until confirmed with the customer: LJ5 B 'M/S' -> M, LJ5 D 'R/M' -> R, LJ6 A 'M/S' -> M.",
+    "gaps": "No items yet for A1 and A4; E3 and E4 have one item each. Items of unsupported types are listed in _pendingItems and not loaded. D3.2 is identical to D1.1 in the source."
+  },
+  "aios.assessment.competence": [
+    {
+      "id": "comp-wp2-accountability",
+      "name": "Accountability",
+      "description": "Covers responsibility for research decisions, transparent documentation, human oversight and institutional accountability in Open Science and AI-supported workflows."
+    },
+    {
+      "id": "comp-wp2-ai-governance-and-regulatory-compliance",
+      "name": "AI Governance and Regulatory Compliance",
+      "description": "Covers understanding and application of institutional AI policies, governance responsibilities, regulatory requirements, risk-management processes, accountability mechanisms and appropriate expert escalation."
+    },
+    {
+      "id": "comp-wp2-ai-literacy",
+      "name": "AI Literacy",
+      "description": "Covers foundational understanding of AI concepts, models, training and inference, major AI system types, generative AI and LLMs, capabilities and limitations, and informed selection and use of AI tools."
+    },
+    {
+      "id": "comp-wp2-ai-transparency-disclosure-and-traceability",
+      "name": "AI Transparency, Disclosure and Traceability",
+      "description": "Covers transparent disclosure and documentation of AI use, including tools/models used, purposes, relevant prompts or task descriptions, outputs accepted or rejected, human corrections, provenance and traceable decision-making."
+    },
+    {
+      "id": "comp-wp2-anonymization",
+      "name": "Anonymization",
+      "description": "Maps to privacy, data protection and safe sharing competences, especially when personal or sensitive data cannot be openly released."
+    },
+    {
+      "id": "comp-wp2-controlled-access",
+      "name": "Controlled access",
+      "description": "Reflects the principle that access should be as open as possible and as closed as necessary, including mediated, restricted or metadata-only access."
+    },
+    {
+      "id": "comp-wp2-critical-thinking",
+      "name": "Critical thinking",
+      "description": "Covers judgement, evidence assessment, evaluation of AI outputs, identification of unsupported claims and reflective decision-making."
+    },
+    {
+      "id": "comp-wp2-data-classification",
+      "name": "Data classification",
+      "description": "Aligns with the ability to distinguish public, non-sensitive, personal, sensitive, confidential, proprietary, community-governed and restricted data."
+    },
+    {
+      "id": "comp-wp2-data-governance",
+      "name": "Data governance",
+      "description": "Covers roles, rights, responsibilities, access rules, stewardship, preservation, reuse and institutional decision-making around research data."
+    },
+    {
+      "id": "comp-wp2-data-stewardship-for-ai",
+      "name": "Data stewardship for AI",
+      "description": "Links research-data stewardship with AI-specific concerns such as bias, training data, documentation, reproducibility, explainability and human validation."
+    },
+    {
+      "id": "comp-wp2-develop-networks",
+      "name": "Develop networks",
+      "description": "Relates to collaboration, stakeholder engagement, community building, cross-institutional exchange and professional networking for Open Science adoption."
+    },
+    {
+      "id": "comp-wp2-ethical-reasoning",
+      "name": "Ethical reasoning",
+      "description": "Covers ethical judgement, fairness, harm assessment, responsible openness, community rights, AI bias and the distinction between legality and ethical adequacy."
+    },
+    {
+      "id": "comp-wp2-evaluate-research",
+      "name": "Evaluate research",
+      "description": "Maps to research-quality assessment, evaluation of methods, reproducibility, open outputs, documentation and evidence quality."
+    },
+    {
+      "id": "comp-wp2-fair-and-reproducible-ai",
+      "name": "FAIR and Reproducible AI",
+      "description": "Covers application of FAIR and reproducibility principles to AI-supported research, including data, code, workflows, documentation, provenance, versions, model/tool information and the conditions required to reproduce or critically inspect AI-assisted processes."
+    },
+    {
+      "id": "comp-wp2-human-oversight-of-ai",
+      "name": "Human Oversight of AI",
+      "description": "Covers maintaining meaningful human control over AI-assisted activities, critically verifying outputs, correcting or rejecting AI recommendations, defining decision responsibilities and preserving final human judgement and accountability."
+    },
+    {
+      "id": "comp-wp2-increase-impact-of-science-on-policy-and-society",
+      "name": "Increase impact of science on policy and society",
+      "description": "Connects Open Science with public value, policy relevance, societal engagement, knowledge transfer, sustainability and responsible innovation."
+    },
+    {
+      "id": "comp-wp2-leverage-ai",
+      "name": "Leverage AI",
+      "description": "Covers the ability to use AI tools productively for discovery, documentation, data analysis, education and communication while preserving human control."
+    },
+    {
+      "id": "comp-wp2-licensing-and-privacy-literacy",
+      "name": "Licensing and privacy literacy",
+      "description": "Combines copyright, open licences, access conditions, privacy protection, data protection and safe reuse of research and educational outputs."
+    },
+    {
+      "id": "comp-wp2-manage-intellectual-property-rights",
+      "name": "Manage intellectual property rights",
+      "description": "Covers recognition of rights, open licensing, copyright retention, reuse conditions, third-party material and knowledge-sharing constraints."
+    },
+    {
+      "id": "comp-wp2-manage-projects",
+      "name": "Manage projects",
+      "description": "Relates to planning objectives, resources, timelines, deliverables, risks, quality and implementation logic for Open Science initiatives."
+    },
+    {
+      "id": "comp-wp2-manage-research",
+      "name": "Manage research",
+      "description": "Directly maps to research planning, coordination, execution, documentation, quality control and responsible management of research processes."
+    },
+    {
+      "id": "comp-wp2-manage-research-data",
+      "name": "Manage research data",
+      "description": "Covers data management plans, storage, metadata, repositories, FAIR principles, preservation, access decisions and reuse."
+    },
+    {
+      "id": "comp-wp2-mobilise-resources",
+      "name": "Mobilise resources",
+      "description": "Aligns with identifying and organising human, financial, technical and institutional resources needed to sustain Open Science activities."
+    },
+    {
+      "id": "comp-wp2-negotiate",
+      "name": "Negotiate",
+      "description": "Covers agreement-building among stakeholders, balancing openness with legal/ethical constraints, and resolving competing institutional interests."
+    },
+    {
+      "id": "comp-wp2-open-science-literacy",
+      "name": "Open Science literacy",
+      "description": "Covers foundational knowledge of Open Science values, pillars, open access, open data, open methods, infrastructures and societal engagement."
+    },
+    {
+      "id": "comp-wp2-operate-open-source-software",
+      "name": "Operate open-source software",
+      "description": "Links digital tool use, open-source environments, code reuse, reproducible workflows and open infrastructures."
+    },
+    {
+      "id": "comp-wp2-problem-solving",
+      "name": "Problem solving",
+      "description": "Covers identifying implementation problems, selecting practical solutions, adapting workflows and resolving technical or organisational barriers."
+    },
+    {
+      "id": "comp-wp2-promote-inclusion-and-diversity",
+      "name": "Promote inclusion and diversity",
+      "description": "Maps to equity, accessibility, participation, diversity of knowledge systems, inclusive teaching and reduction of digital or knowledge divides."
+    },
+    {
+      "id": "comp-wp2-promote-open-access-publications",
+      "name": "Promote open access publications",
+      "description": "Covers repository deposit, open access publishing, copyright retention, publication strategies, metadata and responsible dissemination."
+    },
+    {
+      "id": "comp-wp2-research-data-handling",
+      "name": "Research data handling",
+      "description": "Covers collecting, cleaning, documenting, storing, analysing, sharing and preserving research data according to FAIR and ethical principles."
+    },
+    {
+      "id": "comp-wp2-research-ethics-and-integrity",
+      "name": "Research ethics and integrity",
+      "description": "Covers integrity, transparency, consent, responsible conduct, reproducibility, avoidance of misuse and ethical limits of openness."
+    },
+    {
+      "id": "comp-wp2-research-execution-and-communication",
+      "name": "Research execution and communication",
+      "description": "Connects research implementation with communication of methods, uncertainty, results, documentation and public-facing dissemination."
+    },
+    {
+      "id": "comp-wp2-responsible-ai-use",
+      "name": "Responsible AI use",
+      "description": "Covers safe, ethical and accountable AI use, including bias checks, privacy, explainability, citation transparency, human verification and documentation."
+    },
+    {
+      "id": "comp-wp2-strategic-thinking",
+      "name": "Strategic thinking",
+      "description": "Relates to institutional planning, long-term priorities, sustainability, stakeholder alignment and Open Science transformation."
+    },
+    {
+      "id": "comp-wp2-teach-in-academic-or-vocational-contexts",
+      "name": "Teach in academic or vocational contexts",
+      "description": "Maps to teaching, training, facilitation, open pedagogy, OER use, AI-supported education and professional development in HE/VET settings."
+    },
+    {
+      "id": "comp-wp2-write-research-documents",
+      "name": "Write research documents",
+      "description": "Covers drafting, documenting and communicating research plans, data management plans, reports, metadata records, README files and scholarly outputs."
+    }
+  ],
+  "aios.assessment.section": [
+    {
+      "id": "sec-wp2-a",
+      "code": "A",
+      "name": "Open Science Fundamentals",
+      "description": null
+    },
+    {
+      "id": "sec-wp2-b",
+      "code": "B",
+      "name": "Open Science Resources, Repositories and Data Workflows",
+      "description": null
+    },
+    {
+      "id": "sec-wp2-c",
+      "code": "C",
+      "name": "Management Literacy and Implementation Planning",
+      "description": null
+    },
+    {
+      "id": "sec-wp2-d",
+      "code": "D",
+      "name": "Legal and Ethical Open Science Curriculum",
+      "description": null
+    },
+    {
+      "id": "sec-wp2-e",
+      "code": "E",
+      "name": "Applied Open Science in Educational Contexts",
+      "description": null
+    }
+  ],
+  "aios.assessment.section_module": [
+    {
+      "id": "mod-wp2-a1",
+      "name": "A1 — Introduction to Open Science",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-open-science-literacy",
+      "sectionId": "sec-wp2-a",
+      "level": 1,
+      "moodleCourseId": 1001
+    },
+    {
+      "id": "mod-wp2-a2",
+      "name": "A2 — Introduction to Open Data Management",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-manage-research-data",
+      "sectionId": "sec-wp2-a",
+      "level": 2,
+      "moodleCourseId": 1002
+    },
+    {
+      "id": "mod-wp2-a3",
+      "name": "A3 — Open Science and Research Methodologies",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-research-execution-and-communication",
+      "sectionId": "sec-wp2-a",
+      "level": 3,
+      "moodleCourseId": 1003
+    },
+    {
+      "id": "mod-wp2-a4",
+      "name": "A4 — Introduction to Artificial Intelligence: Foundations, Impacts and Open Science Contexts",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-ai-literacy",
+      "sectionId": "sec-wp2-a",
+      "level": 4,
+      "moodleCourseId": 1004
+    },
+    {
+      "id": "mod-wp2-b1",
+      "name": "B1 — Repositories and OER resource literacy",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-promote-open-access-publications",
+      "sectionId": "sec-wp2-b",
+      "level": 1,
+      "moodleCourseId": 1005
+    },
+    {
+      "id": "mod-wp2-b2",
+      "name": "B2 — Data Storage, Preservation and Versioning",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-manage-research-data",
+      "sectionId": "sec-wp2-b",
+      "level": 2,
+      "moodleCourseId": 1006
+    },
+    {
+      "id": "mod-wp2-b3",
+      "name": "B3 — Open Data Preparation, Analysis and Documentation",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-research-data-handling",
+      "sectionId": "sec-wp2-b",
+      "level": 3,
+      "moodleCourseId": 1007
+    },
+    {
+      "id": "mod-wp2-b4",
+      "name": "B4 — Data and resource quality assessment",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-evaluate-research",
+      "sectionId": "sec-wp2-b",
+      "level": 4,
+      "moodleCourseId": 1008
+    },
+    {
+      "id": "mod-wp2-c1",
+      "name": "C1 — Strategic Alignment and Institutional Readiness",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-strategic-thinking",
+      "sectionId": "sec-wp2-c",
+      "level": 1,
+      "moodleCourseId": 1009
+    },
+    {
+      "id": "mod-wp2-c2",
+      "name": "C2 — Stakeholders, Roles and Support Services",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-develop-networks",
+      "sectionId": "sec-wp2-c",
+      "level": 2,
+      "moodleCourseId": 1010
+    },
+    {
+      "id": "mod-wp2-c3",
+      "name": "C3 — Project Planning and Implementation Logic",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-manage-projects",
+      "sectionId": "sec-wp2-c",
+      "level": 3,
+      "moodleCourseId": 1011
+    },
+    {
+      "id": "mod-wp2-c4",
+      "name": "C4 — Sustainability, Incentives and Community Engagement",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-mobilise-resources",
+      "sectionId": "sec-wp2-c",
+      "level": 4,
+      "moodleCourseId": 1012
+    },
+    {
+      "id": "mod-wp2-d1",
+      "name": "D1 — Open Science Data Governance, Ethics and Legal Literacy",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-data-governance",
+      "sectionId": "sec-wp2-d",
+      "level": 1,
+      "moodleCourseId": 1013
+    },
+    {
+      "id": "mod-wp2-d2",
+      "name": "D2 — Data Privacy, Protection and Sensitive Data Management in Open Science",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-licensing-and-privacy-literacy",
+      "sectionId": "sec-wp2-d",
+      "level": 2,
+      "moodleCourseId": 1014
+    },
+    {
+      "id": "mod-wp2-d3",
+      "name": "D3 — Ethical Risk, Access Decisions and Accountability",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-ethical-reasoning",
+      "sectionId": "sec-wp2-d",
+      "level": 3,
+      "moodleCourseId": 1015
+    },
+    {
+      "id": "mod-wp2-d4",
+      "name": "D4 — AI Legal Use, Caveats, Countermeasures and Open Science Use Cases",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-ai-governance-and-regulatory-compliance",
+      "sectionId": "sec-wp2-d",
+      "level": 4,
+      "moodleCourseId": 1016
+    },
+    {
+      "id": "mod-wp2-e1",
+      "name": "E1 — Open Science Data and Research Resources in Education Practice",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-teach-in-academic-or-vocational-contexts",
+      "sectionId": "sec-wp2-e",
+      "level": 1,
+      "moodleCourseId": 1017
+    },
+    {
+      "id": "mod-wp2-e2",
+      "name": "E2 — Designing, Adapting and Communicating Open Educational Resources",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-teach-in-academic-or-vocational-contexts",
+      "sectionId": "sec-wp2-e",
+      "level": 2,
+      "moodleCourseId": 1018
+    },
+    {
+      "id": "mod-wp2-e3",
+      "name": "E3 — Case Studies, Emerging Trends and Institutional Applications of Open Science",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-critical-thinking",
+      "sectionId": "sec-wp2-e",
+      "level": 3,
+      "moodleCourseId": 1019
+    },
+    {
+      "id": "mod-wp2-e4",
+      "name": "E4 — Practical AI for Open Science and Education",
+      "description": null,
+      "mainCompetenceId": "comp-wp2-leverage-ai",
+      "sectionId": "sec-wp2-e",
+      "level": 4,
+      "moodleCourseId": 1020
+    }
+  ],
+  "aios.assessment.section_module_secondary_competence": [
+    {
+      "moduleId": "mod-wp2-a1",
+      "competenceId": "comp-wp2-research-ethics-and-integrity"
+    },
+    {
+      "moduleId": "mod-wp2-a1",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-a1",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-a1",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-a1",
+      "competenceId": "comp-wp2-promote-open-access-publications"
+    },
+    {
+      "moduleId": "mod-wp2-a1",
+      "competenceId": "comp-wp2-promote-inclusion-and-diversity"
+    },
+    {
+      "moduleId": "mod-wp2-a1",
+      "competenceId": "comp-wp2-increase-impact-of-science-on-policy-and-society"
+    },
+    {
+      "moduleId": "mod-wp2-a1",
+      "competenceId": "comp-wp2-research-execution-and-communication"
+    },
+    {
+      "moduleId": "mod-wp2-a2",
+      "competenceId": "comp-wp2-research-data-handling"
+    },
+    {
+      "moduleId": "mod-wp2-a2",
+      "competenceId": "comp-wp2-data-governance"
+    },
+    {
+      "moduleId": "mod-wp2-a2",
+      "competenceId": "comp-wp2-licensing-and-privacy-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-a2",
+      "competenceId": "comp-wp2-controlled-access"
+    },
+    {
+      "moduleId": "mod-wp2-a2",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-a2",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-a2",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-a2",
+      "competenceId": "comp-wp2-write-research-documents"
+    },
+    {
+      "moduleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-evaluate-research"
+    },
+    {
+      "moduleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-research-ethics-and-integrity"
+    },
+    {
+      "moduleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-open-science-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-problem-solving"
+    },
+    {
+      "moduleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-critical-thinking"
+    },
+    {
+      "moduleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-promote-open-access-publications"
+    },
+    {
+      "moduleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-ai-governance-and-regulatory-compliance"
+    },
+    {
+      "moduleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-fair-and-reproducible-ai"
+    },
+    {
+      "moduleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-critical-thinking"
+    },
+    {
+      "moduleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-data-stewardship-for-ai"
+    },
+    {
+      "moduleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-leverage-ai"
+    },
+    {
+      "moduleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-open-science-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-b1",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "moduleId": "mod-wp2-b1",
+      "competenceId": "comp-wp2-manage-intellectual-property-rights"
+    },
+    {
+      "moduleId": "mod-wp2-b1",
+      "competenceId": "comp-wp2-controlled-access"
+    },
+    {
+      "moduleId": "mod-wp2-b1",
+      "competenceId": "comp-wp2-open-science-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-b1",
+      "competenceId": "comp-wp2-teach-in-academic-or-vocational-contexts"
+    },
+    {
+      "moduleId": "mod-wp2-b1",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-b1",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-b1",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-operate-open-source-software"
+    },
+    {
+      "moduleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-research-data-handling"
+    },
+    {
+      "moduleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-data-governance"
+    },
+    {
+      "moduleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-controlled-access"
+    },
+    {
+      "moduleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-fair-and-reproducible-ai"
+    },
+    {
+      "moduleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-write-research-documents"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-data-stewardship-for-ai"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-data-classification"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-anonymization"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-research-ethics-and-integrity"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-problem-solving"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-critical-thinking"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-fair-and-reproducible-ai"
+    },
+    {
+      "moduleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-write-research-documents"
+    },
+    {
+      "moduleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "moduleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-research-data-handling"
+    },
+    {
+      "moduleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-critical-thinking"
+    },
+    {
+      "moduleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-data-governance"
+    },
+    {
+      "moduleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-fair-and-reproducible-ai"
+    },
+    {
+      "moduleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-research-execution-and-communication"
+    },
+    {
+      "moduleId": "mod-wp2-c1",
+      "competenceId": "comp-wp2-increase-impact-of-science-on-policy-and-society"
+    },
+    {
+      "moduleId": "mod-wp2-c1",
+      "competenceId": "comp-wp2-mobilise-resources"
+    },
+    {
+      "moduleId": "mod-wp2-c1",
+      "competenceId": "comp-wp2-open-science-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-c1",
+      "competenceId": "comp-wp2-data-governance"
+    },
+    {
+      "moduleId": "mod-wp2-c1",
+      "competenceId": "comp-wp2-ai-governance-and-regulatory-compliance"
+    },
+    {
+      "moduleId": "mod-wp2-c1",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-c1",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-c1",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-c2",
+      "competenceId": "comp-wp2-negotiate"
+    },
+    {
+      "moduleId": "mod-wp2-c2",
+      "competenceId": "comp-wp2-manage-projects"
+    },
+    {
+      "moduleId": "mod-wp2-c2",
+      "competenceId": "comp-wp2-mobilise-resources"
+    },
+    {
+      "moduleId": "mod-wp2-c2",
+      "competenceId": "comp-wp2-accountability"
+    },
+    {
+      "moduleId": "mod-wp2-c2",
+      "competenceId": "comp-wp2-data-stewardship-for-ai"
+    },
+    {
+      "moduleId": "mod-wp2-c2",
+      "competenceId": "comp-wp2-ai-governance-and-regulatory-compliance"
+    },
+    {
+      "moduleId": "mod-wp2-c2",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-c2",
+      "competenceId": "comp-wp2-research-execution-and-communication"
+    },
+    {
+      "moduleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-strategic-thinking"
+    },
+    {
+      "moduleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-mobilise-resources"
+    },
+    {
+      "moduleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-problem-solving"
+    },
+    {
+      "moduleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-write-research-documents"
+    },
+    {
+      "moduleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-accountability"
+    },
+    {
+      "moduleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-c4",
+      "competenceId": "comp-wp2-develop-networks"
+    },
+    {
+      "moduleId": "mod-wp2-c4",
+      "competenceId": "comp-wp2-increase-impact-of-science-on-policy-and-society"
+    },
+    {
+      "moduleId": "mod-wp2-c4",
+      "competenceId": "comp-wp2-negotiate"
+    },
+    {
+      "moduleId": "mod-wp2-c4",
+      "competenceId": "comp-wp2-strategic-thinking"
+    },
+    {
+      "moduleId": "mod-wp2-c4",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-c4",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-c4",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-c4",
+      "competenceId": "comp-wp2-promote-inclusion-and-diversity"
+    },
+    {
+      "moduleId": "mod-wp2-d1",
+      "competenceId": "comp-wp2-ai-governance-and-regulatory-compliance"
+    },
+    {
+      "moduleId": "mod-wp2-d1",
+      "competenceId": "comp-wp2-licensing-and-privacy-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-d1",
+      "competenceId": "comp-wp2-accountability"
+    },
+    {
+      "moduleId": "mod-wp2-d1",
+      "competenceId": "comp-wp2-controlled-access"
+    },
+    {
+      "moduleId": "mod-wp2-d1",
+      "competenceId": "comp-wp2-ethical-reasoning"
+    },
+    {
+      "moduleId": "mod-wp2-d1",
+      "competenceId": "comp-wp2-manage-intellectual-property-rights"
+    },
+    {
+      "moduleId": "mod-wp2-d1",
+      "competenceId": "comp-wp2-research-ethics-and-integrity"
+    },
+    {
+      "moduleId": "mod-wp2-d1",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-data-classification"
+    },
+    {
+      "moduleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-anonymization"
+    },
+    {
+      "moduleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-controlled-access"
+    },
+    {
+      "moduleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-accountability"
+    },
+    {
+      "moduleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-research-data-handling"
+    },
+    {
+      "moduleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "moduleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-ai-governance-and-regulatory-compliance"
+    },
+    {
+      "moduleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-accountability"
+    },
+    {
+      "moduleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-data-stewardship-for-ai"
+    },
+    {
+      "moduleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-licensing-and-privacy-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-anonymization"
+    },
+    {
+      "moduleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-controlled-access"
+    },
+    {
+      "moduleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-research-ethics-and-integrity"
+    },
+    {
+      "moduleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-ai-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-accountability"
+    },
+    {
+      "moduleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-ethical-reasoning"
+    },
+    {
+      "moduleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-licensing-and-privacy-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-data-stewardship-for-ai"
+    },
+    {
+      "moduleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-controlled-access"
+    },
+    {
+      "moduleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-manage-research"
+    },
+    {
+      "moduleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "moduleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-research-data-handling"
+    },
+    {
+      "moduleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-write-research-documents"
+    },
+    {
+      "moduleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-manage-intellectual-property-rights"
+    },
+    {
+      "moduleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-licensing-and-privacy-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-open-science-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-leverage-ai"
+    },
+    {
+      "moduleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-critical-thinking"
+    },
+    {
+      "moduleId": "mod-wp2-e2",
+      "competenceId": "comp-wp2-manage-intellectual-property-rights"
+    },
+    {
+      "moduleId": "mod-wp2-e2",
+      "competenceId": "comp-wp2-promote-inclusion-and-diversity"
+    },
+    {
+      "moduleId": "mod-wp2-e2",
+      "competenceId": "comp-wp2-licensing-and-privacy-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-e2",
+      "competenceId": "comp-wp2-open-science-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-e2",
+      "competenceId": "comp-wp2-write-research-documents"
+    },
+    {
+      "moduleId": "mod-wp2-e2",
+      "competenceId": "comp-wp2-leverage-ai"
+    },
+    {
+      "moduleId": "mod-wp2-e2",
+      "competenceId": "comp-wp2-critical-thinking"
+    },
+    {
+      "moduleId": "mod-wp2-e3",
+      "competenceId": "comp-wp2-manage-research"
+    },
+    {
+      "moduleId": "mod-wp2-e3",
+      "competenceId": "comp-wp2-strategic-thinking"
+    },
+    {
+      "moduleId": "mod-wp2-e3",
+      "competenceId": "comp-wp2-problem-solving"
+    },
+    {
+      "moduleId": "mod-wp2-e3",
+      "competenceId": "comp-wp2-open-science-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-e3",
+      "competenceId": "comp-wp2-research-execution-and-communication"
+    },
+    {
+      "moduleId": "mod-wp2-e3",
+      "competenceId": "comp-wp2-increase-impact-of-science-on-policy-and-society"
+    },
+    {
+      "moduleId": "mod-wp2-e3",
+      "competenceId": "comp-wp2-promote-inclusion-and-diversity"
+    },
+    {
+      "moduleId": "mod-wp2-e3",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-ai-literacy"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-responsible-ai-use"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-human-oversight-of-ai"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-ai-transparency-disclosure-and-traceability"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-ai-governance-and-regulatory-compliance"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-fair-and-reproducible-ai"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-critical-thinking"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-data-stewardship-for-ai"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-problem-solving"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-research-execution-and-communication"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-write-research-documents"
+    },
+    {
+      "moduleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-licensing-and-privacy-literacy"
+    }
+  ],
+  "aios.assessment.question": [
+    {
+      "id": "q-wp2-a2-1",
+      "prompt": "What is the primary purpose of a Data Management Plan (DMP) in an Open Science context?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "To define in advance how research data will be collected, documented, stored, preserved and shared throughout its lifecycle"
+          },
+          {
+            "id": "b",
+            "text": "To restrict in advance the sharing of collected, documented and stored research data until publication"
+          },
+          {
+            "id": "c",
+            "text": "To replace the application of metadata standards in the storage, preservation and sharing of research data"
+          },
+          {
+            "id": "d",
+            "text": "To satisfy funder requirements only, regarding the sharing of research data, with limited operational use"
+          }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "mod-wp2-a2",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "id": "q-wp2-a2-2",
+      "prompt": "A persistent identifier (e.g. a DOI) guarantees that a dataset will always resolve to the same, findable location, even if the dataset is moved or updated.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["true"]
+      },
+      "sectionModuleId": "mod-wp2-a2",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "id": "q-wp2-a2-3",
+      "prompt": "How comfortable are you in drafting a README file or metadata record that would allow another researcher to reuse your dataset without contacting you directly?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "labels": [
+            "I do not know how or cannot do this",
+            "I have to ask someone else to do this for me",
+            "I can do this with assistance by someone who knows",
+            "I can do this on my own",
+            "I can do this and I can show other people how to do this"
+          ]
+        }
+      },
+      "sectionModuleId": "mod-wp2-a2",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "id": "q-wp2-a3-1",
+      "prompt": "A researcher wants to assess whether a published study's methods, data and outputs are of good quality and can be trusted. Which activity does this primarily correspond to?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Assessing the quality of evidence and the reproducibility of methods"
+          },
+          {
+            "id": "b",
+            "text": "Assessing the quality of open access publisher and the impact factor of the publications source"
+          },
+          {
+            "id": "c",
+            "text": "Assessing the quality of research publications based on abstract or conclusions"
+          },
+          {
+            "id": "d",
+            "text": "Assessing the quality of research data management"
+          }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-research-execution-and-communication"
+    },
+    {
+      "id": "q-wp2-a3-2",
+      "prompt": "Research ethics and integrity is limited to obtaining informed consent from participants regarding the use of AI tools during a study.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["false"]
+      },
+      "sectionModuleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-research-execution-and-communication"
+    },
+    {
+      "id": "q-wp2-a3-3",
+      "prompt": "How comfortable are you identifying unsupported claims or weak evidence when critically reviewing a research output — including one produced or summarized with AI assistance?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "labels": [
+            "I cannot tell whether the claims or evidence are sound",
+            "I have to ask for assistance by someone who knows about AI",
+            "I can do this with assistance by another human",
+            "I can do this on my own, using AI if necessary",
+            "I can do this and assist other people to do this, using AI if necessary"
+          ]
+        }
+      },
+      "sectionModuleId": "mod-wp2-a3",
+      "competenceId": "comp-wp2-research-execution-and-communication"
+    },
+    {
+      "id": "q-wp2-b1-1",
+      "prompt": "A researcher wants to publish the dataset underlying an article so that it can be cited independently and remain accessible. Which option is generally the most appropriate?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Personal cloud folder"
+          },
+          {
+            "id": "b",
+            "text": "Research data repository providing a persistent identifier"
+          },
+          {
+            "id": "c",
+            "text": "Department website"
+          },
+          {
+            "id": "d",
+            "text": "Email attachment"
+          }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-b1",
+      "competenceId": "comp-wp2-promote-open-access-publications"
+    },
+    {
+      "id": "q-wp2-b1-3",
+      "prompt": "You are depositing an openly reusable teaching dataset. Which package provides the strongest basis for reuse?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Dataset only"
+          },
+          {
+            "id": "b",
+            "text": "Dataset + title"
+          },
+          {
+            "id": "c",
+            "text": "Dataset + metadata + licence + README + citation/PID information"
+          },
+          {
+            "id": "d",
+            "text": "Dataset + promotional description"
+          }
+        ],
+        "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "mod-wp2-b1",
+      "competenceId": "comp-wp2-promote-open-access-publications"
+    },
+    {
+      "id": "q-wp2-b2-2",
+      "prompt": "Three researchers repeatedly overwrite the same dataset and cannot reconstruct which changes were made. What is the most appropriate first improvement?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Rename it final"
+          },
+          {
+            "id": "b",
+            "text": "Establish versioning and provenance records"
+          },
+          {
+            "id": "c",
+            "text": "Compress it"
+          },
+          {
+            "id": "d",
+            "text": "Upload screenshots"
+          }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "id": "q-wp2-b3-1",
+      "prompt": "You find an open dataset for a planned analysis. What should you check before beginning the analysis?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Only file size"
+          },
+          {
+            "id": "b",
+            "text": "Provenance, licence, documentation, variables, format and known limitations"
+          },
+          {
+            "id": "c",
+            "text": "Whether it contains many rows"
+          },
+          {
+            "id": "d",
+            "text": "Whether AI can analyse it"
+          }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-research-data-handling"
+    },
+    {
+      "id": "q-wp2-b3-2",
+      "prompt": "An AI assistant states: 'Variable X increased at the same time as Y, therefore X caused Y.' What should the learner do?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Accept because AI analysed the data"
+          },
+          {
+            "id": "b",
+            "text": "Report it as a causal finding"
+          },
+          {
+            "id": "c",
+            "text": "Verify the analysis and reject the causal claim unless the evidence/design supports causation"
+          },
+          {
+            "id": "d",
+            "text": "Remove both variables"
+          }
+        ],
+        "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-research-data-handling"
+    },
+    {
+      "id": "q-wp2-b4-5",
+      "prompt": "After evaluating a resource, you find useful data but incomplete documentation and uncertain provenance for some variables. What is the most proportionate conclusion?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Fully reusable"
+          },
+          {
+            "id": "b",
+            "text": "Automatically unusable"
+          },
+          {
+            "id": "c",
+            "text": "Reusable with caution if limitations are documented and compatible with the intended use"
+          },
+          {
+            "id": "d",
+            "text": "Reusable if authorization for reuse is obtained"
+          }
+        ],
+        "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-evaluate-research"
+    },
+    {
+      "id": "q-wp2-c1-1",
+      "prompt": "A research organisation wants to strengthen Open Science, but its units differ in expertise, infrastructure, and current practices. Resources are limited. Which approach best supports strategic alignment?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Prioritise units with the strongest existing capacity, using early results as the main basis for deciding where resources should be allocated."
+          },
+          {
+            "id": "b",
+            "text": "Prioritise actions by relating institutional Open Science objectives to differences in readiness and needs across units."
+          },
+          {
+            "id": "c",
+            "text": "Establish common Open Science requirements first, allowing each unit to determine independently which activities should receive priority."
+          },
+          {
+            "id": "d",
+            "text": "Prioritise areas where external Open Science expectations are strongest, regardless of their relative importance to institutional objectives."
+          }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-c1",
+      "competenceId": "comp-wp2-strategic-thinking"
+    },
+    {
+      "id": "q-wp2-c1-2",
+      "prompt": "An institution has approved an Open Science strategy and has strong support from senior management. Before moving to full implementation, which assessment would provide the best indication of institutional readiness?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Examine whether senior management support is shared by researchers and professional staff across the institution."
+          },
+          {
+            "id": "b",
+            "text": "Compare current Open Science practices with those of similar institutions and identify areas where performance differs."
+          },
+          {
+            "id": "c",
+            "text": "Examine whether responsibilities, expertise, support services, and resources are sufficient to carry out the planned actions."
+          },
+          {
+            "id": "d",
+            "text": "Review previous Open Science initiatives to determine which activities achieved the highest levels of participation."
+          }
+        ],
+        "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "mod-wp2-c1",
+      "competenceId": "comp-wp2-strategic-thinking"
+    },
+    {
+      "id": "q-wp2-c1-3",
+      "prompt": "An organisation can implement only some of the actions included in its Open Science strategy during the next year. Which basis should guide the prioritisation of these actions?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Their potential to produce visible results quickly and attract stakeholder support."
+          },
+          {
+            "id": "b",
+            "text": "Their ability to be implemented efficiently using existing resources and organisational capacity."
+          },
+          {
+            "id": "c",
+            "text": "Their contribution to strategic objectives, while taking account of readiness and dependencies between actions."
+          },
+          {
+            "id": "d",
+            "text": "Their ability to ensure that progress is distributed across as many areas of the strategy as possible."
+          }
+        ],
+        "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "mod-wp2-c1",
+      "competenceId": "comp-wp2-strategic-thinking"
+    },
+    {
+      "id": "q-wp2-c2-1",
+      "prompt": "An Open Science initiative involves potentially sensitive personal data. Which stakeholder is particularly relevant for specialised data-protection guidance?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Communications office."
+          },
+          {
+            "id": "b",
+            "text": "Data Protection Officer."
+          },
+          {
+            "id": "c",
+            "text": "Event organiser."
+          },
+          {
+            "id": "d",
+            "text": "Graphic designer."
+          }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-c2",
+      "competenceId": "comp-wp2-develop-networks"
+    },
+    {
+      "id": "q-wp2-c2-2",
+      "prompt": "In an AI-supported Open Science service, an AI tool recommends an institutional decision. Who should retain final accountability?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "The AI system."
+          },
+          {
+            "id": "b",
+            "text": "The software provider."
+          },
+          {
+            "id": "c",
+            "text": "An identified human decision owner within the appropriate institutional role."
+          },
+          {
+            "id": "d",
+            "text": "AI, the identified human and the software provider."
+          }
+        ],
+        "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "mod-wp2-c2",
+      "competenceId": "comp-wp2-develop-networks"
+    },
+    {
+      "id": "q-wp2-c3-1",
+      "prompt": "Which objective is most appropriate for a small Open Science initiative?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Transform the entire university research culture in one month."
+          },
+          {
+            "id": "b",
+            "text": "Provide two introductory DMP workshops for doctoral researchers during the next semester."
+          },
+          {
+            "id": "c",
+            "text": "Make all research data fully open immediately."
+          },
+          {
+            "id": "d",
+            "text": "Eliminate every barrier to Open Science."
+          }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-manage-projects"
+    },
+    {
+      "id": "q-wp2-c3-2",
+      "prompt": "Which set of elements best represents the core planning logic expected in C3?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Problem, objective, target group, activities, deliverables, resources, risks and scope."
+          },
+          {
+            "id": "b",
+            "text": "Logo, website, advertising slogan and social-media account."
+          },
+          {
+            "id": "c",
+            "text": "Budget, objective, advertising, vision, risks and scope."
+          },
+          {
+            "id": "d",
+            "text": "Vision statement, final report, website, deliverables."
+          }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-manage-projects"
+    },
+    {
+      "id": "q-wp2-c3-3",
+      "prompt": "A team plans an Open Science training programme but has only one trainer and limited technical support. What should it do?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Ignore resource limits until implementation begins."
+          },
+          {
+            "id": "b",
+            "text": "Expand the initiative to cover the whole institution."
+          },
+          {
+            "id": "c",
+            "text": "Adapt activities and scope to available resources and constraints."
+          },
+          {
+            "id": "d",
+            "text": "Replace the implementation plan with an AI-generated one."
+          }
+        ],
+        "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-manage-projects"
+    },
+    {
+      "id": "q-wp2-c4-1",
+      "prompt": "Which combination is most likely to support the long-term sustainability of an Open Science initiative?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "A training event."
+          },
+          {
+            "id": "b",
+            "text": "Clear ownership, recurring support, documentation, resources and institutional recognition."
+          },
+          {
+            "id": "c",
+            "text": "A well-documented webpage."
+          },
+          {
+            "id": "d",
+            "text": "Dependence on the initiative formal leader."
+          }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-c4",
+      "competenceId": "comp-wp2-mobilise-resources"
+    },
+    {
+      "id": "q-wp2-c4-2",
+      "prompt": "An AI tool is used to summarise participant feedback for an Open Science programme. Which practice best follows the curriculum?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Publish the AI summary without review."
+          },
+          {
+            "id": "b",
+            "text": "Enter confidential feedback into any available AI service."
+          },
+          {
+            "id": "c",
+            "text": "Verify the summary, document relevant AI use and corrections, and retain an identifiable human approver."
+          },
+          {
+            "id": "d",
+            "text": "Treat the AI system as accountable for the final report."
+          }
+        ],
+        "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "mod-wp2-c4",
+      "competenceId": "comp-wp2-mobilise-resources"
+    },
+    {
+      "id": "q-wp2-d1-1",
+      "prompt": "How comfortable are you describing how intellectual property rights and ancillary rights are both enablers and blockers to legal openness?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "labels": [
+            "Very uncomfortable describing this",
+            "Uncomfortable",
+            "In the middle",
+            "Comfortable",
+            "Very comfortable describing this"
+          ]
+        }
+      },
+      "sectionModuleId": "mod-wp2-d1",
+      "competenceId": "comp-wp2-data-governance"
+    },
+    {
+      "id": "q-wp2-d1-2",
+      "prompt": "Which law is most likely to be relevant in decisions to make data openly accessible? Assuming that the law is relevant in your jurisdiction.",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "GDPR"
+          },
+          {
+            "id": "b",
+            "text": "AI Act"
+          },
+          {
+            "id": "c",
+            "text": "EU Cyberresilience Act"
+          }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "mod-wp2-d1",
+      "competenceId": "comp-wp2-data-governance"
+    },
+    {
+      "id": "q-wp2-d1-3",
+      "prompt": "What are key elements of the EU Data Governance Act?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Focus on protection of non-personal data, as the GDPR covers personal data."
+          },
+          {
+            "id": "b",
+            "text": "Provide rules and safeguards to facilitate re-use of data held by the public sector"
+          },
+          {
+            "id": "c",
+            "text": "Allow public sector bodies to charge fees for allowing the reuse of their data"
+          },
+          {
+            "id": "d",
+            "text": "Prevent the monetization of publicly held data"
+          }
+        ],
+        "correctOptionIds": ["b", "c"]
+      },
+      "sectionModuleId": "mod-wp2-d1",
+      "competenceId": "comp-wp2-data-governance"
+    },
+    {
+      "id": "q-wp2-d2-1",
+      "prompt": "What does the Data Governance Act say about data altruism?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Data altruism is built into the collection of data from the public, with an opt-out approach"
+          },
+          {
+            "id": "b",
+            "text": "Consent or permission can be granted by individuals"
+          },
+          {
+            "id": "c",
+            "text": "Consent or permission can be granted companies"
+          },
+          {
+            "id": "d",
+            "text": "Consent or permission should be given voluntarily and without reward"
+          },
+          {
+            "id": "e",
+            "text": "A lack of data-sharing tools is more of a barrier than a lack of willingness among the public"
+          },
+          {
+            "id": "f",
+            "text": "Data intermediaries should be avoided."
+          }
+        ],
+        "correctOptionIds": ["b", "c", "d", "e", "f"]
+      },
+      "sectionModuleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-licensing-and-privacy-literacy"
+    },
+    {
+      "id": "q-wp2-d2-2",
+      "prompt": "What are identified obstacles to data-sharing in the EU?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Low trust in data-sharing"
+          },
+          {
+            "id": "b",
+            "text": "Technical and infrastructure"
+          },
+          {
+            "id": "c",
+            "text": "Uncertainty about what type of public data can be collected"
+          },
+          {
+            "id": "d",
+            "text": "No cross-sectoral instrument to regulate publicly held data"
+          }
+        ],
+        "correctOptionIds": ["a", "b", "c"]
+      },
+      "sectionModuleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-licensing-and-privacy-literacy"
+    },
+    {
+      "id": "q-wp2-d2-3",
+      "prompt": "The main difference between the Open Data Directive and the Data Governance Act is:",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "The Open Data Directive regulates the reuse of publicly available information held by the public sector, while the Data Governance Act regulates the use of protected data held by the public sector."
+          },
+          {
+            "id": "b",
+            "text": "The Open Data Directive regulates the reuse of protected data held by the public sector, while the Data Governance Act regulates the sharing of publicly available data held by the public sector."
+          },
+          {
+            "id": "c",
+            "text": "The Open Data Directive requires certain types of data to be shared, while the Data Governance Act creates the legal infrastructure for these types of data to be safely shared."
+          },
+          {
+            "id": "d",
+            "text": "Neither address personal data, but the Open Data Directive focuses on companies that process public data, while the Data Governance Act focuses on the public sector."
+          }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-licensing-and-privacy-literacy"
+    },
+    {
+      "id": "q-wp2-d3-1",
+      "prompt": "Which practices display legality more than ethical adequacy?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "A company mines data from its users because they have consented to this in the terms and conditions of a particular product."
+          },
+          {
+            "id": "b",
+            "text": "A company operates across the US and the EU. It has patented a real-time surveillance mechanism in casinos that monitors facial expressions and can accurate predict organized fraud. It suppresses the roll-out of this mechanism in the EU, where the EU AI Act makes it illegal."
+          },
+          {
+            "id": "c",
+            "text": "A company employs “ethical hackers” to perform penetration testing of new software. The hackers’ scope and behavior is governed by codes of conduct."
+          },
+          {
+            "id": "d",
+            "text": "None of the above"
+          }
+        ],
+        "correctOptionIds": ["a", "b"]
+      },
+      "sectionModuleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-ethical-reasoning"
+    },
+    {
+      "id": "q-wp2-d3-2",
+      "prompt": "How comfortable are you describing how intellectual property rights and ancillary rights are both enablers and blockers to legal openness?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "labels": [
+            "Very uncomfortable describing this",
+            "Uncomfortable",
+            "In the middle",
+            "Comfortable",
+            "Very comfortable describing this"
+          ]
+        }
+      },
+      "sectionModuleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-ethical-reasoning"
+    },
+    {
+      "id": "q-wp2-d3-3",
+      "prompt": "Which of the following characterize privacy and data protection as rights in the EU?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "They are fundamental rights"
+          },
+          {
+            "id": "b",
+            "text": "They are automatic"
+          },
+          {
+            "id": "c",
+            "text": "They are non-waivable"
+          },
+          {
+            "id": "d",
+            "text": "They are non-transferrable"
+          },
+          {
+            "id": "e",
+            "text": "None of the above"
+          }
+        ],
+        "correctOptionIds": ["a", "b", "c", "d"]
+      },
+      "sectionModuleId": "mod-wp2-d3",
+      "competenceId": "comp-wp2-ethical-reasoning"
+    },
+    {
+      "id": "q-wp2-d4-2",
+      "prompt": "What is the concept of human oversight according to the EU AI Act?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "The moment a human intervenes in an AI workflow"
+          },
+          {
+            "id": "b",
+            "text": "A set of design requirements that all high-risk AI systems must have"
+          },
+          {
+            "id": "c",
+            "text": "Synonym for “human-in-the-loop”"
+          },
+          {
+            "id": "d",
+            "text": "A step that reduces the risk classification of an AI system"
+          }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-ai-governance-and-regulatory-compliance"
+    },
+    {
+      "id": "q-wp2-d4-3",
+      "prompt": "What is the concept of human oversight according to the GDPR?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "The moment a human intervenes in an AI workflow"
+          },
+          {
+            "id": "b",
+            "text": "A safeguard against automated decision-making"
+          },
+          {
+            "id": "c",
+            "text": "A set of design requirements that all high-risk AI systems must have"
+          },
+          {
+            "id": "d",
+            "text": "A step that reduces the risk classification of an AI system that processes personal data"
+          }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-ai-governance-and-regulatory-compliance"
+    },
+    {
+      "id": "q-wp2-e1-1",
+      "prompt": "How comfortable would you feel using research data or other openly available research resources in your teaching or educational practice?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 4,
+          "labels": [
+            "Not at all comfortable: I would need guidance on where to find resources and how I am allowed to use them.",
+            "Slightly comfortable: I can find some resources, but I am unsure about issues such as licensing, privacy, or appropriate reuse.",
+            "Moderately comfortable: I can usually identify and use appropriate resources, although I sometimes need guidance.",
+            "Very comfortable: I can confidently find, assess, appropriately reuse, and explain open research resources to students."
+          ]
+        }
+      },
+      "sectionModuleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-teach-in-academic-or-vocational-contexts"
+    },
+    {
+      "id": "q-wp2-e1-2",
+      "prompt": "You find a research dataset online that would be useful for a student assignment. What would you check first, before incorporating it into your teaching?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Whether the dataset is easy for students to download."
+          },
+          {
+            "id": "b",
+            "text": "Whether the data are openly licensed."
+          },
+          {
+            "id": "c",
+            "text": "Whether the dataset has been cited frequently."
+          },
+          {
+            "id": "d",
+            "text": "Nothing. If data can be accessed online, they can automatically be reused for educational purposes."
+          }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-teach-in-academic-or-vocational-contexts"
+    },
+    {
+      "id": "q-wp2-e1-3",
+      "prompt": "If research data are accessible online without a paywall, this automatically means they can be reused, modified, and redistributed without restriction.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["false"]
+      },
+      "sectionModuleId": "mod-wp2-e1",
+      "competenceId": "comp-wp2-teach-in-academic-or-vocational-contexts"
+    },
+    {
+      "id": "q-wp2-e2-1",
+      "prompt": "You are adapting an openly licensed educational resource that combines text, images, and data visualisations from several sources. You want to translate it, modify several examples, and publish the adapted resource openly. What is the most appropriate approach?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Apply a new open licence to the entire adapted resource, since the adaptation is a new work."
+          },
+          {
+            "id": "b",
+            "text": "Check the licence and attribution requirements for each relevant component, determine whether the licences are compatible with the planned adaptation and redistribution, and clearly distinguish reused, adapted, and newly created material."
+          },
+          {
+            "id": "c",
+            "text": "Retain the licence of the main resource because individual components become subject to that licence when incorporated into an OER."
+          },
+          {
+            "id": "d",
+            "text": "Remove third-party components and replace them with AI-generated equivalents, which avoids licensing and attribution considerations."
+          }
+        ],
+        "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-e2",
+      "competenceId": "comp-wp2-teach-in-academic-or-vocational-contexts"
+    },
+    {
+      "id": "q-wp2-e2-2",
+      "prompt": "An academic colleague asks you to advise them on adapting and openly publishing a teaching resource containing third-party materials, AI-assisted content, and examples intended for an international student audience. How comfortable would you be advising them on the decisions they need to make?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 4,
+          "labels": [
+            "I could identify some relevant issues, but I would need support to assess licensing, AI use, accessibility, or inclusion implications.",
+            "I could identify most of the issues and suggest appropriate actions, but I would seek specialist guidance for more complex cases.",
+            "I could systematically assess the relevant licensing, attribution, inclusion, accessibility, and AI considerations and justify my recommendations.",
+            "I could advise on complex or ambiguous cases, explain trade-offs between possible approaches, and identify when legal, ethical, technical, or institutional expertise should be brought in."
+          ]
+        }
+      },
+      "sectionModuleId": "mod-wp2-e2",
+      "competenceId": "comp-wp2-teach-in-academic-or-vocational-contexts"
+    },
+    {
+      "id": "q-wp2-e3-3",
+      "prompt": "A new technology is being promoted as a way to make research \"more open\" by automatically generating accessible summaries of research outputs. When evaluating whether an institution should adopt it, which approach demonstrates the strongest critical reasoning?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Assess whether the technology increases the number of people who can access research findings."
+          },
+          {
+            "id": "b",
+            "text": "Compare its accuracy with summaries written by researchers."
+          },
+          {
+            "id": "c",
+            "text": "Assess accessibility and accuracy alongside affected stakeholder groups, evidence of actual use, and possible unintended consequences."
+          },
+          {
+            "id": "d",
+            "text": "Pilot the technology first and evaluate risks using an agile methodology."
+          }
+        ],
+        "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "mod-wp2-e3",
+      "competenceId": "comp-wp2-critical-thinking"
+    },
+    {
+      "id": "q-wp2-e4-1",
+      "prompt": "A domain expert reviews an AI-generated analysis and agrees that the final conclusions are reasonable. Which statement best describes the role of human oversight in this situation?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Expert approval is sufficient because responsibility transfers from the AI system to the human reviewer to make the final decision."
+          },
+          {
+            "id": "b",
+            "text": "Human-in-the-loop has reduced the need to document how AI contributed to the analysis."
+          },
+          {
+            "id": "c",
+            "text": "Human oversight is mainly necessary when the AI system produces an automatic decision."
+          },
+          {
+            "id": "d",
+            "text": "Effective oversight requires more than approving the final result. The reviewer should understand the AI system’s impact on the reviewer’s own decision-making."
+          }
+        ],
+        "correctOptionIds": ["d"]
+      },
+      "sectionModuleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-leverage-ai"
+    }
+  ],
+  "aios.learningJourney.journey": [
+    {
+      "id": "journey-wp2-lj1",
+      "name": "LJ1 — Institutional AI-Driven Open Science Officer",
+      "description": "Final applied output: Institutional Open Science implementation plan and capstone portfolio.",
+      "moodleCourseId": 2001
+    },
+    {
+      "id": "journey-wp2-lj2",
+      "name": "LJ2 — Research Data, Reproducibility and AI Practices",
+      "description": "Final applied output: Documented research-data and responsible-AI workflow package.",
+      "moodleCourseId": 2002
+    },
+    {
+      "id": "journey-wp2-lj3",
+      "name": "LJ3 — Open Science Education, OER and Engagement",
+      "description": "Final applied output: OER or engagement resource with accessibility and assessment plan.",
+      "moodleCourseId": 2003
+    },
+    {
+      "id": "journey-wp2-lj4",
+      "name": "LJ4 — Open Science Train-the-Trainer",
+      "description": "Final applied output: Trainer package, facilitation plan and responsible-AI guidance.",
+      "moodleCourseId": 2004
+    },
+    {
+      "id": "journey-wp2-lj5",
+      "name": "LJ5 — Open Science for Business and Innovation",
+      "description": "Final applied output: Open innovation or academia-industry implementation case.",
+      "moodleCourseId": 2005
+    },
+    {
+      "id": "journey-wp2-lj6",
+      "name": "LJ6 — Open Science for Policy and Public Decision-Making",
+      "description": "Final applied output: Policy roadmap, stakeholder plan or public-value Open Science case.",
+      "moodleCourseId": 2006
+    }
+  ],
+  "aios.learningJourney.journey_section": [
+    {
+      "journeyId": "journey-wp2-lj1",
+      "sectionId": "sec-wp2-a",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj1",
+      "sectionId": "sec-wp2-b",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj1",
+      "sectionId": "sec-wp2-c",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj1",
+      "sectionId": "sec-wp2-d",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj1",
+      "sectionId": "sec-wp2-e",
+      "coverageLevel": "R"
+    },
+    {
+      "journeyId": "journey-wp2-lj2",
+      "sectionId": "sec-wp2-a",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj2",
+      "sectionId": "sec-wp2-b",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj2",
+      "sectionId": "sec-wp2-c",
+      "coverageLevel": "R"
+    },
+    {
+      "journeyId": "journey-wp2-lj2",
+      "sectionId": "sec-wp2-d",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj2",
+      "sectionId": "sec-wp2-e",
+      "coverageLevel": "R"
+    },
+    {
+      "journeyId": "journey-wp2-lj3",
+      "sectionId": "sec-wp2-a",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj3",
+      "sectionId": "sec-wp2-b",
+      "coverageLevel": "S"
+    },
+    {
+      "journeyId": "journey-wp2-lj3",
+      "sectionId": "sec-wp2-c",
+      "coverageLevel": "R"
+    },
+    {
+      "journeyId": "journey-wp2-lj3",
+      "sectionId": "sec-wp2-d",
+      "coverageLevel": "R"
+    },
+    {
+      "journeyId": "journey-wp2-lj3",
+      "sectionId": "sec-wp2-e",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj4",
+      "sectionId": "sec-wp2-a",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj4",
+      "sectionId": "sec-wp2-b",
+      "coverageLevel": "S"
+    },
+    {
+      "journeyId": "journey-wp2-lj4",
+      "sectionId": "sec-wp2-c",
+      "coverageLevel": "R"
+    },
+    {
+      "journeyId": "journey-wp2-lj4",
+      "sectionId": "sec-wp2-d",
+      "coverageLevel": "R"
+    },
+    {
+      "journeyId": "journey-wp2-lj4",
+      "sectionId": "sec-wp2-e",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj5",
+      "sectionId": "sec-wp2-a",
+      "coverageLevel": "R"
+    },
+    {
+      "journeyId": "journey-wp2-lj5",
+      "sectionId": "sec-wp2-b",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj5",
+      "sectionId": "sec-wp2-c",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj5",
+      "sectionId": "sec-wp2-d",
+      "coverageLevel": "R"
+    },
+    {
+      "journeyId": "journey-wp2-lj5",
+      "sectionId": "sec-wp2-e",
+      "coverageLevel": "S"
+    },
+    {
+      "journeyId": "journey-wp2-lj6",
+      "sectionId": "sec-wp2-a",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj6",
+      "sectionId": "sec-wp2-b",
+      "coverageLevel": "S"
+    },
+    {
+      "journeyId": "journey-wp2-lj6",
+      "sectionId": "sec-wp2-c",
+      "coverageLevel": "M"
+    },
+    {
+      "journeyId": "journey-wp2-lj6",
+      "sectionId": "sec-wp2-d",
+      "coverageLevel": "R"
+    },
+    {
+      "journeyId": "journey-wp2-lj6",
+      "sectionId": "sec-wp2-e",
+      "coverageLevel": "R"
+    }
+  ],
+  "_pendingItems": [
+    {
+      "module": "B1",
+      "ref": "B1.2",
+      "type": "true_false_matrix",
+      "prompt": "Indicate whether each statement about repositories is true or false.",
+      "statements": [
+        ["A DOI can provide a persistent identifier for a deposited research object.", true],
+        ["Every repository accepts every type of research object.", false],
+        ["Repository selection should consider preservation and access conditions.", true],
+        [
+          "Depositing a resource automatically means that anyone may reuse it without restrictions.",
+          false
+        ]
+      ]
+    },
+    {
+      "module": "B2",
+      "ref": "B2.1",
+      "type": "ordering",
+      "prompt": "Put these stages into a sensible data-preservation workflow.",
+      "correctOrder": [
+        "Assess files",
+        "Organise/document",
+        "Select preservation format",
+        "Store with appropriate access controls",
+        "Preserve/version",
+        "Periodically review"
+      ]
+    },
+    {
+      "module": "B2",
+      "ref": "B2.3",
+      "type": "classification_matrix",
+      "prompt": "Classify each practice as good practice or poor practice.",
+      "categories": ["Good practice", "Poor practice"],
+      "items": [
+        ["Document changes", "Good practice"],
+        ["Keep only the latest undocumented file", "Poor practice"],
+        ["Use consistent folders", "Good practice"],
+        ["Record provenance", "Good practice"],
+        ["Store sensitive data in unrestricted public folders", "Poor practice"],
+        ["Maintain a README", "Good practice"]
+      ]
+    },
+    {
+      "module": "B3",
+      "ref": "B3.3",
+      "type": "true_false_matrix",
+      "prompt": "Indicate whether each statement is true or false.",
+      "statements": [
+        ["A descriptive chart can establish causality.", false],
+        ["Cleaning transformations should be documented.", true],
+        ["Missing values should always be replaced with zero.", false],
+        ["AI-generated calculations should be verified.", true]
+      ]
+    },
+    {
+      "module": "B4",
+      "ref": "B4.1",
+      "type": "matching",
+      "prompt": "Match each quality problem to the dimension most directly affected.",
+      "pairs": [
+        ["Missing creator information", "Metadata"],
+        ["Inconsistent category labels", "Consistency"],
+        ["Obsolete dataset", "Timeliness"],
+        ["Undocumented origin", "Provenance"],
+        ["Inaccessible file format", "Accessibility/usability"]
+      ]
+    },
+    {
+      "module": "B4",
+      "ref": "B4.2",
+      "type": "true_false_matrix",
+      "prompt": "Indicate whether each statement is true or false.",
+      "statements": [
+        ["FAIR automatically means that data must be completely open.", false],
+        ["Good metadata can improve discoverability and reuse.", true],
+        ["A technically correct chart can still be misleading.", true],
+        ["Quality assessment should consider intended reuse.", true]
+      ]
+    },
+    {
+      "module": "C2",
+      "ref": "C2.3",
+      "type": "matching",
+      "prompt": "Match each actor with the most plausible primary support function.",
+      "pairs": [
+        ["Library", "information/resource support"],
+        ["IT service", "technical infrastructure"],
+        ["Ethics committee", "ethical review"],
+        ["Data steward", "research-data guidance"],
+        ["Communications/training staff", "awareness/training"]
+      ]
+    },
+    {
+      "module": "C3",
+      "ref": "C3.4",
+      "type": "ordering",
+      "prompt": "Put these planning elements into a logical sequence.",
+      "correctOrder": [
+        "Identify problem",
+        "Define objective",
+        "Identify target group",
+        "Define activities",
+        "Specify deliverables and timeline",
+        "Identify resources/risks",
+        "Define scope limits"
+      ]
+    },
+    {
+      "module": "C4",
+      "ref": "C4.5",
+      "type": "true_false_matrix",
+      "prompt": "Indicate whether each statement is true or false.",
+      "statements": [
+        ["Sustainability depends only on continued funding.", false],
+        ["Workload and perceived usefulness can influence adoption.", true],
+        ["Communities of practice can support engagement.", true],
+        ["Monitoring should ideally use a small number of relevant indicators.", true],
+        [
+          "Confidential data may be entered into non-approved AI systems if the output is checked afterwards.",
+          false
+        ]
+      ]
+    },
+    {
+      "module": "D4",
+      "ref": "D4.1",
+      "type": "matching",
+      "prompt": "Match the AI use case to the organizational role under the EU AI Act.",
+      "pairs": [
+        [
+          "An administrative employee uses a personal chatbot account to help her with work",
+          "Her university is a deployer"
+        ],
+        [
+          "An administrative employee uses a chatbot that her university has an enterprise agreement with, to do a work task",
+          "Her university is a deployer"
+        ],
+        [
+          "A researcher uses a chatbot that her colleagues developed at another business, to play a game",
+          "The business is a provider"
+        ],
+        [
+          "A researcher uses a chatbot that her colleagues developed at another business, to do a work task",
+          "The business is a provider AND Her university is a deployer"
+        ]
+      ],
+      "distractors": ["Her university is a provider"]
+    }
+  ]
+}

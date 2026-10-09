@@ -19,8 +19,10 @@ model Competence {
   id              String  @id @default(uuid())
   name            String  @unique
   description     String? @db.Text
-  primarySourceId String
-  primarySource   Source  @relation(fields: [primarySourceId], references: [id])
+  /// The main learning resource for it, when one is known. Optional: the
+  /// WP2 curriculum points learners at Moodle modules instead (SectionModule.moodleUrl).
+  primarySourceId String?
+  primarySource   Source? @relation(fields: [primarySourceId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -78,6 +80,10 @@ model SectionModule {
   /// gets 2 of 3 right on the one below (see assessment.path.ts). Nullable
   /// only so it could be added to existing rows; unleveled modules come last.
   level            Int?
+  /// Where the learning material for this module sits in Moodle ("soft"
+  /// integration: AIOS only links to it). Placeholders until the real URLs
+  /// exist — see MOODLE_BASE_URL and the seed data's moodleCourseId.
+  moodleUrl        String?    @db.VarChar(512)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

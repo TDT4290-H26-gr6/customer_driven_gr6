@@ -29,6 +29,17 @@ export function RecommendedJourneyCard({ journey, source = "recommended" }: Prop
           ))}
         </ol>
       )}
+
+      {journey.moodleUrl && (
+        <a
+          className={styles.moodleLink}
+          href={journey.moodleUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open in Moodle ↗
+        </a>
+      )}
     </div>
   );
 }

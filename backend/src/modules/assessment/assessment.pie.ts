@@ -16,8 +16,12 @@ export type PieContent = {
 
 /** The authored shape of a question's content, before conversion. */
 export type AuthoredContent = {
-  /** likert */
-  scale?: { min: number; max: number; minLabel?: string; maxLabel?: string };
+  /**
+   * likert. Either just the ends are labelled (minLabel/maxLabel), or every
+   * step has its own text (`labels`, one per step from min to max) — as the
+   * WP2 self-rating items do.
+   */
+  scale?: { min: number; max: number; minLabel?: string; maxLabel?: string; labels?: string[] };
   /** single_choice / multi_choice / true_false */
   options?: { id: string; text: string }[];
   correctOptionIds?: string[];
@@ -63,10 +67,12 @@ function multipleChoiceContent(
 function likertChoices(scale: NonNullable<AuthoredContent["scale"]>): PieChoice[] {
   const choices: PieChoice[] = [];
   for (let n = scale.min; n <= scale.max; n++) {
-    // Only the ends are labelled by the author; the numbers in between carry
-    // the meaning. The value is the number itself — that is the score.
+    // Either every step has its own text, or only the ends are labelled and
+    // the numbers in between carry the meaning. Either way the value is the
+    // number itself — that is the score.
+    const own = scale.labels?.[n - scale.min];
     const end = n === scale.min ? scale.minLabel : n === scale.max ? scale.maxLabel : undefined;
-    const text = end ? `${n} — ${end}` : String(n);
+    const text = own ?? (end ? `${n} — ${end}` : String(n));
     choices.push({ value: String(n), label: `<div>${escapeHtml(text)}</div>`, correct: false });
   }
   return choices;

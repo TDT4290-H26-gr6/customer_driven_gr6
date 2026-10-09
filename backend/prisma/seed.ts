@@ -1,11 +1,15 @@
 import { prisma } from "../src/db/prisma";
-import { seedFakeFood } from "../src/seed/fakeFoodSeed";
+import { config } from "../src/config";
+import { seedChosenDataset } from "../src/seed";
 
-// `npx prisma db seed` — loads the fake dataset by hand. The backend also
-// does this by itself on start. The real open-science seed
-// (src/seed/openScienceSeed.ts) is currently dormant — see index.ts.
-seedFakeFood()
-  .then((counts) => console.log("Seeded:", counts))
+// `npx prisma db seed` — loads the dataset SEED_DATASET names ("fake" by
+// default, or "wp2") by hand. The backend also does this by itself on start.
+seedChosenDataset()
+  .then((changed) =>
+    console.log(
+      changed ? `Seeded "${config.seedDataset}".` : `"${config.seedDataset}" already up to date.`,
+    ),
+  )
   .catch((err) => {
     console.error(err);
     process.exit(1);

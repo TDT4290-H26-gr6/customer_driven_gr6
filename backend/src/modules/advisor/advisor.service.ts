@@ -104,6 +104,7 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
       competence.primarySource,
       ...competence.secondarySources.map((s) => s.source),
     ]) {
+      if (!source) continue; // a competence's primary source is optional
       add({
         kind: "source",
         id: source.id,
