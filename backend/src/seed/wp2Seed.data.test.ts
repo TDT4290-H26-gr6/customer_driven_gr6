@@ -23,6 +23,8 @@ const questions = table("aios.assessment.question");
 const journeys = table("aios.learningJourney.journey");
 const journeySections = table("aios.learningJourney.journey_section");
 const pending = table("_pendingItems");
+const sources = table("aios.sources.source");
+const secondarySources = table("aios.assessment.competence_secondary_source");
 
 const ids = (rows: Row[]) => new Set(rows.map((r) => r.id));
 const sectionIds = ids(sections);
@@ -141,5 +143,37 @@ describe("WP2 seed data: Moodle links", () => {
     const courseIds = [...modules, ...journeys].map((row) => row.moodleCourseId);
     expect(courseIds.every((id) => typeof id === "number")).toBe(true);
     expect(new Set(courseIds).size).toBe(courseIds.length);
+  });
+});
+
+describe("WP2 seed data: partner sources", () => {
+  const sourceIds = ids(sources);
+
+  it("has the four partner-institution sources, each with its own web page", () => {
+    expect(sources).toHaveLength(4);
+    for (const source of sources) {
+      expect(String(source.sourceUrl)).toMatch(/^https?:\/\//);
+      expect(source).not.toHaveProperty("moodleCourseId");
+    }
+    expect(new Set(sources.map((s) => s.sourceUrl)).size).toBe(sources.length);
+  });
+
+  it("points every competence's primary source and every secondary link at a real source", () => {
+    for (const c of competences.filter((c) => c.primarySourceId)) {
+      expect(sourceIds.has(c.primarySourceId)).toBe(true);
+    }
+    for (const link of secondarySources) {
+      expect(sourceIds.has(link.sourceId)).toBe(true);
+      expect(competenceIds.has(link.competenceId)).toBe(true);
+    }
+  });
+
+  it("links every source to at least one competence, so the advice can recommend it", () => {
+    for (const source of sources) {
+      const used =
+        competences.some((c) => c.primarySourceId === source.id) ||
+        secondarySources.some((l) => l.sourceId === source.id);
+      expect(used).toBe(true);
+    }
   });
 });
