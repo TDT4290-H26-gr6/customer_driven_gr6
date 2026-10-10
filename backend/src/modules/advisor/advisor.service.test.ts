@@ -19,7 +19,10 @@ vi.mock("../identity/identity.service", () => ({
   findLearnerById: vi.fn(),
   getLearnerProfile: vi.fn(),
 }));
-vi.mock("../learningJourney/learningJourney.service", () => ({ recommendJourney: vi.fn() }));
+vi.mock("../learningJourney/learningJourney.service", () => ({
+  recommendJourney: vi.fn(),
+  WEAK_THRESHOLD: 0.5,
+}));
 vi.mock("../assessment/assessment.service", () => ({ getDashboardProgress: vi.fn() }));
 
 const mockPrisma = vi.mocked(prisma, true);
@@ -69,7 +72,7 @@ describe("getOrCreateAdvice", () => {
     expect(mockPrisma.advice.create).not.toHaveBeenCalled();
   });
 
-  it("generates, validates and stores advice from the weakest competences' sources", async () => {
+  it("offers the weak competence's Moodle module first, then its sources, and stores the advice", async () => {
     mockPrisma.advice.findUnique.mockResolvedValue(null as never);
     mockPrisma.competenceScore.findMany.mockResolvedValue([
       {
@@ -91,7 +94,16 @@ describe("getOrCreateAdvice", () => {
           name: "Data management",
           primarySource: source("weak"),
           secondarySources: [],
-          mainForModules: [{ section: { name: "Research data" } }],
+          mainForModules: [
+            {
+              id: "mod-a2",
+              name: "A2 — Introduction to Open Data Management",
+              description: null,
+              moodleUrl: "https://moodle.example.org/course/view.php?id=1002",
+              level: 2,
+              section: { name: "Research data", code: "A" },
+            },
+          ],
         },
       },
     ] as never);
@@ -99,17 +111,22 @@ describe("getOrCreateAdvice", () => {
       summary: "Start with data management.",
       steps: [
         { ref: "c1", reason: "Your weakest area." },
+        { ref: "c2", reason: "Goes deeper." },
         { ref: "c99", reason: "Made up" },
       ],
     });
 
     const advice = await getOrCreateAdvice("learner-1", llm);
 
-    // Weakest first: the "weak" source is candidate c1.
+    // Only "Data management" (20%) is a target; "Open access" (80%) isn't.
+    // Its Moodle module is c1, its source c2.
     const [, userMessage] = vi.mocked(chatJson).mock.calls[0][1];
     const sent = JSON.parse(userMessage.content);
     expect(sent.competenceScoresWeakestFirst[0].competence).toBe("Data management");
-    expect(sent.candidates[0].title).toBe("Course weak (NTNU)");
+    expect(sent.candidates.map((c: { title: string; type: string }) => [c.title, c.type])).toEqual([
+      ["A2 — Introduction to Open Data Management", "module in Moodle"],
+      ["Course weak (NTNU)", "learning resource"],
+    ]);
 
     expect(mockPrisma.advice.create).toHaveBeenCalledWith({
       data: {
@@ -117,11 +134,18 @@ describe("getOrCreateAdvice", () => {
         summary: "Start with data management.",
         steps: [
           {
+            kind: "moodle_module",
+            id: "mod-a2",
+            title: "A2 — Introduction to Open Data Management",
+            url: "https://moodle.example.org/course/view.php?id=1002",
+            reason: "Your weakest area.",
+          },
+          {
             kind: "source",
             id: "weak",
             title: "Course weak (NTNU)",
             url: "https://moodle.example.org/weak",
-            reason: "Your weakest area.",
+            reason: "Goes deeper.",
           },
         ],
         model: "test-model",
@@ -184,5 +208,125 @@ describe("getOrCreateAdvice", () => {
 
     const [, userMessage] = vi.mocked(chatJson).mock.calls[0][1];
     expect(JSON.parse(userMessage.content)).not.toHaveProperty("progressSincePreviousAssessment");
+  });
+
+  function competenceScore(name: string, score: number, sourceId: string) {
+    return {
+      competenceId: `comp-${name}`,
+      score,
+      maxScore: 10,
+      competence: {
+        name,
+        primarySource: source(sourceId),
+        secondarySources: [],
+        mainForModules: [],
+      },
+    };
+  }
+
+  it("after a perfect score, offers no candidates and asks for no steps", async () => {
+    mockPrisma.advice.findUnique.mockResolvedValue(null as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      competenceScore("Data", 10, "s-data"),
+      competenceScore("AI", 10, "s-ai"),
+    ] as never);
+    vi.mocked(chatJson).mockResolvedValue({ summary: "A perfect score!", steps: [] });
+
+    await getOrCreateAdvice("learner-1", llm);
+
+    const [, userMessage] = vi.mocked(chatJson).mock.calls[0][1];
+    const sent = JSON.parse(userMessage.content);
+    expect(sent.candidates).toEqual([]);
+    expect(sent.numberOfSteps).toEqual({ min: 0, max: 3 });
+    expect(mockPrisma.advice.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ steps: [] }),
+    });
+  });
+
+  it("with nothing below the threshold, still targets the lowest competence", async () => {
+    mockPrisma.advice.findUnique.mockResolvedValue(null as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      competenceScore("Data", 9, "s-data"),
+      competenceScore("AI", 7, "s-ai"),
+    ] as never);
+    vi.mocked(chatJson).mockResolvedValue({ summary: "Strong results.", steps: [] });
+
+    await getOrCreateAdvice("learner-1", llm);
+
+    const [, userMessage] = vi.mocked(chatJson).mock.calls[0][1];
+    const sent = JSON.parse(userMessage.content);
+    expect(sent.candidates.map((c: { title: string }) => c.title)).toEqual(["Course s-ai (NTNU)"]);
+    expect(sent.numberOfSteps).toEqual({ min: 1, max: 3 });
+    // The model chose nothing, so the required step is added.
+    const stored = mockPrisma.advice.create.mock.calls[0][0] as unknown as {
+      data: { steps: { id: string }[] };
+    };
+    expect(stored.data.steps.map((s) => s.id)).toEqual(["s-ai"]);
+  });
+
+  it("offers the sources of every competence below the threshold", async () => {
+    mockPrisma.advice.findUnique.mockResolvedValue(null as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      competenceScore("Data", 2, "s-data"),
+      competenceScore("AI", 5, "s-ai"),
+      competenceScore("Ethics", 4, "s-ethics"),
+      competenceScore("Policy", 3, "s-policy"),
+      competenceScore("Teaching", 9, "s-teaching"),
+    ] as never);
+    vi.mocked(chatJson).mockResolvedValue({ summary: "ok", steps: [] });
+
+    await getOrCreateAdvice("learner-1", llm);
+
+    const [, userMessage] = vi.mocked(chatJson).mock.calls[0][1];
+    // Four at or below 50%, weakest first; the 90% one is left out.
+    expect(
+      JSON.parse(userMessage.content).candidates.map(
+        (c: { buildsCompetence: string }) => c.buildsCompetence,
+      ),
+    ).toEqual(["Data", "Policy", "Ethics", "AI"]);
+  });
+
+  it("handles a competence with no learning source (the WP2 curriculum has none)", async () => {
+    mockPrisma.advice.findUnique.mockResolvedValue(null as never);
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      {
+        competenceId: "comp-ai-literacy",
+        score: 1,
+        maxScore: 10,
+        competence: {
+          name: "AI Literacy",
+          primarySource: null,
+          secondarySources: [],
+          mainForModules: [
+            {
+              id: "mod-a4",
+              name: "A4 — Introduction to Artificial Intelligence",
+              description: null,
+              moodleUrl: "https://moodle.example.org/course/view.php?id=1004",
+              level: 4,
+              section: { name: "Open Science Fundamentals", code: "A" },
+            },
+          ],
+        },
+      },
+    ] as never);
+    vi.mocked(chatJson).mockResolvedValue({
+      summary: "ok",
+      steps: [{ ref: "c1", reason: "Start here." }],
+    });
+
+    await getOrCreateAdvice("learner-1", llm);
+
+    const [, userMessage] = vi.mocked(chatJson).mock.calls[0][1];
+    expect(JSON.parse(userMessage.content).candidates).toHaveLength(1);
+    const stored = mockPrisma.advice.create.mock.calls[0][0] as unknown as {
+      data: { steps: { kind: string; url: string }[] };
+    };
+    expect(stored.data.steps).toEqual([
+      expect.objectContaining({
+        kind: "moodle_module",
+        url: "https://moodle.example.org/course/view.php?id=1004",
+      }),
+    ]);
   });
 });

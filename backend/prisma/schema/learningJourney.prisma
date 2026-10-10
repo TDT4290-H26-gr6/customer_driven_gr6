@@ -12,6 +12,9 @@ model LearningJourney {
   id          String  @id @default(uuid())
   name        String  @unique
   description String? @db.Text
+  /// The journey's page in Moodle, where the learner takes it. Placeholder
+  /// until the real URL exists (see SectionModule.moodleUrl).
+  moodleUrl   String? @db.VarChar(512)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

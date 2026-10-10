@@ -33,8 +33,12 @@ export type CompetenceScoreInput = {
   maxScore: number;
 };
 
-/** A competence scoring at or below this share of its maxScore counts as weak enough to flag. */
-const WEAK_THRESHOLD = 0.6;
+/**
+ * A competence scoring at or below this share of its maxScore counts as weak
+ * enough to flag. Shared with the AI advice (advisor.candidates.ts), so the
+ * journey card, the weak-competences list and the advice agree on "weak".
+ */
+export const WEAK_THRESHOLD = 0.6;
 
 /**
  * Competences scoring at or below the 60% threshold, weakest (lowest

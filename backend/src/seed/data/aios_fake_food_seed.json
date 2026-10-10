@@ -29,7 +29,8 @@
       "aios.assessment.response",
       "aios.assessment.competence_score",
       "aios.learningJourney.recommendation"
-    ]
+    ],
+    "moodle": "Sources, section modules and journeys name a PLACEHOLDER Moodle course (moodleCourseId); links are built from MOODLE_BASE_URL."
   },
   "aios.sources.source": [
     {
@@ -914,7 +915,8 @@
       "sectionId": "sec-fake-knife",
       "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 501
     },
     {
       "id": "mod-fake-fingers",
@@ -924,7 +926,8 @@
       "sectionId": "sec-fake-knife",
       "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 502
     },
     {
       "id": "mod-fake-proofing",
@@ -934,7 +937,8 @@
       "sectionId": "sec-fake-baking",
       "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 503
     },
     {
       "id": "mod-fake-croissants",
@@ -944,7 +948,8 @@
       "sectionId": "sec-fake-baking",
       "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 504
     },
     {
       "id": "mod-fake-mayo",
@@ -954,7 +959,8 @@
       "sectionId": "sec-fake-sauces",
       "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 505
     },
     {
       "id": "mod-fake-pasta",
@@ -964,7 +970,8 @@
       "sectionId": "sec-fake-sauces",
       "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 506
     },
     {
       "id": "mod-fake-fridge",
@@ -974,7 +981,8 @@
       "sectionId": "sec-fake-safety",
       "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 507
     },
     {
       "id": "mod-fake-hands",
@@ -984,7 +992,8 @@
       "sectionId": "sec-fake-safety",
       "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 508
     },
     {
       "id": "mod-fake-crisps",
@@ -994,7 +1003,8 @@
       "sectionId": "sec-fake-critique",
       "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 509
     },
     {
       "id": "mod-fake-parsley",
@@ -1004,7 +1014,8 @@
       "sectionId": "sec-fake-critique",
       "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 510
     },
     {
       "id": "mod-fake-herbs",
@@ -1014,7 +1025,8 @@
       "sectionId": "sec-fake-knife",
       "level": 3,
       "createdAt": "2026-09-28T12:00:00.000Z",
-      "updatedAt": "2026-09-28T12:00:00.000Z"
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 511
     },
     {
       "id": "mod-fake-sharpening",
@@ -1024,7 +1036,8 @@
       "sectionId": "sec-fake-knife",
       "level": 4,
       "createdAt": "2026-09-28T12:00:00.000Z",
-      "updatedAt": "2026-09-28T12:00:00.000Z"
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 512
     },
     {
       "id": "mod-fake-ovens",
@@ -1034,7 +1047,8 @@
       "sectionId": "sec-fake-baking",
       "level": 3,
       "createdAt": "2026-09-28T12:00:00.000Z",
-      "updatedAt": "2026-09-28T12:00:00.000Z"
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 513
     },
     {
       "id": "mod-fake-sourdough",
@@ -1044,7 +1058,8 @@
       "sectionId": "sec-fake-baking",
       "level": 4,
       "createdAt": "2026-09-28T12:00:00.000Z",
-      "updatedAt": "2026-09-28T12:00:00.000Z"
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 514
     },
     {
       "id": "mod-fake-stock",
@@ -1054,7 +1069,8 @@
       "sectionId": "sec-fake-sauces",
       "level": 3,
       "createdAt": "2026-09-28T12:00:00.000Z",
-      "updatedAt": "2026-09-28T12:00:00.000Z"
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 515
     },
     {
       "id": "mod-fake-seasoning",
@@ -1064,7 +1080,8 @@
       "sectionId": "sec-fake-sauces",
       "level": 4,
       "createdAt": "2026-09-28T12:00:00.000Z",
-      "updatedAt": "2026-09-28T12:00:00.000Z"
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 516
     },
     {
       "id": "mod-fake-crosscontam",
@@ -1074,7 +1091,8 @@
       "sectionId": "sec-fake-safety",
       "level": 3,
       "createdAt": "2026-09-28T12:00:00.000Z",
-      "updatedAt": "2026-09-28T12:00:00.000Z"
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 517
     },
     {
       "id": "mod-fake-fire",
@@ -1084,7 +1102,8 @@
       "sectionId": "sec-fake-safety",
       "level": 4,
       "createdAt": "2026-09-28T12:00:00.000Z",
-      "updatedAt": "2026-09-28T12:00:00.000Z"
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 518
     },
     {
       "id": "mod-fake-flavour",
@@ -1094,7 +1113,8 @@
       "sectionId": "sec-fake-critique",
       "level": 3,
       "createdAt": "2026-09-28T12:00:00.000Z",
-      "updatedAt": "2026-09-28T12:00:00.000Z"
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 519
     },
     {
       "id": "mod-fake-plating",
@@ -1104,7 +1124,8 @@
       "sectionId": "sec-fake-critique",
       "level": 4,
       "createdAt": "2026-09-28T12:00:00.000Z",
-      "updatedAt": "2026-09-28T12:00:00.000Z"
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 520
     }
   ],
   "aios.assessment.section_module_secondary_competence": [
@@ -2659,21 +2680,24 @@
       "name": "FAKE Knife Ninja Journey",
       "description": "From onion tears to samurai.",
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 601
     },
     {
       "id": "journey-fake-butter-baron",
       "name": "FAKE Butter Baron Journey",
       "description": "Become one with the croissant.",
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 602
     },
     {
       "id": "journey-fake-snack-sommelier",
       "name": "FAKE Snack Sommelier Journey",
       "description": "Judge crisps professionally.",
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 603
     }
   ],
   "aios.learningJourney.journey_section": [

@@ -109,3 +109,10 @@
     padding: 16px;
   }
 }
+
+/* "Soft" Moodle integration: the journey itself is taken in Moodle. */
+.moodleLink {
+  align-self: flex-start;
+  font-weight: 600;
+  color: var(--color-primary);
+}

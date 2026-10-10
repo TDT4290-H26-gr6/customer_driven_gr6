@@ -53,3 +53,33 @@ describe("buildPieContent: every question type gets an 'I don't know' choice", (
     expect(choicesOf(content).map((c) => c.value)).toEqual(["a", "b", IDK_VALUE]);
   });
 });
+
+describe("buildPieContent: likert labels", () => {
+  type LabelledChoice = Choice & { label: string };
+  const labelled = (content: ReturnType<typeof buildPieContent>) =>
+    choicesOf(content) as LabelledChoice[];
+
+  it("labels only the ends when that's all the author gave", () => {
+    const content = buildPieContent("likert", "How confident?", {
+      scale: { min: 1, max: 3, minLabel: "Not at all", maxLabel: "Very" },
+    });
+    expect(labelled(content).map((c) => c.label)).toEqual([
+      "<div>1 — Not at all</div>",
+      "<div>2</div>",
+      "<div>3 — Very</div>",
+      expect.any(String), // "I don't know"
+    ]);
+  });
+
+  it("gives every step its own text when labels are authored, keeping the number as the value", () => {
+    const content = buildPieContent("likert", "How comfortable?", {
+      scale: { min: 1, max: 3, labels: ["Not at all", "Somewhat", "Very"] },
+    });
+    const choices = labelled(content);
+    expect(choices.slice(0, 3).map((c) => [c.value, c.label])).toEqual([
+      ["1", "<div>Not at all</div>"],
+      ["2", "<div>Somewhat</div>"],
+      ["3", "<div>Very</div>"],
+    ]);
+  });
+});

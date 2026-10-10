@@ -61,4 +61,30 @@ describe("AdviceCard", () => {
 
     expect(screen.getByText(/isn't available right now/i)).toBeInTheDocument();
   });
+
+  it("labels a curriculum module in Moodle and links to it", () => {
+    render(
+      <AdviceCard
+        state={{
+          status: "ready",
+          advice: {
+            ...advice,
+            steps: [
+              {
+                kind: "moodle_module",
+                title: "A2 — Introduction to Open Data Management",
+                url: "https://moodle.example.org/course/view.php?id=1002",
+                reason: "Your weakest area.",
+              },
+            ],
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Module in Moodle")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "A2 — Introduction to Open Data Management" }),
+    ).toHaveAttribute("href", "https://moodle.example.org/course/view.php?id=1002");
+  });
 });

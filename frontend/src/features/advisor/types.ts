@@ -1,7 +1,10 @@
 /** One recommended next step, with why it was picked for this learner. */
 export type AdviceStep = {
-  /** "module": a step in the recommended journey; "source": a learning resource. */
-  kind: "module" | "source";
+  /**
+   * "moodle_module": a curriculum module (e.g. A2) in Moodle; "module": a step
+   * in the recommended journey; "source": a learning resource.
+   */
+  kind: "moodle_module" | "module" | "source";
   title: string;
   /** Where to take it (a Moodle course), when known. */
   url: string | null;

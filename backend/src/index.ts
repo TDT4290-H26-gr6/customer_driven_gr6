@@ -1,7 +1,7 @@
 import { buildServer } from "./server";
 import { config } from "./config";
 import { prisma } from "./db/prisma";
-import { seedIfIncomplete } from "./seed/fakeFoodSeed";
+import { seedChosenDataset } from "./seed";
 
 /** How long in-flight requests get to finish on shutdown before we exit anyway. */
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -19,22 +19,18 @@ process.on("uncaughtException", (err) => {
 });
 
 async function main() {
-  // A fresh database starts with the fake dataset (roles, questions, sources,
-  // journeys), and an older one gets whatever the dataset has gained since.
-  // Awaited before listening so the first request never sees an empty or
-  // half-updated question bank. A failure here is logged, not fatal — the
-  // API still starts, it just has nothing (new) to show.
+  // A fresh database gets the dataset SEED_DATASET names (the fake one by
+  // default; "wp2" for the real curriculum), and an older one gets whatever
+  // that dataset has gained since. Awaited before listening so the first
+  // request never sees an empty or half-updated question bank. A failure here
+  // is logged, not fatal — the API still starts, it just has nothing (new)
+  // to show. That includes refusing to mix two datasets (see seed/index.ts).
   try {
-    if (await seedIfIncomplete())
-      console.log("Fake dataset was incomplete — loaded the missing seed data.");
+    if (await seedChosenDataset())
+      console.log(`Dataset "${config.seedDataset}" loaded or brought up to date.`);
   } catch (err) {
     console.error("Startup seeding failed:", err);
   }
-
-  // The real open-science seed (CD-74, seed/openScienceSeed.ts) is currently
-  // dormant: everyone's initial assessment is the fake dataset for now (see
-  // assessment.service.ts's isInitialAssessment). To bring the real content
-  // back, import seedOpenScienceContent and call it here again.
 
   const server = buildServer().listen(config.port, () => {
     console.log(`AIOS backend listening on http://localhost:${config.port}`);
