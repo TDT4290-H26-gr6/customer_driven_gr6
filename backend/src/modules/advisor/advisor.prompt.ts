@@ -34,8 +34,12 @@ export type AdviceContext = {
   };
   /** Every scored competence, weakest first. */
   competences: { name: string; section: string | null; percent: number }[];
-  /** The score-based recommendation the advice explains, if there is one. */
-  journey: { name: string; description: string | null } | null;
+  /**
+   * Learning journeys covering the learner's weak sections, for the model to
+   * pick the one that fits their role. The first is the score-based pick
+   * (the default). Empty when there's nothing to choose from.
+   */
+  journeyCandidates: JourneyOption[];
   candidates: Candidate[];
   /** 1 whenever there's anything to improve; 0 only after a perfect score (see advisor.candidates.ts). */
   minSteps: 0 | 1;
@@ -93,8 +97,19 @@ export function toAdviceProgress(
   };
 }
 
+/** A learning journey the model may choose, with how strongly it covers each weak section. */
+export type JourneyOption = {
+  id: string;
+  name: string;
+  description: string | null;
+  /** M = centred on the section, R = covers it well, S = touches it. */
+  coverage: { section: string; level: "M" | "R" | "S" }[];
+};
+
 export type AdviceStep = Candidate & { reason: string };
-export type ParsedAdvice = { summary: string; steps: AdviceStep[] };
+/** The journey chosen for the learner; `reason` is null when the app fell back to the default. */
+export type JourneyChoice = { journeyId: string; reason: string | null };
+export type ParsedAdvice = { summary: string; steps: AdviceStep[]; journey: JourneyChoice | null };
 
 export const MAX_STEPS = 3;
 const MAX_SUMMARY_LENGTH = 1200;
@@ -112,14 +127,13 @@ How to read the scores:
 - Judge the learner's role from their "background" (their occupation/role), industry, academic degree and years of experience. A low score in an area that is clearly unrelated to their role is less urgent than one that is central to it.
 
 Rules:
-- The app has already recommended a learning journey ("recommendedJourney") based on the learner's weakest area. Explain why it fits them. Never contradict it or suggest a different journey.
+- Choose ONE learning journey from "journeyCandidates", by its "ref", for the "journey" field. Each candidate lists how strongly it covers the learner's weak sections (M = centred on that section, R = covers it well, S = touches it). The first candidate ("isDefault": true) is the app's pick based on scores alone. Keep it unless another candidate clearly fits the learner's role better while still covering their weak sections well. The journey's "reason" is 1-2 sentences on why it fits this learner's role and results. When "journeyCandidates" is empty, set "journey" to null.
 - Choose your steps ONLY from "candidates", referring to them by their "ref". Never invent courses, modules or links.
 - "numberOfSteps" gives how many steps to choose: never more than its "max". Choose fewer when only a few weak areas matter for this learner's role, and leave out steps that are irrelevant to it. Still choose at least its "min" — when "min" is 1, give the single most useful step even if no weak area fits their role well.
 - When "candidates" is empty, the learner has a perfect score: return no steps, and congratulate them in the summary.
 - Order the steps from most to least important for this learner.
 - Each reason is 1-2 sentences and says which weak competence the step helps with.
-- The summary is 2-3 sentences (at most 4 with progress, see below): where the learner stands, what to focus on first, and — when there is a recommendedJourney — its name and why it fits them.
-- When there is a recommendedJourney, include at least one of its steps (type "step in the recommended journey") among your steps.
+- The summary is 2-3 sentences (at most 4 with progress, see below): where the learner stands, what to focus on first, and — when you chose a journey — its name and why it fits them.
 - Write in English, in the second person ("you"), in a friendly, encouraging and concrete tone. Do not mention percentages for strengths more than once.
 - Use the learner's industry, academic degree, background (their occupation/role) and years of experience in AI or Open Science to make the advice fit them (e.g. examples from their sector, a pace that suits their experience).
 - When the learner has "goals", connect the advice to them where it honestly fits — but the weakest competences still come first.
@@ -132,7 +146,7 @@ Progress since the previous assessment:
 - Praise real improvement, and keep a drop encouraging rather than discouraging.
 
 Reply with JSON only, in exactly this shape:
-{"summary": "...", "steps": [{"ref": "c1", "reason": "..."}]}`;
+{"summary": "...", "journey": {"ref": "j1", "reason": "..."}, "steps": [{"ref": "c1", "reason": "..."}]}`;
 
 function capText(text: string | null): string | null {
   const trimmed = text?.trim();
@@ -152,6 +166,11 @@ export function candidateRef(index: number): string {
   return `c${index + 1}`;
 }
 
+/** Journey refs: "j1", "j2", … — "j1" is always the score-based default. */
+export function journeyRef(index: number): string {
+  return `j${index + 1}`;
+}
+
 /** The chat to send. Names and emails are never included — only role, profile and scores. */
 export function buildAdviceMessages(context: AdviceContext): ChatMessage[] {
   const learnerData = {
@@ -166,7 +185,13 @@ export function buildAdviceMessages(context: AdviceContext): ChatMessage[] {
       section: c.section,
       scorePercent: Math.round(c.percent),
     })),
-    recommendedJourney: context.journey,
+    journeyCandidates: context.journeyCandidates.map((j, i) => ({
+      ref: journeyRef(i),
+      ...(i === 0 && { isDefault: true }),
+      name: j.name,
+      description: j.description,
+      coversWeakSections: j.coverage,
+    })),
     numberOfSteps: { min: Math.min(context.minSteps, context.candidates.length), max: MAX_STEPS },
     candidates: context.candidates.map((c, i) => ({
       ref: candidateRef(i),
@@ -186,6 +211,30 @@ export function buildAdviceMessages(context: AdviceContext): ChatMessage[] {
 
 function clip(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+/**
+ * The journey the model chose, mapped back to a real candidate. A missing,
+ * unknown or malformed choice falls back to the default (the score-based
+ * pick, first in the list), without a reason — so there's always a journey
+ * when there were candidates, and never one that wasn't offered.
+ */
+export function parseJourneyChoice(
+  choice: unknown,
+  journeyCandidates: JourneyOption[],
+): JourneyChoice | null {
+  if (journeyCandidates.length === 0) return null;
+  const { ref, reason } = (typeof choice === "object" && choice !== null ? choice : {}) as {
+    ref?: unknown;
+    reason?: unknown;
+  };
+  const index = journeyCandidates.findIndex((_, i) => journeyRef(i) === String(ref ?? "").trim());
+  if (index === -1) return { journeyId: journeyCandidates[0].id, reason: null };
+  const text = typeof reason === "string" ? reason.trim() : "";
+  return {
+    journeyId: journeyCandidates[index].id,
+    reason: text ? clip(text, MAX_REASON_LENGTH) : null,
+  };
 }
 
 /** The step added when the LLM chose none but one is required: the first (most relevant) candidate. */
@@ -211,6 +260,7 @@ export function parseAdvice(
   reply: unknown,
   candidates: Candidate[],
   minSteps: 0 | 1 = 0,
+  journeyCandidates: JourneyOption[] = [],
 ): ParsedAdvice {
   if (typeof reply !== "object" || reply === null) throw new Error("Advice reply is not an object");
   const { summary, steps } = reply as { summary?: unknown; steps?: unknown };
@@ -240,5 +290,9 @@ export function parseAdvice(
     parsedSteps.push(fallbackStep(candidates[0]));
   }
 
-  return { summary: clip(summary.trim(), MAX_SUMMARY_LENGTH), steps: parsedSteps };
+  return {
+    summary: clip(summary.trim(), MAX_SUMMARY_LENGTH),
+    steps: parsedSteps,
+    journey: parseJourneyChoice((reply as { journey?: unknown }).journey, journeyCandidates),
+  };
 }

@@ -4,7 +4,8 @@
     "moodle": "Every module and journey names a PLACEHOLDER Moodle course (moodleCourseId); links are built from MOODLE_BASE_URL. Replace with the real ids — or give a full moodleUrl — once the Moodle pages exist.",
     "levels": "Each section's four modules are stored as levels 1–4 (A1 = level 1), as the current adaptive assessment expects. In the curriculum they are parallel topics, not difficulty levels — open question for the team.",
     "coverage": "Mixed coverage values in the source are stored as their first letter until confirmed with the customer: LJ5 B 'M/S' -> M, LJ5 D 'R/M' -> R, LJ6 A 'M/S' -> M.",
-    "gaps": "No items yet for A1 and A4; E3 and E4 have one item each. Items of unsupported types are listed in _pendingItems and not loaded. D3.2 is identical to D1.1 in the source."
+    "gaps": "No items yet for A1 and A4; E3 and E4 have one item each. Items of unsupported types are listed in _pendingItems and not loaded. D3.2 is identical to D1.1 in the source.",
+    "sources": "The four partner-institution sources come from the earlier curated course list and link to their own web pages, not Moodle. Which competences they build (primarySourceId / competence_secondary_source) is a PROPOSED mapping from their topics and descriptions — confirm with the customer."
   },
   "aios.assessment.competence": [
     {
@@ -115,7 +116,8 @@
     {
       "id": "comp-wp2-manage-research-data",
       "name": "Manage research data",
-      "description": "Covers data management plans, storage, metadata, repositories, FAIR principles, preservation, access decisions and reuse."
+      "description": "Covers data management plans, storage, metadata, repositories, FAIR principles, preservation, access decisions and reuse.",
+      "primarySourceId": "src-wp2-unibo-data-steward"
     },
     {
       "id": "comp-wp2-mobilise-resources",
@@ -130,12 +132,14 @@
     {
       "id": "comp-wp2-open-science-literacy",
       "name": "Open Science literacy",
-      "description": "Covers foundational knowledge of Open Science values, pillars, open access, open data, open methods, infrastructures and societal engagement."
+      "description": "Covers foundational knowledge of Open Science values, pillars, open access, open data, open methods, infrastructures and societal engagement.",
+      "primarySourceId": "src-wp2-unibo-open-science"
     },
     {
       "id": "comp-wp2-operate-open-source-software",
       "name": "Operate open-source software",
-      "description": "Links digital tool use, open-source environments, code reuse, reproducible workflows and open infrastructures."
+      "description": "Links digital tool use, open-source environments, code reuse, reproducible workflows and open infrastructures.",
+      "primarySourceId": "src-wp2-unibo-open-science"
     },
     {
       "id": "comp-wp2-problem-solving",
@@ -150,12 +154,14 @@
     {
       "id": "comp-wp2-promote-open-access-publications",
       "name": "Promote open access publications",
-      "description": "Covers repository deposit, open access publishing, copyright retention, publication strategies, metadata and responsible dissemination."
+      "description": "Covers repository deposit, open access publishing, copyright retention, publication strategies, metadata and responsible dissemination.",
+      "primarySourceId": "src-wp2-uth-open-access"
     },
     {
       "id": "comp-wp2-research-data-handling",
       "name": "Research data handling",
-      "description": "Covers collecting, cleaning, documenting, storing, analysing, sharing and preserving research data according to FAIR and ethical principles."
+      "description": "Covers collecting, cleaning, documenting, storing, analysing, sharing and preserving research data according to FAIR and ethical principles.",
+      "primarySourceId": "src-wp2-unibo-data-steward"
     },
     {
       "id": "comp-wp2-research-ethics-and-integrity",
@@ -180,7 +186,8 @@
     {
       "id": "comp-wp2-teach-in-academic-or-vocational-contexts",
       "name": "Teach in academic or vocational contexts",
-      "description": "Maps to teaching, training, facilitation, open pedagogy, OER use, AI-supported education and professional development in HE/VET settings."
+      "description": "Maps to teaching, training, facilitation, open pedagogy, OER use, AI-supported education and professional development in HE/VET settings.",
+      "primarySourceId": "src-wp2-hou-daissy"
     },
     {
       "id": "comp-wp2-write-research-documents",
@@ -2348,6 +2355,106 @@
       "journeyId": "journey-wp2-lj6",
       "sectionId": "sec-wp2-e",
       "coverageLevel": "R"
+    }
+  ],
+  "aios.sources.source": [
+    {
+      "id": "src-wp2-unibo-open-science",
+      "institution": "University of Bologna (UNIBO)",
+      "country": "Italy",
+      "courseName": "Open Science (1) (LM)",
+      "type": "Formal university course",
+      "level": "master",
+      "degreeProgramme": "Digital Humanities and Digital Knowledge",
+      "credits": 6,
+      "language": "English",
+      "instructor": "Silvio Peroni",
+      "format": "in-person",
+      "topics": "Introduction to Open Science, Reproducibility, FAIR and Open Data, Open Methodology, Open Peer Review, Open Source Software, Open Access, Open Metrics, Open Infrastructures",
+      "prerequisites": "Basic programming (Python/JavaScript) recommended",
+      "description": null,
+      "sourceUrl": "https://www.unibo.it/en/study/course-units-transferable-skills-moocs/course-unit-catalogue/course-unit/2025/443753",
+      "confidence": 0.95
+    },
+    {
+      "id": "src-wp2-unibo-data-steward",
+      "institution": "University of Bologna (UNIBO)",
+      "country": "Italy",
+      "courseName": "Data Steward@Unibo",
+      "type": "Support service / training programme",
+      "level": null,
+      "degreeProgramme": null,
+      "credits": null,
+      "language": null,
+      "instructor": null,
+      "format": null,
+      "topics": null,
+      "prerequisites": null,
+      "description": "Personalized guidance on Data Management Plans and producing FAIR data; includes an \"Open Science Corner\" recurring meeting series and library information-literacy training.",
+      "sourceUrl": "https://www.unibo.it/en/research/open-science",
+      "confidence": 0.8
+    },
+    {
+      "id": "src-wp2-uth-open-access",
+      "institution": "University of Thessaly (UTH)",
+      "country": "Greece",
+      "courseName": "Open Access and Science",
+      "type": "Institutional initiative",
+      "level": null,
+      "degreeProgramme": null,
+      "credits": null,
+      "language": null,
+      "instructor": null,
+      "format": null,
+      "topics": null,
+      "prerequisites": null,
+      "description": "Programme run by the Library & Information Centre with the Research Committee (dissertation repository, publications, data repository). A separate general \"Open Courses\" lifelong-learning platform exists, but no open-science-specific course is confirmed in it.",
+      "sourceUrl": "https://www.uth.gr/en/ereyna/open-access-and-science",
+      "confidence": 0.3
+    },
+    {
+      "id": "src-wp2-hou-daissy",
+      "institution": "Hellenic Open University (HOU)",
+      "country": "Greece",
+      "courseName": "DAISSy Research Group — Open Education & MOOC Quality",
+      "type": "Research group / EU project involvement",
+      "level": null,
+      "degreeProgramme": null,
+      "credits": null,
+      "language": null,
+      "instructor": null,
+      "format": null,
+      "topics": null,
+      "prerequisites": null,
+      "description": "DAISSy research group at HOU participates as a partner in EU-funded projects on open education/MOOC quality (e.g. MOOQ) — not a standalone open-science course for enrolled students.",
+      "sourceUrl": "http://mooc-quality.eu/about/hellenic-open-university",
+      "confidence": 0.25
+    }
+  ],
+  "aios.assessment.competence_secondary_source": [
+    {
+      "competenceId": "comp-wp2-manage-research-data",
+      "sourceId": "src-wp2-unibo-open-science"
+    },
+    {
+      "competenceId": "comp-wp2-manage-research-data",
+      "sourceId": "src-wp2-uth-open-access"
+    },
+    {
+      "competenceId": "comp-wp2-promote-open-access-publications",
+      "sourceId": "src-wp2-unibo-open-science"
+    },
+    {
+      "competenceId": "comp-wp2-fair-and-reproducible-ai",
+      "sourceId": "src-wp2-unibo-open-science"
+    },
+    {
+      "competenceId": "comp-wp2-data-governance",
+      "sourceId": "src-wp2-unibo-data-steward"
+    },
+    {
+      "competenceId": "comp-wp2-write-research-documents",
+      "sourceId": "src-wp2-unibo-data-steward"
     }
   ],
   "_pendingItems": [

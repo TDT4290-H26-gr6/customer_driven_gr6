@@ -57,3 +57,13 @@
   font-weight: 600;
   color: var(--color-primary);
 }
+
+/* The AI advisor's reason for choosing this journey for the learner. */
+.reason {
+  margin: 0;
+  font-size: 14px;
+}
+
+.reasonLabel {
+  font-weight: 600;
+}

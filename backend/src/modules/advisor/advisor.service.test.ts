@@ -3,7 +3,10 @@ import { getOrCreateAdvice } from "./advisor.service";
 import { prisma } from "../../db/prisma";
 import { chatJson } from "../../lib/llm";
 import { findLearnerById, getLearnerProfile } from "../identity/identity.service";
-import { recommendJourney } from "../learningJourney/learningJourney.service";
+import {
+  journeyCandidatesForSections,
+  recommendJourney,
+} from "../learningJourney/learningJourney.service";
 import { getDashboardProgress } from "../assessment/assessment.service";
 
 vi.mock("../../db/prisma", () => ({
@@ -21,6 +24,7 @@ vi.mock("../identity/identity.service", () => ({
 }));
 vi.mock("../learningJourney/learningJourney.service", () => ({
   recommendJourney: vi.fn(),
+  journeyCandidatesForSections: vi.fn(),
   WEAK_THRESHOLD: 0.5,
 }));
 vi.mock("../assessment/assessment.service", () => ({ getDashboardProgress: vi.fn() }));
@@ -44,6 +48,7 @@ beforeEach(() => {
   vi.mocked(findLearnerById).mockResolvedValue({ userRole: { name: "Student" } } as never);
   vi.mocked(getLearnerProfile).mockResolvedValue(null as never);
   vi.mocked(recommendJourney).mockResolvedValue(null as never);
+  vi.mocked(journeyCandidatesForSections).mockResolvedValue([]);
   vi.mocked(getDashboardProgress).mockResolvedValue(null as never);
   mockPrisma.source.findMany.mockResolvedValue([] as never);
   mockPrisma.advice.create.mockImplementation((({ data }: { data: object }) =>
@@ -148,6 +153,8 @@ describe("getOrCreateAdvice", () => {
             reason: "Goes deeper.",
           },
         ],
+        journeyId: null,
+        journeyReason: null,
         model: "test-model",
       },
     });
@@ -328,5 +335,84 @@ describe("getOrCreateAdvice", () => {
         url: "https://moodle.example.org/course/view.php?id=1004",
       }),
     ]);
+  });
+
+  describe("journey choice", () => {
+    const weakDataCompetence = {
+      competenceId: "comp-data",
+      score: 2,
+      maxScore: 10,
+      competence: {
+        name: "Manage research data",
+        primarySource: null,
+        secondarySources: [],
+        mainForModules: [
+          {
+            id: "mod-a2",
+            name: "A2 — Introduction to Open Data Management",
+            description: null,
+            moodleUrl: null,
+            level: 2,
+            section: { id: "sec-a", name: "Open Science Fundamentals", code: "A" },
+          },
+        ],
+      },
+    };
+    const officer = {
+      id: "j-lj1",
+      name: "LJ1 — Officer",
+      description: null,
+      coverage: [{ sectionId: "sec-a", section: "Open Science Fundamentals", level: "M" as const }],
+    };
+    const dataJourney = { ...officer, id: "j-lj2", name: "LJ2 — Research Data" };
+
+    beforeEach(() => {
+      mockPrisma.advice.findUnique.mockResolvedValue(null as never);
+      mockPrisma.competenceScore.findMany.mockResolvedValue([weakDataCompetence] as never);
+      vi.mocked(journeyCandidatesForSections).mockResolvedValue([officer, dataJourney]);
+    });
+
+    it("offers the journeys covering the weak sections, the score-based pick first", async () => {
+      vi.mocked(recommendJourney).mockResolvedValue({ id: "j-lj2" } as never);
+      vi.mocked(chatJson).mockResolvedValue({ summary: "ok", steps: [] });
+
+      await getOrCreateAdvice("learner-1", llm);
+
+      expect(journeyCandidatesForSections).toHaveBeenCalledWith(["sec-a"]);
+      const [, userMessage] = vi.mocked(chatJson).mock.calls[0][1];
+      const sent = JSON.parse(userMessage.content).journeyCandidates;
+      expect(sent.map((j: { name: string }) => j.name)).toEqual([
+        "LJ2 — Research Data",
+        "LJ1 — Officer",
+      ]);
+      expect(sent[0].isDefault).toBe(true);
+    });
+
+    it("stores the journey the model chose, with its reason", async () => {
+      vi.mocked(chatJson).mockResolvedValue({
+        summary: "ok",
+        steps: [],
+        journey: { ref: "j2", reason: "Fits a data steward." },
+      });
+
+      await getOrCreateAdvice("learner-1", llm);
+
+      expect(mockPrisma.advice.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          journeyId: "j-lj2",
+          journeyReason: "Fits a data steward.",
+        }),
+      });
+    });
+
+    it("stores the default journey, without a reason, when the model's choice is unusable", async () => {
+      vi.mocked(chatJson).mockResolvedValue({ summary: "ok", steps: [], journey: { ref: "j7" } });
+
+      await getOrCreateAdvice("learner-1", llm);
+
+      expect(mockPrisma.advice.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ journeyId: "j-lj1", journeyReason: null }),
+      });
+    });
   });
 });

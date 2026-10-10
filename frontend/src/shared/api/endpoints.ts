@@ -13,6 +13,7 @@ export const endpoints = {
   sources: "/sources",
   learningJourneys: "/learning-journeys",
   learningJourneyRecommendation: "/learning-journeys/recommendation",
+  learningJourneySuggestion: "/learning-journeys/suggestion",
   learningJourneySelected: "/learning-journeys/selected",
   learningJourneyWeakCompetences: "/learning-journeys/weak-competences",
   learningJourneySelect: (id: string) => `/learning-journeys/${encodeURIComponent(id)}/select`,

@@ -32,6 +32,8 @@ function withDates(row: Row): Row {
  * (`moodleCourseId`), so the real Moodle site can be swapped in in one place
  * (MOODLE_BASE_URL); a row that already knows its full link gives it as
  * `moodleUrl` instead, which wins. Null when the row has neither.
+ * (A source outside Moodle — a partner institution's own course page —
+ * gives its `sourceUrl` directly instead; see withMoodleLink.)
  */
 export function moodleLink(row: Row, baseUrl = config.moodleBaseUrl): string | null {
   if (typeof row.moodleUrl === "string" && row.moodleUrl) return row.moodleUrl;
@@ -39,9 +41,14 @@ export function moodleLink(row: Row, baseUrl = config.moodleBaseUrl): string | n
   return `${baseUrl}/course/view.php?id=${row.moodleCourseId}`;
 }
 
-/** The row without the authoring-only Moodle fields, plus the built link under `key`. */
-function withMoodleLink(row: Row, key: "moodleUrl" | "sourceUrl"): Row {
-  const out: Row = { ...row, [key]: moodleLink(row) };
+/**
+ * The row without the authoring-only Moodle fields, plus the built link under
+ * `key`. A source that gives its own `sourceUrl` (a partner's course page,
+ * not Moodle) keeps it.
+ */
+export function withMoodleLink(row: Row, key: "moodleUrl" | "sourceUrl"): Row {
+  const own = key === "sourceUrl" && typeof row.sourceUrl === "string" && row.sourceUrl;
+  const out: Row = { ...row, [key]: own || moodleLink(row) };
   delete out.moodleCourseId;
   if (key !== "moodleUrl") delete out.moodleUrl;
   return out;
@@ -56,6 +63,7 @@ export function createDatasetLoader(data: unknown) {
 
   const sectionIds = (tables["aios.assessment.section"] ?? []).map((row) => String(row.id));
   const questionIds = (tables["aios.assessment.question"] ?? []).map((row) => String(row.id));
+  const sourceIds = (tables["aios.sources.source"] ?? []).map((row) => String(row.id));
 
   async function seedTables(tx: Prisma.TransactionClient) {
     const counts: Record<string, number> = {};
@@ -195,6 +203,18 @@ export function createDatasetLoader(data: unknown) {
         data: { name },
       });
       changed += count;
+      // A competence given its primary source after it was first seeded.
+      const primarySourceId = (competence.primarySourceId as string | undefined) ?? null;
+      if (primarySourceId) {
+        const { count: linked } = await prisma.competence.updateMany({
+          where: {
+            id: String(competence.id),
+            OR: [{ primarySourceId: null }, { primarySourceId: { not: primarySourceId } }],
+          },
+          data: { primarySourceId },
+        });
+        changed += linked;
+      }
     }
     for (const section of tables["aios.assessment.section"] ?? []) {
       const code = section.code as string;
@@ -240,15 +260,18 @@ export function createDatasetLoader(data: unknown) {
   }
 
   /**
-   * Loads the dataset when any of its own questions are missing — a fresh
-   * database, or one seeded before questions were added to it — then brings
-   * existing rows up to date (syncExistingRows). Keyed on this dataset's
-   * question ids, not "the question bank is empty". Returns whether
+   * Loads the dataset when any of its own questions or sources are missing —
+   * a fresh database, or one seeded before they were added to it — then
+   * brings existing rows up to date (syncExistingRows). Keyed on this
+   * dataset's ids, not "the question bank is empty". Returns whether
    * anything was added or changed.
    */
   async function seedIfIncomplete() {
-    const present = await prisma.question.count({ where: { id: { in: questionIds } } });
-    const seeded = present < questionIds.length;
+    const [questionsPresent, sourcesPresent] = await Promise.all([
+      prisma.question.count({ where: { id: { in: questionIds } } }),
+      prisma.source.count({ where: { id: { in: sourceIds } } }),
+    ]);
+    const seeded = questionsPresent < questionIds.length || sourcesPresent < sourceIds.length;
     if (seeded) await seed();
     const synced = (await syncExistingRows()) > 0;
     return seeded || synced;

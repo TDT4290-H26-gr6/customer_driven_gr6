@@ -1,21 +1,38 @@
+import type { JourneySource } from "../api";
 import type { LearningJourney } from "../types";
 import styles from "./RecommendedJourneyCard.module.css";
 
 type Props = {
   journey: LearningJourney;
-  /** "selected": the learner chose this journey themselves (CD-33) and it sticks. "recommended" (default): the current score-based pick. */
-  source?: "selected" | "recommended";
+  /**
+   * "selected": the learner chose this journey themselves (CD-33) and it
+   * sticks. "recommended" (default): picked for a weak area. "suggested":
+   * nothing is weak, so it's one to keep improving with.
+   */
+  source?: JourneySource;
+  /** Why it fits this learner, when the AI advisor chose it. */
+  reason?: string | null;
+};
+
+const EYEBROW: Record<JourneySource, string> = {
+  selected: "Your journey",
+  recommended: "Recommended for you",
+  suggested: "To keep improving",
 };
 
 /** "What to do next" — the learner's chosen journey, or the one recommended from their latest scores. */
-export function RecommendedJourneyCard({ journey, source = "recommended" }: Props) {
+export function RecommendedJourneyCard({ journey, source = "recommended", reason }: Props) {
   return (
     <div className={styles.card}>
-      <p className={styles.eyebrow}>
-        {source === "selected" ? "Your journey" : "Recommended for you"}
-      </p>
+      <p className={styles.eyebrow}>{EYEBROW[source]}</p>
       <h2 className={styles.name}>{journey.name}</h2>
       {journey.description && <p className={styles.description}>{journey.description}</p>}
+      {reason && (
+        <p className={styles.reason}>
+          <span className={styles.reasonLabel}>Why this journey: </span>
+          {reason}
+        </p>
+      )}
 
       {journey.modules.length > 0 && (
         <ol className={styles.modules}>

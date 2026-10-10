@@ -35,4 +35,21 @@ describe("RecommendedJourneyCard", () => {
     rerender(<RecommendedJourneyCard journey={journey} source="selected" />);
     expect(screen.getByText("Your journey")).toBeInTheDocument();
   });
+
+  it("labels a suggestion as one to keep improving with", () => {
+    render(<RecommendedJourneyCard journey={journey} source="suggested" />);
+    expect(screen.getByText("To keep improving")).toBeInTheDocument();
+  });
+
+  it("shows why the journey was chosen, when there's a reason", () => {
+    render(<RecommendedJourneyCard journey={journey} reason="It centres on research data." />);
+    expect(screen.getByText(/why this journey/i).parentElement).toHaveTextContent(
+      "Why this journey: It centres on research data.",
+    );
+  });
+
+  it("shows no reason line without one", () => {
+    render(<RecommendedJourneyCard journey={journey} />);
+    expect(screen.queryByText(/why this journey/i)).not.toBeInTheDocument();
+  });
 });

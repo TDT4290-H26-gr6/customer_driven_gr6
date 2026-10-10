@@ -89,6 +89,21 @@ export function ResultsPage() {
       .catch(() => setAdvice({ status: "unavailable" }));
   }, []);
 
+  // The journey card: the learner's own choice always wins; otherwise the AI
+  // advisor's role-aware pick (with its reason) once the advice has loaded;
+  // otherwise the score-based recommendation, or a suggestion to keep
+  // improving with. The AI pick keeps the score-based label ("Recommended
+  // for you" / "To keep improving"), since it chose among those journeys.
+  const aiJourney = advice?.status === "ready" ? advice.advice.journey : null;
+  const shownJourney =
+    journey?.source !== "selected" && aiJourney && advice?.status === "ready"
+      ? {
+          journey: aiJourney,
+          source: journey?.source ?? ("recommended" as const),
+          reason: advice.advice.journeyReason,
+        }
+      : journey && { journey: journey.journey, source: journey.source, reason: null };
+
   if (!learner?.hasCompletedInitialAssessment && !learner?.hasCompletedProfile) {
     return <Navigate to="/profile" replace />;
   }
@@ -159,7 +174,13 @@ export function ResultsPage() {
 
       {!loadFailed && progress && <ProgressCard progress={progress} />}
 
-      {journey && <RecommendedJourneyCard journey={journey.journey} source={journey.source} />}
+      {shownJourney && (
+        <RecommendedJourneyCard
+          journey={shownJourney.journey}
+          source={shownJourney.source}
+          reason={shownJourney.reason}
+        />
+      )}
 
       {weakCompetences && <WeakCompetencesSection competences={weakCompetences} />}
 

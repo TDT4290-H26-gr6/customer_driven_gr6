@@ -2,7 +2,12 @@ import { Router } from "express";
 import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
 import { requireRole } from "../../middleware/requireRole";
 import { asyncHandler } from "../../lib/asyncHandler";
-import { listJourneys, recommendJourney, weakCompetences } from "./learningJourney.service";
+import {
+  listJourneys,
+  recommendJourney,
+  suggestJourney,
+  weakCompetences,
+} from "./learningJourney.service";
 import { getSelectedJourney, selectJourney } from "../identity/identity.service";
 
 export const learningJourneyRouter = Router();
@@ -41,6 +46,23 @@ learningJourneyRouter.get(
  * single pick /recommendation returns. An empty array means every
  * competence is sufficient.
  */
+/**
+ * A journey to keep improving with, for a learner with nothing at or below
+ * the weak threshold — so the dashboard always offers one unless the score
+ * is perfect. 204 when there's none to suggest (something is weak, so
+ * /recommendation applies; a perfect score; or no completed assessment).
+ */
+learningJourneyRouter.get(
+  "/learning-journeys/suggestion",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const journey = await suggestJourney(req.learnerId!);
+    if (!journey) return res.status(204).end();
+    res.json(journey);
+  }),
+);
+
 learningJourneyRouter.get(
   "/learning-journeys/weak-competences",
   requireAuth,
