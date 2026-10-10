@@ -113,8 +113,12 @@ describe("WP2 seed data: questions", () => {
       const optionIds = new Set(content.options?.map((o) => o.id));
       const correct = content.correctOptionIds ?? [];
       for (const id of correct) expect(optionIds.has(id)).toBe(true);
-      if (q.questionType === "multi_choice") expect(correct.length).toBeGreaterThan(0);
-      else expect(correct).toHaveLength(1);
+      if (q.questionType === "multi_choice" || q.questionType === "criteria_check") {
+        expect(correct.length).toBeGreaterThan(0);
+      }
+      if (q.questionType === "single_choice" || q.questionType === "true_false") {
+        expect(correct).toHaveLength(1);
+      }
     }
   });
 
@@ -175,5 +179,27 @@ describe("WP2 seed data: partner sources", () => {
         secondarySources.some((l) => l.sourceId === source.id);
       expect(used).toBe(true);
     }
+  });
+});
+
+describe("WP2 seed data: judge-an-example items (criteria_check)", () => {
+  const criteriaItems = questions.filter((q) => q.questionType === "criteria_check");
+  const meta = (seedData as unknown as { _meta: { devAuthoredItems: { questionIds: string[] } } })
+    ._meta;
+
+  it("gives every item an example to judge and at least one criterion it doesn't meet", () => {
+    expect(criteriaItems.length).toBeGreaterThan(0);
+    for (const q of criteriaItems) {
+      const content = q.content as AuthoredContent;
+      expect(content.exhibit?.trim()).toBeTruthy();
+      // Otherwise ticking everything would score full marks.
+      expect(content.correctOptionIds!.length).toBeLessThan(content.options!.length);
+    }
+  });
+
+  it("lists the items the dev team wrote, for the content team to review", () => {
+    const questionIds = new Set(questions.map((q) => q.id));
+    for (const id of meta.devAuthoredItems.questionIds) expect(questionIds.has(id)).toBe(true);
+    expect(meta.devAuthoredItems.questionIds).toEqual(criteriaItems.map((q) => q.id));
   });
 });

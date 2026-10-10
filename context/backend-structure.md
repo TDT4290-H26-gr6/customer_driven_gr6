@@ -354,7 +354,7 @@ real users exist.
 ### Question types and scoring
 
 Authored simply, stored as PIE. A question's `questionType` decides how
-`assessment.pie.ts` builds its PIE item; **all four use PIE's `multiple-choice`
+`assessment.pie.ts` builds its PIE item; **all five use PIE's `multiple-choice`
 element** (already rendered and scored by the app):
 
 | `questionType`  | Authored `content`                        | PIE                       | Score                                                                                                  |
@@ -362,7 +362,8 @@ element** (already rendered and scored by the app):
 | `single_choice` | `options[]`, one id in `correctOptionIds` | radio                     | 1 if correct, else 0                                                                                   |
 | `true_false`    | two options, one correct                  | radio, order kept         | 1 if correct, else 0                                                                                   |
 | `multi_choice`  | `options[]`, several correct ids          | checkbox                  | share of correct options ticked − share of wrong options ticked, floored at 0 (ticking everything = 0) |
-| `likert`        | `scale {min,max,minLabel,maxLabel}`       | radio, ordered `min..max` | the scale value picked ÷ the top of the scale                                                          |
+| `likert`        | `scale {min,max,minLabel,maxLabel}`, or `labels[]` for every step | radio, ordered `min..max` | the scale value picked ÷ the top of the scale                                                          |
+| `criteria_check` | `exhibit` (the example to judge: a README, a change log …) + `options[]` = the criteria, correct ids = those the example meets | checkbox; the exhibit in a box under the prompt (`.aios-exhibit`, globals.css) | as `multi_choice`, so ticking every criterion scores 0 |
 
 Every question is out of 1 point; "I don't know" scores 0 out of 1.
 
