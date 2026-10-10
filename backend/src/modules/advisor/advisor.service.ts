@@ -5,7 +5,11 @@ import { chatJson, type LlmSettings } from "../../lib/llm";
 import { createKeyedLock } from "../../lib/keyedLock";
 import { findLearnerById, getLearnerProfile } from "../identity/identity.service";
 import { ACADEMIC_DEGREE_LABELS, INDUSTRY_LABELS } from "../identity/identity.types";
-import { recommendJourney, WEAK_THRESHOLD } from "../learningJourney/learningJourney.service";
+import {
+  journeyCandidatesForSections,
+  recommendJourney,
+  WEAK_THRESHOLD,
+} from "../learningJourney/learningJourney.service";
 import {
   completedCompetenceScoresQuery,
   newestPerCompetence,
@@ -18,6 +22,7 @@ import {
   type AdviceContext,
   type AdviceStep,
   type Candidate,
+  type JourneyOption,
 } from "./advisor.prompt";
 import { selectTargets } from "./advisor.candidates";
 
@@ -27,6 +32,8 @@ import { selectTargets } from "./advisor.candidates";
 // through their services.
 
 const MAX_CANDIDATES = 15;
+/** There are six learning journeys today; more than this would just be noise for the model. */
+const MAX_JOURNEY_CANDIDATES = 6;
 
 const adviceLock = createKeyedLock();
 
@@ -42,14 +49,18 @@ export type StoredStep = Pick<AdviceStep, "kind" | "id" | "title" | "url" | "rea
  * instance. Scores are the newest per competence across all completed
  * instances, since a reassessment may only have covered some sections.
  *
- * The candidates follow the competences the advice targets (every one at or
+ * Everything follows the competences the advice targets (every one at or
  * below the weak threshold, else the single lowest; none after a perfect
- * score — see advisor.candidates.ts), weakest first: first the curriculum
- * modules that teach them, linked to their page in Moodle, then the
- * recommended journey's steps, then any learning sources linked to them. The
- * Moodle links are placeholders until the real pages exist (MOODLE_BASE_URL
- * + the seed data's moodleCourseId). From a second assessment on, it also gets the dashboard's
- * per-section before/after, so the advice can comment on progress.
+ * score — see advisor.candidates.ts), weakest first:
+ * - step candidates: the curriculum modules that teach them, linked to their
+ *   page in Moodle, then any learning sources linked to them. The Moodle
+ *   links are placeholders until the real pages exist (MOODLE_BASE_URL + the
+ *   seed data's moodleCourseId);
+ * - journey candidates: every journey covering their sections, the
+ *   score-based pick (recommendJourney) first as the default, for the model
+ *   to choose the one that fits the learner's role.
+ * From a second assessment on, it also gets the dashboard's per-section
+ * before/after, so the advice can comment on progress.
  */
 async function buildContext(learnerId: string): Promise<AdviceContext> {
   const [learner, profile, journey, dashboard, allScores] = await Promise.all([
@@ -70,7 +81,7 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
                 name: true,
                 description: true,
                 moodleUrl: true,
-                section: { select: { name: true, code: true } },
+                section: { select: { id: true, name: true, code: true } },
                 level: true,
               },
             },
@@ -117,24 +128,7 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
     }
   }
 
-  // 2. The recommended journey's steps.
-  if (journey) {
-    const sourceIds = journey.modules.flatMap((m) => (m.sourceId ? [m.sourceId] : []));
-    const sources = await prisma.source.findMany({ where: { id: { in: sourceIds } } });
-    const urlBySource = new Map(sources.map((s) => [s.id, s.sourceUrl]));
-    for (const module of journey.modules) {
-      add({
-        kind: "module",
-        id: module.id,
-        title: module.title,
-        description: module.description,
-        competence: null,
-        url: module.sourceId ? (urlBySource.get(module.sourceId) ?? null) : null,
-      });
-    }
-  }
-
-  // 3. Any learning sources linked to the target competences.
+  // 2. Any learning sources linked to the target competences.
   for (const { competence } of targets) {
     const sources = [competence.primarySource, ...competence.secondarySources.map((s) => s.source)];
     for (const source of sources) {
@@ -150,6 +144,31 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
     }
   }
 
+  // Journeys covering the target competences' sections, for the model to
+  // choose from with the learner's role in mind. The score-based pick leads
+  // as the default (when there's none, e.g. nothing below the threshold, the
+  // best-covering journey of the lowest area does — the dashboard suggestion).
+  const targetSectionIds = [
+    ...new Set(
+      targets.flatMap(({ competence }) => competence.mainForModules.map((m) => m.section.id)),
+    ),
+  ];
+  const coveringJourneys = await journeyCandidatesForSections(targetSectionIds);
+  const defaultFirst = journey
+    ? [
+        ...coveringJourneys.filter((j) => j.id === journey.id),
+        ...coveringJourneys.filter((j) => j.id !== journey.id),
+      ]
+    : coveringJourneys;
+  const journeyCandidates: JourneyOption[] = defaultFirst
+    .slice(0, MAX_JOURNEY_CANDIDATES)
+    .map(({ id, name, description, coverage }) => ({
+      id,
+      name,
+      description,
+      coverage: coverage.map(({ section, level }) => ({ section, level })),
+    }));
+
   return {
     role: learner?.userRole?.name ?? null,
     profile: {
@@ -164,7 +183,7 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
       section: s.competence.mainForModules[0]?.section.name ?? null,
       percent: s.percent,
     })),
-    journey: journey ? { name: journey.name, description: journey.description } : null,
+    journeyCandidates,
     candidates,
     minSteps,
     progress:
@@ -185,7 +204,12 @@ async function generateAdvice(
 ): Promise<Advice> {
   const context = await buildContext(learnerId);
   const reply = await chatJson(llm, buildAdviceMessages(context));
-  const { summary, steps } = parseAdvice(reply, context.candidates, context.minSteps);
+  const { summary, steps, journey } = parseAdvice(
+    reply,
+    context.candidates,
+    context.minSteps,
+    context.journeyCandidates,
+  );
 
   const storedSteps: StoredStep[] = steps.map(({ kind, id, title, url, reason }) => ({
     kind,
@@ -196,7 +220,14 @@ async function generateAdvice(
   }));
 
   return prisma.advice.create({
-    data: { satInstanceId, summary, steps: storedSteps, model: llm.model },
+    data: {
+      satInstanceId,
+      summary,
+      steps: storedSteps,
+      journeyId: journey?.journeyId ?? null,
+      journeyReason: journey?.reason ?? null,
+      model: llm.model,
+    },
   });
 }
 

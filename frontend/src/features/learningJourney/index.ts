@@ -9,4 +9,4 @@ export {
   selectJourney,
 } from "./api";
 export type { LearningJourney, LearningJourneyModule, WeakCompetence } from "./types";
-export type { CurrentJourney } from "./api";
+export type { CurrentJourney, JourneySource } from "./api";

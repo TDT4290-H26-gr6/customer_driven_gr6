@@ -68,6 +68,19 @@ export function pickWeakestCompetence(scores: CompetenceScoreInput[]): string | 
 }
 
 /**
+ * The lowest-scoring competence that isn't already at 100%, with no
+ * threshold — what a learner who's above it everywhere could still work on.
+ * Null after a perfect score (or with nothing scorable). Pure, like
+ * pickWeakestCompetence.
+ */
+export function pickLowestImprovable(scores: CompetenceScoreInput[]): string | null {
+  const improvable = scores
+    .filter((s) => s.maxScore > 0 && s.score < s.maxScore)
+    .sort((a, b) => a.score / a.maxScore - b.score / b.maxScore);
+  return improvable[0]?.competenceId ?? null;
+}
+
+/**
  * The sections a competence is taught in: those holding a module whose main
  * competence it is, or — if none does — a module that lists it as secondary.
  */
@@ -186,7 +199,7 @@ export type WeakCompetence = {
   score: number;
   maxScore: number;
   /** The journey that addresses this competence, or null if none covers its sections. */
-  journey: { id: string; name: string } | null;
+  journey: { id: string; name: string; moodleUrl: string | null } | null;
 };
 
 /**
@@ -224,8 +237,89 @@ export async function weakCompetences(learnerId: string): Promise<WeakCompetence
         competenceName: nameById.get(w.competenceId) ?? "Unknown competence",
         score: w.score,
         maxScore: w.maxScore,
-        journey: journey ? { id: journey.id, name: journey.name } : null,
+        journey: journey
+          ? { id: journey.id, name: journey.name, moodleUrl: journey.moodleUrl }
+          : null,
       };
     }),
   );
+}
+
+/**
+ * A journey to keep improving with, for a learner who has nothing at or
+ * below the weak threshold — so the dashboard always offers at least one
+ * journey unless the score is perfect. It's the journey that best covers
+ * their lowest-scoring competence. Deliberately separate from
+ * recommendJourney(): it isn't a "you're lacking" recommendation, and isn't
+ * logged as one. Null after a perfect score, when something is weak (then
+ * recommendJourney() applies), or when no journey covers it.
+ */
+export async function suggestJourney(learnerId: string) {
+  const scores = newestPerCompetence(
+    await prisma.competenceScore.findMany(completedCompetenceScoresQuery(learnerId)),
+  );
+  if (pickWeakestCompetence(scores)) return null;
+
+  const lowest = pickLowestImprovable(scores);
+  if (!lowest) return null;
+  return bestJourneyForSections(await sectionIdsForCompetence(lowest));
+}
+
+export type JourneyCandidate = {
+  id: string;
+  name: string;
+  description: string | null;
+  /** How strongly the journey covers each of the asked-for sections it touches, best first. */
+  coverage: { sectionId: string; section: string; level: CoverageLevel }[];
+};
+
+/**
+ * Every journey covering any of the given sections, with how strongly it
+ * covers each — for the AI advice to choose the one that fits the learner's
+ * role. Ordered like bestJourneyForSections (best coverage level, then the
+ * most sections covered, then name), so the first is the score-based pick.
+ */
+export async function journeyCandidatesForSections(
+  sectionIds: string[],
+): Promise<JourneyCandidate[]> {
+  if (sectionIds.length === 0) return [];
+
+  const links = await prisma.journeySection.findMany({
+    where: { sectionId: { in: sectionIds } },
+    select: {
+      coverageLevel: true,
+      section: { select: { id: true, name: true } },
+      journey: { select: { id: true, name: true, description: true } },
+    },
+  });
+
+  const byJourney = new Map<string, JourneyCandidate>();
+  for (const link of links) {
+    const candidate = byJourney.get(link.journey.id) ?? { ...link.journey, coverage: [] };
+    candidate.coverage.push({
+      sectionId: link.section.id,
+      section: link.section.name,
+      level: link.coverageLevel,
+    });
+    byJourney.set(link.journey.id, candidate);
+  }
+
+  const bestRank = (c: JourneyCandidate) =>
+    Math.min(...c.coverage.map((x) => COVERAGE_RANK[x.level]));
+  return [...byJourney.values()]
+    .map((c) => ({
+      ...c,
+      coverage: c.coverage.sort((a, b) => COVERAGE_RANK[a.level] - COVERAGE_RANK[b.level]),
+    }))
+    .sort(
+      (a, b) =>
+        bestRank(a) - bestRank(b) ||
+        b.coverage.length - a.coverage.length ||
+        a.name.localeCompare(b.name),
+    );
+}
+
+/** One journey with its steps, as the dashboard shows it. */
+export function findJourney(id: string) {
+  return prisma.learningJourney.findUnique({ where: { id }, include: journeyInclude });
 }

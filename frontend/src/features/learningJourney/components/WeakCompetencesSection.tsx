@@ -31,7 +31,21 @@ export function WeakCompetencesSection({ competences }: Props) {
                 <span className={styles.score}>{percent(c.score, c.maxScore)}%</span>
               </div>
               {c.journey && (
-                <span className={styles.journeyName}>Covered by: {c.journey.name}</span>
+                <span className={styles.journeyName}>
+                  Covered by:{" "}
+                  {c.journey.moodleUrl ? (
+                    <a
+                      className={styles.journeyLink}
+                      href={c.journey.moodleUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {c.journey.name} ↗
+                    </a>
+                  ) : (
+                    c.journey.name
+                  )}
+                </span>
               )}
             </li>
           ))}

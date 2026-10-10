@@ -22,5 +22,6 @@ export type WeakCompetence = {
   competenceName: string;
   score: number;
   maxScore: number;
-  journey: { id: string; name: string } | null;
+  /** The journey that addresses it, with its Moodle page (placeholder until the real page exists). */
+  journey: { id: string; name: string; moodleUrl: string | null } | null;
 };

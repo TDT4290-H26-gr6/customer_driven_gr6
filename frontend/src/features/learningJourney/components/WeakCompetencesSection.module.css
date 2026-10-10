@@ -59,3 +59,9 @@
   font-size: 13px;
   color: var(--color-text-muted);
 }
+
+/* The journey's page in Moodle ("soft" integration). */
+.journeyLink {
+  font-weight: 600;
+  color: var(--color-primary);
+}

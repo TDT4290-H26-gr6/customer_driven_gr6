@@ -3,6 +3,7 @@ import {
   MAX_STEPS,
   buildAdviceMessages,
   parseAdvice,
+  parseJourneyChoice,
   toAdviceProgress,
   type AdviceContext,
   type Candidate,
@@ -34,7 +35,14 @@ function context(overrides: Partial<AdviceContext> = {}): AdviceContext {
       { name: "Data management", section: "Research data", percent: 31.6 },
       { name: "Open access", section: "Publishing", percent: 80 },
     ],
-    journey: { name: "FAIR foundations", description: "Start with the basics." },
+    journeyCandidates: [
+      {
+        id: "journey-fair",
+        name: "FAIR foundations",
+        description: "Start with the basics.",
+        coverage: [{ section: "Research data", level: "M" }],
+      },
+    ],
     candidates: [candidate(), candidate({ kind: "module", id: "module-1", title: "Step 1" })],
     progress: null,
     minSteps: 1,
@@ -66,7 +74,12 @@ describe("buildAdviceMessages", () => {
       section: "Research data",
       scorePercent: 32,
     });
-    expect(data.recommendedJourney.name).toBe("FAIR foundations");
+    expect(data.journeyCandidates[0]).toMatchObject({
+      ref: "j1",
+      isDefault: true,
+      name: "FAIR foundations",
+      coversWeakSections: [{ section: "Research data", level: "M" }],
+    });
     expect(data.candidates.map((c: { ref: string }) => c.ref)).toEqual(["c1", "c2"]);
     // Ids and links stay on our side — the model only needs refs.
     expect(user.content).not.toContain("source-1");
@@ -151,6 +164,7 @@ describe("parseAdvice", () => {
     expect(parseAdvice({ summary: "ok", steps: "none" }, candidates)).toEqual({
       summary: "ok",
       steps: [],
+      journey: null,
     });
   });
 
@@ -298,5 +312,61 @@ describe("number of steps", () => {
     );
 
     expect(advice.steps.map((s) => [s.id, s.reason])).toEqual([["s2", "Fits your role."]]);
+  });
+});
+
+describe("journey choice", () => {
+  const journeys = [
+    {
+      id: "j-officer",
+      name: "LJ1 — Open Science Officer",
+      description: null,
+      coverage: [{ section: "Research data", level: "M" as const }],
+    },
+    {
+      id: "j-data",
+      name: "LJ2 — Research Data",
+      description: null,
+      coverage: [{ section: "Research data", level: "M" as const }],
+    },
+  ];
+
+  it("tells the model to keep the default unless another fits the role better", () => {
+    const [system, user] = buildAdviceMessages(context({ journeyCandidates: journeys }));
+    const sent = JSON.parse(user.content).journeyCandidates;
+
+    expect(sent.map((j: { ref: string }) => j.ref)).toEqual(["j1", "j2"]);
+    expect(sent[0].isDefault).toBe(true);
+    expect(sent[1]).not.toHaveProperty("isDefault");
+    expect(system.content).toMatch(/clearly fits the learner's role better/);
+  });
+
+  it("maps the chosen ref back to the journey, with its reason", () => {
+    expect(parseJourneyChoice({ ref: "j2", reason: " Fits a data steward. " }, journeys)).toEqual({
+      journeyId: "j-data",
+      reason: "Fits a data steward.",
+    });
+  });
+
+  it.each([
+    ["no choice", undefined],
+    ["an unknown ref", { ref: "j9", reason: "made up" }],
+    ["a malformed choice", "LJ2"],
+  ])("falls back to the default, without a reason, for %s", (_label, choice) => {
+    expect(parseJourneyChoice(choice, journeys)).toEqual({ journeyId: "j-officer", reason: null });
+  });
+
+  it("chooses nothing when there were no journeys to choose from", () => {
+    expect(parseJourneyChoice({ ref: "j1", reason: "x" }, [])).toBeNull();
+  });
+
+  it("is part of the parsed advice", () => {
+    const advice = parseAdvice(
+      { summary: "ok", steps: [], journey: { ref: "j2", reason: "Fits." } },
+      [],
+      0,
+      journeys,
+    );
+    expect(advice.journey).toEqual({ journeyId: "j-data", reason: "Fits." });
   });
 });

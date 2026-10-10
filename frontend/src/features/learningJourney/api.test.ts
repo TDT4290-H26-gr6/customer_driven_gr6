@@ -39,8 +39,21 @@ describe("getCurrentJourney", () => {
     expect(result).toEqual({ journey: RECOMMENDED, source: "recommended" });
   });
 
-  it("returns null when there's neither a selection nor a recommendation", async () => {
-    vi.mocked(apiFetch).mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined);
+  it("falls back to a suggestion to keep improving when nothing is weak", async () => {
+    const SUGGESTED: LearningJourney = { ...RECOMMENDED, id: "suggested", name: "Suggested" };
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(undefined) // nothing selected
+      .mockResolvedValueOnce(undefined) // nothing at or below 60%
+      .mockResolvedValueOnce(SUGGESTED);
+
+    expect(await getCurrentJourney()).toEqual({ journey: SUGGESTED, source: "suggested" });
+  });
+
+  it("returns null when there's no selection, recommendation or suggestion (e.g. a perfect score)", async () => {
+    vi.mocked(apiFetch)
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined);
 
     expect(await getCurrentJourney()).toBeNull();
   });
