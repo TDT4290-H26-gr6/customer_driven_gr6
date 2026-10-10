@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
 import { requireRole } from "../../middleware/requireRole";
 import { asyncHandler } from "../../lib/asyncHandler";
-import { listJourneys, recommendJourney } from "./learningJourney.service";
+import { listJourneys, recommendJourney, weakCompetences } from "./learningJourney.service";
 import { getSelectedJourney, selectJourney } from "../identity/identity.service";
 
 export const learningJourneyRouter = Router();
@@ -32,6 +32,21 @@ learningJourneyRouter.get(
       return;
     }
     res.json(journey);
+  }),
+);
+
+/**
+ * Every competence the learner is at or below 60% on (CD-90), weakest
+ * first, each paired with the journey that addresses it — not just the
+ * single pick /recommendation returns. An empty array means every
+ * competence is sufficient.
+ */
+learningJourneyRouter.get(
+  "/learning-journeys/weak-competences",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    res.json(await weakCompetences(req.learnerId!));
   }),
 );
 

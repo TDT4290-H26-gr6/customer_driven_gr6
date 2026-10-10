@@ -11,8 +11,13 @@ import { WelcomeScreen } from "../components/WelcomeScreen";
 import { getDashboardProgress } from "../api";
 import { radarAxes } from "../progressRows";
 import type { DashboardProgress } from "../types";
-import { RecommendedJourneyCard, getCurrentJourney } from "@/features/learningJourney";
-import type { CurrentJourney } from "@/features/learningJourney";
+import {
+  RecommendedJourneyCard,
+  WeakCompetencesSection,
+  getCurrentJourney,
+  getWeakCompetences,
+} from "@/features/learningJourney";
+import type { CurrentJourney, WeakCompetence } from "@/features/learningJourney";
 import { AdviceCard, getAdvice } from "@/features/advisor";
 import { getProgress } from "@/features/assessment";
 import type { AdviceState } from "@/features/advisor";
@@ -24,8 +29,10 @@ import styles from "./ResultsPage.module.css";
  * section's own competences; a section has too many competences to chart
  * individually here), a section-by-section summary (ProgressCard), the
  * learner's journey (whichever they've explicitly selected, CD-33, else the
- * score-based recommendation — see getCurrentJourney), AI advice that
- * explains it, and the entry point into the assessment. From a second
+ * score-based recommendation — see getCurrentJourney), every competence at
+ * or below 60% paired with the journey for it (CD-90, not just the single
+ * recommended one), AI advice that explains it, and the entry point into
+ * the assessment. From a second
  * assessment on, the radar overlays the previous one and the summary shows
  * the change — always the latest two; older ones are in History and "See
  * results by section". The page remounts on every visit, so retaking the
@@ -49,6 +56,8 @@ export function ResultsPage() {
   const [loadFailed, setLoadFailed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const [journey, setJourney] = useState<CurrentJourney | null>(null);
+  // null while loading; [] once loaded means every competence is sufficient.
+  const [weakCompetences, setWeakCompetences] = useState<WeakCompetence[] | null>(null);
   // null: no advice to show (no completed assessment, or the feature is off).
   const [advice, setAdvice] = useState<AdviceState | null>({ status: "loading" });
   // null while loading. A failed load falls back to the "start" wording —
@@ -70,6 +79,9 @@ export function ResultsPage() {
     getCurrentJourney()
       .then(setJourney)
       .catch(() => setJourney(null));
+    getWeakCompetences()
+      .then(setWeakCompetences)
+      .catch(() => setWeakCompetences(null));
     // Slower than the rest (an LLM call the first time), so it fills in on
     // its own instead of holding up the page.
     getAdvice()
@@ -148,6 +160,8 @@ export function ResultsPage() {
       {!loadFailed && progress && <ProgressCard progress={progress} />}
 
       {journey && <RecommendedJourneyCard journey={journey.journey} source={journey.source} />}
+
+      {weakCompetences && <WeakCompetencesSection competences={weakCompetences} />}
 
       {advice && <AdviceCard state={advice} />}
 
