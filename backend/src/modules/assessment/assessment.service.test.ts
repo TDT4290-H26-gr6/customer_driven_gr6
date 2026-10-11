@@ -30,7 +30,6 @@ vi.mock("../../db/prisma", () => ({
     question: { findFirst: vi.fn(), findMany: vi.fn() },
     satInstanceSection: { findMany: vi.fn() },
     section: { findMany: vi.fn() },
-    learningJourney: { findUnique: vi.fn() },
     response: { findMany: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
     competenceScore: { findMany: vi.fn(), upsert: vi.fn() },
     sectionModule: { findMany: vi.fn() },
@@ -797,7 +796,7 @@ describe("listAssessableSections", () => {
 });
 
 describe("startReassessment", () => {
-  const input = { completedJourneyId: "journey-1", sectionIds: ["section-1", "section-1"] };
+  const input = ["section-1", "section-1"];
 
   beforeEach(() => {
     // mockReset, not just the global clear: drops "Once" values other tests left queued.
@@ -805,7 +804,6 @@ describe("startReassessment", () => {
     mockPrisma.satInstance.create.mockReset();
     mockPrisma.satInstance.findFirst.mockResolvedValue(null); // no active instance, no prior num
     mockPrisma.satInstance.count.mockResolvedValue(1); // first assessment done
-    mockPrisma.learningJourney.findUnique.mockResolvedValue({ name: "Knife Ninja" } as never);
     vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);
     vi.mocked(getRoleGrants).mockResolvedValue({ sectionIds: ["section-1"], competenceIds: [] });
     mockPrisma.section.findMany.mockResolvedValue([
@@ -813,7 +811,7 @@ describe("startReassessment", () => {
     ] as never);
   });
 
-  it("creates an instance recording the journey and its (deduplicated) sections", async () => {
+  it("creates an instance limited to the chosen (deduplicated) sections", async () => {
     mockPrisma.satInstance.findFirst
       .mockResolvedValueOnce(null) // no active instance
       .mockResolvedValueOnce({ instanceNum: 2 } as never); // highest so far
@@ -823,8 +821,6 @@ describe("startReassessment", () => {
       data: {
         learnerId: "learner-1",
         instanceNum: 3,
-        completedJourneyId: "journey-1",
-        completedJourneyName: "Knife Ninja",
         reassessedSectionNames: ["Knife Skills"],
         sections: { create: [{ sectionId: "section-1" }] },
       },
@@ -844,18 +840,8 @@ describe("startReassessment", () => {
     expect(await startReassessment("learner-1", input)).toMatchObject({ ok: false, status: 409 });
   });
 
-  it("refuses an unknown journey", async () => {
-    mockPrisma.learningJourney.findUnique.mockResolvedValue(null);
-
-    expect(await startReassessment("learner-1", input)).toMatchObject({ ok: false, status: 400 });
-    expect(mockPrisma.satInstance.create).not.toHaveBeenCalled();
-  });
-
   it("refuses sections the learner can't be assessed in", async () => {
-    const result = await startReassessment("learner-1", {
-      completedJourneyId: "journey-1",
-      sectionIds: ["section-1", "hidden-section"],
-    });
+    const result = await startReassessment("learner-1", ["section-1", "hidden-section"]);
 
     expect(result).toMatchObject({ ok: false, status: 400 });
     expect(mockPrisma.satInstance.create).not.toHaveBeenCalled();

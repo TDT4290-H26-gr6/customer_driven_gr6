@@ -27,11 +27,11 @@ export function getAssessableSections(): Promise<AssessableSection[]> {
   return apiFetch<AssessableSection[]>(endpoints.assessment.sections);
 }
 
-/** Starts a reassessment after a completed journey, limited to the given sections. */
-export function startReassessment(completedJourneyId: string, sectionIds: string[]): Promise<void> {
+/** Starts a reassessment limited to the given sections. */
+export function startReassessment(sectionIds: string[]): Promise<void> {
   return apiFetch<void>(endpoints.assessment.start, {
     method: "POST",
-    body: { completedJourneyId, sectionIds },
+    body: { sectionIds },
   });
 }
 

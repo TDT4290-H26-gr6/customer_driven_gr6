@@ -228,7 +228,7 @@ function isUniqueViolation(err: unknown) {
 
 /**
  * Creates the learner's next instance (instanceNum = their highest + 1).
- * `extra` carries a reassessment's journey and section limit.
+ * `extra` carries a reassessment's section limit.
  */
 async function createInstance(
   learnerId: string,
@@ -261,23 +261,20 @@ async function getOrCreateActiveInstance(learnerId: string) {
   }
 }
 
-export type StartReassessmentInput = { completedJourneyId: string; sectionIds: string[] };
-
 export type StartReassessmentResult =
   { ok: true } | { ok: false; status: 400 | 409; error: string };
 
 /**
- * Starts a reassessment after the learner finished a learning journey: a new
- * instance that records the journey and is limited to the chosen sections,
- * so listQuestions only returns those. (A reassessment without a journey
- * needs no start — the first saved answer creates a normal instance.)
- * Refused while another instance is in progress, before the first
- * assessment is done (that one covers everything), for an unknown journey,
- * and for sections with no question the learner's role can see.
+ * Starts a reassessment of only some sections: a new instance limited to
+ * the chosen sections, so listQuestions only returns those. (A reassessment
+ * of everything needs no start — the first saved answer creates a normal
+ * instance.) Refused while another instance is in progress, before the first
+ * assessment is done (that one covers everything), and for sections with no
+ * question the learner's role can see.
  */
 export async function startReassessment(
   learnerId: string,
-  { completedJourneyId, sectionIds }: StartReassessmentInput,
+  sectionIds: string[],
 ): Promise<StartReassessmentResult> {
   if (await findActiveInstance(learnerId)) {
     return { ok: false, status: 409, error: "An assessment is already in progress" };
@@ -285,12 +282,6 @@ export async function startReassessment(
   if (await isInitialAssessment(learnerId)) {
     return { ok: false, status: 409, error: "Finish your first assessment before reassessing" };
   }
-
-  const journey = await prisma.learningJourney.findUnique({
-    where: { id: completedJourneyId },
-    select: { name: true },
-  });
-  if (!journey) return { ok: false, status: 400, error: "Unknown learning journey" };
 
   const assessable = new Map(
     (await listAssessableSections(learnerId)).map((s) => [s.id, s.name] as const),
@@ -302,9 +293,7 @@ export async function startReassessment(
 
   try {
     await createInstance(learnerId, {
-      completedJourneyId,
-      // Copies for History, which must outlive the journey and sections.
-      completedJourneyName: journey.name,
+      // A copy for History, which must outlive the sections.
       reassessedSectionNames: unique
         .map((id) => assessable.get(id)!)
         .sort((a, b) => a.localeCompare(b)),

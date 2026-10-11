@@ -79,6 +79,17 @@ describe("HistoryPage", () => {
     expect(screen.getByText("Reassessed: Knife Skills, Kitchen Safety")).toBeInTheDocument();
   });
 
+  it("shows the reassessed section of a reassessment without a journey", async () => {
+    vi.mocked(getSatHistory).mockResolvedValue([
+      { ...ENTRIES[1], completedJourney: null, reassessedSections: ["Baking"] },
+    ]);
+
+    render(<HistoryPage />);
+
+    expect(await screen.findByText("Reassessed: Baking")).toBeInTheDocument();
+    expect(screen.queryByText(/after completing/i)).not.toBeInTheDocument();
+  });
+
   it("lists each instance's module scores under the section they belong to", async () => {
     vi.mocked(getSatHistory).mockResolvedValue([ENTRIES[0]]);
 
