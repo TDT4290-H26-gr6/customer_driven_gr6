@@ -25,8 +25,8 @@ function answersOf(path: AssessmentPath): Record<string, PieAnswer> {
 /**
  * Runs the adaptive assessment one question at a time. The backend decides
  * the route (assessment.path.ts): sections in a random order, levels 1 → 4
- * within each, moving up a level at 2 of 3 right and on to the next section
- * once that's out of reach. So the page doesn't hold the whole question list — it
+ * within each, every question of a level asked, moving up a level at 2 of 3
+ * right and on to the next section as soon as that's out of reach. So the page doesn't hold the whole question list — it
  * holds the path so far (answered questions + the next one) and refetches it
  * after every Next. Answered questions are history: Back revisits them and
  * changing an answer only changes its score — which question comes next is

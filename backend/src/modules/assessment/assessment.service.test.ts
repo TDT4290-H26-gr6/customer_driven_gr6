@@ -417,6 +417,7 @@ function mockPathInputs({
       prompt: `Prompt ${q.id}`,
       questionType: "single_choice",
       content: {},
+      competenceId: q.competenceId,
       competence: { id: q.competenceId, name: q.competenceId },
       sectionModule: {
         id: `module-${q.level ?? 1}`,
@@ -499,23 +500,9 @@ describe("completeActiveInstance", () => {
         { id: "r4", questionId: null, score: 1, maxScore: 1 },
       ],
     });
-    const fromA1 = {
-      competenceId: "comp-a",
-      competence: { name: "A" },
-      sectionModule: { level: 1, section: { code: "A", name: "Section A" } },
-    };
-    mockPrisma.response.findMany.mockResolvedValueOnce([
-      { score: 1, maxScore: 1, question: fromA1 },
-      { score: 0, maxScore: 1, question: fromA1 },
-    ] as never);
 
     expect(await completeActiveInstance("learner-1")).toBe("completed");
 
-    expect(mockPrisma.response.findMany).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ questionId: { in: ["q1", "q2"] } }),
-      }),
-    );
     expect(mockPrisma.response.deleteMany).toHaveBeenCalledWith({
       where: { id: { in: ["r3", "r4"] } },
     });
@@ -528,7 +515,7 @@ describe("completeActiveInstance", () => {
         update: {
           score: 1,
           maxScore: 2,
-          competenceName: "A",
+          competenceName: "comp-a",
           sectionCode: "A",
           sectionName: "Section A",
           level: 1,
@@ -539,6 +526,31 @@ describe("completeActiveInstance", () => {
       where: { id: "instance-1" },
       data: { completedAt: expect.any(Date) },
     });
+  });
+
+  it("counts questions never asked as 0 — the rest of a failed level and the levels above it", async () => {
+    mockPathInputs({
+      questions: [
+        { id: "q1", competenceId: "comp-a" },
+        { id: "q2", competenceId: "comp-a" },
+        { id: "q3", competenceId: "comp-a" },
+        { id: "q4", competenceId: "comp-b", level: 2 },
+      ],
+      active: { id: "instance-1", instanceNum: 1 },
+      // Level 1 failed after two wrong answers: q3 and q4 are never asked.
+      responses: [
+        { id: "r1", questionId: "q1", score: 0.5, maxScore: 1 },
+        { id: "r2", questionId: "q2", score: 0, maxScore: 1 },
+      ],
+    });
+
+    expect(await completeActiveInstance("learner-1")).toBe("completed");
+
+    const scores = mockPrisma.competenceScore.upsert.mock.calls.map(([args]) => args.update);
+    expect(scores).toEqual([
+      expect.objectContaining({ competenceName: "comp-a", score: 0.5, maxScore: 3, level: 1 }),
+      expect.objectContaining({ competenceName: "comp-b", score: 0, maxScore: 1, level: 2 }),
+    ]);
   });
 
   it("refuses while the path still has a next question", async () => {
@@ -557,7 +569,6 @@ describe("completeActiveInstance", () => {
 
   it("completes with no scores when there's nothing to ask", async () => {
     mockPathInputs({ questions: [], active: { id: "instance-1", instanceNum: 1 }, responses: [] });
-    mockPrisma.response.findMany.mockResolvedValueOnce([]);
 
     expect(await completeActiveInstance("learner-1")).toBe("completed");
     expect(mockPrisma.competenceScore.upsert).not.toHaveBeenCalled();
@@ -646,10 +657,12 @@ describe("getAttemptSectionScores", () => {
   });
 
   it("gives one SAT's sections, with scores in level order and the skill level reached", async () => {
-    // A1 passed (2 of 2 asked), A2 failed — so level 1; A3 never reached.
+    // A1 passed, A2 failed after two wrong — so level 1; A2-3 and A3 never
+    // asked, but they count as 0.
     mockPrisma.response.findMany.mockResolvedValue([
       answer("A1-1", 1, "Onion", "A"),
       answer("A1-2", 1, "Onion", "A"),
+      answer("A1-3", 1, "Onion", "A"),
       answer("A2-1", 0, "Fingers", "A"),
       answer("A2-2", 0, "Fingers", "A"),
     ] as never);
@@ -672,9 +685,9 @@ describe("getAttemptSectionScores", () => {
           level: 1,
           levelCount: 3,
           competences: [
-            { competence: { name: "Onion" }, level: 1, score: 2, maxScore: 2 },
-            { competence: { name: "Fingers" }, level: 2, score: 0, maxScore: 2 },
-            { competence: { name: "Herbs" }, level: 3, score: 0, maxScore: 0 },
+            { competence: { name: "Onion" }, level: 1, score: 3, maxScore: 3 },
+            { competence: { name: "Fingers" }, level: 2, score: 0, maxScore: 3 },
+            { competence: { name: "Herbs" }, level: 3, score: 0, maxScore: 3 },
           ],
         },
       ],
