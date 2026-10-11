@@ -83,3 +83,39 @@ describe("buildPieContent: likert labels", () => {
     ]);
   });
 });
+
+describe("buildPieContent: criteria_check", () => {
+  const content = {
+    exhibit: "README.md\nLicence: CC BY 4.0 <open>",
+    options: [
+      { id: "a", text: "States a licence" },
+      { id: "b", text: "Gives a persistent identifier" },
+    ],
+    correctOptionIds: ["a"],
+  };
+
+  it("shows the example in its own box under the prompt, line breaks kept and escaped", () => {
+    const model = buildPieContent("criteria_check", "Which criteria does it meet?", content)
+      .models[0] as { prompt: string; choiceMode: string };
+
+    expect(model.prompt).toBe(
+      '<p>Which criteria does it meet?</p><div class="aios-exhibit">README.md<br>Licence: CC BY 4.0 &lt;open&gt;</div>',
+    );
+    expect(model.choiceMode).toBe("checkbox");
+  });
+
+  it("marks the criteria the example meets as correct, plus 'I don't know' last", () => {
+    const choices = choicesOf(buildPieContent("criteria_check", "Which?", content));
+    expect(choices.map((c) => [c.value, c.correct])).toEqual([
+      ["a", true],
+      ["b", false],
+      [IDK_VALUE, false],
+    ]);
+  });
+
+  it("refuses an item without an example", () => {
+    expect(() => buildPieContent("criteria_check", "Which?", { ...content, exhibit: " " })).toThrow(
+      /needs content.exhibit/,
+    );
+  });
+});

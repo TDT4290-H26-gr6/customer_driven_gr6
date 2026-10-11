@@ -5,7 +5,11 @@
     "levels": "Each section's four modules are stored as levels 1–4 (A1 = level 1), as the current adaptive assessment expects. In the curriculum they are parallel topics, not difficulty levels — open question for the team.",
     "coverage": "Mixed coverage values in the source are stored as their first letter until confirmed with the customer: LJ5 B 'M/S' -> M, LJ5 D 'R/M' -> R, LJ6 A 'M/S' -> M.",
     "gaps": "No items yet for A1 and A4; E3 and E4 have one item each. Items of unsupported types are listed in _pendingItems and not loaded. D3.2 is identical to D1.1 in the source.",
-    "sources": "The four partner-institution sources come from the earlier curated course list and link to their own web pages, not Moodle. Which competences they build (primarySourceId / competence_secondary_source) is a PROPOSED mapping from their topics and descriptions — confirm with the customer."
+    "sources": "The four partner-institution sources come from the earlier curated course list and link to their own web pages, not Moodle. Which competences they build (primarySourceId / competence_secondary_source) is a PROPOSED mapping from their topics and descriptions — confirm with the customer.",
+    "devAuthoredItems": {
+      "note": "Written by the development team as the first examples of the 'judge an example against criteria' type (criteria_check), not by the content team. Pending the content team's approval.",
+      "questionIds": ["q-wp2-b4-x1", "q-wp2-b2-x1", "q-wp2-d2-x1"]
+    }
   },
   "aios.assessment.competence": [
     {
@@ -2165,6 +2169,105 @@
       },
       "sectionModuleId": "mod-wp2-e4",
       "competenceId": "comp-wp2-leverage-ai"
+    },
+    {
+      "id": "q-wp2-b4-x1",
+      "prompt": "A colleague shares this README with their dataset. Which quality criteria does it meet?",
+      "questionType": "criteria_check",
+      "content": {
+        "exhibit": "README.md\nDataset: Student wellbeing survey, spring 2024 (survey_2024.csv)\nCollected through an anonymous online questionnaire, n = 412.\nLicence: CC BY 4.0\nQuestions: contact the research group.",
+        "options": [
+          {
+            "id": "a",
+            "text": "Names the data file it describes"
+          },
+          {
+            "id": "b",
+            "text": "Describes how the data was collected"
+          },
+          {
+            "id": "c",
+            "text": "States a licence for reuse"
+          },
+          {
+            "id": "d",
+            "text": "Explains what each variable means"
+          },
+          {
+            "id": "e",
+            "text": "Gives a persistent identifier (e.g. a DOI) for citing the dataset"
+          }
+        ],
+        "correctOptionIds": ["a", "b", "c"]
+      },
+      "sectionModuleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-evaluate-research"
+    },
+    {
+      "id": "q-wp2-b2-x1",
+      "prompt": "A research team keeps this change log for its dataset. Which good versioning practices does it show?",
+      "questionType": "criteria_check",
+      "content": {
+        "exhibit": "CHANGELOG\nv1.2  2024-05-10  Removed 3 duplicate rows (script: clean_v2.py)\nv1.1  2024-04-28  Recoded 'age' into age groups\nv1.0  2024-04-02  Raw export from the survey tool, kept unchanged",
+        "options": [
+          {
+            "id": "a",
+            "text": "Versions are numbered and dated"
+          },
+          {
+            "id": "b",
+            "text": "Each entry says what was changed"
+          },
+          {
+            "id": "c",
+            "text": "The original raw data is kept as its own version"
+          },
+          {
+            "id": "d",
+            "text": "Every version has its own persistent identifier"
+          },
+          {
+            "id": "e",
+            "text": "The data is stored with access restrictions"
+          }
+        ],
+        "correctOptionIds": ["a", "b", "c"]
+      },
+      "sectionModuleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "id": "q-wp2-d2-x1",
+      "prompt": "A researcher plans to share interview data as described below. Which data-protection criteria does the plan meet?",
+      "questionType": "criteria_check",
+      "content": {
+        "exhibit": "Sharing plan\n- Names are replaced with codes (P01, P02, …); the code key is stored separately.\n- Free-text answers are checked for indirect identifiers before release.\n- The consent form covers \"use in this study\" only.\n- The data will be published openly on Zenodo.",
+        "options": [
+          {
+            "id": "a",
+            "text": "Direct identifiers are pseudonymised"
+          },
+          {
+            "id": "b",
+            "text": "The key that links codes to people is kept apart from the data"
+          },
+          {
+            "id": "c",
+            "text": "The risk of indirect identification is assessed"
+          },
+          {
+            "id": "d",
+            "text": "Participants have consented to the planned sharing"
+          },
+          {
+            "id": "e",
+            "text": "Access is restricted in line with the consent and the data's sensitivity"
+          }
+        ],
+        "correctOptionIds": ["a", "b", "c"]
+      },
+      "sectionModuleId": "mod-wp2-d2",
+      "competenceId": "comp-wp2-licensing-and-privacy-literacy"
     }
   ],
   "aios.learningJourney.journey": [
