@@ -12,13 +12,19 @@ model LearningJourney {
   id          String  @id @default(uuid())
   name        String  @unique
   description String? @db.Text
+  /// The journey's page in Moodle, where the learner takes it. Placeholder
+  /// until the real URL exists (see SectionModule.moodleUrl).
+  moodleUrl   String? @db.VarChar(512)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  modules         LearningModule[]
-  sections        JourneySection[]
-  recommendations JourneyRecommendation[]
+  modules            LearningModule[]
+  sections           JourneySection[]
+  recommendations    JourneyRecommendation[]
+  selectedByLearners Learner[]               @relation("LearnerSelectedJourney")
+  chosenInAdvice     Advice[]
+  satInstances       SatInstance[]
 
   @@map("learning_journey_journey")
 }

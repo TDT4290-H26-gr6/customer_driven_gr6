@@ -65,10 +65,66 @@ function adminEmails(): string[] | "everyone" {
   return "everyone";
 }
 
+/**
+ * The NTNU IDUN LLM (OpenAI-compatible API) behind the AI advice on the
+ * results page. Optional: with no LLM_API_KEY the feature is simply off, so
+ * local development and CI don't need a key. Only reachable from NTNU's
+ * network or VPN.
+ */
+function llm() {
+  const apiKey = process.env.LLM_API_KEY;
+  if (!apiKey || isPlaceholder(apiKey)) {
+    console.warn("LLM_API_KEY is not set — AI advice on the results page is turned off.");
+    return null;
+  }
+  return {
+    apiKey,
+    baseUrl: (process.env.LLM_BASE_URL || "https://llm.hpc.ntnu.no/v1").replace(/\/+$/, ""),
+    model: process.env.LLM_MODEL || "openai/gpt-oss-120b",
+  };
+}
+
+/**
+ * Which content the backend loads into the database: "fake" (the
+ * food-themed test data, the default for now) or "wp2" (the real AIOS WP2
+ * curriculum — sections A–E, its competences, modules, learning journeys and
+ * the self-assessment items delivered so far). The two never share a
+ * database; see seed/index.ts.
+ */
+function seedDataset(): "fake" | "wp2" {
+  const value = process.env.SEED_DATASET?.trim().toLowerCase();
+  if (!value || value === "fake") return "fake";
+  if (value === "wp2") return "wp2";
+  throw new Error(`SEED_DATASET must be "fake" or "wp2", got "${process.env.SEED_DATASET}"`);
+}
+
+/**
+ * The Moodle site the learning material lives on ("soft" integration: AIOS
+ * only links to it). Seed data names each module's Moodle course by id, and
+ * links are built from this base — a placeholder until the real site and
+ * course ids are known.
+ */
+function moodleBaseUrl(): string {
+  return (process.env.MOODLE_BASE_URL || "https://moodle.example.org").replace(/\/+$/, "");
+}
+
 export const config = {
+  /**
+   * TEMPORARILY OFF. When on, a learner picks a persona role after first
+   * signing in (the frontend's RoleGateModal), role-gated routes refuse
+   * learners without one (requireRole), and retakes only ask the questions
+   * the role has been granted. While off, nobody needs a role and every SAT
+   * covers the whole question bank. Set back to true — together with
+   * ROLE_SELECTION_ENABLED in frontend/src/shared/lib/features.ts — to
+   * bring roles back.
+   */
+  roleSelectionEnabled: false,
   port: port("BACKEND_PORT", 4000),
   jwtSecret: required("JWT_SECRET", "dev-secret-change-me"),
   googleClientId: required("GOOGLE_CLIENT_ID", ""),
   corsOrigins: corsOrigins(),
   adminEmails: adminEmails(),
+  llm: llm(),
+  seedDataset: seedDataset(),
+  moodleBaseUrl: moodleBaseUrl(),
 };

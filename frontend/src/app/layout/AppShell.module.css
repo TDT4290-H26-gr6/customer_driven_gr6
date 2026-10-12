@@ -1,5 +1,10 @@
+/* Capped to exactly the viewport height (not min-height, which would let the
+   shell grow taller than the screen and hand scrolling to the whole page —
+   carrying the header and sidebar away with it). With this cap, `.main`'s
+   own overflow-y:auto below is what actually scrolls: the header and sidebar
+   stay in view, and the routed page exists inside their frame. */
 .shell {
-  min-height: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
 }

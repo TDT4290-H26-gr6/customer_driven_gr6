@@ -40,7 +40,9 @@ frontend/
 ├── tsconfig.json
 ├── package.json
 ├── .env.example                 # documents every VITE_* variable the app reads
-├── public/                      # static assets copied as-is (favicon, etc.)
+├── public/                      # static assets copied as-is: favicon.png (tab icon).
+│                                 # The header/login wordmark is NOT here — it's inlined SVG,
+│                                 # see shared/components/Logo.tsx below.
 └── src/
     ├── main.tsx                 # React entry: mounts <App/> inside providers
     ├── App.tsx                  # router + layout shell ONLY
@@ -52,7 +54,7 @@ frontend/
     │   │   └── AuthProvider.tsx     # session/token state + refresh
     │   ├── layout/
     │   │   ├── AppShell.tsx         # header + sidebar + <Outlet/>, blocks with RoleGateModal if no role
-    │   │   ├── Header.tsx           # brand left, account menu right (Settings, Admin mode, Sign out)
+    │   │   ├── Header.tsx           # sidebar toggle (centred above the rail's icon column) + <Logo/> left, account menu right
     │   │   ├── Sidebar.tsx          # collapsible left rail (desktop) / fixed bottom tab bar (mobile)
     │   │   └── RoleGateModal.tsx    # forced role-pick modal — see "Role gating" below
     │   └── guards/
@@ -111,10 +113,12 @@ frontend/
     │   │   │   ├── ScoreTable.tsx
     │   │   │   └── WelcomeScreen.tsx         # first-run state: no assessment taken yet
     │   │   ├── pages/
-    │   │   │   └── ResultsPage.tsx
-    │   │   ├── api.ts               # GET /results, GET /competence-scores
+    │   │   │   ├── ResultsPage.tsx          # overview: one radar axis per section (sectionAxes.ts)
+    │   │   │   └── SectionDetailsPage.tsx   # "More details": one radar per section, its own competences
+    │   │   ├── api.ts               # GET /competence-scores/by-section
+    │   │   ├── sectionAxes.ts       # rolls each section's competences into one overview axis
     │   │   ├── hooks.ts             # useResults()
-    │   │   ├── types.ts             # CompetenceScore, ResultSummary
+    │   │   ├── types.ts             # CompetenceScore, SectionCompetenceScores
     │   │   └── index.ts
     │   │
     │   ├── learningJourney/        # the journey recommended on the dashboard
@@ -147,7 +151,9 @@ frontend/
     │   │   ├── Select.tsx
     │   │   ├── Card.tsx
     │   │   ├── Spinner.tsx
-    │   │   └── ErrorBanner.tsx
+    │   │   ├── ErrorBanner.tsx
+    │   │   ├── icons.tsx           # small inline SVG icon set (incl. SidebarToggleIcon)
+    │   │   └── Logo.tsx            # the AIOS wordmark as inline SVG — see "Logo" below
     │   ├── hooks/
     │   │   ├── useAsync.ts
     │   │   ├── useLocalStorage.ts
@@ -174,14 +180,14 @@ frontend/
 
 ## 3. Layer responsibilities
 
-| Layer                    | May import from                             | Must not import from                |
-| ------------------------ | ------------------------------------------- | ----------------------------------- |
-| `shared/`                | `shared/`, `config/`                        | `features/`, `app/`                 |
-| `features/<x>/`          | its own folder, `shared/`, `config/`        | other `features/`, `app/`           |
-| `app/`                   | `features/*/index.ts`, `shared/`, `config/` | feature internals (only the barrel) |
+| Layer           | May import from                             | Must not import from                |
+| --------------- | ------------------------------------------- | ----------------------------------- |
+| `shared/`       | `shared/`, `config/`                        | `features/`, `app/`                 |
+| `features/<x>/` | its own folder, `shared/`, `config/`        | other `features/`, `app/`           |
+| `app/`          | `features/*/index.ts`, `shared/`, `config/` | feature internals (only the barrel) |
 
 **Exception:** a page may import a hook directly from `app/providers/` (`useAuth`, `useTheme`) even though that's technically "`app/`". These providers hold genuinely app-wide state — the current session, the visuals setting — not feature-specific logic, so treat them like `shared/`: any feature may depend on the hook, but never reach into a provider's other internals.
-| `App.tsx` / `routes.tsx` | `app/`, `features/*/index.ts`               | anything deep                       |
+| `App.tsx` / `routes.tsx` | `app/`, `features/*/index.ts` | anything deep |
 
 A **page** owns data loading and composition for one screen. A **component**
 is given everything it needs via props and stays reusable. A feature's
@@ -268,7 +274,7 @@ stays mounted underneath, blocked:
   to clean up).
 - `AppShell` also sets the DOM `inert` property on everything else (header,
   sidebar, the empty main area) while the modal is up. `inert` blocks clicks
-  *and* removes those elements from the tab order, so there's no
+  _and_ removes those elements from the tab order, so there's no
   keyboard-only escape route around the modal either. The modal itself has
   no close button, no backdrop-click-to-dismiss, and no Escape handling.
 - **This client-side blocking is UX, not the security boundary.** A learner
@@ -340,13 +346,22 @@ a single toggle:
    currently means) for the rare case a component can't rely on CSS
    variables — e.g. `GoogleLoginButton` picks a matching Google‑widget theme.
 3. `index.html` has a small inline script that applies a stored `data-theme`
-   *before* React mounts, so there's no flash of the wrong theme on first
+   _before_ React mounts, so there's no flash of the wrong theme on first
    paint. It reads the same `localStorage` key `ThemeProvider` writes
    (`aios.themePreference`) — keep them in sync if either changes.
 4. The picker itself lives in `features/settings/pages/SettingsPage.tsx`
    ("Choose your visuals"), via `useTheme()`.
 
-**Token list** (defined for both light and dark — add new ones to *both*
+**Accent color.** Settings also has "Choose your accent color": the three
+AIOS logo colors (purple default, blue, olive). `app/providers/AccentProvider.tsx`
+(`useAccent()`, `ACCENTS`, storage key `aios.accentColor`) sets
+`data-accent` on `<html>`; `index.html`'s inline script applies it before
+mount too. `globals.css` has `:root[data-accent]` rules (after the theme
+blocks) that override `--color-primary`, `-hover`, `-contrast` and `-soft`
+via `color-mix()` — darkened in light mode, lightened in dark (twice, like
+the theme blocks). Components just keep using the `--color-primary*` tokens.
+
+**Token list** (defined for both light and dark — add new ones to _both_
 places in `globals.css`, right next to each other, so they can't drift):
 `--color-bg`, `--color-surface`, `--color-border`, `--color-text`,
 `--color-text-muted`, `--color-primary`, `--color-primary-hover`,
@@ -360,7 +375,7 @@ Non‑color tokens (`--header-height`, `--sidebar-width*`, `--bottom-nav-height`
 `<pie-fixed-player>` (`@pie-framework/pie-fixed-player-static`, wrapped by
 `features/assessment/components/PieQuestionPlayer.tsx`) renders its
 question/answer content via Material‑UI (MUI) in the regular **light
-DOM — not Shadow DOM**, so global CSS *can* reach its internals. It's just
+DOM — not Shadow DOM**, so global CSS _can_ reach its internals. It's just
 built assuming a light page and doesn't read our tokens on its own, so in
 dark mode it was rendering dark widget text on our now-dark card
 background — unreadable.
@@ -424,10 +439,78 @@ genuinely differ** — currently exactly two places:
    other, not both and not CSS-reordered, so Tab order always matches what's
    on screen.
 2. `ResultsPage` passes `compact={isMobile}` to `CompetenceRadar`.
+3. `AppShell` passes `Header` its `sidebarHidden`/`onToggleSidebar` props only
+   on desktop (`undefined` on mobile) — the bottom tab bar can't be hidden,
+   so the header's toggle button hides itself entirely rather than
+   controlling something meaningless.
 
 The hook reads synchronously (`useSyncExternalStore`), so there's no flash of
 the wrong layout on first paint. Never use it for spacing or sizing — that's
 what the CSS media queries are for.
+
+**Fixed app shell (every viewport)**
+
+`AppShell.module.css`'s `.shell` is `height: 100%` — deliberately not
+`min-height: 100%`, which would let the shell grow taller than the screen on
+a long page and hand scrolling to the whole document, carrying the header and
+sidebar away with it. Capped like this, `.main`'s own `overflow-y: auto` is
+the only thing that scrolls: the header and the side rail (or the mobile tab
+bar) never move, and a routed page always renders inside that fixed frame.
+`.body { min-height: 0 }` is the other half of this — without it a flex child
+can't shrink below its content size, and the cap on `.shell` would do nothing.
+
+The desktop rail has **two separate controls, on purpose two different
+states** — easy to conflate, so worth being explicit about:
+
+- **`Header`'s `SidebarToggleIcon` button** (top-left, only rendered when
+  `onToggleSidebar` is passed, i.e. not on mobile) toggles `hidden`
+  (`useLocalStorage "aios.sidebarHidden"`). This hides the **entire rail** —
+  `AppShell` simply doesn't render `<Sidebar>` at all while `hidden` — and
+  `<main>` takes the full row width. The button sits in its own `.railSlot`,
+  fixed to `--sidebar-width-collapsed` and centred within it, so it lines up
+  directly above the sidebar's icon column below (that column's position
+  doesn't shift between collapsed/expanded — only the labels do) instead of
+  just floating next to the logo. `SidebarToggleIcon` also takes an `open`
+  prop (`open={!hidden}`) and draws its left panel filled solid when the
+  rail is showing, hollow when it isn't — the icon depicts the *current*
+  state, not just a generic toggle glyph, so a click's effect is visible
+  before it happens, not just spelled out in the `aria-label`.
+- **`Sidebar`'s own bottom-right button** (`.labelToggle`) toggles the
+  unrelated `collapsed` state (`useLocalStorage "aios.sidebarCollapsed"`),
+  which only hides the nav items' _labels_, icon-only — the rail itself
+  stays put, just narrower. It used to be a "Hide"/"Show" text label; it's
+  now `icons.tsx`'s shared `ChevronIcon`, sideways rather than up/down since
+  that's the direction the rail itself actually resizes in: right-pointing
+  (›, its default, no rotation needed) while collapsed — there are labels to
+  reveal in that direction — and rotated 180° to point left (‹) once
+  expanded, to tuck them back away. `title` carries the same explanation as
+  a hover tooltip since there's no text left on the button to read, and
+  `aria-label` still names the action for screen readers. Pinned to that
+  corner by making
+  `.sidebar` a flex column and giving the button `margin-top: auto` (pushes
+  it to the bottom, however many nav items sit above it) plus `align-self:
+  flex-end` (pins it to the right instead of stretching full-width like the
+  nav links above it).
+
+Both replaced an earlier single floating chevron button (absolutely
+positioned on the sidebar's right edge) that conflated the two — collapsing
+labels and hiding the whole rail were, confusingly, the same click. Don't
+reunify them; a learner might want the rail icon-only _and_ still visible.
+
+### Logo
+
+`shared/components/Logo.tsx` renders the AIOS wordmark as inline SVG (not a
+raster image) and is used by both `Header` and `LoginPage`. The wordmark
+path's fill is `currentColor`, and `Logo.module.css` sets `color:
+var(--color-text)`, so it flips between the light/dark palettes the same way
+any other text does — no separate dark-mode asset. The colourful dot spiral
+next to it keeps its own literal hex fills (it reads fine on both
+backgrounds). Callers pass their own `className` (composed alongside the
+component's own) purely to size it — `Header.module.css`'s `.logo` sets a
+fixed height for the header, `LoginPage.module.css`'s centers a larger one
+on the card. This replaced a PNG in `public/aios-logo.png` that was seated on
+a hardcoded white chip to stay visible on a dark header; that file and hack
+are both gone now that the logo is theme-aware.
 
 **App shell on mobile**
 
@@ -458,6 +541,13 @@ what the CSS media queries are for.
   the axes on a 320px screen, so axes get numbered tips and the names +
   scores move into a legend list under the chart (which also gives assistive
   tech the actual numbers). Desktop keeps inline labels.
+- `CompetenceRadar` itself only knows how to chart a `CompetenceScore[]` — it
+  has no idea whether each axis is a competence or something bigger.
+  `ResultsPage`'s overview feeds it 5 _section_ axes (`sectionAxes.ts` sums
+  each section's own competences into one score); `SectionDetailsPage`'s
+  "More details" drill-down feeds it real competences, one radar per section.
+  With 20 competences an all-competences radar would be unreadable, hence the
+  two-level split.
 - `PieQuestionPlayer`'s `.canvas` has `overflow-x: auto`: a wide third-party
   widget scrolls inside its card instead of pushing the whole page sideways.
 - `AppShell`'s `.main` has `min-width: 0`. Without it a flex item grows to

@@ -17,9 +17,10 @@
   text-align: center;
 }
 
-.brand {
-  margin: 0 0 8px;
-  color: var(--color-primary);
+.logo {
+  height: 56px;
+  width: auto;
+  margin: 0 auto 12px;
 }
 
 .tagline {

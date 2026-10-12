@@ -1,10 +1,12 @@
 import { useState } from "react";
+import { ACCENTS, useAccent } from "@/app/providers/AccentProvider";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useTheme, type ThemePreference } from "@/app/providers/ThemeProvider";
 import { MonitorIcon, MoonIcon, SunIcon } from "@/shared/components/icons";
 import { RoleSelect } from "@/features/onboarding";
 import type { Role } from "@/features/onboarding";
 import { ProfileForm } from "@/features/profile";
+import { ROLE_SELECTION_ENABLED } from "@/shared/lib/features";
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
 import styles from "./SettingsPage.module.css";
 
@@ -15,12 +17,14 @@ const VISUAL_OPTIONS: { value: ThemePreference; label: string; Icon: typeof Moni
 ];
 
 /**
- * Account settings: role, and visuals for now — more sections land here
- * later (see context/frontend-structure.md).
+ * Account settings: visuals, profile, role and account deletion. The role
+ * card is hidden while role selection is temporarily off
+ * (shared/lib/features.ts).
  */
 export function SettingsPage() {
   const { learner, setRole } = useAuth();
   const { preference, setPreference } = useTheme();
+  const { accent, setAccent } = useAccent();
   const [saved, setSaved] = useState<Role | null>(null);
 
   function handleRoleChange(role: Role) {
@@ -59,21 +63,47 @@ export function SettingsPage() {
       </div>
 
       <div className={styles.card}>
-        <RoleSelect
-          initialRoleId={learner?.role?.id}
-          heading="Your role"
-          description="Change the role that best describes you."
-          confirmLabel="Save"
-          onDone={handleRoleChange}
-        />
-        {saved && (
-          <p className={styles.confirmation}>Saved — you&apos;re now set as {saved.name}.</p>
-        )}
+        <h2 className={styles.cardHeading}>Choose your accent color</h2>
+        <p className={styles.cardHint}>The colors of the AIOS logo.</p>
+        <div className={styles.accentOptions} role="radiogroup" aria-label="Accent color">
+          {ACCENTS.map(({ value, label, hex }) => (
+            <button
+              key={value}
+              type="button"
+              role="radio"
+              aria-checked={accent === value}
+              aria-label={label}
+              title={label}
+              className={
+                accent === value
+                  ? `${styles.accentSwatch} ${styles.accentSwatchActive}`
+                  : styles.accentSwatch
+              }
+              style={{ background: hex }}
+              onClick={() => setAccent(value)}
+            />
+          ))}
+        </div>
       </div>
 
       <div className={styles.card}>
         <ProfileForm />
       </div>
+
+      {ROLE_SELECTION_ENABLED && (
+        <div className={styles.card}>
+          <RoleSelect
+            initialRoleId={learner?.role?.id}
+            heading="Your role"
+            description="Change the role that best describes you."
+            confirmLabel="Save"
+            onDone={handleRoleChange}
+          />
+          {saved && (
+            <p className={styles.confirmation}>Saved — you&apos;re now set as {saved.name}.</p>
+          )}
+        </div>
+      )}
 
       <div className={styles.card}>
         <DeleteAccountSection />

@@ -53,6 +53,16 @@ export function BookIcon(props: IconProps) {
   );
 }
 
+export function RouteIcon(props: IconProps) {
+  return (
+    <svg {...defaults} {...props}>
+      <circle cx="5" cy="6" r="2.5" />
+      <circle cx="19" cy="18" r="2.5" />
+      <path d="M7.2 7.5C10 10 8 14 12 15.5s6-1 6.8 2" />
+    </svg>
+  );
+}
+
 export function SunIcon(props: IconProps) {
   return (
     <svg {...defaults} {...props}>
@@ -108,11 +118,42 @@ export function ShieldIcon(props: IconProps) {
 }
 
 /** Speech bubble — the "Feedback" button. */
+export function CloseIcon(props: IconProps) {
+  return (
+    <svg {...defaults} {...props}>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 export function MessageIcon(props: IconProps) {
   return (
     <svg {...defaults} {...props}>
       <path d="M20 15a2 2 0 0 1-2 2H8l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z" />
       <path d="M8 8h8M8 12h5" />
+    </svg>
+  );
+}
+
+type SidebarToggleIconProps = IconProps & {
+  /**
+   * Whether the sidebar is currently showing. The left panel is drawn solid
+   * when it is (there's a rail to hide) and left hollow when it isn't (there
+   * isn't), so the icon depicts the *current* state rather than a generic
+   * toggle glyph — clicking always does the opposite of what's drawn.
+   */
+  open?: boolean;
+};
+
+/** A rectangle with a divider near the left edge — the conventional "toggle sidebar" glyph. */
+export function SidebarToggleIcon({ open = true, ...props }: SidebarToggleIconProps) {
+  return (
+    <svg {...defaults} {...props}>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="9" y1="4" x2="9" y2="20" />
+      {open && (
+        <rect x="4.3" y="5.3" width="4" height="13.4" rx="1" fill="currentColor" stroke="none" />
+      )}
     </svg>
   );
 }

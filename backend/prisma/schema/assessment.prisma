@@ -2,7 +2,15 @@
 /// the question bank, self-assessment runs, answers and derived scores.
 /// Tables: assessment_*.
 ///
-/// Hierarchy: a Section contains SectionModules; each SectionModule has one
+/// History outlives content: a learner's completed SATs must stay readable
+/// after questions, competences, sections or journeys are removed. So
+/// answers and scores only *link* to content (set to null when it's
+/// deleted, never blocking the delete), and everything History displays is
+/// also copied onto the instance/score when it's recorded (the *Name
+/// fields below).
+///
+/// Hierarchy: a Section (A–E) contains SectionModules at levels 1–4 (A1 the
+/// easiest … A4 the most advanced); each SectionModule has one
 /// main Competence plus any number of secondary ones (join table). Questions
 /// hang off a SectionModule and name the Competence they assess directly —
 /// scores roll up by that competenceId, not through the hierarchy.
@@ -11,8 +19,10 @@ model Competence {
   id              String  @id @default(uuid())
   name            String  @unique
   description     String? @db.Text
-  primarySourceId String
-  primarySource   Source  @relation(fields: [primarySourceId], references: [id])
+  /// The main learning resource for it, when one is known. Optional: the
+  /// WP2 curriculum points learners at Moodle modules instead (SectionModule.moodleUrl).
+  primarySourceId String?
+  primarySource   Source? @relation(fields: [primarySourceId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -41,6 +51,8 @@ model CompetenceSecondarySource {
 
 model Section {
   id          String  @id @default(uuid())
+  /// Short letter, "A"–"E". Nullable only so it could be added to existing rows.
+  code        String? @unique
   name        String  @unique
   description String? @db.Text
 
@@ -50,6 +62,7 @@ model Section {
   modules         SectionModule[]
   roleGrants      RoleSection[]
   journeySections JourneySection[]
+  satInstances    SatInstanceSection[]
 
   @@map("assessment_section")
 }
@@ -62,6 +75,15 @@ model SectionModule {
   mainCompetence   Competence @relation(fields: [mainCompetenceId], references: [id])
   sectionId        String
   section          Section    @relation(fields: [sectionId], references: [id])
+  /// 1 (easiest) to 4 (most advanced) within its section: with the section's
+  /// code, A1 … A4. The assessment only moves up a level after a learner
+  /// gets 2 of 3 right on the one below (see assessment.path.ts). Nullable
+  /// only so it could be added to existing rows; unleveled modules come last.
+  level            Int?
+  /// Where the learning material for this module sits in Moodle ("soft"
+  /// integration: AIOS only links to it). Placeholders until the real URLs
+  /// exist — see MOODLE_BASE_URL and the seed data's moodleCourseId.
+  moodleUrl        String?    @db.VarChar(512)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -69,6 +91,7 @@ model SectionModule {
   secondaryCompetences SectionModuleSecondaryCompetence[]
   questions            Question[]
 
+  @@unique([sectionId, level])
   @@map("assessment_section_module")
 }
 
@@ -103,26 +126,41 @@ model Question {
 }
 
 model SatInstance {
-  id          String    @id @default(uuid())
-  learnerId   String
-  learner     Learner   @relation(fields: [learnerId], references: [id], onDelete: Cascade)
-  instanceNum Int // sequence number for this learner: 1 = initial, 2+ = retakes
-  startedAt   DateTime  @default(now())
-  completedAt DateTime?
-
-  responses        Response[]
-  competenceScores CompetenceScore[]
+  id                     String               @id @default(uuid())
+  learnerId              String
+  learner                Learner              @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  instanceNum            Int // sequence number for this learner: 1 = initial, 2+ = retakes
+  startedAt              DateTime             @default(now())
+  completedAt            DateTime?
+  completedJourneyId     String?
+  completedJourney       LearningJourney?     @relation(fields: [completedJourneyId], references: [id], onDelete: SetNull)
+  completedJourneyName   String?
+  reassessedSectionNames Json?
+  sections               SatInstanceSection[]
+  responses              Response[]
+  competenceScores       CompetenceScore[]
+  advice                 Advice?
 
   @@unique([learnerId, instanceNum])
   @@map("assessment_sat_instance")
+}
+
+model SatInstanceSection {
+  satInstanceId String
+  satInstance   SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
+  sectionId     String
+  section       Section     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  @@id([satInstanceId, sectionId])
+  @@map("assessment_sat_instance_section")
 }
 
 model Response {
   id            String      @id @default(uuid())
   satInstanceId String
   satInstance   SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
-  questionId    String
-  question      Question    @relation(fields: [questionId], references: [id])
+  questionId    String?
+  question      Question?   @relation(fields: [questionId], references: [id], onDelete: SetNull)
   answer        Json
   score         Float?
   maxScore      Float?
@@ -135,13 +173,17 @@ model Response {
 }
 
 model CompetenceScore {
-  id            String      @id @default(uuid())
-  satInstanceId String
-  satInstance   SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
-  competenceId  String
-  competence    Competence  @relation(fields: [competenceId], references: [id])
-  score         Float
-  maxScore      Float
+  id             String      @id @default(uuid())
+  satInstanceId  String
+  satInstance    SatInstance @relation(fields: [satInstanceId], references: [id], onDelete: Cascade)
+  competenceId   String?
+  competence     Competence? @relation(fields: [competenceId], references: [id], onDelete: SetNull)
+  competenceName String?
+  sectionCode    String?
+  sectionName    String?
+  level          Int?
+  score          Float
+  maxScore       Float
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

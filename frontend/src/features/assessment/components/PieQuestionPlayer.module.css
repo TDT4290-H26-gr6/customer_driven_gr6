@@ -13,6 +13,26 @@
   overflow-x: auto;
 }
 
+/* A line between the real answers and the "I don't know" choice the backend
+   appends to every question. Matched by its input's value — "__idk__" is
+   IDK_VALUE in backend/src/modules/assessment/assessment.scoring.ts — since
+   PIE's own class names are generated and not stable. `.choice-input` is the
+   wrapper PIE's multiple-choice element renders around each choice. */
+.canvas :global(.choice-input:has(input[value="__idk__"])) {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Once "I don't know" is ticked on a checkbox question, the other choices are
+   locked (the click itself is blocked in PieQuestionPlayer.tsx). Radio
+   questions are untouched: picking another choice just switches. */
+.canvas:has(input[type="checkbox"][value="__idk__"]:checked)
+  :global(.choice-input:not(:has(input[value="__idk__"]))) {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 @media (max-width: 767px) {
   .canvas {
     padding: 8px;

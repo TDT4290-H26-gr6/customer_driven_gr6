@@ -50,3 +50,20 @@
   font-size: 13px;
   color: var(--color-text-muted);
 }
+
+/* "Soft" Moodle integration: the journey itself is taken in Moodle. */
+.moodleLink {
+  align-self: flex-start;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* The AI advisor's reason for choosing this journey for the learner. */
+.reason {
+  margin: 0;
+  font-size: 14px;
+}
+
+.reasonLabel {
+  font-weight: 600;
+}

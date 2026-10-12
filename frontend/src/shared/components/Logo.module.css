@@ -1,0 +1,7 @@
+/* Default look-and-feel for the inline AIOS wordmark. Callers pass their own
+   className (composed alongside this one — see Logo.tsx) to control size and
+   spacing; this file only owns the theme-aware color and block layout. */
+.logo {
+  display: block;
+  color: var(--color-text);
+}

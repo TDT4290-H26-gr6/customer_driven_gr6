@@ -28,6 +28,14 @@ services:
       # Optional in development — see .env.example.
       CORS_ORIGIN: ${CORS_ORIGIN:-}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      # AI advice on the results page — off when LLM_API_KEY is unset.
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-}
+      LLM_MODEL: ${LLM_MODEL:-}
+      # Which content to load ("fake" by default, or "wp2"), and the Moodle
+      # site placeholder links are built from — see .env.example.
+      SEED_DATASET: ${SEED_DATASET:-}
+      MOODLE_BASE_URL: ${MOODLE_BASE_URL:-}
       # tsx watch's file watcher misses bind-mount changes on Docker
       # Desktop/Windows (native fs events don't cross the mount) — same
       # class of issue the frontend's vite.config.ts already works around

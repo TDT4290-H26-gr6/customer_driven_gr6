@@ -33,6 +33,43 @@
   margin-top: 16px;
 }
 
+/* Which outline is which assessment — the same look as the radar's own
+   shapes (solid latest, dashed previous) and the detailed view's legend. */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 16px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatchLatest,
+.swatchPrevious {
+  flex: none;
+  width: 18px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.swatchLatest {
+  background: color-mix(in srgb, var(--color-primary) 25%, transparent);
+  border: 2px solid var(--color-primary);
+}
+
+.swatchPrevious {
+  border: 2px dashed var(--color-danger);
+}
+
 .note {
   margin: 12px 0 0;
   font-size: 13px;

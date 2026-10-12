@@ -1,12 +1,14 @@
 import styles from "./AssessmentProgress.module.css";
 
 type Props = {
-  /** 1-based index of the question currently on screen. */
+  /** How far along: the bar fills to current / total. */
   current: number;
   total: number;
+  /** Text beside the bar. Defaults to "current / total". */
+  label?: string;
 };
 
-export function AssessmentProgress({ current, total }: Props) {
+export function AssessmentProgress({ current, total, label }: Props) {
   const pct = total > 0 ? Math.round((current / total) * 100) : 0;
 
   return (
@@ -20,9 +22,7 @@ export function AssessmentProgress({ current, total }: Props) {
       >
         <div className={styles.fill} style={{ width: `${pct}%` }} />
       </div>
-      <span className={styles.label}>
-        {current} / {total}
-      </span>
+      <span className={styles.label}>{label ?? `${current} / ${total}`}</span>
     </div>
   );
 }

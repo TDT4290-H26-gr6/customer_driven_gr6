@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "description": "FAKE food-themed seed data for AIOS (schema v3, role visibility). Everything here is obviously fake. No SAT instances, responses, scores or recommendations are included, so a freshly logged-in learner starts with all questions unanswered.",
+    "description": "FAKE food-themed seed data for AIOS. This is the app's initial assessment for every learner: 5 sections (A-E) x 4 section modules (levels 1-4, one competence each) x 3 questions = 60 questions, covering all sections and competences regardless of role (see assessment.service.ts's isInitialAssessment). Everything here is obviously fake. Source links point at a placeholder Moodle base URL (MOODLE_BASE_URL in fakeFoodSeed.ts) built from each source's moodleCourseId -- swap the base URL / ids for real ones later. No SAT instances, responses, scores or recommendations are included, so a freshly logged-in learner starts with every question unanswered.",
     "insertOrder": [
       "aios.sources.source",
       "aios.identity.role",
@@ -20,15 +20,17 @@
     "questionTypes": {
       "likert": "content.scale {min,max,minLabel,maxLabel}; self-rated, score = chosen value",
       "single_choice": "content.options[] + correctOptionIds (one)",
-      "multi_choice": "content.options[] + correctOptionIds (several), 1 point per correct pick",
+      "multi_choice": "content.options[] + correctOptionIds (several); scored as the share of correct options ticked minus the share of wrong ones ticked, out of 1",
       "true_false": "content.options true/false + correctOptionIds"
     },
+    "everyQuestionAlsoHas": "An 'I don't know' choice appended by assessment.pie.ts (IDK_VALUE in assessment.scoring.ts) -- not authored here, added automatically at load time.",
     "intentionallyEmpty": [
       "aios.assessment.sat_instance",
       "aios.assessment.response",
       "aios.assessment.competence_score",
       "aios.learningJourney.recommendation"
-    ]
+    ],
+    "moodle": "Sources, section modules and journeys name a PLACEHOLDER Moodle course (moodleCourseId); links are built from MOODLE_BASE_URL."
   },
   "aios.sources.source": [
     {
@@ -46,10 +48,10 @@
       "topics": "boiling, twirling, sauce adhesion",
       "prerequisites": "Must own a fork",
       "description": "Totally fake course for seeding test data.",
-      "sourceUrl": "https://example.com/fake/advanced-noodle-theory",
       "confidence": 0.99,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 101
     },
     {
       "id": "src-fake-croissant-academy",
@@ -66,10 +68,10 @@
       "topics": "folding, chilling, more butter",
       "prerequisites": "None, except butter",
       "description": "Fake course about folding butter 27 times.",
-      "sourceUrl": "https://example.com/fake/lamination-101",
       "confidence": 0.95,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 102
     },
     {
       "id": "src-fake-knife-dojo",
@@ -86,10 +88,10 @@
       "topics": "dice, brunoise, emotional resilience",
       "prerequisites": "10 fingers (please keep them)",
       "description": "Fake course on cutting onions without crying.",
-      "sourceUrl": "https://example.com/fake/onion-tears",
       "confidence": 0.9,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 103
     },
     {
       "id": "src-fake-sauce-college",
@@ -106,10 +108,10 @@
       "topics": "mayonnaise, hollandaise, broken sauce therapy",
       "prerequisites": "Whisk",
       "description": "Fake course on keeping oil and water friends.",
-      "sourceUrl": "https://example.com/fake/emulsions-and-you",
       "confidence": 0.88,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 104
     },
     {
       "id": "src-fake-fridge-uni",
@@ -126,10 +128,10 @@
       "topics": "expiry dates, sniff tests, labelling",
       "prerequisites": "A nose",
       "description": "Fake course on identifying mystery containers.",
-      "sourceUrl": "https://example.com/fake/what-is-that-smell",
       "confidence": 0.8,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 105
     },
     {
       "id": "src-fake-snack-review",
@@ -146,10 +148,410 @@
       "topics": "crunch vocabulary, mouthfeel, dramatic sighs",
       "prerequisites": "Has eaten a crisp",
       "description": "Fake course on writing reviews of snacks.",
-      "sourceUrl": "https://example.com/fake/crisp-eloquence",
       "confidence": 0.92,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 106
+    },
+    {
+      "id": "src-fake-onion-academy",
+      "institution": "Institute of Onion Studies (FAKE)",
+      "country": "Alliumia",
+      "courseName": "Onion Fundamentals",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Dr. Bulb Layers",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Onion Fundamentals.",
+      "moodleCourseId": 201,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-digitology",
+      "institution": "Digitology Institute (FAKE)",
+      "country": "Handovia",
+      "courseName": "Applied Digit Preservation",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Prof. Phalanges",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Applied Digit Preservation.",
+      "moodleCourseId": 202,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-yeast-college",
+      "institution": "Yeast Behavioral College (FAKE)",
+      "country": "Leavenland",
+      "courseName": "Proofing Theory and Practice",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Dr. Rise N. Shine",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Proofing Theory and Practice.",
+      "moodleCourseId": 203,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-lamination-guild",
+      "institution": "Guild of Laminators (FAKE)",
+      "country": "Laminatia",
+      "courseName": "The Lamination Guild Masterclass",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Master Feuillete",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for The Lamination Guild Masterclass.",
+      "moodleCourseId": 204,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-emulsion-lab",
+      "institution": "Emulsion Physics Lab (FAKE)",
+      "country": "Saucia",
+      "courseName": "Stable Emulsions 101",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Dr. Lecithin",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Stable Emulsions 101.",
+      "moodleCourseId": 205,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-al-dente-inst",
+      "institution": "Al Dente Institute (FAKE)",
+      "country": "Pastaland",
+      "courseName": "Timing the Perfect Bite",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Chef Minuto",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Timing the Perfect Bite.",
+      "moodleCourseId": 206,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-forensics-uni",
+      "institution": "University of Chilled Investigation (FAKE)",
+      "country": "Coldland",
+      "courseName": "Applied Fridge Forensics",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Dr. Mold E. Cheese Jr.",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Applied Fridge Forensics.",
+      "moodleCourseId": 207,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-suds-academy",
+      "institution": "Academy of Suds (FAKE)",
+      "country": "Soapistan",
+      "courseName": "Suds and Science",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Prof. Lather",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Suds and Science.",
+      "moodleCourseId": 208,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-thesaurus-inst",
+      "institution": "Institute of Snack Linguistics (FAKE)",
+      "country": "Crunchovia",
+      "courseName": "The Crunch Thesaurus",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Dr. Onomatopoeia",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for The Crunch Thesaurus.",
+      "moodleCourseId": 209,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-garnish-school",
+      "institution": "School of Fine Garnish (FAKE)",
+      "country": "Leafington",
+      "courseName": "Precision Garnishing",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Chef Tweezer",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Precision Garnishing.",
+      "moodleCourseId": 210,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-chiffonade-co",
+      "institution": "Chiffonade Collective (FAKE)",
+      "country": "Herbistan",
+      "courseName": "Ribbons of Basil",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Chef Julienne Vert",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Ribbons of Basil.",
+      "moodleCourseId": 211,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-whetstone-inst",
+      "institution": "Whetstone Institute (FAKE)",
+      "country": "Slicistan",
+      "courseName": "The Art of the Edge",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Sensei Sharp",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for The Art of the Edge.",
+      "moodleCourseId": 212,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-thermo-oven-lab",
+      "institution": "Oven Physics Lab (FAKE)",
+      "country": "Bakeland",
+      "courseName": "Thermodynamics of Your Oven",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Dr. Fahrenheit Jr.",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Thermodynamics of Your Oven.",
+      "moodleCourseId": 213,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-starter-sanctuary",
+      "institution": "Starter Sanctuary (FAKE)",
+      "country": "Leavenland",
+      "courseName": "Keeping Starters Alive",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Sister Levain",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Keeping Starters Alive.",
+      "moodleCourseId": 214,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-stockpot-uni",
+      "institution": "Stockpot University (FAKE)",
+      "country": "Brothia",
+      "courseName": "Low and Slow: Stock Theory",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Prof. Simmer",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Low and Slow: Stock Theory.",
+      "moodleCourseId": 215,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-balance-inst",
+      "institution": "Institute of Seasoning Balance (FAKE)",
+      "country": "Saucia",
+      "courseName": "The Balanced Palate",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Chef Acidulous",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for The Balanced Palate.",
+      "moodleCourseId": 216,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-hygiene-board",
+      "institution": "Kitchen Hygiene Board (FAKE)",
+      "country": "Soapistan",
+      "courseName": "Separation Protocols",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Inspector Clean",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Separation Protocols.",
+      "moodleCourseId": 217,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-extinguish-academy",
+      "institution": "Kitchen Fire Academy (FAKE)",
+      "country": "Emberton",
+      "courseName": "Small Fires, Fast Thinking",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Chief Damp N. Towel",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Small Fires, Fast Thinking.",
+      "moodleCourseId": 218,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-pairing-conservatory",
+      "institution": "Flavour Pairing Conservatory (FAKE)",
+      "country": "Tastonia",
+      "courseName": "Unexpected Pairings",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Dr. Contrast",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Unexpected Pairings.",
+      "moodleCourseId": 219,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "src-fake-plating-atelier",
+      "institution": "Plating Atelier (FAKE)",
+      "country": "Garnishtown",
+      "courseName": "Composition on a Plate",
+      "type": "course",
+      "level": "bachelor",
+      "degreeProgramme": null,
+      "credits": 5.0,
+      "language": "English",
+      "instructor": "Chef Symmetry",
+      "format": "online",
+      "topics": null,
+      "prerequisites": null,
+      "description": "FAKE course seeding placeholder content for Composition on a Plate.",
+      "moodleCourseId": 220,
+      "confidence": 0.85,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
     }
   ],
   "aios.identity.role": [
@@ -183,7 +585,7 @@
       "id": "comp-fake-onion-dicing",
       "name": "FAKE Onion Dicing",
       "description": "Cutting onions into small cubes without crying.",
-      "primarySourceId": "src-fake-knife-dojo",
+      "primarySourceId": "src-fake-onion-academy",
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -191,7 +593,7 @@
       "id": "comp-fake-finger-keeping",
       "name": "FAKE Finger Keeping",
       "description": "Retaining all ten fingers after knife work.",
-      "primarySourceId": "src-fake-knife-dojo",
+      "primarySourceId": "src-fake-digitology",
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -199,7 +601,7 @@
       "id": "comp-fake-dough-proofing",
       "name": "FAKE Dough Proofing",
       "description": "Knowing when bread dough has risen enough.",
-      "primarySourceId": "src-fake-croissant-academy",
+      "primarySourceId": "src-fake-yeast-college",
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -207,7 +609,7 @@
       "id": "comp-fake-butter-lamination",
       "name": "FAKE Butter Lamination",
       "description": "Folding butter into dough an unreasonable number of times.",
-      "primarySourceId": "src-fake-croissant-academy",
+      "primarySourceId": "src-fake-lamination-guild",
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -215,7 +617,7 @@
       "id": "comp-fake-emulsion-wrangling",
       "name": "FAKE Emulsion Wrangling",
       "description": "Keeping mayonnaise from splitting.",
-      "primarySourceId": "src-fake-sauce-college",
+      "primarySourceId": "src-fake-emulsion-lab",
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -223,7 +625,7 @@
       "id": "comp-fake-pasta-timing",
       "name": "FAKE Pasta Timing",
       "description": "Cooking pasta al dente instead of mush.",
-      "primarySourceId": "src-fake-spaghetti-u",
+      "primarySourceId": "src-fake-al-dente-inst",
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -231,7 +633,7 @@
       "id": "comp-fake-fridge-forensics",
       "name": "FAKE Fridge Forensics",
       "description": "Identifying the contents and age of mystery containers.",
-      "primarySourceId": "src-fake-fridge-uni",
+      "primarySourceId": "src-fake-forensics-uni",
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -239,7 +641,7 @@
       "id": "comp-fake-hand-washing",
       "name": "FAKE Hand Washing",
       "description": "Washing hands for longer than 2 seconds.",
-      "primarySourceId": "src-fake-fridge-uni",
+      "primarySourceId": "src-fake-suds-academy",
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -247,7 +649,7 @@
       "id": "comp-fake-crunch-vocabulary",
       "name": "FAKE Crunch Vocabulary",
       "description": "Describing crunch with words other than 'crunchy'.",
-      "primarySourceId": "src-fake-snack-review",
+      "primarySourceId": "src-fake-thesaurus-inst",
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
     },
@@ -255,46 +657,217 @@
       "id": "comp-fake-garnish-placement",
       "name": "FAKE Garnish Placement",
       "description": "Placing a single parsley leaf with dramatic intent.",
-      "primarySourceId": "src-fake-snack-review",
+      "primarySourceId": "src-fake-garnish-school",
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-herb-chiffonade",
+      "name": "FAKE Herb Chiffonade",
+      "description": "Cutting leafy herbs into thin, even ribbons.",
+      "primarySourceId": "src-fake-chiffonade-co",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-knife-sharpening",
+      "name": "FAKE Knife Sharpening",
+      "description": "Keeping a blade properly sharp and safe to use.",
+      "primarySourceId": "src-fake-whetstone-inst",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-oven-temp",
+      "name": "FAKE Oven Temperature Tuning",
+      "description": "Knowing what your oven is actually doing versus the dial.",
+      "primarySourceId": "src-fake-thermo-oven-lab",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-sourdough-starter",
+      "name": "FAKE Sourdough Starter Care",
+      "description": "Feeding and reading a live sourdough starter.",
+      "primarySourceId": "src-fake-starter-sanctuary",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-stock-simmering",
+      "name": "FAKE Stock Simmering",
+      "description": "Coaxing a clear, flavorful stock without boiling it.",
+      "primarySourceId": "src-fake-stockpot-uni",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-seasoning-balance",
+      "name": "FAKE Seasoning Balance",
+      "description": "Balancing salt, acid, fat, and sweetness in a dish.",
+      "primarySourceId": "src-fake-balance-inst",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-cross-contamination",
+      "name": "FAKE Cross-Contamination Control",
+      "description": "Keeping raw and ready-to-eat food safely apart.",
+      "primarySourceId": "src-fake-hygiene-board",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-fire-extinguisher",
+      "name": "FAKE Fire Extinguisher Awareness",
+      "description": "Responding safely to a small kitchen fire.",
+      "primarySourceId": "src-fake-extinguish-academy",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-flavour-pairing",
+      "name": "FAKE Flavour Pairing",
+      "description": "Combining flavors that play well (or interestingly) together.",
+      "primarySourceId": "src-fake-pairing-conservatory",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "comp-fake-plating-symmetry",
+      "name": "FAKE Plating Symmetry",
+      "description": "Arranging a plate so it looks intentional, not accidental.",
+      "primarySourceId": "src-fake-plating-atelier",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
     }
   ],
   "aios.assessment.competence_secondary_source": [
     {
       "competenceId": "comp-fake-onion-dicing",
-      "sourceId": "src-fake-spaghetti-u",
-      "createdAt": "2026-09-23T12:00:00.000Z"
+      "sourceId": "src-fake-knife-dojo",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-finger-keeping",
+      "sourceId": "src-fake-knife-dojo",
+      "createdAt": "2026-09-28T12:00:00.000Z"
     },
     {
       "competenceId": "comp-fake-dough-proofing",
-      "sourceId": "src-fake-spaghetti-u",
-      "createdAt": "2026-09-23T12:00:00.000Z"
+      "sourceId": "src-fake-croissant-academy",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-butter-lamination",
+      "sourceId": "src-fake-croissant-academy",
+      "createdAt": "2026-09-28T12:00:00.000Z"
     },
     {
       "competenceId": "comp-fake-emulsion-wrangling",
-      "sourceId": "src-fake-croissant-academy",
-      "createdAt": "2026-09-23T12:00:00.000Z"
+      "sourceId": "src-fake-sauce-college",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-emulsion-wrangling",
+      "sourceId": "src-fake-spaghetti-u",
+      "createdAt": "2026-09-28T12:00:00.000Z"
     },
     {
       "competenceId": "comp-fake-pasta-timing",
       "sourceId": "src-fake-sauce-college",
-      "createdAt": "2026-09-23T12:00:00.000Z"
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-pasta-timing",
+      "sourceId": "src-fake-spaghetti-u",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-fridge-forensics",
+      "sourceId": "src-fake-fridge-uni",
+      "createdAt": "2026-09-28T12:00:00.000Z"
     },
     {
       "competenceId": "comp-fake-hand-washing",
-      "sourceId": "src-fake-knife-dojo",
-      "createdAt": "2026-09-23T12:00:00.000Z"
+      "sourceId": "src-fake-fridge-uni",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-crunch-vocabulary",
+      "sourceId": "src-fake-snack-review",
+      "createdAt": "2026-09-28T12:00:00.000Z"
     },
     {
       "competenceId": "comp-fake-garnish-placement",
+      "sourceId": "src-fake-snack-review",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-herb-chiffonade",
+      "sourceId": "src-fake-knife-dojo",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-knife-sharpening",
+      "sourceId": "src-fake-knife-dojo",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-oven-temp",
+      "sourceId": "src-fake-croissant-academy",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-sourdough-starter",
+      "sourceId": "src-fake-croissant-academy",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-stock-simmering",
       "sourceId": "src-fake-sauce-college",
-      "createdAt": "2026-09-23T12:00:00.000Z"
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-stock-simmering",
+      "sourceId": "src-fake-spaghetti-u",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-seasoning-balance",
+      "sourceId": "src-fake-sauce-college",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-seasoning-balance",
+      "sourceId": "src-fake-spaghetti-u",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-cross-contamination",
+      "sourceId": "src-fake-fridge-uni",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-fire-extinguisher",
+      "sourceId": "src-fake-fridge-uni",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-flavour-pairing",
+      "sourceId": "src-fake-snack-review",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "competenceId": "comp-fake-plating-symmetry",
+      "sourceId": "src-fake-snack-review",
+      "createdAt": "2026-09-28T12:00:00.000Z"
     }
   ],
   "aios.assessment.section": [
     {
       "id": "sec-fake-knife",
+      "code": "A",
       "name": "FAKE Knife Skills",
       "description": "Pointy things and how not to lose fingers.",
       "createdAt": "2026-09-23T12:00:00.000Z",
@@ -302,6 +875,7 @@
     },
     {
       "id": "sec-fake-baking",
+      "code": "B",
       "name": "FAKE Baking & Pastry",
       "description": "Bread, butter, and patience.",
       "createdAt": "2026-09-23T12:00:00.000Z",
@@ -309,6 +883,7 @@
     },
     {
       "id": "sec-fake-sauces",
+      "code": "C",
       "name": "FAKE Sauces & Pasta",
       "description": "Wet food and noodles.",
       "createdAt": "2026-09-23T12:00:00.000Z",
@@ -316,6 +891,7 @@
     },
     {
       "id": "sec-fake-safety",
+      "code": "D",
       "name": "FAKE Kitchen Safety",
       "description": "Fridges, hands, and mystery smells.",
       "createdAt": "2026-09-23T12:00:00.000Z",
@@ -323,6 +899,7 @@
     },
     {
       "id": "sec-fake-critique",
+      "code": "E",
       "name": "FAKE Snack Critique & Plating",
       "description": "Judging food and making it look fancy.",
       "createdAt": "2026-09-23T12:00:00.000Z",
@@ -336,8 +913,10 @@
       "description": "Everything about onions.",
       "mainCompetenceId": "comp-fake-onion-dicing",
       "sectionId": "sec-fake-knife",
+      "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 501
     },
     {
       "id": "mod-fake-fingers",
@@ -345,8 +924,10 @@
       "description": "Keep them attached.",
       "mainCompetenceId": "comp-fake-finger-keeping",
       "sectionId": "sec-fake-knife",
+      "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 502
     },
     {
       "id": "mod-fake-proofing",
@@ -354,8 +935,10 @@
       "description": "Watching dough grow.",
       "mainCompetenceId": "comp-fake-dough-proofing",
       "sectionId": "sec-fake-baking",
+      "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 503
     },
     {
       "id": "mod-fake-croissants",
@@ -363,8 +946,10 @@
       "description": "Butter. More butter.",
       "mainCompetenceId": "comp-fake-butter-lamination",
       "sectionId": "sec-fake-baking",
+      "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 504
     },
     {
       "id": "mod-fake-mayo",
@@ -372,8 +957,10 @@
       "description": "Oil + egg = drama.",
       "mainCompetenceId": "comp-fake-emulsion-wrangling",
       "sectionId": "sec-fake-sauces",
+      "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 505
     },
     {
       "id": "mod-fake-pasta",
@@ -381,8 +968,10 @@
       "description": "Boil water, add noodles, panic.",
       "mainCompetenceId": "comp-fake-pasta-timing",
       "sectionId": "sec-fake-sauces",
+      "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 506
     },
     {
       "id": "mod-fake-fridge",
@@ -390,8 +979,10 @@
       "description": "What is in the blue tub?",
       "mainCompetenceId": "comp-fake-fridge-forensics",
       "sectionId": "sec-fake-safety",
+      "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 507
     },
     {
       "id": "mod-fake-hands",
@@ -399,8 +990,10 @@
       "description": "Soap exists.",
       "mainCompetenceId": "comp-fake-hand-washing",
       "sectionId": "sec-fake-safety",
+      "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 508
     },
     {
       "id": "mod-fake-crisps",
@@ -408,8 +1001,10 @@
       "description": "Crunch, described.",
       "mainCompetenceId": "comp-fake-crunch-vocabulary",
       "sectionId": "sec-fake-critique",
+      "level": 1,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 509
     },
     {
       "id": "mod-fake-parsley",
@@ -417,8 +1012,120 @@
       "description": "One leaf. Perfect.",
       "mainCompetenceId": "comp-fake-garnish-placement",
       "sectionId": "sec-fake-critique",
+      "level": 2,
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 510
+    },
+    {
+      "id": "mod-fake-herbs",
+      "name": "FAKE Herb Chiffonade Module",
+      "description": "Cutting leafy herbs into thin, even ribbons.",
+      "mainCompetenceId": "comp-fake-herb-chiffonade",
+      "sectionId": "sec-fake-knife",
+      "level": 3,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 511
+    },
+    {
+      "id": "mod-fake-sharpening",
+      "name": "FAKE Knife Sharpening Module",
+      "description": "Keeping a blade properly sharp and safe to use.",
+      "mainCompetenceId": "comp-fake-knife-sharpening",
+      "sectionId": "sec-fake-knife",
+      "level": 4,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 512
+    },
+    {
+      "id": "mod-fake-ovens",
+      "name": "FAKE Oven Temperature Tuning Module",
+      "description": "Knowing what your oven is actually doing versus the dial.",
+      "mainCompetenceId": "comp-fake-oven-temp",
+      "sectionId": "sec-fake-baking",
+      "level": 3,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 513
+    },
+    {
+      "id": "mod-fake-sourdough",
+      "name": "FAKE Sourdough Starter Care Module",
+      "description": "Feeding and reading a live sourdough starter.",
+      "mainCompetenceId": "comp-fake-sourdough-starter",
+      "sectionId": "sec-fake-baking",
+      "level": 4,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 514
+    },
+    {
+      "id": "mod-fake-stock",
+      "name": "FAKE Stock Simmering Module",
+      "description": "Coaxing a clear, flavorful stock without boiling it.",
+      "mainCompetenceId": "comp-fake-stock-simmering",
+      "sectionId": "sec-fake-sauces",
+      "level": 3,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 515
+    },
+    {
+      "id": "mod-fake-seasoning",
+      "name": "FAKE Seasoning Balance Module",
+      "description": "Balancing salt, acid, fat, and sweetness in a dish.",
+      "mainCompetenceId": "comp-fake-seasoning-balance",
+      "sectionId": "sec-fake-sauces",
+      "level": 4,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 516
+    },
+    {
+      "id": "mod-fake-crosscontam",
+      "name": "FAKE Cross-Contamination Control Module",
+      "description": "Keeping raw and ready-to-eat food safely apart.",
+      "mainCompetenceId": "comp-fake-cross-contamination",
+      "sectionId": "sec-fake-safety",
+      "level": 3,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 517
+    },
+    {
+      "id": "mod-fake-fire",
+      "name": "FAKE Fire Extinguisher Awareness Module",
+      "description": "Responding safely to a small kitchen fire.",
+      "mainCompetenceId": "comp-fake-fire-extinguisher",
+      "sectionId": "sec-fake-safety",
+      "level": 4,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 518
+    },
+    {
+      "id": "mod-fake-flavour",
+      "name": "FAKE Flavour Pairing Module",
+      "description": "Combining flavors that play well (or interestingly) together.",
+      "mainCompetenceId": "comp-fake-flavour-pairing",
+      "sectionId": "sec-fake-critique",
+      "level": 3,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 519
+    },
+    {
+      "id": "mod-fake-plating",
+      "name": "FAKE Plating Symmetry Module",
+      "description": "Arranging a plate so it looks intentional, not accidental.",
+      "mainCompetenceId": "comp-fake-plating-symmetry",
+      "sectionId": "sec-fake-critique",
+      "level": 4,
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z",
+      "moodleCourseId": 520
     }
   ],
   "aios.assessment.section_module_secondary_competence": [
@@ -429,7 +1136,7 @@
     },
     {
       "moduleId": "mod-fake-fingers",
-      "competenceId": "comp-fake-hand-washing",
+      "competenceId": "comp-fake-knife-sharpening",
       "createdAt": "2026-09-23T12:00:00.000Z"
     },
     {
@@ -1205,6 +1912,766 @@
       "competenceId": "comp-fake-garnish-placement",
       "createdAt": "2026-09-23T12:00:00.000Z",
       "updatedAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-herb-1",
+      "prompt": "How steady is your chiffonade cut on fresh basil?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Herb confetti",
+          "maxLabel": "Ribbon perfection"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-herbs",
+      "competenceId": "comp-fake-herb-chiffonade",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-herb-2",
+      "prompt": "[FAKE] What does 'chiffonade' technically mean?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Rolled and thinly sliced"
+          },
+          {
+            "id": "b",
+            "text": "Diced into cubes"
+          },
+          {
+            "id": "c",
+            "text": "Julienned lengthwise"
+          },
+          {
+            "id": "d",
+            "text": "Pureed in a blender"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-herbs",
+      "competenceId": "comp-fake-herb-chiffonade",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-herb-3",
+      "prompt": "[FAKE] Stacking and rolling leaves before cutting is part of the chiffonade technique.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["true"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-herbs",
+      "competenceId": "comp-fake-herb-chiffonade",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-sharpen-1",
+      "prompt": "How confident are you maintaining a sharp edge on your knives?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Butter knife energy",
+          "maxLabel": "Could shave with it"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-sharpening",
+      "competenceId": "comp-fake-knife-sharpening",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-sharpen-2",
+      "prompt": "[FAKE] What angle is commonly recommended for sharpening a Western chef's knife?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Around 20 degrees per side"
+          },
+          {
+            "id": "b",
+            "text": "90 degrees"
+          },
+          {
+            "id": "c",
+            "text": "Whatever feels right"
+          },
+          {
+            "id": "d",
+            "text": "0 degrees, perfectly flat"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-sharpening",
+      "competenceId": "comp-fake-knife-sharpening",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-sharpen-3",
+      "prompt": "[FAKE] Which of these help maintain a sharp knife? (select all)",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Honing steel"
+          },
+          {
+            "id": "b",
+            "text": "Cutting on glass"
+          },
+          {
+            "id": "c",
+            "text": "Whetstone sharpening"
+          },
+          {
+            "id": "d",
+            "text": "Storing loose in a drawer"
+          }
+        ],
+        "correctOptionIds": ["a", "c"],
+        "maxScore": 2
+      },
+      "sectionModuleId": "mod-fake-sharpening",
+      "competenceId": "comp-fake-knife-sharpening",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-oven-1",
+      "prompt": "How well do you know your oven's actual temperature versus the dial?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Complete mystery",
+          "maxLabel": "Calibrated precisely"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-ovens",
+      "competenceId": "comp-fake-oven-temp",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-oven-2",
+      "prompt": "[FAKE] What tool best confirms your oven's real temperature?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "An oven thermometer"
+          },
+          {
+            "id": "b",
+            "text": "Guessing by smell"
+          },
+          {
+            "id": "c",
+            "text": "The dial alone"
+          },
+          {
+            "id": "d",
+            "text": "A meat thermometer"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-ovens",
+      "competenceId": "comp-fake-oven-temp",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-oven-3",
+      "prompt": "[FAKE] Most home ovens run at exactly the temperature shown on the dial.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["false"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-ovens",
+      "competenceId": "comp-fake-oven-temp",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-sourdough-1",
+      "prompt": "How confident are you keeping a sourdough starter alive?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "It's died on me before",
+          "maxLabel": "It's basically a pet"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-sourdough",
+      "competenceId": "comp-fake-sourdough-starter",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-sourdough-2",
+      "prompt": "[FAKE] How can you tell a sourdough starter is ready to bake with?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "It doubles in size and floats in water"
+          },
+          {
+            "id": "b",
+            "text": "It turns bright pink"
+          },
+          {
+            "id": "c",
+            "text": "It stops smelling like anything"
+          },
+          {
+            "id": "d",
+            "text": "It becomes completely solid"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-sourdough",
+      "competenceId": "comp-fake-sourdough-starter",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-sourdough-3",
+      "prompt": "[FAKE] Which of these keep a starter healthy? (select all)",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Regular feeding"
+          },
+          {
+            "id": "b",
+            "text": "Sealing it completely airtight forever"
+          },
+          {
+            "id": "c",
+            "text": "Discarding part before feeding"
+          },
+          {
+            "id": "d",
+            "text": "Never checking on it"
+          }
+        ],
+        "correctOptionIds": ["a", "c"],
+        "maxScore": 2
+      },
+      "sectionModuleId": "mod-fake-sourdough",
+      "competenceId": "comp-fake-sourdough-starter",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-stock-1",
+      "prompt": "How confident are you making a clear, flavorful stock?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "Mine comes out cloudy",
+          "maxLabel": "Restaurant-clear every time"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-stock",
+      "competenceId": "comp-fake-stock-simmering",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-stock-2",
+      "prompt": "[FAKE] Why should stock be simmered gently rather than boiled?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Boiling emulsifies fat and clouds the stock"
+          },
+          {
+            "id": "b",
+            "text": "Boiling makes it too flavorful"
+          },
+          {
+            "id": "c",
+            "text": "It cooks faster when clear"
+          },
+          {
+            "id": "d",
+            "text": "There's no real difference"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-stock",
+      "competenceId": "comp-fake-stock-simmering",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-stock-3",
+      "prompt": "[FAKE] Skimming foam off simmering stock helps keep it clear.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["true"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-stock",
+      "competenceId": "comp-fake-stock-simmering",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-seasoning-1",
+      "prompt": "How well can you balance salt, acid, and sweetness in a dish?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "I only own salt",
+          "maxLabel": "I taste and adjust constantly"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-seasoning",
+      "competenceId": "comp-fake-seasoning-balance",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-seasoning-2",
+      "prompt": "[FAKE] A squeeze of lemon at the end of cooking mainly adds...",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Acidity to balance richness"
+          },
+          {
+            "id": "b",
+            "text": "Sweetness"
+          },
+          {
+            "id": "c",
+            "text": "Umami"
+          },
+          {
+            "id": "d",
+            "text": "Nothing noticeable"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-seasoning",
+      "competenceId": "comp-fake-seasoning-balance",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-seasoning-3",
+      "prompt": "[FAKE] Which of these can rescue an overly salty sauce? (select all)",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Adding a splash of water or stock"
+          },
+          {
+            "id": "b",
+            "text": "Adding more salt"
+          },
+          {
+            "id": "c",
+            "text": "Adding a bit of acid or sweetness"
+          },
+          {
+            "id": "d",
+            "text": "Serving it colder"
+          }
+        ],
+        "correctOptionIds": ["a", "c"],
+        "maxScore": 2
+      },
+      "sectionModuleId": "mod-fake-seasoning",
+      "competenceId": "comp-fake-seasoning-balance",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-crosscontam-1",
+      "prompt": "How careful are you about keeping raw meat away from ready-to-eat food?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "It's all one big cutting board",
+          "maxLabel": "Strictly separated, always"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-crosscontam",
+      "competenceId": "comp-fake-cross-contamination",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-crosscontam-2",
+      "prompt": "[FAKE] What's the safest way to handle a cutting board used for raw chicken?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Wash it thoroughly before reusing for other food"
+          },
+          {
+            "id": "b",
+            "text": "Wipe it once with a dry towel"
+          },
+          {
+            "id": "c",
+            "text": "Reuse it immediately for salad"
+          },
+          {
+            "id": "d",
+            "text": "Rinse with cold water only"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-crosscontam",
+      "competenceId": "comp-fake-cross-contamination",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-crosscontam-3",
+      "prompt": "[FAKE] Using the same knife for raw chicken and salad vegetables is fine if you rinse it briefly first.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["false"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-crosscontam",
+      "competenceId": "comp-fake-cross-contamination",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-fire-1",
+      "prompt": "How confident are you responding to a small kitchen fire?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "I would panic and run",
+          "maxLabel": "I'd calmly handle it"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-fire",
+      "competenceId": "comp-fake-fire-extinguisher",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-fire-2",
+      "prompt": "[FAKE] What should you do first for a small grease fire in a pan?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Cover it with a lid to cut off oxygen"
+          },
+          {
+            "id": "b",
+            "text": "Throw water on it"
+          },
+          {
+            "id": "c",
+            "text": "Carry it outside while it's burning"
+          },
+          {
+            "id": "d",
+            "text": "Blow on it"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-fire",
+      "competenceId": "comp-fake-fire-extinguisher",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-fire-3",
+      "prompt": "[FAKE] Which of these are correct kitchen fire responses? (select all)",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Turn off the heat source"
+          },
+          {
+            "id": "b",
+            "text": "Use water on a grease fire"
+          },
+          {
+            "id": "c",
+            "text": "Use a class-appropriate extinguisher"
+          },
+          {
+            "id": "d",
+            "text": "Fan the flames to see how big it is"
+          }
+        ],
+        "correctOptionIds": ["a", "c"],
+        "maxScore": 2
+      },
+      "sectionModuleId": "mod-fake-fire",
+      "competenceId": "comp-fake-fire-extinguisher",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-flavour-1",
+      "prompt": "How confident are you pairing unexpected flavors together?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "I stick to plain and safe",
+          "maxLabel": "I'll pair anything with anything"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-flavour",
+      "competenceId": "comp-fake-flavour-pairing",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-flavour-2",
+      "prompt": "[FAKE] Which classic pairing helps balance rich, fatty pork?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "A tart apple or citrus element"
+          },
+          {
+            "id": "b",
+            "text": "Extra butter"
+          },
+          {
+            "id": "c",
+            "text": "More pork"
+          },
+          {
+            "id": "d",
+            "text": "Plain white rice only"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-flavour",
+      "competenceId": "comp-fake-flavour-pairing",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-flavour-3",
+      "prompt": "[FAKE] Pairing contrasting flavors, like sweet and salty, is a common way to make a dish more interesting.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "correctOptionIds": ["true"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-flavour",
+      "competenceId": "comp-fake-flavour-pairing",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-plating-1",
+      "prompt": "How confident are you plating a dish so it looks intentional?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "minLabel": "It looks like it fell there",
+          "maxLabel": "Restaurant-ready every time"
+        },
+        "maxScore": 5
+      },
+      "sectionModuleId": "mod-fake-plating",
+      "competenceId": "comp-fake-plating-symmetry",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-plating-2",
+      "prompt": "[FAKE] Which plating principle is most about visual balance?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Distributing elements thoughtfully around the plate"
+          },
+          {
+            "id": "b",
+            "text": "Piling everything in the center"
+          },
+          {
+            "id": "c",
+            "text": "Using the biggest plate possible"
+          },
+          {
+            "id": "d",
+            "text": "Placing things randomly"
+          }
+        ],
+        "correctOptionIds": ["a"],
+        "maxScore": 1
+      },
+      "sectionModuleId": "mod-fake-plating",
+      "competenceId": "comp-fake-plating-symmetry",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "id": "q-fake-plating-3",
+      "prompt": "[FAKE] Which of these are common plating techniques? (select all)",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "A sauce swoosh or dot pattern"
+          },
+          {
+            "id": "b",
+            "text": "Stacking components with height"
+          },
+          {
+            "id": "c",
+            "text": "Covering the entire plate edge to edge"
+          },
+          {
+            "id": "d",
+            "text": "Ignoring negative space entirely"
+          }
+        ],
+        "correctOptionIds": ["a", "b"],
+        "maxScore": 2
+      },
+      "sectionModuleId": "mod-fake-plating",
+      "competenceId": "comp-fake-plating-symmetry",
+      "createdAt": "2026-09-28T12:00:00.000Z",
+      "updatedAt": "2026-09-28T12:00:00.000Z"
     }
   ],
   "aios.learningJourney.journey": [
@@ -1213,21 +2680,24 @@
       "name": "FAKE Knife Ninja Journey",
       "description": "From onion tears to samurai.",
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 601
     },
     {
       "id": "journey-fake-butter-baron",
       "name": "FAKE Butter Baron Journey",
       "description": "Become one with the croissant.",
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 602
     },
     {
       "id": "journey-fake-snack-sommelier",
       "name": "FAKE Snack Sommelier Journey",
       "description": "Judge crisps professionally.",
       "createdAt": "2026-09-23T12:00:00.000Z",
-      "updatedAt": "2026-09-23T12:00:00.000Z"
+      "updatedAt": "2026-09-23T12:00:00.000Z",
+      "moodleCourseId": 603
     }
   ],
   "aios.learningJourney.journey_section": [
@@ -1608,6 +3078,136 @@
       "competenceId": "comp-fake-pasta-timing",
       "grantedByLearnerId": "learner-fake-chef-admin",
       "createdAt": "2026-09-23T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-herb-chiffonade",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-knife-sharpening",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-oven-temp",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-sourdough-starter",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-stock-simmering",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-seasoning-balance",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-cross-contamination",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-fire-extinguisher",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-flavour-pairing",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-everything",
+      "competenceId": "comp-fake-plating-symmetry",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-herb-chiffonade",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-knife-sharpening",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-stock-simmering",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-seasoning-balance",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-cross-contamination",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-line-cook",
+      "competenceId": "comp-fake-fire-extinguisher",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-oven-temp",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-sourdough-starter",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-stock-simmering",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-seasoning-balance",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-cross-contamination",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-pastry",
+      "competenceId": "comp-fake-fire-extinguisher",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-critic",
+      "competenceId": "comp-fake-flavour-pairing",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-critic",
+      "competenceId": "comp-fake-plating-symmetry",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-critic",
+      "competenceId": "comp-fake-stock-simmering",
+      "createdAt": "2026-09-28T12:00:00.000Z"
+    },
+    {
+      "roleId": "role-fake-critic",
+      "competenceId": "comp-fake-seasoning-balance",
+      "createdAt": "2026-09-28T12:00:00.000Z"
     }
   ]
 }

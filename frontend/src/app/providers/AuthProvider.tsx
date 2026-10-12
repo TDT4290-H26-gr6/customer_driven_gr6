@@ -12,6 +12,8 @@ type AuthContextValue = {
   logout: () => void;
   setRole: (role: Role) => void;
   markInitialAssessmentComplete: () => void;
+  /** Replaces the session's learner with a fresh copy from the backend (e.g. after saving the profile). */
+  updateLearner: (learner: Learner) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -69,9 +71,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLearner((prev) => (prev ? { ...prev, hasCompletedInitialAssessment: true } : prev));
   }
 
+  function updateLearner(updated: Learner) {
+    setLearner(updated);
+  }
+
   return (
     <AuthContext.Provider
-      value={{ learner, status, login, logout, setRole, markInitialAssessmentComplete }}
+      value={{
+        learner,
+        status,
+        login,
+        logout,
+        setRole,
+        markInitialAssessmentComplete,
+        updateLearner,
+      }}
     >
       {children}
     </AuthContext.Provider>
