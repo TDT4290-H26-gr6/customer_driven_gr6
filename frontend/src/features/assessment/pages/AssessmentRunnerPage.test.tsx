@@ -136,7 +136,7 @@ describe("AssessmentRunnerPage", () => {
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     expect(await screen.findByText("Question A2-q")).toBeInTheDocument();
-    expect(saveResponse).toHaveBeenCalledWith("1", done);
+    expect(saveResponse).toHaveBeenCalledWith("1", done, expect.any(Number));
     expect(getAssessmentPath).toHaveBeenCalledTimes(2);
   });
 
@@ -191,7 +191,7 @@ describe("AssessmentRunnerPage", () => {
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     expect(await screen.findByText("Question 2")).toBeInTheDocument();
-    expect(saveResponse).toHaveBeenCalledWith("1", done);
+    expect(saveResponse).toHaveBeenCalledWith("1", done, expect.any(Number));
   });
 
   it("refuses to move on while an answer is unsaved, until the save is retried", async () => {

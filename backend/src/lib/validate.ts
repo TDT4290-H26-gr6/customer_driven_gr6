@@ -29,3 +29,18 @@ export function requireObject(value: unknown, field: string): Record<string, unk
   }
   return value as Record<string, unknown>;
 }
+
+/**
+ * A plausible non-negative duration in milliseconds, or undefined if it's
+ * missing, the wrong type, or outside [0, maxMs]. Unlike the `require*`
+ * guards above, this never throws — it's a best-effort analytics value
+ * (CD-97's time-per-question), not core data, so an implausible clock
+ * reading (e.g. a backgrounded tab) silently drops just that one field
+ * rather than failing the whole save.
+ */
+export function plausibleDurationMs(value: unknown, maxMs: number): number | undefined {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > maxMs) {
+    return undefined;
+  }
+  return value;
+}

@@ -164,6 +164,11 @@ model Response {
   answer        Json
   score         Float?
   maxScore      Float?
+  // Wall-clock time (ms) the question was on screen before this save, from
+  // the frontend's own clock (CD-97). Null for responses saved before this
+  // existed, or when the value the client sent wasn't plausible. Analytics
+  // only — never used for scoring.
+  timeSpentMs   Int?
   answeredAt    DateTime    @default(now())
 
   // One response per question per SAT instance — resubmitting (e.g. going

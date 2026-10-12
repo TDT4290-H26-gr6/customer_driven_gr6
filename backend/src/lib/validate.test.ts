@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { HttpError } from "./httpError";
-import { requireObject, requireString } from "./validate";
+import { plausibleDurationMs, requireObject, requireString } from "./validate";
 
 describe("requireString", () => {
   it("returns a non-empty string unchanged", () => {
@@ -36,4 +36,24 @@ describe("requireObject", () => {
   it.each([undefined, null, "text", 1, true, []])("throws a 400 for %j", (value) => {
     expect(() => requireObject(value, "answer")).toThrow("Missing or invalid answer");
   });
+});
+
+describe("plausibleDurationMs", () => {
+  const MAX = 60_000;
+
+  it("returns a valid value unchanged", () => {
+    expect(plausibleDurationMs(4200, MAX)).toBe(4200);
+  });
+
+  it("accepts the boundaries 0 and max", () => {
+    expect(plausibleDurationMs(0, MAX)).toBe(0);
+    expect(plausibleDurationMs(MAX, MAX)).toBe(MAX);
+  });
+
+  it.each([undefined, null, -1, MAX + 1, 1.5, "4200", {}, [], true, NaN, Infinity])(
+    "returns undefined instead of throwing, for %j",
+    (value) => {
+      expect(plausibleDurationMs(value, MAX)).toBeUndefined();
+    },
+  );
 });
