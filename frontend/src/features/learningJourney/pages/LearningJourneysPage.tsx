@@ -1,42 +1,62 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { isApiError } from "@/shared/api/client";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
-import { listJourneys, getSelectedJourney, selectJourney } from "../api";
+import { listJourneys, startJourneyAssessment } from "../api";
 import type { LearningJourney } from "../types";
 import styles from "./LearningJourneysPage.module.css";
 
+/** The sections a journey is centred on (M) — what assessing it covers. */
+function coreSections(journey: LearningJourney) {
+  return (journey.sections ?? [])
+    .filter((s) => s.coverageLevel === "M")
+    .map((s) => s.section?.code ?? s.section?.name ?? "")
+    .filter(Boolean)
+    .sort();
+}
+
 /**
- * Browse every learning journey and pick one to follow (CD-33) — not just
- * the one score-based recommendation. The selection sticks (Learner.
- * selectedJourneyId) and is what the results page then shows as "your
- * journey", overriding the recommendation, until a different one is picked.
+ * Browse every learning journey and assess yourself on one of them: an
+ * assessment with only the questions in the sections the journey is centred
+ * on (M). It stands on its own — it never overrides or compares with the
+ * main self-assessment, and its result shows under Competencies.
  */
 export function LearningJourneysPage() {
+  const navigate = useNavigate();
   const [journeys, setJourneys] = useState<LearningJourney[] | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [selectingId, setSelectingId] = useState<string | null>(null);
-  const [selectError, setSelectError] = useState("");
+  const [startingId, setStartingId] = useState<string | null>(null);
+  const [startError, setStartError] = useState<{ message: string; inProgress: boolean } | null>(
+    null,
+  );
 
   useEffect(() => {
-    Promise.all([listJourneys(), getSelectedJourney()])
-      .then(([loaded, selected]) => {
-        setJourneys(loaded);
-        setSelectedId(selected?.id ?? null);
-      })
+    listJourneys()
+      .then(setJourneys)
       .catch(() => {
         setJourneys([]);
         setLoadFailed(true);
       });
   }, []);
 
-  function handleSelect(id: string) {
-    setSelectingId(id);
-    setSelectError("");
-    selectJourney(id)
-      .then((journey) => setSelectedId(journey.id))
-      .catch(() => setSelectError("Couldn't save your choice. Try again."))
-      .finally(() => setSelectingId(null));
+  function handleAssess(id: string) {
+    setStartingId(id);
+    setStartError(null);
+    startJourneyAssessment(id)
+      .then(() => navigate("/assessment"))
+      .catch((err) => {
+        const inProgress = isApiError(err) && err.status === 409;
+        setStartError({
+          message: inProgress
+            ? "You have an assessment in progress. Finish or abort it before assessing a journey."
+            : isApiError(err) && err.status === 400
+              ? err.message
+              : "Couldn't start the assessment. Try again.",
+          inProgress,
+        });
+        setStartingId(null);
+      });
   }
 
   if (journeys === null) {
@@ -51,8 +71,8 @@ export function LearningJourneysPage() {
     <div className={styles.page}>
       <h1 className={styles.heading}>Learning journeys</h1>
       <p className={styles.subheading}>
-        Browse every journey and pick the one you want to follow — it doesn&apos;t have to be the
-        one recommended for you.
+        Assess yourself on any journey — only the sections it focuses on. It doesn&apos;t change
+        your self-assessment; your result shows under Competencies.
       </p>
 
       {loadFailed && (
@@ -63,15 +83,23 @@ export function LearningJourneysPage() {
         <p className={styles.note}>No learning journeys are available yet.</p>
       )}
 
-      {selectError && <p className={styles.error}>{selectError}</p>}
+      {startError && (
+        <div className={styles.error} role="alert">
+          {startError.message}{" "}
+          {startError.inProgress && (
+            <Button variant="secondary" onClick={() => navigate("/assessment")}>
+              Continue assessment
+            </Button>
+          )}
+        </div>
+      )}
 
       {journeys.map((journey) => {
-        const isSelected = journey.id === selectedId;
+        const sections = coreSections(journey);
         return (
           <div key={journey.id} className={styles.card}>
             <div className={styles.cardHeader}>
               <h2 className={styles.cardHeading}>{journey.name}</h2>
-              {isSelected && <span className={styles.badge}>Selected</span>}
             </div>
 
             {journey.description && <p className={styles.description}>{journey.description}</p>}
@@ -89,6 +117,10 @@ export function LearningJourneysPage() {
               </ol>
             )}
 
+            {sections.length > 0 && (
+              <p className={styles.covers}>Assesses sections {sections.join(", ")}</p>
+            )}
+
             {journey.moodleUrl && (
               <a
                 className={styles.moodleLink}
@@ -102,14 +134,10 @@ export function LearningJourneysPage() {
             <Button
               variant="secondary"
               className={styles.selectButton}
-              onClick={() => handleSelect(journey.id)}
-              disabled={isSelected || selectingId === journey.id}
+              onClick={() => handleAssess(journey.id)}
+              disabled={startingId !== null || sections.length === 0}
             >
-              {isSelected
-                ? "Currently selected"
-                : selectingId === journey.id
-                  ? "Selecting…"
-                  : "Select this journey"}
+              {startingId === journey.id ? "Starting…" : "Assess this journey"}
             </Button>
           </div>
         );

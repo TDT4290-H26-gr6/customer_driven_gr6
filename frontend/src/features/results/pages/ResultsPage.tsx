@@ -28,8 +28,8 @@ import styles from "./ResultsPage.module.css";
  * an overview radar with one axis per section (each rolling up that
  * section's own competences; a section has too many competences to chart
  * individually here), a section-by-section summary (ProgressCard), the
- * learner's journey (whichever they've explicitly selected, CD-33, else the
- * score-based recommendation — see getCurrentJourney), every competence at
+ * learner's journey (the AI advisor's role-aware pick, else the score-based
+ * recommendation or suggestion — see getCurrentJourney), every competence at
  * or below 60% paired with the journey for it (CD-90, not just the single
  * recommended one), AI advice that explains it, and the entry point into
  * the assessment. From a second
@@ -89,14 +89,14 @@ export function ResultsPage() {
       .catch(() => setAdvice({ status: "unavailable" }));
   }, []);
 
-  // The journey card: the learner's own choice always wins; otherwise the AI
-  // advisor's role-aware pick (with its reason) once the advice has loaded;
-  // otherwise the score-based recommendation, or a suggestion to keep
-  // improving with. The AI pick keeps the score-based label ("Recommended
-  // for you" / "To keep improving"), since it chose among those journeys.
+  // The journey card: the AI advisor's role-aware pick (with its reason)
+  // once the advice has loaded; otherwise the score-based recommendation, or
+  // a suggestion to keep improving with. The AI pick keeps the score-based
+  // label ("Recommended for you" / "To keep improving"), since it chose
+  // among those journeys.
   const aiJourney = advice?.status === "ready" ? advice.advice.journey : null;
   const shownJourney =
-    journey?.source !== "selected" && aiJourney && advice?.status === "ready"
+    aiJourney && advice?.status === "ready"
       ? {
           journey: aiJourney,
           source: journey?.source ?? ("recommended" as const),

@@ -47,30 +47,6 @@ export function completeInitialAssessment(learnerId: string) {
   });
 }
 
-// --- Selected learning journey (CD-33) ---
-// Learner.selectedJourneyId lives in identity_learner (this module owns the
-// write), even though it references a learning_journey_journey row — same
-// pattern as the role visibility grants below, which reference assessment
-// sections/competences. The journeyInclude shape (modules, ordered) mirrors
-// learningJourney.service.ts's own, since the learner-picked-this-journey use
-// case here needs exactly the same "journey with its modules" shape the
-// recommendation does.
-const journeyInclude = { modules: { orderBy: { order: "asc" as const } } };
-
-export async function getSelectedJourney(learnerId: string) {
-  const learner = await prisma.learner.findUnique({
-    where: { id: learnerId },
-    select: { selectedJourney: { include: journeyInclude } },
-  });
-  return learner?.selectedJourney ?? null;
-}
-
-/** Throws Prisma's P2003 if journeyId doesn't exist — the route maps that to a 404. */
-export async function selectJourney(learnerId: string, journeyId: string) {
-  await prisma.learner.update({ where: { id: learnerId }, data: { selectedJourneyId: journeyId } });
-  return getSelectedJourney(learnerId);
-}
-
 export function getLearnerProfile(learnerId: string) {
   return prisma.learnerProfile.findUnique({ where: { learnerId } });
 }

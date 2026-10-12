@@ -1,95 +1,96 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LearningJourneysPage } from "./LearningJourneysPage";
-import { listJourneys, getSelectedJourney, selectJourney } from "../api";
+import { listJourneys, startJourneyAssessment } from "../api";
 import type { LearningJourney } from "../types";
 
 vi.mock("../api", () => ({
   listJourneys: vi.fn(),
-  getSelectedJourney: vi.fn(),
-  selectJourney: vi.fn(),
+  startJourneyAssessment: vi.fn(),
 }));
+
+const navigate = vi.fn();
+vi.mock("react-router-dom", () => ({ useNavigate: () => navigate }));
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
+const section = (code: string, coverageLevel: "M" | "R" | "S") => ({
+  sectionId: `sec-${code}`,
+  coverageLevel,
+  section: { code, name: `Section ${code}` },
+});
+
 const JOURNEYS: LearningJourney[] = [
-  { id: "journey-1", name: "Open Science Foundations", description: "Start here.", modules: [] },
+  {
+    id: "journey-1",
+    name: "Open Science Foundations",
+    description: "Start here.",
+    modules: [],
+    sections: [section("D", "M"), section("A", "M"), section("B", "R"), section("E", "S")],
+  },
   {
     id: "journey-2",
     name: "Legal Deep Dive",
     description: null,
     modules: [{ id: "mod-1", order: 1, title: "GDPR basics", description: null }],
+    sections: [section("C", "R")],
   },
 ];
 
 describe("LearningJourneysPage", () => {
-  it("lists every journey, not just the recommended one", async () => {
+  it("lists every journey with the sections assessing it covers (its M sections)", async () => {
     vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
-    vi.mocked(getSelectedJourney).mockResolvedValue(null);
 
     render(<LearningJourneysPage />);
 
     expect(await screen.findByText("Open Science Foundations")).toBeInTheDocument();
+    expect(screen.getByText("Assesses sections A, D")).toBeInTheDocument();
     expect(screen.getByText("Legal Deep Dive")).toBeInTheDocument();
     expect(screen.getByText("GDPR basics")).toBeInTheDocument();
   });
 
-  it("marks the currently-selected journey and disables its own select button", async () => {
+  it("starts a journey assessment and goes to the assessment", async () => {
     vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
-    vi.mocked(getSelectedJourney).mockResolvedValue(JOURNEYS[0]);
-
-    render(<LearningJourneysPage />);
-    await screen.findByText("Open Science Foundations");
-
-    expect(screen.getByText("Selected")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /currently selected/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /^select this journey$/i })).toBeEnabled();
-  });
-
-  it("selects a journey on click and marks it selected once it resolves", async () => {
+    vi.mocked(startJourneyAssessment).mockResolvedValue(undefined);
     const user = userEvent.setup();
-    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
-    vi.mocked(getSelectedJourney).mockResolvedValue(null);
-    vi.mocked(selectJourney).mockResolvedValue(JOURNEYS[1]);
 
     render(<LearningJourneysPage />);
-    await screen.findByText("Legal Deep Dive");
+    const [first] = await screen.findAllByRole("button", { name: "Assess this journey" });
+    await user.click(first);
 
-    await user.click(screen.getAllByRole("button", { name: /^select this journey$/i })[1]);
-
-    expect(selectJourney).toHaveBeenCalledWith("journey-2");
-    expect(await screen.findByText("Selected")).toBeInTheDocument();
+    expect(startJourneyAssessment).toHaveBeenCalledWith("journey-1");
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/assessment"));
   });
 
-  it("shows an error, not a crash, when selecting fails", async () => {
+  it("can't assess a journey with no core (M) sections", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+
+    render(<LearningJourneysPage />);
+
+    const buttons = await screen.findAllByRole("button", { name: "Assess this journey" });
+    expect(buttons[0]).toBeEnabled();
+    expect(buttons[1]).toBeDisabled();
+  });
+
+  it("explains, and offers to continue, when another assessment is in progress", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+    vi.mocked(startJourneyAssessment).mockRejectedValue({ status: 409, message: "busy" });
     const user = userEvent.setup();
-    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
-    vi.mocked(getSelectedJourney).mockResolvedValue(null);
-    vi.mocked(selectJourney).mockRejectedValue(new Error("network error"));
 
     render(<LearningJourneysPage />);
-    await screen.findByText("Open Science Foundations");
+    const [first] = await screen.findAllByRole("button", { name: "Assess this journey" });
+    await user.click(first);
 
-    await user.click(screen.getAllByRole("button", { name: /^select this journey$/i })[0]);
-
-    expect(await screen.findByText(/couldn't save your choice/i)).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent(/assessment in progress/i);
+    await user.click(screen.getByRole("button", { name: "Continue assessment" }));
+    expect(navigate).toHaveBeenCalledWith("/assessment");
   });
 
-  it("shows an empty-state message when there are no journeys", async () => {
-    vi.mocked(listJourneys).mockResolvedValue([]);
-    vi.mocked(getSelectedJourney).mockResolvedValue(null);
-
-    render(<LearningJourneysPage />);
-
-    expect(await screen.findByText(/no learning journeys/i)).toBeInTheDocument();
-  });
-
-  it("shows an error message instead of crashing when loading fails", async () => {
-    vi.mocked(listJourneys).mockRejectedValue(new Error("network error"));
-    vi.mocked(getSelectedJourney).mockResolvedValue(null);
+  it("shows a message instead of a list when loading fails", async () => {
+    vi.mocked(listJourneys).mockRejectedValue({ status: 0, message: "offline" });
 
     render(<LearningJourneysPage />);
 

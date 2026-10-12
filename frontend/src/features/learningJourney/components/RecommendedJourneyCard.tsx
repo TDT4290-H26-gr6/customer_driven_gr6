@@ -5,9 +5,8 @@ import styles from "./RecommendedJourneyCard.module.css";
 type Props = {
   journey: LearningJourney;
   /**
-   * "selected": the learner chose this journey themselves (CD-33) and it
-   * sticks. "recommended" (default): picked for a weak area. "suggested":
-   * nothing is weak, so it's one to keep improving with.
+   * "recommended" (default): picked for a weak area. "suggested": nothing is
+   * weak, so it's one to keep improving with.
    */
   source?: JourneySource;
   /** Why it fits this learner, when the AI advisor chose it. */
@@ -15,12 +14,11 @@ type Props = {
 };
 
 const EYEBROW: Record<JourneySource, string> = {
-  selected: "Your journey",
   recommended: "Recommended for you",
   suggested: "To keep improving",
 };
 
-/** "What to do next" — the learner's chosen journey, or the one recommended from their latest scores. */
+/** "What to do next" — the journey recommended (or suggested) from the learner's latest scores. */
 export function RecommendedJourneyCard({ journey, source = "recommended", reason }: Props) {
   return (
     <div className={styles.card}>

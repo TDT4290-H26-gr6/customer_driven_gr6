@@ -11,6 +11,7 @@ import {
   discardActiveInstance,
   getAssessmentPath,
   getAttemptSectionScores,
+  getCompetencies,
   getDashboardProgress,
   getLatestCompetenceScores,
   getProgress,
@@ -18,6 +19,7 @@ import {
   listAssessableSections,
   listQuestions,
   saveResponse,
+  startJourneyAssessment,
   startReassessment,
 } from "./assessment.service";
 
@@ -106,6 +108,26 @@ assessmentRouter.post(
   }),
 );
 
+// Assesses one learning journey on its own: only the questions in its M
+// sections, and the result never counts towards the main self-assessment.
+assessmentRouter.post(
+  "/assessment/journey",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const journeyId = requireString(req.body?.journeyId, "journeyId");
+
+    const learner = await findLearnerById(req.learnerId!);
+    if (!learner || !isProfileComplete(learner.name, learner.profile)) {
+      return res.status(403).json({ error: "Complete your profile first" });
+    }
+
+    const result = await startJourneyAssessment(req.learnerId!, journeyId);
+    if (!result.ok) return res.status(result.status).json({ error: result.error });
+    res.status(204).end();
+  }),
+);
+
 assessmentRouter.post(
   "/assessment/complete",
   requireAuth,
@@ -186,5 +208,17 @@ assessmentRouter.get(
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
     res.json(await getSatHistory(req.learnerId!));
+  }),
+);
+
+// The Competencies tab: each module's best result over all assessments (main
+// and journey), a percentage per section, and the recommended journey's
+// sections first.
+assessmentRouter.get(
+  "/competencies",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    res.json(await getCompetencies(req.learnerId!));
   }),
 );

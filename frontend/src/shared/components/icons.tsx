@@ -63,6 +63,17 @@ export function RouteIcon(props: IconProps) {
   );
 }
 
+/** Concentric target — the Competencies tab. */
+export function TargetIcon(props: IconProps) {
+  return (
+    <svg {...defaults} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1.5" />
+    </svg>
+  );
+}
+
 export function SunIcon(props: IconProps) {
   return (
     <svg {...defaults} {...props}>

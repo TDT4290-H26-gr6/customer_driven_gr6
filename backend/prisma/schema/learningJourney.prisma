@@ -19,12 +19,12 @@ model LearningJourney {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  modules            LearningModule[]
-  sections           JourneySection[]
-  recommendations    JourneyRecommendation[]
-  selectedByLearners Learner[]               @relation("LearnerSelectedJourney")
-  chosenInAdvice     Advice[]
-  satInstances       SatInstance[]
+  modules         LearningModule[]
+  sections        JourneySection[]
+  recommendations JourneyRecommendation[]
+  chosenInAdvice  Advice[]
+  satInstances    SatInstance[]           @relation("CompletedJourney")
+  assessedIn      SatInstance[]           @relation("AssessedJourney")
 
   @@map("learning_journey_journey")
 }

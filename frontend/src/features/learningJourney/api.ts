@@ -29,38 +29,22 @@ export function getSuggestedJourney(): Promise<LearningJourney | null> {
   );
 }
 
-/** The journey the learner has explicitly chosen (CD-33), or null if they haven't picked one. */
-export function getSelectedJourney(): Promise<LearningJourney | null> {
-  return apiFetch<LearningJourney | undefined>(endpoints.learningJourneySelected).then(
-    (journey) => journey ?? null,
-  );
-}
-
-/** Picks a journey to follow. Sticks until the learner selects a different one. */
-export function selectJourney(id: string): Promise<LearningJourney> {
-  return apiFetch<LearningJourney>(endpoints.learningJourneySelect(id), { method: "PUT" });
-}
-
 /**
- * "selected": the learner chose it (CD-33). "recommended": for a competence
- * at or below 60%. "suggested": nothing is that low, so it's a journey to
- * keep improving with.
+ * "recommended": for a competence at or below 60%. "suggested": nothing is
+ * that low, so it's a journey to keep improving with.
  */
-export type JourneySource = "selected" | "recommended" | "suggested";
+export type JourneySource = "recommended" | "suggested";
 
 export type CurrentJourney = { journey: LearningJourney; source: JourneySource };
 
 /**
- * What the results page shows as "your journey": whichever the learner
- * explicitly selected, if any — that choice always wins — otherwise the
- * score-based recommendation, otherwise a suggestion to keep improving
- * with. Null only when there's nothing to offer (no completed assessment,
- * or a perfect score).
+ * What the results page shows as "your journey": the score-based
+ * recommendation, otherwise a suggestion to keep improving with. Null only
+ * when there's nothing to offer (no completed assessment, or a perfect
+ * score). The dashboard shows the AI advisor's role-aware pick instead,
+ * once the advice has loaded.
  */
 export async function getCurrentJourney(): Promise<CurrentJourney | null> {
-  const selected = await getSelectedJourney();
-  if (selected) return { journey: selected, source: "selected" };
-
   const recommended = await getRecommendedJourney();
   if (recommended) return { journey: recommended, source: "recommended" };
 
@@ -75,4 +59,14 @@ export async function getCurrentJourney(): Promise<CurrentJourney | null> {
  */
 export function getWeakCompetences(): Promise<WeakCompetence[]> {
   return apiFetch<WeakCompetence[]>(endpoints.learningJourneyWeakCompetences);
+}
+
+/**
+ * Starts assessing one learning journey on its own: only the questions in
+ * the sections it's centred on, and the result never counts towards the main
+ * self-assessment (it shows under Competencies). Rejects with 409 while
+ * another assessment is in progress.
+ */
+export function startJourneyAssessment(journeyId: string): Promise<void> {
+  return apiFetch<void>(endpoints.assessment.journey, { method: "POST", body: { journeyId } });
 }

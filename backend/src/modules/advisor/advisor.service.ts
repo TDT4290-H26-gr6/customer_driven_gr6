@@ -1,5 +1,6 @@
 import type { Advice } from "@prisma/client";
 import { prisma } from "../../db/prisma";
+import { MAIN_KIND } from "../assessment/assessment.kinds";
 import { config } from "../../config";
 import { chatJson, type LlmSettings } from "../../lib/llm";
 import { createKeyedLock } from "../../lib/keyedLock";
@@ -244,7 +245,7 @@ export async function getOrCreateAdvice(learnerId: string, llm = config.llm) {
   if (!llm) return null;
 
   const latestInstance = await prisma.satInstance.findFirst({
-    where: { learnerId, completedAt: { not: null } },
+    where: { learnerId, kind: MAIN_KIND, completedAt: { not: null } },
     orderBy: { completedAt: "desc" },
   });
   if (!latestInstance) return null;

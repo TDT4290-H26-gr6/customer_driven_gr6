@@ -1,5 +1,6 @@
 import type { CoverageLevel } from "@prisma/client";
 import { prisma } from "../../db/prisma";
+import { MAIN_KIND } from "../assessment/assessment.kinds";
 import { createKeyedLock } from "../../lib/keyedLock";
 import {
   completedCompetenceScoresQuery,
@@ -19,10 +20,23 @@ const journeyInclude = { modules: { orderBy: { order: "asc" as const } } };
 // recommends it (R) beats one that merely touches it (S).
 const COVERAGE_RANK: Record<CoverageLevel, number> = { M: 0, R: 1, S: 2 };
 
-/** Every journey with its steps and the sections it covers (for picking one before a reassessment). */
+/**
+ * Every journey with its steps and the sections it covers, with how strongly
+ * — for picking one before a reassessment, and for showing which sections
+ * assessing a journey covers (its M sections).
+ */
 export function listJourneys() {
   return prisma.learningJourney.findMany({
-    include: { ...journeyInclude, sections: { select: { sectionId: true } } },
+    include: {
+      ...journeyInclude,
+      sections: {
+        select: {
+          sectionId: true,
+          coverageLevel: true,
+          section: { select: { code: true, name: true } },
+        },
+      },
+    },
     orderBy: { name: "asc" },
   });
 }
@@ -150,7 +164,7 @@ async function bestJourneyForSections(sectionIds: string[]) {
  */
 export async function recommendJourney(learnerId: string) {
   const latestInstance = await prisma.satInstance.findFirst({
-    where: { learnerId, completedAt: { not: null } },
+    where: { learnerId, kind: MAIN_KIND, completedAt: { not: null } },
     orderBy: { completedAt: "desc" },
   });
   if (!latestInstance) return null;
@@ -212,7 +226,7 @@ export type WeakCompetence = {
  */
 export async function weakCompetences(learnerId: string): Promise<WeakCompetence[]> {
   const latestInstance = await prisma.satInstance.findFirst({
-    where: { learnerId, completedAt: { not: null } },
+    where: { learnerId, kind: MAIN_KIND, completedAt: { not: null } },
     orderBy: { completedAt: "desc" },
   });
   if (!latestInstance) return [];
