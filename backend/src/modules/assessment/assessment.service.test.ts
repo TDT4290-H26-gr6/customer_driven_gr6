@@ -16,6 +16,7 @@ import { config } from "../../config";
 import { prisma } from "../../db/prisma";
 import { findLearnerById, getRoleGrants } from "../identity/identity.service";
 import { IDK_VALUE } from "./assessment.scoring";
+import { buildPieContent } from "./assessment.pie";
 
 vi.mock("../../db/prisma", () => ({
   prisma: {
@@ -248,6 +249,41 @@ describe("saveResponse", () => {
     expect(mockPrisma.response.upsert).toHaveBeenCalledWith(
       expect.objectContaining({ update: { answer, score: 0, maxScore: 1 } }),
     );
+  });
+
+  it("scores a criteria_check like its criteria: full for exactly the ones met, less for wrong ticks", async () => {
+    const criteriaQuestion = {
+      id: "q3",
+      questionType: "criteria_check",
+      content: buildPieContent("criteria_check", "Which criteria does the README meet?", {
+        exhibit: "README.md\nLicence: CC BY 4.0",
+        options: [
+          { id: "a", text: "States a licence" },
+          { id: "b", text: "Names the file" },
+          { id: "c", text: "Gives a DOI" },
+          { id: "d", text: "Explains every variable" },
+        ],
+        correctOptionIds: ["a", "b"],
+      }),
+    };
+    mockPrisma.question.findFirst.mockResolvedValue(criteriaQuestion as never);
+    const tick = (...values: string[]) => ({
+      session: { id: "", data: [{ id: "1", value: values }] },
+      complete: true,
+    });
+    const scoreFor = async (...values: string[]) => {
+      mockPrisma.satInstance.findFirst.mockResolvedValueOnce({ id: "instance-1" } as never);
+      mockPrisma.response.upsert.mockClear();
+      await saveResponse("learner-1", "q3", tick(...values));
+      return (mockPrisma.response.upsert.mock.calls[0][0] as { update: { score: number } }).update
+        .score;
+    };
+
+    expect(await scoreFor("a", "b")).toBe(1);
+    // Both met criteria found, but one of the two unmet ones ticked too.
+    expect(await scoreFor("a", "b", "c")).toBe(0.5);
+    // Ticking everything isn't a strategy.
+    expect(await scoreFor("a", "b", "c", "d")).toBe(0);
   });
 });
 

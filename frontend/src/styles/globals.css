@@ -204,3 +204,33 @@ select {
   background-color: transparent !important;
   border-color: var(--color-border) !important;
 }
+
+/* The example a "judge an example against criteria" question (criteria_check,
+   see the backend's assessment.pie.ts) asks the learner to assess — a README,
+   a change log, a sharing plan. Set apart from the question like a quoted
+   document: monospace, line breaks kept, an accent rule on the left. In dark
+   mode the player overrides above make every background transparent and
+   every border neutral, so the accent is put back with higher specificity. */
+pie-fixed-player .aios-exhibit {
+  margin: 12px 0 4px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) pie-fixed-player .aios-exhibit {
+    border-left-color: var(--color-primary) !important;
+    background-color: var(--color-primary-soft) !important;
+  }
+}
+
+:root[data-theme="dark"] pie-fixed-player .aios-exhibit {
+  border-left-color: var(--color-primary) !important;
+  background-color: var(--color-primary-soft) !important;
+}
