@@ -1,41 +1,26 @@
 import { describe, expect, it, vi } from "vitest";
-import { getCurrentJourney, startJourneyAssessment } from "./api";
+import { getRecommendedJourneys, startJourneyAssessment } from "./api";
 import { apiFetch } from "@/shared/api/client";
-import type { LearningJourney } from "./types";
 
 vi.mock("@/shared/api/client", () => ({
   apiFetch: vi.fn(),
 }));
 
-const RECOMMENDED: LearningJourney = {
-  id: "recommended",
-  name: "Recommended",
-  description: null,
-  modules: [],
-};
-const SUGGESTED: LearningJourney = { ...RECOMMENDED, id: "suggested", name: "Suggested" };
+describe("getRecommendedJourneys", () => {
+  it("returns the score-based top two", async () => {
+    const result = {
+      source: "recommended" as const,
+      journeys: [{ id: "a", name: "A", description: null, modules: [] }],
+    };
+    vi.mocked(apiFetch).mockResolvedValueOnce(result);
 
-describe("getCurrentJourney", () => {
-  it("shows the recommendation when something is weak", async () => {
-    vi.mocked(apiFetch).mockResolvedValueOnce(RECOMMENDED);
-
-    expect(await getCurrentJourney()).toEqual({ journey: RECOMMENDED, source: "recommended" });
-    // The suggestion is never even fetched once there's a recommendation.
-    expect(apiFetch).toHaveBeenCalledTimes(1);
+    expect(await getRecommendedJourneys()).toEqual(result);
+    expect(apiFetch).toHaveBeenCalledWith("/learning-journeys/recommendations");
   });
 
-  it("falls back to a suggestion to keep improving when nothing is weak", async () => {
-    vi.mocked(apiFetch)
-      .mockResolvedValueOnce(undefined) // nothing at or below 60%
-      .mockResolvedValueOnce(SUGGESTED);
-
-    expect(await getCurrentJourney()).toEqual({ journey: SUGGESTED, source: "suggested" });
-  });
-
-  it("returns null when there's no recommendation or suggestion (e.g. a perfect score)", async () => {
-    vi.mocked(apiFetch).mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined);
-
-    expect(await getCurrentJourney()).toBeNull();
+  it("returns null when there's nothing to recommend (204)", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(undefined);
+    expect(await getRecommendedJourneys()).toBeNull();
   });
 });
 

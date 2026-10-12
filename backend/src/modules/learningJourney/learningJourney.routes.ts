@@ -5,6 +5,7 @@ import { asyncHandler } from "../../lib/asyncHandler";
 import {
   listJourneys,
   recommendJourney,
+  recommendJourneys,
   suggestJourney,
   weakCompetences,
 } from "./learningJourney.service";
@@ -46,6 +47,23 @@ learningJourneyRouter.get(
  * is perfect. 204 when there's none to suggest (something is weak, so
  * /recommendation applies; a perfect score; or no completed assessment).
  */
+/**
+ * The dashboard's two journeys by score alone, best first, and whether
+ * they're "recommended" (something is weak) or "suggested" (to keep
+ * improving). The AI advisor's ranking, which also weighs the profile,
+ * replaces this when it's available. 204 when there's nothing to recommend.
+ */
+learningJourneyRouter.get(
+  "/learning-journeys/recommendations",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const result = await recommendJourneys(req.learnerId!);
+    if (!result) return res.status(204).end();
+    res.json(result);
+  }),
+);
+
 learningJourneyRouter.get(
   "/learning-journeys/suggestion",
   requireAuth,

@@ -205,7 +205,7 @@ async function generateAdvice(
 ): Promise<Advice> {
   const context = await buildContext(learnerId);
   const reply = await chatJson(llm, buildAdviceMessages(context));
-  const { summary, steps, journey } = parseAdvice(
+  const { summary, steps, journeys } = parseAdvice(
     reply,
     context.candidates,
     context.minSteps,
@@ -225,8 +225,12 @@ async function generateAdvice(
       satInstanceId,
       summary,
       steps: storedSteps,
-      journeyId: journey?.journeyId ?? null,
-      journeyReason: journey?.reason ?? null,
+      // Ranked by fit (scores + profile): the best one, highlighted on the
+      // dashboard, and the runner-up shown beside it.
+      journeyId: journeys[0]?.journeyId ?? null,
+      journeyReason: journeys[0]?.reason ?? null,
+      runnerUpJourneyId: journeys[1]?.journeyId ?? null,
+      runnerUpJourneyReason: journeys[1]?.reason ?? null,
       model: llm.model,
     },
   });
