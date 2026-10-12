@@ -9,7 +9,7 @@
 
 .heading {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--font-size-4xl);
 }
 
 .subheading {
@@ -19,7 +19,7 @@
 
 .note {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -57,8 +57,8 @@
   margin-bottom: -1px;
   background: transparent;
   font: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
   cursor: pointer;
 }
@@ -98,12 +98,12 @@
 
 .attemptTitle {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--font-size-xl);
 }
 
 .attemptNote {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   color: var(--color-text-muted);
 }
 
@@ -116,14 +116,14 @@
 }
 
 .compareLabel {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 .compareSelect {
   padding: 8px 10px;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -139,7 +139,7 @@
   margin: 8px 0 0;
   padding: 0;
   list-style: none;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -154,7 +154,7 @@
   flex: none;
   width: 18px;
   height: 10px;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
 }
 
 .swatchMain {
@@ -169,7 +169,7 @@
 .sectionName {
   align-self: flex-start;
   margin: 0 0 12px;
-  font-size: 18px;
+  font-size: var(--font-size-xl);
 }
 
 @media (max-width: 767px) {
@@ -178,7 +178,7 @@
   }
 
   .heading {
-    font-size: 22px;
+    font-size: var(--font-size-3xl);
   }
 
   .subheading {
@@ -193,7 +193,7 @@
 /* Touch devices: no form control under 16px (iOS zooms the page on focus). */
 @media (pointer: coarse) {
   .compareSelect {
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     min-height: 44px;
   }
 }

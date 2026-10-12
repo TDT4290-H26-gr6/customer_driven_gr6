@@ -60,12 +60,12 @@
   position: absolute;
   top: -40px;
   left: 8px;
-  z-index: 100;
+  z-index: var(--z-skip-link);
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: var(--color-primary-contrast);
-  transition: top 0.15s ease;
+  transition: top var(--duration-fast) ease;
 }
 
 .skipLink:focus-visible {

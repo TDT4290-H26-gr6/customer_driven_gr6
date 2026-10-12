@@ -12,8 +12,8 @@
 
 .eyebrow {
   margin: 0;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text-muted);
@@ -47,7 +47,7 @@
 }
 
 .competenceName {
-  font-weight: 500;
+  font-weight: var(--font-weight-medium);
 }
 
 .score {
@@ -56,12 +56,12 @@
 }
 
 .journeyName {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
 /* The journey's page in Moodle ("soft" integration). */
 .journeyLink {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
 }

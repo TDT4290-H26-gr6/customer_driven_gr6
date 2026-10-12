@@ -6,13 +6,13 @@
 
 .heading {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--font-size-xl);
 }
 
 .hint {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: var(--font-size-md);
 }
 
 .field {
@@ -22,13 +22,13 @@
 }
 
 .label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
 }
 
 .optional {
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-muted);
 }
 
@@ -38,7 +38,7 @@
 .numberInput {
   padding: 10px 12px;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -56,13 +56,13 @@
 .error {
   margin: 0;
   color: var(--color-danger);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .confirmation {
   margin: 0;
   color: var(--color-primary);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 /* Touch devices: iOS Safari zooms the whole page when a form control under
@@ -72,7 +72,7 @@
   .select,
   .textarea,
   .numberInput {
-    font-size: 16px;
+    font-size: var(--font-size-lg);
   }
 
   .select {

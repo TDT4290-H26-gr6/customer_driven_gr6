@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--color-on-brand);
 }
 
 .bannerIcon {
@@ -53,9 +53,9 @@
 .confirmedBadge,
 .unconfirmedBadge {
   padding: 3px 9px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
 }
 
@@ -76,12 +76,12 @@
 
 .name {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--font-size-lg);
 }
 
 .institution {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -98,14 +98,14 @@
 }
 
 .fact dt {
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   color: var(--color-text-muted);
 }
 
 .fact dd {
   margin: 0;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 .details {
@@ -115,7 +115,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
 }
 
@@ -135,10 +135,10 @@
 
 .topicChip {
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-bg);
   border: 1px solid var(--color-border);
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   color: var(--color-text);
 }
 
@@ -148,8 +148,8 @@
      spot on every collapsed card even when one has fewer facts above it. */
   margin-top: auto;
   padding-top: 4px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
 }
 
@@ -159,8 +159,8 @@
 }
 
 .externalLink {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
   text-decoration: none;
 }

@@ -316,10 +316,21 @@ UX; the real gate has to be server-side, like `requireRole`. See
 - **Every color a component uses must be one of the `--color-*` tokens
   below** (never a hardcoded hex/rgb) — that's the only thing that makes
   dark mode automatic instead of a per‑component chore. `npx grep` for
-  `#[0-9a-f]{3,8}|rgba?\(` under `src/` before merging a new screen; a hit
-  in a `.module.css` (as opposed to `styles/globals.css` itself, or a
-  deliberately theme‑agnostic decorative color, e.g. `SourceCard`'s banner
-  gradients) means a token got skipped.
+  `#[0-9a-f]{3,8}|rgba?\(` under `src/` before merging a new screen; any hit
+  outside `styles/globals.css` itself (and the logo's SVG path data) means a
+  token got skipped. Deliberately theme‑agnostic colors (the logo's brand
+  colors, `SourceCard`'s banner gradients) are tokens too — they just live
+  in the theme‑agnostic `:root` block instead of the light/dark ones.
+- **The same goes for the other design values:** font sizes
+  (`--font-size-*`), font weights (`--font-weight-*`), font families
+  (`--font-family-*`), radii (`--radius-*`), shadows (`--shadow-*`),
+  animation durations (`--duration-*`) and stacking order (`--z-*`). If a
+  value you need isn't in the scale, add it to `globals.css` rather than
+  writing a one‑off number in the component. Spacing (padding/margin/gap)
+  is not tokenized yet.
+- Inline `style={{…}}` is only for values computed at runtime (a progress
+  width, a rotation) — and even then it should reference a token
+  (`var(--banner-gradient-2)`), not carry its own color.
 
 ### Theming: Default / Light / Dark
 
@@ -366,9 +377,17 @@ places in `globals.css`, right next to each other, so they can't drift):
 `--color-bg`, `--color-surface`, `--color-border`, `--color-text`,
 `--color-text-muted`, `--color-primary`, `--color-primary-hover`,
 `--color-primary-contrast`, `--color-primary-soft`, `--color-danger`,
-`--color-warning`, `--color-warning-bg`, `--shadow-sm`, `--shadow-md`.
-Non‑color tokens (`--header-height`, `--sidebar-width*`, `--bottom-nav-height`,
-`--radius-*`) don't need a dark variant.
+`--color-danger-contrast`, `--color-warning`, `--color-warning-bg`,
+`--color-success`, `--color-success-bg`, `--color-overlay` (dialog
+backdrops), `--shadow-sm`, `--shadow-md`.
+
+Theme‑agnostic tokens live once, in the first `:root` block of `globals.css`,
+and have no dark variant: the brand palette (`--brand-purple`, `--brand-blue`,
+`--brand-olive` — the logo colors, which the accent colors, the logo and the
+accent picker's swatches all read from), `--color-on-brand`,
+`--banner-gradient-1…5`, layout sizes (`--header-height`, `--sidebar-width*`,
+`--bottom-nav-height`), `--radius-*`, `--font-size-*`, `--font-weight-*`,
+`--font-family-*`, `--duration-*` and the `--z-*` stacking scale.
 
 ### Third-party widgets: pie-fixed-player
 
@@ -504,8 +523,8 @@ raster image) and is used by both `Header` and `LoginPage`. The wordmark
 path's fill is `currentColor`, and `Logo.module.css` sets `color:
 var(--color-text)`, so it flips between the light/dark palettes the same way
 any other text does — no separate dark-mode asset. The colourful dot spiral
-next to it keeps its own literal hex fills (it reads fine on both
-backgrounds). Callers pass their own `className` (composed alongside the
+next to it keeps the fixed `--brand-*` colors, set as fills in
+`Logo.module.css` (it reads fine on both backgrounds). Callers pass their own `className` (composed alongside the
 component's own) purely to size it — `Header.module.css`'s `.logo` sets a
 fixed height for the header, `LoginPage.module.css`'s centers a larger one
 on the card. This replaced a PNG in `public/aios-logo.png` that was seated on
@@ -526,8 +545,10 @@ are both gone now that the logo is theme-aware.
 - **Clearance** — `<main>`'s bottom padding reserves the bar's height plus
   the inset (`AppShell.module.css`), so pages need nothing extra. Anything
   else you pin to the bottom of the screen must account for the bar itself.
-- **Stacking** — bottom bar `z-index: 20`, header `30`, `RoleGateModal`
-  `1000`. Slot new fixed UI into that order.
+- **Stacking** — the `--z-*` tokens in `globals.css`: bottom bar
+  (`--z-bottom-nav`, 20), header (`--z-header`, 30), feedback widget
+  (`--z-floating`, 40), dialogs (`--z-dialog`, 900), `RoleGateModal`
+  (`--z-modal`, 1000). Slot new fixed UI into that scale.
 - **Safe areas** — `index.html` sets `viewport-fit=cover`; the header, tab
   bar and `<main>` add `env(safe-area-inset-*)`. Zoom is **not** disabled (no
   `maximum-scale` / `user-scalable=no`) — keep it that way (WCAG 1.4.4).
@@ -565,7 +586,8 @@ are both gone now that the logo is theme-aware.
 3. Interactive elements ≥ 44px and inputs ≥ 16px under `pointer: coarse`
    (`Button` already handles it — if you build a bespoke control, you own it).
 4. `min-width: 0` on flex/grid children with long text.
-5. `--color-*` tokens only, so dark mode still works.
+5. Tokens only — `--color-*` (so dark mode still works), `--font-size-*`,
+   `--radius-*` etc. No hex/rgb or one‑off sizes in the module.
 6. Check it at 320, 390, ~768 and desktop, in light and dark, using the
    browser's device toolbar; confirm no horizontal scroll
    (`document.documentElement.scrollWidth <= window.innerWidth`).

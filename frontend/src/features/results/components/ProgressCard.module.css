@@ -12,12 +12,12 @@
 
 .heading {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--font-size-2xl);
 }
 
 .subheading {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   color: var(--color-text-muted);
 }
 
@@ -51,8 +51,8 @@
   border-radius: var(--radius-sm);
   background: var(--color-primary-soft);
   color: var(--color-primary);
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-md);
 }
 
 .main {
@@ -64,12 +64,12 @@
 }
 
 .name {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   overflow-wrap: anywhere;
 }
 
 .values {
-  font-size: 14px;
+  font-size: var(--font-size-md);
 }
 
 .level {
@@ -77,7 +77,7 @@
 }
 
 .muted {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -86,17 +86,16 @@
 .changeSame {
   flex: none;
   padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 600;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
 }
 
-/* Green for improvement. Defined here rather than as a global token: it's
-   the only place the app shows "better", and it reads in both themes. */
+/* Green for improvement. */
 .changeUp {
-  color: #15803d;
-  background: rgba(22, 163, 74, 0.12);
+  color: var(--color-success);
+  background: var(--color-success-bg);
 }
 
 .changeDown {
@@ -107,18 +106,6 @@
 .changeSame {
   color: var(--color-text-muted);
   background: var(--color-bg);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .changeUp {
-    color: #4ade80;
-    background: rgba(74, 222, 128, 0.16);
-  }
-}
-
-:root[data-theme="dark"] .changeUp {
-  color: #4ade80;
-  background: rgba(74, 222, 128, 0.16);
 }
 
 @media (max-width: 767px) {

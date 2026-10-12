@@ -9,6 +9,70 @@
    app/providers/ThemeProvider.tsx for how `data-theme` gets set, and
    §8 "Theming" below for the full contract. */
 
+/* Theme-agnostic tokens: the same value in light and dark, so they're defined
+   once, here, and never repeated in the dark blocks below. */
+:root {
+  /* Brand palette — the three colors of the AIOS logo. Raw colors: use them
+     for brand artwork (the logo, the accent picker's swatches) and to derive
+     other tokens from, not directly for text or surfaces. */
+  --brand-purple: #7b3d8d;
+  --brand-blue: #3386a7;
+  --brand-olive: #aab627;
+  /* Text/icons on a fixed-color decorative fill (e.g. the source banners). */
+  --color-on-brand: #ffffff;
+
+  /* Decorative banner gradients for SourceCard — a stand-in "picture" per
+     source until real artwork exists. Reads fine on both themes. */
+  --banner-gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --banner-gradient-2: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  --banner-gradient-3: linear-gradient(135deg, #f59e0b, #f97316);
+  --banner-gradient-4: linear-gradient(135deg, #10b981, #14b8a6);
+  --banner-gradient-5: linear-gradient(135deg, #ec4899, #f43f5e);
+
+  --header-height: 56px;
+  --sidebar-width: 220px;
+  --sidebar-width-collapsed: 64px;
+  --bottom-nav-height: 60px; /* mobile tab bar, excluding the safe-area inset */
+
+  --radius-xs: 2px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-pill: 999px;
+
+  --font-size-2xs: 11px;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px; /* also the iOS no-zoom minimum for form controls */
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 22px;
+  --font-size-4xl: 24px;
+  --font-size-5xl: 32px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --font-family-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --duration-fast: 0.15s;
+  --duration-normal: 0.2s;
+
+  /* Stacking order, lowest to highest. Slot new fixed/floating UI in here
+     rather than picking a number in the component. */
+  --z-dropdown: 10;
+  --z-bottom-nav: 20;
+  --z-header: 30;
+  --z-floating: 40; /* the feedback widget */
+  --z-skip-link: 100;
+  --z-dialog: 900;
+  --z-modal: 1000; /* RoleGateModal — blocks the whole app, dialogs included */
+}
+
 :root {
   color-scheme: light;
 
@@ -25,16 +89,12 @@
   --color-primary-contrast: #ffffff;
   --color-primary-soft: rgba(79, 70, 229, 0.12);
   --color-danger: #dc2626;
+  --color-danger-contrast: #ffffff;
   --color-warning: #b45309;
   --color-warning-bg: #fef3c7;
-
-  --header-height: 56px;
-  --sidebar-width: 220px;
-  --sidebar-width-collapsed: 64px;
-  --bottom-nav-height: 60px; /* mobile tab bar, excluding the safe-area inset */
-
-  --radius-sm: 6px;
-  --radius-md: 10px;
+  --color-success: #15803d;
+  --color-success-bg: rgba(22, 163, 74, 0.12);
+  --color-overlay: rgba(15, 23, 42, 0.6);
 
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
@@ -57,8 +117,12 @@
     --color-primary-contrast: #ffffff;
     --color-primary-soft: rgba(129, 140, 248, 0.18);
     --color-danger: #f87171;
+    --color-danger-contrast: #ffffff;
     --color-warning: #fbbf24;
     --color-warning-bg: rgba(251, 191, 36, 0.16);
+    --color-success: #4ade80;
+    --color-success-bg: rgba(74, 222, 128, 0.16);
+    --color-overlay: rgba(15, 23, 42, 0.6);
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -79,8 +143,12 @@
   --color-primary-contrast: #ffffff;
   --color-primary-soft: rgba(129, 140, 248, 0.18);
   --color-danger: #f87171;
+  --color-danger-contrast: #ffffff;
   --color-warning: #fbbf24;
   --color-warning-bg: rgba(251, 191, 36, 0.16);
+  --color-success: #4ade80;
+  --color-success-bg: rgba(74, 222, 128, 0.16);
+  --color-overlay: rgba(15, 23, 42, 0.6);
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -94,18 +162,18 @@
    for contrast on the dark surface. The extra attribute selector gives these
    rules higher specificity than the theme blocks above, whatever their order. */
 :root[data-accent="purple"] {
-  --accent: #7b3d8d;
+  --accent: var(--brand-purple);
   --accent-contrast: #ffffff;
 }
 
 :root[data-accent="blue"] {
-  --accent: #3386a7;
+  --accent: var(--brand-blue);
   --accent-contrast: #ffffff;
 }
 
 /* White text on olive is too low-contrast, so olive takes dark text. */
 :root[data-accent="olive"] {
-  --accent: #aab627;
+  --accent: var(--brand-olive);
   --accent-contrast: #1c1f26;
 }
 
@@ -148,7 +216,7 @@ html {
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-family-sans);
   background: var(--color-bg);
   color: var(--color-text);
 }
@@ -220,8 +288,8 @@ pie-fixed-player .aios-exhibit {
   border-left: 4px solid var(--color-primary);
   border-radius: var(--radius-sm);
   background: var(--color-bg);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 14px;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-md);
   line-height: 1.5;
   overflow-wrap: anywhere;
 }

@@ -1,7 +1,20 @@
 /* Default look-and-feel for the inline AIOS wordmark. Callers pass their own
    className (composed alongside this one — see Logo.tsx) to control size and
-   spacing; this file only owns the theme-aware color and block layout. */
+   spacing; this file only owns the colors and block layout. */
 .logo {
   display: block;
   color: var(--color-text);
+}
+
+/* The dot spiral keeps the fixed brand colors in both themes. */
+.purple {
+  fill: var(--brand-purple);
+}
+
+.blue {
+  fill: var(--brand-blue);
+}
+
+.olive {
+  fill: var(--brand-olive);
 }

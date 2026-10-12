@@ -7,7 +7,7 @@
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
   padding: 16px 8px;
-  transition: width 0.18s ease;
+  transition: width var(--duration-normal) ease;
 }
 
 .sidebar.collapsed {
@@ -40,7 +40,7 @@
 .active {
   background: var(--color-bg);
   color: var(--color-primary);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .icon {
@@ -81,7 +81,7 @@
    flip the same easing as the rail's own width transition instead of
    snapping instantly. */
 .labelToggle svg {
-  transition: transform 0.18s ease;
+  transition: transform var(--duration-normal) ease;
 }
 
 @media (pointer: coarse) {
@@ -98,7 +98,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 20;
+  z-index: var(--z-bottom-nav);
   width: auto;
   padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
     env(safe-area-inset-left, 0px);
@@ -121,7 +121,7 @@
   gap: 2px;
   padding: 4px;
   border-radius: 0;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 
 .bottomBar .item:hover,

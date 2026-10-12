@@ -16,18 +16,18 @@
 
 .heading {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--font-size-3xl);
 }
 
 .question {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--font-size-lg);
 }
 
 .hint {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: var(--font-size-md);
 }
 
 .field {
@@ -37,15 +37,15 @@
 }
 
 .label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
 }
 
 .select {
   padding: 10px 12px;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -70,7 +70,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   cursor: pointer;
 }
 
@@ -90,7 +90,7 @@
 .error {
   margin: 0;
   color: var(--color-danger);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .actions {
@@ -104,7 +104,7 @@
    and roomier tap targets. */
 @media (pointer: coarse) {
   .select {
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     min-height: 44px;
   }
 

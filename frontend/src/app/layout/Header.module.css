@@ -22,7 +22,7 @@
   .header {
     position: sticky;
     top: 0;
-    z-index: 30;
+    z-index: var(--z-header);
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
@@ -91,8 +91,8 @@
   border: none;
   background: var(--color-primary);
   color: var(--color-primary-contrast);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.02em;
   cursor: pointer;
   display: flex;
@@ -115,7 +115,7 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   padding: 8px;
-  z-index: 10;
+  z-index: var(--z-dropdown);
 }
 
 .dropdownHeader {
@@ -127,8 +127,8 @@
 }
 
 .dropdownName {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
@@ -136,7 +136,7 @@
 }
 
 .dropdownRole {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -149,7 +149,7 @@
   border: none;
   background: transparent;
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: var(--font-size-md);
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
@@ -169,7 +169,7 @@
   .avatarButton {
     width: 44px;
     height: 44px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
   }
 
   .dropdownItem {

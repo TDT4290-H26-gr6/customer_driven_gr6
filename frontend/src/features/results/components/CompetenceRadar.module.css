@@ -58,8 +58,8 @@
 /* Compact (mobile) mode: numbered axis tips + a legend list below. */
 .tipNumber {
   fill: var(--color-primary);
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
 }
 
 .legend {
@@ -76,7 +76,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 /* A pill rather than a circle, so a two-character tip like "A1" fits too. */
@@ -85,11 +85,11 @@
   min-width: 22px;
   height: 22px;
   padding: 0 5px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-primary-soft);
   color: var(--color-primary);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   display: flex;
   align-items: center;
   justify-content: center;

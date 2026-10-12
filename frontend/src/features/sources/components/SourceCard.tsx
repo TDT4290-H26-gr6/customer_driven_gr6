@@ -3,14 +3,9 @@ import type { Source } from "../types";
 import styles from "./SourceCard.module.css";
 
 // Deterministic banner colour per source — a stand-in "picture" until real
-// artwork exists.
-const PALETTE: [string, string][] = [
-  ["#6366f1", "#8b5cf6"],
-  ["#0ea5e9", "#06b6d4"],
-  ["#f59e0b", "#f97316"],
-  ["#10b981", "#14b8a6"],
-  ["#ec4899", "#f43f5e"],
-];
+// artwork exists. The gradients themselves are the --banner-gradient-* tokens
+// in styles/globals.css; keep this count in sync with them.
+const BANNER_GRADIENT_COUNT = 5;
 
 /** At or above this confidence a source is shown as "confirmed"; below it, as a warning. */
 const CONFIRMED_CONFIDENCE = 0.9;
@@ -18,8 +13,7 @@ const CONFIRMED_CONFIDENCE = 0.9;
 function bannerGradient(seed: string): string {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  const [from, to] = PALETTE[hash % PALETTE.length];
-  return `linear-gradient(135deg, ${from}, ${to})`;
+  return `var(--banner-gradient-${(hash % BANNER_GRADIENT_COUNT) + 1})`;
 }
 
 type Props = {
