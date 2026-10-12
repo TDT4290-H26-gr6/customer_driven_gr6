@@ -4,6 +4,7 @@ import {
   ChevronIcon,
   ClipboardIcon,
   HomeIcon,
+  HelpIcon,
   RouteIcon,
   TargetIcon,
 } from "@/shared/components/icons";
@@ -17,6 +18,9 @@ const NAV_ITEMS = [
   { to: "/journeys", label: "Journeys", Icon: RouteIcon },
   { to: "/history", label: "History", Icon: ClipboardIcon },
   { to: "/sources", label: "Sources", Icon: BookIcon },
+  // Not in the mobile bottom bar — five tabs already fill a small phone's
+  // width — so there FAQ lives in the header's account menu instead.
+  { to: "/faq", label: "FAQ", Icon: HelpIcon, desktopOnly: true },
 ];
 
 type Props = {
@@ -44,7 +48,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, layout = "side" }: Props
   return (
     <aside className={sidebarClass}>
       <nav className={styles.nav} aria-label="Main">
-        {NAV_ITEMS.map(({ to, label, Icon }) => (
+        {NAV_ITEMS.filter((item) => !(isBottom && item.desktopOnly)).map(({ to, label, Icon }) => (
           <NavLink
             key={to}
             to={to}
