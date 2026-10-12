@@ -10,37 +10,57 @@ export const advisorRouter = Router();
 
 type JourneyWithSteps = NonNullable<Awaited<ReturnType<typeof findJourney>>>;
 
-function toAdviceDto(advice: Advice, journey: JourneyWithSteps | null) {
+function toJourneyDto(journey: JourneyWithSteps) {
+  return {
+    id: journey.id,
+    name: journey.name,
+    description: journey.description,
+    moodleUrl: journey.moodleUrl,
+    modules: journey.modules.map(({ id, order, title, description }) => ({
+      id,
+      order,
+      title,
+      description,
+    })),
+  };
+}
+
+function toAdviceDto(
+  advice: Advice,
+  ranked: { journey: JourneyWithSteps; reason: string | null }[],
+) {
   const steps = advice.steps as StoredStep[];
   return {
     summary: advice.summary,
     steps: steps.map(({ kind, title, url, reason }) => ({ kind, title, url, reason })),
-    // The journey the AI chose for this learner — the dashboard shows it
-    // instead of the score-based pick, unless they selected one themselves.
-    journey: journey && {
-      id: journey.id,
-      name: journey.name,
-      description: journey.description,
-      moodleUrl: journey.moodleUrl,
-      modules: journey.modules.map(({ id, order, title, description }) => ({
-        id,
-        order,
-        title,
-        description,
-      })),
-    },
-    journeyReason: journey ? advice.journeyReason : null,
+    // The journeys the AI ranked for this learner on their scores and
+    // profile, best fit first — the dashboard highlights the first.
+    journeys: ranked.map(({ journey, reason }) => ({ journey: toJourneyDto(journey), reason })),
     model: advice.model,
     generatedAt: advice.createdAt,
   };
 }
 
+/** The advice's ranked journeys that still exist, best first. */
+async function rankedJourneys(advice: Advice) {
+  const picks = [
+    { id: advice.journeyId, reason: advice.journeyReason },
+    { id: advice.runnerUpJourneyId, reason: advice.runnerUpJourneyReason },
+  ];
+  const ranked: { journey: JourneyWithSteps; reason: string | null }[] = [];
+  for (const { id, reason } of picks) {
+    const journey = id ? await findJourney(id) : null;
+    if (journey) ranked.push({ journey, reason });
+  }
+  return ranked;
+}
+
 /**
- * 200 with the advice (including the journey chosen for the learner, when
- * there is one), 204 when there's none to give (no completed assessment
+ * 200 with the advice (including the journeys ranked for the learner, when
+ * there are any), 204 when there's none to give (no completed assessment
  * yet, or the feature is off), 503 when the LLM couldn't be reached or
  * answered nonsense — the results page then just leaves the advice out, and
- * the score-based journey still shows.
+ * the score-based journeys still show.
  */
 advisorRouter.get(
   "/advice",
@@ -56,7 +76,6 @@ advisorRouter.get(
     }
 
     if (!advice) return res.status(204).end();
-    const journey = advice.journeyId ? await findJourney(advice.journeyId) : null;
-    res.json(toAdviceDto(advice, journey));
+    res.json(toAdviceDto(advice, await rankedJourneys(advice)));
   }),
 );

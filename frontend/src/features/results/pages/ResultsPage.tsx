@@ -12,12 +12,16 @@ import { getDashboardProgress } from "../api";
 import { radarAxes } from "../progressRows";
 import type { DashboardProgress } from "../types";
 import {
-  RecommendedJourneyCard,
+  RecommendedJourneys,
   WeakCompetencesSection,
-  getCurrentJourney,
+  getRecommendedJourneys,
   getWeakCompetences,
 } from "@/features/learningJourney";
-import type { CurrentJourney, WeakCompetence } from "@/features/learningJourney";
+import type {
+  RankedJourney,
+  RecommendedJourneysResult,
+  WeakCompetence,
+} from "@/features/learningJourney";
 import { AdviceCard, getAdvice } from "@/features/advisor";
 import { getProgress } from "@/features/assessment";
 import type { AdviceState } from "@/features/advisor";
@@ -28,10 +32,10 @@ import styles from "./ResultsPage.module.css";
  * an overview radar with one axis per section (each rolling up that
  * section's own competences; a section has too many competences to chart
  * individually here), a section-by-section summary (ProgressCard), the
- * learner's journey (the AI advisor's role-aware pick, else the score-based
- * recommendation or suggestion — see getCurrentJourney), every competence at
- * or below 60% paired with the journey for it (CD-90, not just the single
- * recommended one), AI advice that explains it, and the entry point into
+ * two recommended learning journeys (the AI advisor's ranking on scores and
+ * profile, the best fit highlighted — else the score-based top two, see
+ * getRecommendedJourneys), every competence at or below 60% paired with the
+ * journey for it (CD-90), AI advice that explains it, and the entry point into
  * the assessment. From a second
  * assessment on, the radar overlays the previous one and the summary shows
  * the change — always the latest two; older ones are in History and "See
@@ -55,7 +59,8 @@ export function ResultsPage() {
   const [progress, setProgress] = useState<DashboardProgress | null | undefined>(undefined);
   const [loadFailed, setLoadFailed] = useState(false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
-  const [journey, setJourney] = useState<CurrentJourney | null>(null);
+  // The score-based top two; null while loading or when there are none.
+  const [scoreJourneys, setScoreJourneys] = useState<RecommendedJourneysResult | null>(null);
   // null while loading; [] once loaded means every competence is sufficient.
   const [weakCompetences, setWeakCompetences] = useState<WeakCompetence[] | null>(null);
   // null: no advice to show (no completed assessment, or the feature is off).
@@ -76,9 +81,9 @@ export function ResultsPage() {
     getProgress()
       .then((progress) => setHasOngoing(progress !== null))
       .catch(() => setHasOngoing(false));
-    getCurrentJourney()
-      .then(setJourney)
-      .catch(() => setJourney(null));
+    getRecommendedJourneys()
+      .then(setScoreJourneys)
+      .catch(() => setScoreJourneys(null));
     getWeakCompetences()
       .then(setWeakCompetences)
       .catch(() => setWeakCompetences(null));
@@ -89,20 +94,23 @@ export function ResultsPage() {
       .catch(() => setAdvice({ status: "unavailable" }));
   }, []);
 
-  // The journey card: the AI advisor's role-aware pick (with its reason)
-  // once the advice has loaded; otherwise the score-based recommendation, or
-  // a suggestion to keep improving with. The AI pick keeps the score-based
-  // label ("Recommended for you" / "To keep improving"), since it chose
-  // among those journeys.
-  const aiJourney = advice?.status === "ready" ? advice.advice.journey : null;
-  const shownJourney =
-    aiJourney && advice?.status === "ready"
-      ? {
-          journey: aiJourney,
-          source: journey?.source ?? ("recommended" as const),
-          reason: advice.advice.journeyReason,
-        }
-      : journey && { journey: journey.journey, source: journey.source, reason: null };
+  // The recommended journeys: the AI advisor's ranking (scores + profile,
+  // with reasons) once the advice has loaded; until then, or when the
+  // advisor is off or fails, the score-based top two. Either way the label
+  // ("Recommended for you" / "To keep improving") follows the scores, since
+  // the advisor ranks among the same journeys.
+  const aiRanked: RankedJourney[] = advice?.status === "ready" ? advice.advice.journeys : [];
+  // Two whenever two exist: an AI ranking with fewer (advice saved before
+  // ranking, which had one) is topped up from the score-based order.
+  const scoreRanked: RankedJourney[] = (scoreJourneys?.journeys ?? []).map((journey) => ({
+    journey,
+    reason: null,
+  }));
+  const ranked: RankedJourney[] = [
+    ...aiRanked,
+    ...scoreRanked.filter((s) => !aiRanked.some((a) => a.journey.id === s.journey.id)),
+  ].slice(0, 2);
+  const journeySource = scoreJourneys?.source ?? "recommended";
 
   if (!learner?.hasCompletedInitialAssessment && !learner?.hasCompletedProfile) {
     return <Navigate to="/profile" replace />;
@@ -174,13 +182,7 @@ export function ResultsPage() {
 
       {!loadFailed && progress && <ProgressCard progress={progress} />}
 
-      {shownJourney && (
-        <RecommendedJourneyCard
-          journey={shownJourney.journey}
-          source={shownJourney.source}
-          reason={shownJourney.reason}
-        />
-      )}
+      {ranked.length > 0 && <RecommendedJourneys ranked={ranked} source={journeySource} />}
 
       {weakCompetences && <WeakCompetencesSection competences={weakCompetences} />}
 

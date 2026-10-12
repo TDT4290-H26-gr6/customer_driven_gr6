@@ -107,9 +107,16 @@ export type JourneyOption = {
 };
 
 export type AdviceStep = Candidate & { reason: string };
-/** The journey chosen for the learner; `reason` is null when the app fell back to the default. */
+/** A journey chosen for the learner; `reason` is null when the app filled it in from the score-based order. */
 export type JourneyChoice = { journeyId: string; reason: string | null };
-export type ParsedAdvice = { summary: string; steps: AdviceStep[]; journey: JourneyChoice | null };
+/** How many journeys the dashboard recommends: the best fit, highlighted, and a runner-up. */
+export const RECOMMENDED_JOURNEYS = 2;
+export type ParsedAdvice = {
+  summary: string;
+  steps: AdviceStep[];
+  /** Best fit first; up to RECOMMENDED_JOURNEYS, fewer only when fewer were offered. */
+  journeys: JourneyChoice[];
+};
 
 export const MAX_STEPS = 3;
 const MAX_SUMMARY_LENGTH = 1200;
@@ -127,13 +134,17 @@ How to read the scores:
 - Judge the learner's role from their "background" (their occupation/role), industry, academic degree and years of experience. A low score in an area that is clearly unrelated to their role is less urgent than one that is central to it.
 
 Rules:
-- Choose ONE learning journey from "journeyCandidates", by its "ref", for the "journey" field. Each candidate lists how strongly it covers the learner's weak sections (M = centred on that section, R = covers it well, S = touches it). The first candidate ("isDefault": true) is the app's pick based on scores alone. Keep it unless another candidate clearly fits the learner's role better while still covering their weak sections well. The journey's "reason" is 1-2 sentences on why it fits this learner's role and results. When "journeyCandidates" is empty, set "journey" to null.
+- Rank the learning journeys in "journeyCandidates" by how well each fits THIS learner, and return the best ${RECOMMENDED_JOURNEYS} in the "journeys" field, best first, by their "ref" (fewer only if fewer candidates exist; none when it's empty). Judge fit on both:
+  - their results: how strongly the journey covers the learner's weak sections (M = centred on that section, R = covers it well, S = touches it), and how weak those sections are;
+  - their profile: their occupation/role ("background"), industry, academic degree, years of experience and goals.
+  Judge profile fit first: each journey's name and description say who it is designed for (for example an institutional officer, research data work, educators, trainers, business, or policy makers). Compare that with the learner's occupation and industry. A journey designed for their kind of work is the best fit whenever it covers at least one of their weak sections as M or R — even if another journey covers their single lowest score more strongly. Use the scores to choose between journeys that fit their role equally well, and to pick the second.
+  The candidates are in the app's score-only order ("isDefault": true marks the first), which ignores the profile; reorder them accordingly. Each journey's "reason" is 1-2 sentences on why it fits this learner's role and results — never claim a journey matches their role unless its name or description shows it is designed for that kind of work. The first one's reason should make clear why it is the better fit of the two.
 - Choose your steps ONLY from "candidates", referring to them by their "ref". Never invent courses, modules or links.
 - "numberOfSteps" gives how many steps to choose: never more than its "max". Choose fewer when only a few weak areas matter for this learner's role, and leave out steps that are irrelevant to it. Still choose at least its "min" — when "min" is 1, give the single most useful step even if no weak area fits their role well.
 - When "candidates" is empty, the learner has a perfect score: return no steps, and congratulate them in the summary.
 - Order the steps from most to least important for this learner.
 - Each reason is 1-2 sentences and says which weak competence the step helps with.
-- The summary is 2-3 sentences (at most 4 with progress, see below): where the learner stands, what to focus on first, and — when you chose a journey — its name and why it fits them.
+- The summary is 2-3 sentences (at most 4 with progress, see below): where the learner stands, what to focus on first, and — when you recommend journeys — the name of the best-fitting one.
 - Write in English, in the second person ("you"), in a friendly, encouraging and concrete tone. Do not mention percentages for strengths more than once.
 - Use the learner's industry, academic degree, background (their occupation/role) and years of experience in AI or Open Science to make the advice fit them (e.g. examples from their sector, a pace that suits their experience).
 - When the learner has "goals", connect the advice to them where it honestly fits — but the weakest competences still come first.
@@ -146,7 +157,7 @@ Progress since the previous assessment:
 - Praise real improvement, and keep a drop encouraging rather than discouraging.
 
 Reply with JSON only, in exactly this shape:
-{"summary": "...", "journey": {"ref": "j1", "reason": "..."}, "steps": [{"ref": "c1", "reason": "..."}]}`;
+{"summary": "...", "journeys": [{"ref": "j2", "reason": "..."}, {"ref": "j1", "reason": "..."}], "steps": [{"ref": "c1", "reason": "..."}]}`;
 
 function capText(text: string | null): string | null {
   const trimmed = text?.trim();
@@ -214,27 +225,47 @@ function clip(text: string, max: number): string {
 }
 
 /**
- * The journey the model chose, mapped back to a real candidate. A missing,
- * unknown or malformed choice falls back to the default (the score-based
- * pick, first in the list), without a reason — so there's always a journey
- * when there were candidates, and never one that wasn't offered.
+ * The journeys the model ranked, mapped back to real candidates, best first:
+ * unknown, malformed or repeated refs are dropped, at most
+ * RECOMMENDED_JOURNEYS are kept, and any shortfall is filled from the
+ * score-based order (the candidates' own order) without a reason — so the
+ * learner always gets as many recommendations as there were candidates for,
+ * and never a journey that wasn't offered. Also accepts a single "journey"
+ * choice, the shape before ranking.
  */
-export function parseJourneyChoice(
-  choice: unknown,
+export function parseJourneyRanking(
+  reply: { journeys?: unknown; journey?: unknown },
   journeyCandidates: JourneyOption[],
-): JourneyChoice | null {
-  if (journeyCandidates.length === 0) return null;
-  const { ref, reason } = (typeof choice === "object" && choice !== null ? choice : {}) as {
-    ref?: unknown;
-    reason?: unknown;
-  };
-  const index = journeyCandidates.findIndex((_, i) => journeyRef(i) === String(ref ?? "").trim());
-  if (index === -1) return { journeyId: journeyCandidates[0].id, reason: null };
-  const text = typeof reason === "string" ? reason.trim() : "";
-  return {
-    journeyId: journeyCandidates[index].id,
-    reason: text ? clip(text, MAX_REASON_LENGTH) : null,
-  };
+): JourneyChoice[] {
+  const wanted = Math.min(RECOMMENDED_JOURNEYS, journeyCandidates.length);
+  const choices = Array.isArray(reply.journeys)
+    ? reply.journeys
+    : reply.journey !== undefined
+      ? [reply.journey]
+      : [];
+
+  const ranked: JourneyChoice[] = [];
+  for (const choice of choices) {
+    if (ranked.length >= wanted) break;
+    const { ref, reason } = (typeof choice === "object" && choice !== null ? choice : {}) as {
+      ref?: unknown;
+      reason?: unknown;
+    };
+    const index = journeyCandidates.findIndex((_, i) => journeyRef(i) === String(ref ?? "").trim());
+    if (index === -1) continue;
+    const journeyId = journeyCandidates[index].id;
+    if (ranked.some((r) => r.journeyId === journeyId)) continue;
+    const text = typeof reason === "string" ? reason.trim() : "";
+    ranked.push({ journeyId, reason: text ? clip(text, MAX_REASON_LENGTH) : null });
+  }
+
+  for (const candidate of journeyCandidates) {
+    if (ranked.length >= wanted) break;
+    if (!ranked.some((r) => r.journeyId === candidate.id)) {
+      ranked.push({ journeyId: candidate.id, reason: null });
+    }
+  }
+  return ranked;
 }
 
 /** The step added when the LLM chose none but one is required: the first (most relevant) candidate. */
@@ -293,6 +324,9 @@ export function parseAdvice(
   return {
     summary: clip(summary.trim(), MAX_SUMMARY_LENGTH),
     steps: parsedSteps,
-    journey: parseJourneyChoice((reply as { journey?: unknown }).journey, journeyCandidates),
+    journeys: parseJourneyRanking(
+      reply as { journeys?: unknown; journey?: unknown },
+      journeyCandidates,
+    ),
   };
 }

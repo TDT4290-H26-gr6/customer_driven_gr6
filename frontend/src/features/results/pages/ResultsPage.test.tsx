@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ResultsPage } from "./ResultsPage";
 import { getProgress } from "@/features/assessment";
-import { getCurrentJourney } from "@/features/learningJourney";
+import { getRecommendedJourneys } from "@/features/learningJourney";
 import { getAdvice } from "@/features/advisor";
 import { getDashboardProgress } from "../api";
 import type { DashboardProgress } from "../types";
@@ -20,20 +20,20 @@ vi.mock("react-router-dom", () => ({
 vi.mock("@/features/assessment", () => ({ getProgress: vi.fn() }));
 vi.mock("../api", () => ({ getDashboardProgress: vi.fn() }));
 vi.mock("@/features/learningJourney", () => ({
-  getCurrentJourney: vi.fn().mockResolvedValue(null),
+  getRecommendedJourneys: vi.fn().mockResolvedValue(null),
   getWeakCompetences: vi.fn().mockResolvedValue([]),
-  // Shows what the dashboard hands the card: which journey, labelled how, and why.
-  RecommendedJourneyCard: ({
-    journey,
+  // Shows what the dashboard hands the component: which journeys, in what
+  // order, labelled how, and why.
+  RecommendedJourneys: ({
+    ranked,
     source,
-    reason,
   }: {
-    journey: { name: string };
+    ranked: { journey: { name: string }; reason: string | null }[];
     source: string;
-    reason?: string | null;
   }) => (
     <p>
-      journey card: {journey.name} [{source}]{reason ? ` because ${reason}` : ""}
+      journeys [{source}]:{" "}
+      {ranked.map((r) => `${r.journey.name}${r.reason ? ` (${r.reason})` : ""}`).join(" > ")}
     </p>
   ),
   WeakCompetencesSection: () => null,
@@ -176,7 +176,7 @@ describe("ResultsPage results", () => {
   });
 });
 
-describe("ResultsPage journey card", () => {
+describe("ResultsPage recommended journeys", () => {
   const journeyOf = (name: string) => ({
     id: name,
     name,
@@ -184,60 +184,80 @@ describe("ResultsPage journey card", () => {
     moodleUrl: null,
     modules: [],
   });
-  const adviceWithJourney = (name: string, reason: string | null) => ({
+  const adviceRanking = (...picks: [string, string | null][]) => ({
     summary: "ok",
     steps: [],
-    journey: journeyOf(name),
-    journeyReason: reason,
+    journeys: picks.map(([name, reason]) => ({ journey: journeyOf(name), reason })),
     model: "test",
-    generatedAt: "2026-10-10T10:00:00.000Z",
+    generatedAt: "2026-10-12T10:00:00.000Z",
   });
 
   beforeEach(() => {
     vi.mocked(getProgress).mockResolvedValue(null);
+    vi.mocked(getRecommendedJourneys).mockResolvedValue({
+      source: "recommended",
+      journeys: [journeyOf("LJ3 — Education"), journeyOf("LJ1 — Officer")],
+    });
   });
 
-  it("shows the AI advisor's role-aware pick, with its reason, instead of the score-based one", async () => {
-    vi.mocked(getCurrentJourney).mockResolvedValue({
-      journey: journeyOf("LJ3 — Education"),
-      source: "recommended",
-    });
+  it("shows the AI's ranking of two, on scores and profile, with reasons", async () => {
     vi.mocked(getAdvice).mockResolvedValue(
-      adviceWithJourney("LJ2 — Research Data", "Fits a data steward."),
+      adviceRanking(
+        ["LJ2 — Research Data", "Built for data stewards."],
+        ["LJ1 — Officer", "Broader."],
+      ),
     );
 
     render(<ResultsPage />);
 
     expect(
       await screen.findByText(
-        "journey card: LJ2 — Research Data [recommended] because Fits a data steward.",
+        "journeys [recommended]: LJ2 — Research Data (Built for data stewards.) > LJ1 — Officer (Broader.)",
       ),
     ).toBeInTheDocument();
   });
 
-  it("keeps the score-based journey while the AI advice is unavailable", async () => {
-    vi.mocked(getCurrentJourney).mockResolvedValue({
-      journey: journeyOf("LJ3 — Education"),
-      source: "recommended",
-    });
+  it("tops up an older one-journey AI pick with the score-based next best", async () => {
+    vi.mocked(getAdvice).mockResolvedValue(adviceRanking(["LJ1 — Officer", "Fits."]));
+
+    render(<ResultsPage />);
+
+    expect(
+      await screen.findByText("journeys [recommended]: LJ1 — Officer (Fits.) > LJ3 — Education"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the score-based two while the AI advice is unavailable", async () => {
     vi.mocked(getAdvice).mockRejectedValue({ status: 503, message: "unavailable" });
 
     render(<ResultsPage />);
 
     expect(
-      await screen.findByText("journey card: LJ3 — Education [recommended]"),
+      await screen.findByText("journeys [recommended]: LJ3 — Education > LJ1 — Officer"),
     ).toBeInTheDocument();
   });
 
-  it("labels the AI's pick as a suggestion when nothing was weak", async () => {
-    vi.mocked(getCurrentJourney).mockResolvedValue({
-      journey: journeyOf("LJ1 — Officer"),
+  it("keeps the 'to keep improving' label when nothing was weak", async () => {
+    vi.mocked(getRecommendedJourneys).mockResolvedValue({
       source: "suggested",
+      journeys: [journeyOf("LJ1 — Officer")],
     });
-    vi.mocked(getAdvice).mockResolvedValue(adviceWithJourney("LJ6 — Policy", null));
+    vi.mocked(getAdvice).mockResolvedValue(adviceRanking(["LJ6 — Policy", null]));
 
     render(<ResultsPage />);
 
-    expect(await screen.findByText("journey card: LJ6 — Policy [suggested]")).toBeInTheDocument();
+    expect(
+      await screen.findByText("journeys [suggested]: LJ6 — Policy > LJ1 — Officer"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows no journeys when there are none to recommend", async () => {
+    vi.mocked(getRecommendedJourneys).mockResolvedValue(null);
+    vi.mocked(getAdvice).mockResolvedValue(null);
+
+    render(<ResultsPage />);
+
+    await screen.findByText("radar");
+    expect(screen.queryByText(/^journeys/)).not.toBeInTheDocument();
   });
 });

@@ -19,8 +19,7 @@ const advice: Advice = {
       reason: "Goes deeper on data management plans.",
     },
   ],
-  journey: null,
-  journeyReason: null,
+  journeys: [],
   model: "openai/gpt-oss-120b",
   generatedAt: "2026-09-30T10:00:00.000Z",
 };

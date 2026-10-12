@@ -337,3 +337,58 @@ export async function journeyCandidatesForSections(
 export function findJourney(id: string) {
   return prisma.learningJourney.findUnique({ where: { id }, include: journeyInclude });
 }
+
+/**
+ * The dashboard's two journeys by score alone — the fallback when the AI
+ * advisor (which also weighs the learner's profile) is off or fails, and the
+ * order it starts from. Learner data never leaves the app here.
+ * - Something at or below the weak threshold: "recommended". The first is
+ *   recommendJourney()'s pick (so the recommendation log is unchanged), the
+ *   second the next-best coverage of all the learner's weak sections.
+ * - Nothing that weak (but not perfect): "suggested", the best coverage of
+ *   the lowest-scoring area's sections — journeys to keep improving with.
+ * Null when there's nothing to recommend (no completed assessment, or a
+ * perfect score).
+ */
+export async function recommendJourneys(learnerId: string) {
+  const scores = newestPerCompetence(
+    await prisma.competenceScore.findMany(completedCompetenceScoresQuery(learnerId)),
+  );
+  const weak = weakestFirst(scores);
+
+  let source: "recommended" | "suggested";
+  let competenceIds: string[];
+  let first: { id: string } | null = null;
+  if (weak.length > 0) {
+    source = "recommended";
+    competenceIds = weak.map((w) => w.competenceId);
+    first = await recommendJourney(learnerId);
+  } else {
+    const lowest = pickLowestImprovable(scores);
+    if (!lowest) return null;
+    source = "suggested";
+    competenceIds = [lowest];
+  }
+
+  const sectionIds: string[] = [];
+  for (const id of competenceIds) {
+    for (const sectionId of await sectionIdsForCompetence(id)) {
+      if (!sectionIds.includes(sectionId)) sectionIds.push(sectionId);
+    }
+  }
+  const covering = await journeyCandidatesForSections(sectionIds);
+  const ordered = first
+    ? [first.id, ...covering.map((c) => c.id).filter((id) => id !== first!.id)]
+    : covering.map((c) => c.id);
+  const ids = ordered.slice(0, 2);
+  if (ids.length === 0) return null;
+
+  const journeys = await prisma.learningJourney.findMany({
+    where: { id: { in: ids } },
+    include: journeyInclude,
+  });
+  return {
+    source,
+    journeys: ids.flatMap((id) => journeys.filter((j) => j.id === id)),
+  };
+}

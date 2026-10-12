@@ -155,6 +155,8 @@ describe("getOrCreateAdvice", () => {
         ],
         journeyId: null,
         journeyReason: null,
+        runnerUpJourneyId: null,
+        runnerUpJourneyReason: null,
         model: "test-model",
       },
     });
@@ -388,11 +390,14 @@ describe("getOrCreateAdvice", () => {
       expect(sent[0].isDefault).toBe(true);
     });
 
-    it("stores the journey the model chose, with its reason", async () => {
+    it("stores the two journeys the model ranked, best first, with reasons", async () => {
       vi.mocked(chatJson).mockResolvedValue({
         summary: "ok",
         steps: [],
-        journey: { ref: "j2", reason: "Fits a data steward." },
+        journeys: [
+          { ref: "j2", reason: "Built for data stewards." },
+          { ref: "j1", reason: "Broader." },
+        ],
       });
 
       await getOrCreateAdvice("learner-1", llm);
@@ -400,19 +405,56 @@ describe("getOrCreateAdvice", () => {
       expect(mockPrisma.advice.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           journeyId: "j-lj2",
-          journeyReason: "Fits a data steward.",
+          journeyReason: "Built for data stewards.",
+          runnerUpJourneyId: "j-lj1",
+          runnerUpJourneyReason: "Broader.",
         }),
       });
     });
 
-    it("stores the default journey, without a reason, when the model's choice is unusable", async () => {
-      vi.mocked(chatJson).mockResolvedValue({ summary: "ok", steps: [], journey: { ref: "j7" } });
+    it("falls back to the score-based order, without reasons, when the ranking is unusable", async () => {
+      vi.mocked(chatJson).mockResolvedValue({
+        summary: "ok",
+        steps: [],
+        journeys: [{ ref: "j7" }],
+      });
 
       await getOrCreateAdvice("learner-1", llm);
 
       expect(mockPrisma.advice.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({ journeyId: "j-lj1", journeyReason: null }),
+        data: expect.objectContaining({
+          journeyId: "j-lj1",
+          journeyReason: null,
+          runnerUpJourneyId: "j-lj2",
+          runnerUpJourneyReason: null,
+        }),
       });
+    });
+
+    it("never sends the learner's name or email to the model (GDPR)", async () => {
+      vi.mocked(findLearnerById).mockResolvedValue({
+        name: "Kari Nordmann",
+        email: "kari.nordmann@example.no",
+        userRole: { name: "Student" },
+      } as never);
+      vi.mocked(getLearnerProfile).mockResolvedValue({
+        industry: "higher_education",
+        academicDegree: "phd",
+        background: "Data steward at a university library",
+        yearsOfExperience: 3,
+        goals: "Share data openly",
+      } as never);
+      vi.mocked(chatJson).mockResolvedValue({ summary: "ok", steps: [] });
+
+      await getOrCreateAdvice("learner-1", llm);
+
+      const sent = JSON.stringify(vi.mocked(chatJson).mock.calls[0][1]);
+      expect(sent).not.toContain("Kari");
+      expect(sent).not.toContain("Nordmann");
+      expect(sent).not.toContain("kari.nordmann@example.no");
+      // …while the profile it ranks on does get through.
+      expect(sent).toContain("Data steward at a university library");
+      expect(sent).toContain("Higher education");
     });
   });
 });

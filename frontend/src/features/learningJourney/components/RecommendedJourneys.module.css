@@ -1,0 +1,181 @@
+/* The dashboard's two recommended journeys: the best fit large and clearly
+   highlighted (accent border, a soft wash of the AIOS logo's purple and blue,
+   a badge, a bigger title, a button), the runner-up compact beneath it. */
+
+.wrap {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* --- Best fit --- */
+
+.best {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #7b3d8d 10%, var(--color-surface)),
+    color-mix(in srgb, #3386a7 10%, var(--color-surface))
+  );
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary) 22%, transparent);
+}
+
+.bestBadge {
+  align-self: flex-start;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.bestName {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.description {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.reason {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  font-size: 14px;
+}
+
+.reasonLabel {
+  font-weight: 700;
+}
+
+.steps {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.steps li {
+  display: flex;
+  flex-direction: column;
+}
+
+.stepTitle {
+  font-weight: 600;
+}
+
+.stepDescription {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.moodleButton {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.moodleButton:hover {
+  background: var(--color-primary-hover);
+}
+
+/* --- Runner-up --- */
+
+.runnerUp {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.runnerUpLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.runnerUpName {
+  margin: 0;
+  font-size: 15px;
+}
+
+.runnerUpReason {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.moodleLink {
+  align-self: flex-start;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+@media (max-width: 767px) {
+  .best {
+    padding: 18px;
+  }
+
+  .bestName {
+    font-size: 19px;
+  }
+}
+
+/* Touch devices: finger-sized targets. */
+@media (pointer: coarse) {
+  .moodleButton {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .moodleLink {
+    display: inline-block;
+    padding: 10px 0;
+  }
+}
