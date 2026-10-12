@@ -145,4 +145,17 @@ describe("CompetenciesPage", () => {
 
     expect(await screen.findByText(/couldn't load your competencies/i)).toBeInTheDocument();
   });
+
+  it("labels every score in words as well as colour, and gives each section a ring", async () => {
+    vi.mocked(getCompetencies).mockResolvedValue(DATA);
+
+    render(<CompetenciesPage />);
+
+    const sectionB = await screen.findByRole("region", { name: "Repositories" });
+    expect(within(sectionB).getByText("Good")).toBeInTheDocument(); // B1: 80%
+    expect(within(sectionB).getByRole("img", { name: "80%, good" })).toBeInTheDocument();
+    const sectionA = screen.getByRole("region", { name: "Fundamentals" });
+    expect(within(sectionA).getByText("Weak")).toBeInTheDocument(); // A1: 50%
+    expect(within(sectionA).getByRole("img", { name: "50%, weak" })).toBeInTheDocument();
+  });
 });

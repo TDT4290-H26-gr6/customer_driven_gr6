@@ -41,14 +41,30 @@ const JOURNEYS: LearningJourney[] = [
 ];
 
 describe("LearningJourneysPage", () => {
-  it("lists every journey with the sections assessing it covers (its M sections)", async () => {
+  it("lists every journey as a card, with the core sections assessing it covers", async () => {
     vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
 
     render(<LearningJourneysPage />);
 
-    expect(await screen.findByText("Open Science Foundations")).toBeInTheDocument();
-    expect(screen.getByText("Assesses sections A, D")).toBeInTheDocument();
+    const first = (await screen.findByText("Open Science Foundations")).closest("article")!;
+    expect(first).toHaveTextContent("Core sectionsA, D");
     expect(screen.getByText("Legal Deep Dive")).toBeInTheDocument();
+  });
+
+  it("expands one card at a time", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+    const user = userEvent.setup();
+
+    render(<LearningJourneysPage />);
+    const [firstToggle, secondToggle] = await screen.findAllByRole("button", {
+      name: /read more/i,
+    });
+    await user.click(firstToggle);
+    expect(firstToggle).toHaveAttribute("aria-expanded", "true");
+
+    await user.click(secondToggle);
+    expect(secondToggle).toHaveAttribute("aria-expanded", "true");
+    expect(firstToggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByText("GDPR basics")).toBeInTheDocument();
   });
 
@@ -89,11 +105,16 @@ describe("LearningJourneysPage", () => {
     expect(navigate).toHaveBeenCalledWith("/assessment");
   });
 
-  it("shows a message instead of a list when loading fails", async () => {
-    vi.mocked(listJourneys).mockRejectedValue({ status: 0, message: "offline" });
+  it("shows a message with a retry when loading fails", async () => {
+    vi.mocked(listJourneys)
+      .mockRejectedValueOnce({ status: 0, message: "offline" })
+      .mockResolvedValueOnce(JOURNEYS);
+    const user = userEvent.setup();
 
     render(<LearningJourneysPage />);
-
     expect(await screen.findByText(/couldn't load the journeys/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("Open Science Foundations")).toBeInTheDocument();
   });
 });

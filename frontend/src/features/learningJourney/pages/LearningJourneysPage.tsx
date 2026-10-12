@@ -1,44 +1,43 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { isApiError } from "@/shared/api/client";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
+import { JourneyCard } from "../components/JourneyCard";
 import { listJourneys, startJourneyAssessment } from "../api";
 import type { LearningJourney } from "../types";
 import styles from "./LearningJourneysPage.module.css";
 
-/** The sections a journey is centred on (M) — what assessing it covers. */
-function coreSections(journey: LearningJourney) {
-  return (journey.sections ?? [])
-    .filter((s) => s.coverageLevel === "M")
-    .map((s) => s.section?.code ?? s.section?.name ?? "")
-    .filter(Boolean)
-    .sort();
-}
-
 /**
- * Browse every learning journey and assess yourself on one of them: an
- * assessment with only the questions in the sections the journey is centred
- * on (M). It stands on its own — it never overrides or compares with the
- * main self-assessment, and its result shows under Competencies.
+ * Every learning journey, listed like the Sources page (the customer's
+ * request): a grid of cards, one expanded at a time. Each can be assessed on
+ * its own — only the questions in the sections it's centred on (M) — which
+ * never overrides or compares with the main self-assessment; the result
+ * shows under Competencies.
  */
 export function LearningJourneysPage() {
   const navigate = useNavigate();
   const [journeys, setJourneys] = useState<LearningJourney[] | null>(null);
+  // Kept apart from an empty list: "couldn't load" and "there are none" are
+  // different messages, and only the first is worth retrying.
   const [loadFailed, setLoadFailed] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [startingId, setStartingId] = useState<string | null>(null);
   const [startError, setStartError] = useState<{ message: string; inProgress: boolean } | null>(
     null,
   );
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoadFailed(false);
+    setJourneys(null);
     listJourneys()
       .then(setJourneys)
-      .catch(() => {
-        setJourneys([]);
-        setLoadFailed(true);
-      });
+      .catch(() => setLoadFailed(true));
   }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   function handleAssess(id: string) {
     setStartingId(id);
@@ -59,14 +58,6 @@ export function LearningJourneysPage() {
       });
   }
 
-  if (journeys === null) {
-    return (
-      <div className={styles.page}>
-        <Spinner />
-      </div>
-    );
-  }
-
   return (
     <div className={styles.page}>
       <h1 className={styles.heading}>Learning journeys</h1>
@@ -75,17 +66,9 @@ export function LearningJourneysPage() {
         your self-assessment; your result shows under Competencies.
       </p>
 
-      {loadFailed && (
-        <p className={styles.note}>Couldn&apos;t load the journeys right now. Please try again.</p>
-      )}
-
-      {!loadFailed && journeys.length === 0 && (
-        <p className={styles.note}>No learning journeys are available yet.</p>
-      )}
-
       {startError && (
-        <div className={styles.error} role="alert">
-          {startError.message}{" "}
+        <div className={styles.alert} role="alert">
+          <p className={styles.alertText}>{startError.message}</p>
           {startError.inProgress && (
             <Button variant="secondary" onClick={() => navigate("/assessment")}>
               Continue assessment
@@ -94,54 +77,37 @@ export function LearningJourneysPage() {
         </div>
       )}
 
-      {journeys.map((journey) => {
-        const sections = coreSections(journey);
-        return (
-          <div key={journey.id} className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2 className={styles.cardHeading}>{journey.name}</h2>
-            </div>
-
-            {journey.description && <p className={styles.description}>{journey.description}</p>}
-
-            {journey.modules.length > 0 && (
-              <ol className={styles.modules}>
-                {journey.modules.map((module) => (
-                  <li key={module.id} className={styles.module}>
-                    <span className={styles.moduleTitle}>{module.title}</span>
-                    {module.description && (
-                      <span className={styles.moduleDescription}>{module.description}</span>
-                    )}
-                  </li>
-                ))}
-              </ol>
-            )}
-
-            {sections.length > 0 && (
-              <p className={styles.covers}>Assesses sections {sections.join(", ")}</p>
-            )}
-
-            {journey.moodleUrl && (
-              <a
-                className={styles.moodleLink}
-                href={journey.moodleUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open in Moodle ↗
-              </a>
-            )}
-            <Button
-              variant="secondary"
-              className={styles.selectButton}
-              onClick={() => handleAssess(journey.id)}
-              disabled={startingId !== null || sections.length === 0}
-            >
-              {startingId === journey.id ? "Starting…" : "Assess this journey"}
-            </Button>
-          </div>
-        );
-      })}
+      {loadFailed ? (
+        <div className={styles.failed}>
+          <p className={styles.error} role="alert">
+            Couldn&apos;t load the journeys. Check your connection and try again.
+          </p>
+          <Button variant="secondary" onClick={load}>
+            Try again
+          </Button>
+        </div>
+      ) : journeys === null ? (
+        <Spinner />
+      ) : journeys.length === 0 ? (
+        <p className={styles.empty}>No learning journeys are available yet.</p>
+      ) : (
+        <div className={styles.grid}>
+          {journeys.map((journey) => (
+            <JourneyCard
+              key={journey.id}
+              journey={journey}
+              expanded={expandedId === journey.id}
+              onToggle={() => setExpandedId((id) => (id === journey.id ? null : journey.id))}
+              onAssess={() => handleAssess(journey.id)}
+              starting={startingId === journey.id}
+              assessDisabled={
+                startingId !== null ||
+                !(journey.sections ?? []).some((s) => s.coverageLevel === "M")
+              }
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

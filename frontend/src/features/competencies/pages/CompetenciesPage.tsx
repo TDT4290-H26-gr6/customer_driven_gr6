@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
 import { DATE_FORMAT } from "@/shared/lib/format";
 import { getCompetencies } from "../api";
+import { BAND_LABEL, scoreBand } from "../scoreBand";
 import type { BestResult, Competencies, CompetencyModule } from "../types";
 import styles from "./CompetenciesPage.module.css";
 
@@ -15,10 +16,38 @@ function sourceOf(best: BestResult): string {
     : `Self-assessment, ${date}`;
 }
 
+/** Each section's own colour (A–E), from the AIOS logo palette; see the CSS. */
+function hueClass(code: string | null | undefined): string {
+  const letter = code?.[0]?.toUpperCase();
+  return letter && "ABCDE".includes(letter) ? styles[`hue${letter}`] : "";
+}
+
 function Bar({ percent }: { percent: number }) {
   return (
-    <span className={styles.bar} aria-hidden="true">
+    <span className={`${styles.bar} ${styles[scoreBand(percent)]}`} aria-hidden="true">
       <span className={styles.barFill} style={{ width: `${percent}%` }} />
+    </span>
+  );
+}
+
+/** A section's percentage as a ring, in its score colour. */
+function Ring({ percent }: { percent: number | null }) {
+  if (percent === null) {
+    return (
+      <span className={styles.ring} role="img" aria-label="Not assessed yet">
+        <span className={styles.ringValue}>–</span>
+      </span>
+    );
+  }
+  const band = scoreBand(percent);
+  return (
+    <span
+      className={`${styles.ring} ${styles[band]}`}
+      style={{ "--p": percent } as CSSProperties}
+      role="img"
+      aria-label={`${percent}%, ${BAND_LABEL[band].toLowerCase()}`}
+    >
+      <span className={styles.ringValue}>{percent}%</span>
     </span>
   );
 }
@@ -26,7 +55,7 @@ function Bar({ percent }: { percent: number }) {
 function ModuleRow({ module }: { module: CompetencyModule }) {
   return (
     <li className={styles.module}>
-      <span className={styles.moduleCode}>{module.code ?? "–"}</span>
+      <span className={`${styles.moduleCode} ${hueClass(module.code)}`}>{module.code ?? "–"}</span>
       <div className={styles.moduleMain}>
         <span className={styles.moduleName}>{module.name}</span>
         {module.best ? (
@@ -46,8 +75,9 @@ function ModuleRow({ module }: { module: CompetencyModule }) {
         )}
       </div>
       {module.best && (
-        <span className={styles.modulePercent}>
-          <strong>{module.best.percent}%</strong>
+        <span className={`${styles.modulePercent} ${styles[scoreBand(module.best.percent)]}`}>
+          <strong className={styles.scoreValue}>{module.best.percent}%</strong>
+          <span className={styles.bandLabel}>{BAND_LABEL[scoreBand(module.best.percent)]}</span>
           <Bar percent={module.best.percent} />
         </span>
       )}
@@ -131,20 +161,23 @@ export function CompetenciesPage() {
       )}
 
       {data.sections.map((section) => (
-        <section key={section.id} className={styles.card} aria-labelledby={`section-${section.id}`}>
+        <section
+          key={section.id}
+          className={`${styles.card} ${styles.sectionCard} ${hueClass(section.code)}`}
+          aria-labelledby={`section-${section.id}`}
+        >
           <div className={styles.sectionHeader}>
             <span className={styles.sectionCode}>{section.code ?? "–"}</span>
-            <h2 id={`section-${section.id}`} className={styles.cardHeading}>
-              {section.name}
-            </h2>
-            <span className={styles.sectionPercent}>
-              {section.percent === null ? "–" : `${section.percent}%`}
-            </span>
+            <div className={styles.sectionTitle}>
+              <h2 id={`section-${section.id}`} className={styles.cardHeading}>
+                {section.name}
+              </h2>
+              <p className={styles.muted}>
+                {section.assessedModules} of {section.moduleCount} modules assessed
+              </p>
+            </div>
+            <Ring percent={section.percent} />
           </div>
-          {section.percent !== null && <Bar percent={section.percent} />}
-          <p className={styles.muted}>
-            {section.assessedModules} of {section.moduleCount} modules assessed
-          </p>
           <ul className={styles.modules}>
             {section.modules.map((module) => (
               <ModuleRow key={module.id} module={module} />
