@@ -3,12 +3,14 @@
 // asks this what comes next.
 //
 // Sections are taken one at a time, in a random order per attempt. Within a
-// section the modules go level 1 → 4 (A1 … A4). A level is decided as soon
-// as its outcome is certain:
-// - passed once the learner has PASS_THRESHOLD of its points — the rest of
-//   its questions are skipped and they move up to the next level;
+// section the modules go level 1 → 4 (A1 … A4). Every question of a level is
+// asked, unless the level can no longer be passed:
+// - passed when all its questions are answered and the learner has
+//   PASS_THRESHOLD of its points — they move up to the next level;
 // - failed once PASS_THRESHOLD is out of reach even with every remaining
 //   question right — the section ends there and the next section starts.
+// Questions never asked (the rest of a failed level, and the levels above
+// it) still count toward the scores, as 0 points (see assessment.service.ts).
 //
 // Questions already answered are history: they stay on the path, in the
 // order they were first answered, whatever happens to their answers later.
@@ -20,7 +22,8 @@
 
 /**
  * A level counts as passed at 2/3 of its points — 2 of its 3 questions
- * right. Partial credit (multiple-answer questions) adds up toward it.
+ * right, once all are answered. Partial credit (multiple-answer questions)
+ * adds up toward it.
  */
 export const PASS_THRESHOLD = 2 / 3;
 
@@ -114,12 +117,31 @@ function continueSection(
 
 /**
  * Whether a level is passed, failed, or still open (and its next unanswered
- * question). Also how the results page works out a learner's skill level.
+ * question). A level stays open until every question is answered, unless
+ * the threshold is already out of reach.
  */
 export function levelOutcome(
   module: PathModule,
   answers: ReadonlyMap<string, Pick<PathAnswer, "score" | "maxScore">>,
 ): LevelOutcome {
+  const { earned, needed, remaining, firstUnanswered } = levelPoints(module, answers);
+  if (firstUnanswered) {
+    return earned + remaining < needed
+      ? { status: "failed" }
+      : { status: "open", next: firstUnanswered };
+  }
+  return earned >= needed ? { status: "passed" } : { status: "failed" };
+}
+
+/**
+ * A level's points so far: what's earned, what's needed to pass it, and
+ * what the unanswered questions could still add. A level with nothing
+ * scorable needs 0 — no gate.
+ */
+function levelPoints(
+  module: PathModule,
+  answers: ReadonlyMap<string, Pick<PathAnswer, "score" | "maxScore">>,
+) {
   let earned = 0;
   let total = 0;
   let remaining = 0;
@@ -137,18 +159,17 @@ export function levelOutcome(
     }
   }
 
-  if (total === 0) return { status: "passed" }; // nothing scorable here — no gate
-  const needed = PASS_THRESHOLD * total - EPSILON;
-  if (earned >= needed) return { status: "passed" };
-  if (!firstUnanswered || earned + remaining < needed) return { status: "failed" };
-  return { status: "open", next: firstUnanswered };
+  return { earned, needed: PASS_THRESHOLD * total - EPSILON, remaining, firstUnanswered };
 }
 
 /**
  * A learner's skill level in a section: how many levels, from level 1 up
  * without a gap, they've passed — 0 if not even level 1. A level passed
  * above a failed or unanswered one (possible after editing an earlier
- * answer) doesn't count, since the levels build on each other.
+ * answer) doesn't count, since the levels build on each other. Here a level
+ * counts as passed once its points reach the threshold, answered in full or
+ * not — SATs taken while a passed level skipped its remaining questions
+ * keep their level.
  */
 export function skillLevel(
   modules: PathModule[],
@@ -156,7 +177,8 @@ export function skillLevel(
 ): number {
   let level = 0;
   for (const module of byLevel(modules)) {
-    if (levelOutcome(module, answers).status !== "passed") break;
+    const { earned, needed } = levelPoints(module, answers);
+    if (earned < needed) break;
     level++;
   }
   return level;

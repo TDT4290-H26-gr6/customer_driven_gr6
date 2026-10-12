@@ -456,10 +456,12 @@ so running it again never duplicates or overwrites.
   module (level) has exactly 3 questions — `fakeFoodSeed.data.test.ts` checks
   this).
 - The assessment is adaptive (`assessment.path.ts`): sections in a random order
-  per attempt, levels 1 → 4 within each, moving up a level at 2 of 3 right
-  (2/3 of the level's points) and on to the next section once that's out of
-  reach. A module's `level` therefore
-  decides when its questions are asked.
+  per attempt, levels 1 → 4 within each. Every question of a level is asked;
+  the learner moves up a level at 2 of 3 right (2/3 of the level's points)
+  and on to the next section as soon as that's out of reach. A module's
+  `level` therefore decides when its questions are asked. Questions never
+  asked (the rest of a failed level and the levels above it) still count in
+  the scores, as 0 of 1, so every SAT is scored over the same questions.
 - There is no longer a default-roles bootstrap: roles come from the seed, so the
   role picker lists the seed's (fake) roles.
 - **The real open-science content is dormant, not deleted.**

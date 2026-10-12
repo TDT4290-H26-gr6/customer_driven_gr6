@@ -503,9 +503,11 @@ export type CompleteResult = "completed" | "none" | "unfinished";
 
 /**
  * Marks the learner's active instance complete — only once its path is
- * finished (assessment.path.ts) — and rolls its scored responses up into
- * one CompetenceScore row per competence touched, grouped by each
- * question's own competenceId. Every answered question counts. The only
+ * finished (assessment.path.ts) — and rolls its questions up into one
+ * CompetenceScore row per competence in the learner's bank, grouped by each
+ * question's own competenceId. Every question counts, so SATs compare like
+ * for like: one never asked (its level, or one below it, wasn't passed)
+ * scores 0 of QUESTION_MAX_SCORE. The only
  * answers deleted are ones to questions no longer in the learner's bank
  * (deleted, or hidden from their role since), so every later read of the
  * responses agrees with the scores. Each score also stores copies of its
@@ -528,21 +530,6 @@ export async function completeActiveInstance(learnerId: string): Promise<Complet
     .filter((r) => !r.questionId || !inBank.has(r.questionId))
     .map((r) => r.id);
 
-  const responses = await prisma.response.findMany({
-    where: { satInstanceId: active.id, score: { not: null }, questionId: { in: answered } },
-    include: {
-      question: {
-        select: {
-          competenceId: true,
-          competence: { select: { name: true } },
-          sectionModule: {
-            select: { level: true, section: { select: { code: true, name: true } } },
-          },
-        },
-      },
-    },
-  });
-
   const byCompetence = new Map<
     string,
     {
@@ -554,21 +541,21 @@ export async function completeActiveInstance(learnerId: string): Promise<Complet
       level: number | null;
     }
   >();
-  for (const r of responses) {
-    if (!r.question) continue;
-    const competenceId = r.question.competenceId;
-    const { section, level } = r.question.sectionModule;
-    const totals = byCompetence.get(competenceId) ?? {
+  for (const q of inputs.questions.values()) {
+    const answer = inputs.answers.get(q.id);
+    if (answer && answer.score === null) continue; // answered, but nothing scorable
+    const { section, level } = q.sectionModule;
+    const totals = byCompetence.get(q.competenceId) ?? {
       score: 0,
       maxScore: 0,
-      competenceName: r.question.competence.name,
+      competenceName: q.competence.name,
       sectionCode: section.code,
       sectionName: section.name,
       level,
     };
-    totals.score += r.score ?? 0;
-    totals.maxScore += r.maxScore ?? 0;
-    byCompetence.set(competenceId, totals);
+    totals.score += answer?.score ?? 0;
+    totals.maxScore += answer ? (answer.maxScore ?? 0) : QUESTION_MAX_SCORE;
+    byCompetence.set(q.competenceId, totals);
   }
 
   await prisma.$transaction([
@@ -744,7 +731,8 @@ function bySectionCode(
  * assessed in but this SAT didn't touch (`assessed: false`, all 0/0, no
  * level) — e.g. sections a journey retake left out. Each section lists one
  * entry per competence its modules cover (main or secondary) or its
- * questions name, in level order (A1 … A4) so its radar always starts at
+ * questions name — scored over every question of an assessed section, the
+ * ones never asked as 0 — in level order (A1 … A4) so its radar always starts at
  * level 1, and the learner's skill level in it: how many levels they passed
  * from the bottom up (skillLevel in assessment.path.ts). Sections already
  * assessed are shown even if the learner's current role no longer sees
@@ -827,6 +815,15 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
     for (const c of covered) entry.competences.set(c.id, c.name);
     if (m.level !== null) levelOf.set(m.mainCompetence.id, m.level);
     entry.levels.push({ id: m.id, level: m.level, questionIds: m.questions.map((q) => q.id) });
+    // In a section this SAT assessed, a question never asked still counts — as 0.
+    const answers = answersBySection.get(m.section.id);
+    for (const q of answers ? m.questions : []) {
+      if (answers?.has(q.id)) continue;
+      const key = `${m.section.id}:${q.competence.id}`;
+      const total = totals.get(key) ?? { score: 0, maxScore: 0 };
+      total.maxScore += QUESTION_MAX_SCORE;
+      totals.set(key, total);
+    }
     sections.set(m.section.id, entry);
   }
   // Level 1 → 4; a competence that's no module's main one has no level and

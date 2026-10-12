@@ -32,10 +32,17 @@ describe("buildPath", () => {
     });
   });
 
-  it("passes a level early at 2 of 3 right and skips its remaining question", () => {
-    // 2 of 3 right: A1-3 is never asked.
+  it("asks every question of a level, even once 2 of 3 are right", () => {
     const path = buildPath([section("A")], answers({ "A1-1": right, "A1-2": right }));
-    expect(path).toEqual({ answered: ["A1-1", "A1-2"], next: "A2-1" });
+    expect(path).toEqual({ answered: ["A1-1", "A1-2"], next: "A1-3" });
+  });
+
+  it("moves up a level once all its questions are answered with 2 of 3 right", () => {
+    const path = buildPath(
+      [section("A")],
+      answers({ "A1-1": right, "A1-2": right, "A1-3": wrong }),
+    );
+    expect(path).toEqual({ answered: ["A1-1", "A1-2", "A1-3"], next: "A2-1" });
   });
 
   it("keeps asking while the level is still undecided", () => {
@@ -74,6 +81,7 @@ describe("buildPath", () => {
     for (const level of [1, 2, 3, 4]) {
       all[`A${level}-1`] = right;
       all[`A${level}-2`] = right;
+      all[`A${level}-3`] = right;
     }
     expect(buildPath([section("A")], answers(all))).toEqual({
       answered: Object.keys(all),
@@ -137,7 +145,7 @@ describe("buildPath: the 2/3 threshold", () => {
 
 describe("buildPath: answered questions are history", () => {
   it("keeps every answered question after an earlier answer changes", () => {
-    // A1 was passed (right, right) and A2-1 answered — then A1-2 was changed
+    // A1 was passed and A2-1 answered — then A1's answers were changed
     // to wrong. A1 would now have failed, but A2-1 stays on the path.
     const path = buildPath(
       [section("A"), section("B")],
@@ -156,9 +164,10 @@ describe("buildPath: answered questions are history", () => {
   });
 
   it("lets a change to the latest level decide what comes next", () => {
-    // Latest is A1-2: wrong leaves A1 open; right passes it.
-    expect(buildPath([section("A")], answers({ "A1-1": right, "A1-2": wrong })).next).toBe("A1-3");
-    expect(buildPath([section("A")], answers({ "A1-1": right, "A1-2": right })).next).toBe("A2-1");
+    // Latest is A1-3: wrong fails A1 (the section ends); right passes it.
+    const first = { "A1-1": right, "A1-2": wrong };
+    expect(buildPath([section("A")], answers({ ...first, "A1-3": wrong })).next).toBeNull();
+    expect(buildPath([section("A")], answers({ ...first, "A1-3": right })).next).toBe("A2-1");
   });
 
   it("never returns to a section already left", () => {
@@ -242,6 +251,10 @@ describe("skillLevel", () => {
     // A2 passed, but A1 failed (e.g. after an earlier answer was changed).
     const given = answers({ "A1-1": wrong, "A1-2": wrong, "A2-1": right, "A2-2": right });
     expect(skillLevel(modules, given)).toBe(0);
+  });
+
+  it("counts a level at 2 of 3 right with the third never asked (older SATs skipped it)", () => {
+    expect(skillLevel(modules, answers({ "A1-1": right, "A1-2": right }))).toBe(1);
   });
 
   it("orders levels by number, whatever order the modules come in", () => {
