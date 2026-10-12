@@ -5,6 +5,7 @@ import {
   ClipboardIcon,
   HomeIcon,
   RouteIcon,
+  TargetIcon,
 } from "@/shared/components/icons";
 import styles from "./Sidebar.module.css";
 
@@ -12,6 +13,7 @@ import styles from "./Sidebar.module.css";
 // dashboard's "Retake assessment" button, not as a page someone browses to.
 const NAV_ITEMS = [
   { to: "/results", label: "Dashboard", Icon: HomeIcon },
+  { to: "/competencies", label: "Competencies", Icon: TargetIcon },
   { to: "/journeys", label: "Journeys", Icon: RouteIcon },
   { to: "/history", label: "History", Icon: ClipboardIcon },
   { to: "/sources", label: "Sources", Icon: BookIcon },

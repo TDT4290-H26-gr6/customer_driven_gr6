@@ -471,6 +471,42 @@ so running it again never duplicates or overwrites.
   (e.g. as a _second_, later assessment rather than the initial one), call it
   from one of those two files again.
 
+### Journey assessments and the Competencies overview
+
+- **Two kinds of SAT instance** (`SatInstance.kind`, `assessment.kinds.ts`):
+  `main` (the self-assessment: the initial one and its retakes) and `journey`
+  (a learner assessing one learning journey on its own). Each kind is numbered
+  on its own (`@@unique([learnerId, kind, instanceNum])`), so main assessments
+  stay 1, 2, 3 … whatever journey assessments happen in between.
+- **A journey assessment never touches the main results.** Every main-results
+  query filters on `kind: "main"`: History, the dashboard's per-assessment
+  results and progress, the shared newest-scores query (dashboard radar,
+  journey recommendation, weak competences, AI advice), and the "has done the
+  self-assessment" check (`hasCompletedMainAssessment`, which also guards
+  `PUT /auth/me/initial-assessment`). Only one assessment of any kind can be
+  in progress at a time.
+- `POST /assessment/journey` (`startJourneyAssessment`) limits the instance to
+  the journey's **M sections** that have questions (the same `SatInstanceSection`
+  mechanism a reassessment uses). The runner shows which journey, and finishes
+  on Competencies instead of the dashboard. It replaces the old "select a
+  journey" (CD-33), which is removed.
+- `GET /competencies` (`getCompetencies`, pure logic in
+  `assessment.competencies.ts`): each module's **best** result over **all**
+  completed assessments, main and journey alike; a section's percentage is the
+  average of its modules' best results (modules without a result left out).
+  The M sections of the journey recommended after the latest main assessment
+  (the AI advisor's pick, else the score-based recommendation, else the
+  suggestion) are marked relevant and come first.
+
+### Schema changes db push can't make on its own
+
+`prisma db push` runs on every start (Dockerfile). A few MySQL changes need a
+step first: `prisma/pre-push.sql` runs before it, and is idempotent (a no-op
+when there's nothing to do, or on a fresh database). Today it creates the
+`assessment_sat_instance(learnerId)` index — MySQL won't drop the old
+`(learnerId, instanceNum)` unique key while it's the only index behind the
+learner foreign key, and `db push` drops it before creating the new index.
+
 ### Resetting the database
 
 The stack still uses `prisma db push` (§7), which cannot rename tables or

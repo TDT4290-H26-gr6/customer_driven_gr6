@@ -1,119 +1,113 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { isApiError } from "@/shared/api/client";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
-import { listJourneys, getSelectedJourney, selectJourney } from "../api";
+import { JourneyCard } from "../components/JourneyCard";
+import { listJourneys, startJourneyAssessment } from "../api";
 import type { LearningJourney } from "../types";
 import styles from "./LearningJourneysPage.module.css";
 
 /**
- * Browse every learning journey and pick one to follow (CD-33) — not just
- * the one score-based recommendation. The selection sticks (Learner.
- * selectedJourneyId) and is what the results page then shows as "your
- * journey", overriding the recommendation, until a different one is picked.
+ * Every learning journey, listed like the Sources page (the customer's
+ * request): a grid of cards, one expanded at a time. Each can be assessed on
+ * its own — only the questions in the sections it's centred on (M) — which
+ * never overrides or compares with the main self-assessment; the result
+ * shows under Competencies.
  */
 export function LearningJourneysPage() {
+  const navigate = useNavigate();
   const [journeys, setJourneys] = useState<LearningJourney[] | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Kept apart from an empty list: "couldn't load" and "there are none" are
+  // different messages, and only the first is worth retrying.
   const [loadFailed, setLoadFailed] = useState(false);
-  const [selectingId, setSelectingId] = useState<string | null>(null);
-  const [selectError, setSelectError] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [startingId, setStartingId] = useState<string | null>(null);
+  const [startError, setStartError] = useState<{ message: string; inProgress: boolean } | null>(
+    null,
+  );
 
-  useEffect(() => {
-    Promise.all([listJourneys(), getSelectedJourney()])
-      .then(([loaded, selected]) => {
-        setJourneys(loaded);
-        setSelectedId(selected?.id ?? null);
-      })
-      .catch(() => {
-        setJourneys([]);
-        setLoadFailed(true);
-      });
+  const load = useCallback(() => {
+    setLoadFailed(false);
+    setJourneys(null);
+    listJourneys()
+      .then(setJourneys)
+      .catch(() => setLoadFailed(true));
   }, []);
 
-  function handleSelect(id: string) {
-    setSelectingId(id);
-    setSelectError("");
-    selectJourney(id)
-      .then((journey) => setSelectedId(journey.id))
-      .catch(() => setSelectError("Couldn't save your choice. Try again."))
-      .finally(() => setSelectingId(null));
-  }
+  useEffect(() => {
+    load();
+  }, [load]);
 
-  if (journeys === null) {
-    return (
-      <div className={styles.page}>
-        <Spinner />
-      </div>
-    );
+  function handleAssess(id: string) {
+    setStartingId(id);
+    setStartError(null);
+    startJourneyAssessment(id)
+      .then(() => navigate("/assessment"))
+      .catch((err) => {
+        const inProgress = isApiError(err) && err.status === 409;
+        setStartError({
+          message: inProgress
+            ? "You have an assessment in progress. Finish or abort it before assessing a journey."
+            : isApiError(err) && err.status === 400
+              ? err.message
+              : "Couldn't start the assessment. Try again.",
+          inProgress,
+        });
+        setStartingId(null);
+      });
   }
 
   return (
     <div className={styles.page}>
       <h1 className={styles.heading}>Learning journeys</h1>
       <p className={styles.subheading}>
-        Browse every journey and pick the one you want to follow — it doesn&apos;t have to be the
-        one recommended for you.
+        Assess yourself on any journey — only the sections it focuses on. It doesn&apos;t change
+        your self-assessment; your result shows under Competencies.
       </p>
 
-      {loadFailed && (
-        <p className={styles.note}>Couldn&apos;t load the journeys right now. Please try again.</p>
-      )}
-
-      {!loadFailed && journeys.length === 0 && (
-        <p className={styles.note}>No learning journeys are available yet.</p>
-      )}
-
-      {selectError && <p className={styles.error}>{selectError}</p>}
-
-      {journeys.map((journey) => {
-        const isSelected = journey.id === selectedId;
-        return (
-          <div key={journey.id} className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2 className={styles.cardHeading}>{journey.name}</h2>
-              {isSelected && <span className={styles.badge}>Selected</span>}
-            </div>
-
-            {journey.description && <p className={styles.description}>{journey.description}</p>}
-
-            {journey.modules.length > 0 && (
-              <ol className={styles.modules}>
-                {journey.modules.map((module) => (
-                  <li key={module.id} className={styles.module}>
-                    <span className={styles.moduleTitle}>{module.title}</span>
-                    {module.description && (
-                      <span className={styles.moduleDescription}>{module.description}</span>
-                    )}
-                  </li>
-                ))}
-              </ol>
-            )}
-
-            {journey.moodleUrl && (
-              <a
-                className={styles.moodleLink}
-                href={journey.moodleUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open in Moodle ↗
-              </a>
-            )}
-            <Button
-              variant="secondary"
-              className={styles.selectButton}
-              onClick={() => handleSelect(journey.id)}
-              disabled={isSelected || selectingId === journey.id}
-            >
-              {isSelected
-                ? "Currently selected"
-                : selectingId === journey.id
-                  ? "Selecting…"
-                  : "Select this journey"}
+      {startError && (
+        <div className={styles.alert} role="alert">
+          <p className={styles.alertText}>{startError.message}</p>
+          {startError.inProgress && (
+            <Button variant="secondary" onClick={() => navigate("/assessment")}>
+              Continue assessment
             </Button>
-          </div>
-        );
-      })}
+          )}
+        </div>
+      )}
+
+      {loadFailed ? (
+        <div className={styles.failed}>
+          <p className={styles.error} role="alert">
+            Couldn&apos;t load the journeys. Check your connection and try again.
+          </p>
+          <Button variant="secondary" onClick={load}>
+            Try again
+          </Button>
+        </div>
+      ) : journeys === null ? (
+        <Spinner />
+      ) : journeys.length === 0 ? (
+        <p className={styles.empty}>No learning journeys are available yet.</p>
+      ) : (
+        <div className={styles.grid}>
+          {journeys.map((journey) => (
+            <JourneyCard
+              key={journey.id}
+              journey={journey}
+              expanded={expandedId === journey.id}
+              onToggle={() => setExpandedId((id) => (id === journey.id ? null : journey.id))}
+              onAssess={() => handleAssess(journey.id)}
+              starting={startingId === journey.id}
+              assessDisabled={
+                startingId !== null ||
+                !(journey.sections ?? []).some((s) => s.coverageLevel === "M")
+              }
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

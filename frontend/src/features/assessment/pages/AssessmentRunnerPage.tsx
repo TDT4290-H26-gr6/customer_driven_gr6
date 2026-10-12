@@ -186,6 +186,12 @@ export function AssessmentRunnerPage() {
     setIsFinishing(true);
     try {
       await withRetry(() => completeAssessment());
+      // A journey assessment stands on its own: it doesn't complete the
+      // self-assessment, and its result is shown under Competencies.
+      if (path?.journey) {
+        navigate("/competencies", { replace: true });
+        return;
+      }
       await withRetry(() => completeInitialAssessment());
       markInitialAssessmentComplete();
       navigate("/", { replace: true });
@@ -276,6 +282,13 @@ export function AssessmentRunnerPage() {
           />
         </div>
       </div>
+
+      {path.journey && (
+        <p className={styles.journeyBanner}>
+          Assessing the journey <strong>{path.journey.name ?? "you chose"}</strong>. Your result
+          shows under Competencies and doesn&apos;t change your self-assessment.
+        </p>
+      )}
 
       {unsavedCount > 0 && (
         <div className={styles.alert} role="alert">

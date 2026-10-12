@@ -51,7 +51,7 @@ vi.mock("../components/CompetenceRadar", () => ({
   ),
 }));
 
-const ongoing = { satInstanceId: "instance-1", responses: [] };
+const ongoing = { satInstanceId: "instance-1", journey: null, responses: [] };
 
 const oneAssessment: DashboardProgress = {
   latest: { instanceNum: 1, completedAt: "2026-09-20T10:00:00.000Z" },
@@ -227,19 +227,6 @@ describe("ResultsPage journey card", () => {
     expect(
       await screen.findByText("journey card: LJ3 — Education [recommended]"),
     ).toBeInTheDocument();
-  });
-
-  it("always shows the journey the learner selected themselves", async () => {
-    vi.mocked(getCurrentJourney).mockResolvedValue({
-      journey: journeyOf("LJ4 — Trainer"),
-      source: "selected",
-    });
-    vi.mocked(getAdvice).mockResolvedValue(adviceWithJourney("LJ2 — Research Data", "Fits."));
-
-    render(<ResultsPage />);
-
-    await screen.findByText("journey card: LJ4 — Trainer [selected]");
-    expect(screen.queryByText(/LJ2/)).not.toBeInTheDocument();
   });
 
   it("labels the AI's pick as a suggestion when nothing was weak", async () => {

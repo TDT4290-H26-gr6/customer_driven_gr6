@@ -28,12 +28,9 @@ describe("RecommendedJourneyCard", () => {
     expect(screen.queryByRole("link", { name: /open in moodle/i })).not.toBeInTheDocument();
   });
 
-  it("says whether the learner chose the journey or it was recommended", () => {
-    const { rerender } = render(<RecommendedJourneyCard journey={journey} />);
+  it("is labelled as recommended by default", () => {
+    render(<RecommendedJourneyCard journey={journey} />);
     expect(screen.getByText("Recommended for you")).toBeInTheDocument();
-
-    rerender(<RecommendedJourneyCard journey={journey} source="selected" />);
-    expect(screen.getByText("Your journey")).toBeInTheDocument();
   });
 
   it("labels a suggestion as one to keep improving with", () => {

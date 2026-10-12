@@ -14,11 +14,10 @@ export const endpoints = {
   learningJourneys: "/learning-journeys",
   learningJourneyRecommendation: "/learning-journeys/recommendation",
   learningJourneySuggestion: "/learning-journeys/suggestion",
-  learningJourneySelected: "/learning-journeys/selected",
   learningJourneyWeakCompetences: "/learning-journeys/weak-competences",
-  learningJourneySelect: (id: string) => `/learning-journeys/${encodeURIComponent(id)}/select`,
   feedback: "/feedback",
   advice: "/advice",
+  competencies: "/competencies",
   assessment: {
     progress: "/assessment/progress",
     path: "/assessment/path",
@@ -27,6 +26,7 @@ export const endpoints = {
     active: "/assessment/active",
     sections: "/assessment/sections",
     start: "/assessment/start",
+    journey: "/assessment/journey",
     history: "/assessment/history",
   },
   admin: {

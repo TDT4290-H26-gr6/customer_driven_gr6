@@ -35,4 +35,10 @@ export type AssessmentPath = {
   items: PathItem[];
   sectionCount: number;
   done: boolean;
+  /**
+   * Set while assessing one learning journey on its own (only its core
+   * sections; the result never counts towards the main self-assessment).
+   * Null for the main self-assessment.
+   */
+  journey: { id: string | null; name: string | null } | null;
 };

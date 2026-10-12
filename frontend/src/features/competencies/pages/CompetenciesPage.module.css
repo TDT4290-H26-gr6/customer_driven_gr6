@@ -1,0 +1,335 @@
+/* Colour on this page, all from the AIOS logo palette (purple #7b3d8d, blue
+   #3386a7, olive #aab627) plus two neighbours for five sections:
+   - each section A–E has its own hue (--hue) for its letter badge and the
+     strip along the top of its card;
+   - each score has a band colour (--band): weak ≤ 60%, good ≤ 84%, strong.
+   Light mode uses darker shades for contrast on white, dark mode lighter
+   ones (every text colour here is at least 4.5:1 on its background, WCAG AA) — the same two dark-mode blocks as globals.css (OS default, and an
+   explicit "Dark" choice). Scores always carry a text label too. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* Section hues. */
+.hueA {
+  --hue: #7b3d8d;
+}
+.hueB {
+  --hue: #24647e;
+}
+.hueC {
+  --hue: #5c6412;
+}
+.hueD {
+  --hue: #1f6b5f;
+}
+.hueE {
+  --hue: #8f3a5b;
+}
+
+/* Score bands. */
+.weak {
+  --band: #a8360a;
+}
+.good {
+  --band: #24647e;
+}
+.strong {
+  --band: #4a5f0e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .page {
+    --tint: #fff;
+  }
+  :root:not([data-theme="light"]) .weak {
+    --band: #fb923c;
+  }
+  :root:not([data-theme="light"]) .good {
+    --band: #7cc4e0;
+  }
+  :root:not([data-theme="light"]) .strong {
+    --band: #c3d147;
+  }
+}
+
+:root[data-theme="dark"] .page {
+  --tint: #fff;
+}
+:root[data-theme="dark"] .weak {
+  --band: #fb923c;
+}
+:root[data-theme="dark"] .good {
+  --band: #7cc4e0;
+}
+:root[data-theme="dark"] .strong {
+  --band: #c3d147;
+}
+
+.heading {
+  margin: 0;
+  font-size: 24px;
+}
+
+.subheading,
+.note {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.card,
+.relevantCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+/* The section's own colour along the top of its card. */
+.sectionCard {
+  border-top: 4px solid var(--hue, var(--color-primary));
+}
+
+/* The recommended journey's modules: a soft wash of the logo's purple and blue. */
+.relevantCard {
+  border-color: color-mix(in srgb, #7b3d8d 35%, var(--color-border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #7b3d8d 11%, var(--color-surface)),
+    color-mix(in srgb, #3386a7 11%, var(--color-surface))
+  );
+}
+
+.relevantCard > button {
+  align-self: flex-start;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.cardHeading {
+  margin: 0;
+  font-size: 18px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sectionTitle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Letter badges in the section's hue (the theme's primary for no section).
+   In dark mode the hue is lightened toward white (--tint) for contrast; in
+   light mode --tint is unset, so the mix is the hue itself. */
+.sectionCode,
+.moduleCode {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--hue, var(--color-primary)) 16%, transparent);
+  color: color-mix(
+    in srgb,
+    var(--hue, var(--color-primary)) 55%,
+    var(--tint, var(--hue, var(--color-primary)))
+  );
+  font-weight: 700;
+}
+
+.sectionCode {
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+}
+
+.moduleCode {
+  width: 34px;
+  height: 34px;
+  font-size: 13px;
+}
+
+/* A section's percentage as a ring: the arc is its score in the band colour. */
+@property --p {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+.ring {
+  --p: 0;
+  flex: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(
+    var(--band, var(--color-border)) calc(var(--p) * 1%),
+    var(--color-bg) 0
+  );
+  animation: ring-fill 0.8s ease-out both;
+}
+
+.ringValue {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--color-surface);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@keyframes ring-fill {
+  from {
+    --p: 0;
+  }
+}
+
+.muted {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+/* A percentage as a bar in its band colour. Decorative: the number and
+   label are always shown as text. */
+.bar {
+  display: block;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--band, var(--color-primary));
+  transform-origin: left;
+  animation: bar-fill 0.7s ease-out both;
+}
+
+@keyframes bar-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring,
+  .barFill {
+    animation: none;
+  }
+}
+
+.modules {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.module {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.moduleMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.moduleName {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.modulePercent {
+  flex: none;
+  width: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.scoreValue {
+  color: var(--band);
+  font-size: 16px;
+}
+
+/* "Weak" / "Good" / "Strong": the band in words, so colour isn't the only cue. */
+.bandLabel {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--band) 15%, transparent);
+  color: var(--band);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.moodleLink {
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+@media (max-width: 767px) {
+  .card,
+  .relevantCard {
+    padding: 16px;
+  }
+
+  .modulePercent {
+    width: 64px;
+  }
+
+  .ring {
+    width: 52px;
+    height: 52px;
+  }
+
+  .ringValue {
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
+  }
+}
