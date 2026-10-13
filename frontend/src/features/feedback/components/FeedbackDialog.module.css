@@ -4,6 +4,10 @@
   /* Fixed dark scrim regardless of theme, like RoleGateModal's. Below the
      role gate (1000) — that one must always win. */
   background: var(--color-overlay);
+  /* Blurs the page behind as well, so its text and colors (the dashboard's
+     backdrop circles, say) don't compete with the dialog while it's open. */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: var(--z-dialog);
   display: flex;
   align-items: center;
@@ -96,6 +100,14 @@
   background: var(--color-surface);
   color: var(--color-text);
   resize: vertical;
+}
+
+/* The accent color instead of the browser's default blue ring, as on the
+   FAQ search field. :focus-visible is always true for a text field, so this
+   shows for mouse and keyboard alike. */
+.textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 
 .error {
