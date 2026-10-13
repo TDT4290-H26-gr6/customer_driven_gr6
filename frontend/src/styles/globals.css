@@ -69,6 +69,11 @@
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-pill: 999px;
+  /* Every content card (dashboard, journey cards, FAQ, settings, history …):
+     small corners and a clear shadow. Dialogs, menus and
+     floating buttons keep --radius-md / --shadow-md of their own. */
+  --radius-card: var(--radius-sm);
+  --shadow-card: var(--shadow-md);
 
   --font-size-2xs: 11px;
   --font-size-xs: 12px;

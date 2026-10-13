@@ -400,7 +400,9 @@ accent picker's swatches all read from), the card banner gradients
 (`--section-a…e`), `--color-compare` (an earlier assessment on the
 results radar; an alias for `--color-text-muted`), layout sizes (`--header-height`,
 `--sidebar-width*`, `--bottom-nav-height`), `--radius-*`, `--font-size-*`,
-`--font-weight-*`, `--font-family-*`, `--duration-*` and the `--z-*` stacking
+`--font-weight-*`, `--font-family-*`, `--duration-*`, the card style (`--radius-card`,
+`--shadow-card` — every content card uses these, dialogs and menus don't)
+and the `--z-*` stacking
 scale.
 
 ### Third-party widgets: pie-fixed-player
