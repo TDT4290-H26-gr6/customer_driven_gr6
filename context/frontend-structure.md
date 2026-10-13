@@ -395,7 +395,8 @@ and have no dark variant: the brand palette (`--brand-purple`, `--brand-blue`,
 `--brand-olive` — the logo colors, which the accent colors, the logo and the
 accent picker's swatches all read from), the card banner gradients
 (`--banner-gradient-1…3`, one tonal gradient per themed `--banner-*` color), the competence section hues
-(`--section-a…e`), layout sizes (`--header-height`,
+(`--section-a…e`), `--color-compare` (an earlier assessment on the
+results radar; an alias for `--color-text-muted`), layout sizes (`--header-height`,
 `--sidebar-width*`, `--bottom-nav-height`), `--radius-*`, `--font-size-*`,
 `--font-weight-*`, `--font-family-*`, `--duration-*` and the `--z-*` stacking
 scale.

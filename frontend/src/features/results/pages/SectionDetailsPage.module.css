@@ -163,7 +163,7 @@
 }
 
 .swatchCompare {
-  border: 2px dashed var(--color-danger);
+  border: 2px dashed var(--color-compare);
 }
 
 .sectionName {

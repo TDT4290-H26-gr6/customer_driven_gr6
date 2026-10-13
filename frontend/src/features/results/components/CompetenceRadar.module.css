@@ -33,18 +33,19 @@
   fill: var(--color-primary);
 }
 
-/* A second SAT to compare with: a dashed outline only, in another colour,
-   so it reads apart from the main shape even without colour vision. */
+/* A second SAT to compare with: a dashed outline only, in a neutral colour
+   (--color-compare), so it reads as history rather than as good or bad, and
+   apart from the main shape even without colour vision. */
 .compareArea {
   fill: none;
-  stroke: var(--color-danger);
+  stroke: var(--color-compare);
   /* Thinner than the main shape's 2, so it reads as the secondary one. */
   stroke-width: 1.25;
   stroke-dasharray: 5 3;
 }
 
 .comparePoint {
-  fill: var(--color-danger);
+  fill: var(--color-compare);
 }
 
 .label {

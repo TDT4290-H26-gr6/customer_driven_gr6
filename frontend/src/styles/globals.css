@@ -54,6 +54,12 @@
   --section-d: #1f6b5f;
   --section-e: #8f3a5b;
 
+  /* An earlier assessment drawn for comparison (the dashed outline on the
+     results radar and its legend swatches): the muted text color, so it
+     reads as neutral history rather than as good or bad, a step behind the
+     latest result's outline, and follows the theme. */
+  --color-compare: var(--color-text-muted);
+
   --header-height: 56px;
   --sidebar-width: 220px;
   --sidebar-width-collapsed: 64px;
