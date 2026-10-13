@@ -1,11 +1,11 @@
-/* Colour on this page, all from the AIOS logo palette (purple #7b3d8d, blue
-   #3386a7, olive #aab627) plus two neighbours for five sections:
-   - each section A–E has its own hue (--hue) for its letter badge and the
-     strip along the top of its card;
-   - each score has a band colour (--band): weak ≤ 60%, good ≤ 84%, strong.
-   Light mode uses darker shades for contrast on white, dark mode lighter
-   ones (every text colour here is at least 4.5:1 on its background, WCAG AA) — the same two dark-mode blocks as globals.css (OS default, and an
-   explicit "Dark" choice). Scores always carry a text label too. */
+/* Colour on this page comes from globals.css:
+   - each section A–E has its own hue (--hue, from --section-a…e) for its
+     letter badge and the strip along the top of its card;
+   - each score has a band colour (--band, from --color-score-*): weak ≤ 60%,
+     good ≤ 84%, strong.
+   The tokens switch between darker light-mode and lighter dark-mode shades
+   (every text colour here is at least 4.5:1 on its background, WCAG AA).
+   Scores always carry a text label too. */
 
 .page {
   display: flex;
@@ -15,65 +15,37 @@
   margin: 0 auto;
 }
 
-/* Section hues. */
+/* Section hues and score bands: the --section-* and --color-score-* tokens
+   in globals.css, which already switch with the theme. */
 .hueA {
-  --hue: #7b3d8d;
+  --hue: var(--section-a);
 }
 .hueB {
-  --hue: #24647e;
+  --hue: var(--section-b);
 }
 .hueC {
-  --hue: #5c6412;
+  --hue: var(--section-c);
 }
 .hueD {
-  --hue: #1f6b5f;
+  --hue: var(--section-d);
 }
 .hueE {
-  --hue: #8f3a5b;
+  --hue: var(--section-e);
 }
 
-/* Score bands. */
 .weak {
-  --band: #a8360a;
+  --band: var(--color-score-weak);
 }
 .good {
-  --band: #24647e;
+  --band: var(--color-score-good);
 }
 .strong {
-  --band: #4a5f0e;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .page {
-    --tint: #fff;
-  }
-  :root:not([data-theme="light"]) .weak {
-    --band: #fb923c;
-  }
-  :root:not([data-theme="light"]) .good {
-    --band: #7cc4e0;
-  }
-  :root:not([data-theme="light"]) .strong {
-    --band: #c3d147;
-  }
-}
-
-:root[data-theme="dark"] .page {
-  --tint: #fff;
-}
-:root[data-theme="dark"] .weak {
-  --band: #fb923c;
-}
-:root[data-theme="dark"] .good {
-  --band: #7cc4e0;
-}
-:root[data-theme="dark"] .strong {
-  --band: #c3d147;
+  --band: var(--color-score-strong);
 }
 
 .heading {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--font-size-4xl);
 }
 
 .subheading,
@@ -101,11 +73,11 @@
 
 /* The recommended journey's modules: a soft wash of the logo's purple and blue. */
 .relevantCard {
-  border-color: color-mix(in srgb, #7b3d8d 35%, var(--color-border));
+  border-color: color-mix(in srgb, var(--brand-purple) 35%, var(--color-border));
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, #7b3d8d 11%, var(--color-surface)),
-    color-mix(in srgb, #3386a7 11%, var(--color-surface))
+    color-mix(in srgb, var(--brand-purple) 11%, var(--color-surface)),
+    color-mix(in srgb, var(--brand-blue) 11%, var(--color-surface))
   );
 }
 
@@ -115,8 +87,8 @@
 
 .eyebrow {
   margin: 0;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-primary);
@@ -124,7 +96,7 @@
 
 .cardHeading {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--font-size-xl);
 }
 
 .sectionHeader {
@@ -142,8 +114,8 @@
 }
 
 /* Letter badges in the section's hue (the theme's primary for no section).
-   In dark mode the hue is lightened toward white (--tint) for contrast; in
-   light mode --tint is unset, so the mix is the hue itself. */
+   In dark mode the hue is lightened toward white (--color-section-tint) for
+   contrast; in light mode that token is unset, so the mix is the hue itself. */
 .sectionCode,
 .moduleCode {
   flex: none;
@@ -155,21 +127,21 @@
   color: color-mix(
     in srgb,
     var(--hue, var(--color-primary)) 55%,
-    var(--tint, var(--hue, var(--color-primary)))
+    var(--color-section-tint, var(--hue, var(--color-primary)))
   );
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .sectionCode {
   width: 40px;
   height: 40px;
-  font-size: 18px;
+  font-size: var(--font-size-xl);
 }
 
 .moduleCode {
   width: 34px;
   height: 34px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 /* A section's percentage as a ring: the arc is its score in the band colour. */
@@ -201,8 +173,8 @@
   display: grid;
   place-items: center;
   background: var(--color-surface);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
 }
 
 @keyframes ring-fill {
@@ -213,7 +185,7 @@
 
 .muted {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -223,7 +195,7 @@
   display: block;
   width: 100%;
   height: 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-bg);
   overflow: hidden;
 }
@@ -275,7 +247,7 @@
 }
 
 .moduleName {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   overflow-wrap: anywhere;
 }
 
@@ -290,25 +262,25 @@
 
 .scoreValue {
   color: var(--band);
-  font-size: 16px;
+  font-size: var(--font-size-lg);
 }
 
 /* "Weak" / "Good" / "Strong": the band in words, so colour isn't the only cue. */
 .bandLabel {
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--band) 15%, transparent);
   color: var(--band);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .moodleLink {
   align-self: flex-start;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
 }
 
@@ -330,6 +302,6 @@
   .ringValue {
     width: 40px;
     height: 40px;
-    font-size: 13px;
+    font-size: var(--font-size-sm);
   }
 }

@@ -1,15 +1,33 @@
-/* Mirrors SourceCard.module.css (features/sources), so journeys and sources
-   are listed the same way; the additions are the coverage list and the
-   two-action footer. */
-
 .card {
   display: flex;
   flex-direction: column;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
+  transition:
+    transform var(--duration-fast) ease,
+    box-shadow var(--duration-fast) ease;
+}
+
+/* Lifts the card slightly on hover. Only on devices that actually hover — on
+   touch screens a tap would otherwise leave the card stuck in its lifted state. */
+@media (hover: hover) {
+  .card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+
+  .card:hover {
+    transform: none;
+  }
 }
 
 .toggle {
@@ -29,7 +47,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--color-on-banner);
 }
 
 .bannerIcon {
@@ -37,7 +55,9 @@
 }
 
 .body {
-  /* Same fixed floor as SourceCard, so every collapsed card is one size. */
+  /* Fixed floor so every collapsed card is the same size regardless of how
+     many facts a journey has. An expanded card's content simply grows past
+     this. */
   min-height: 220px;
   padding: 16px;
   display: flex;
@@ -54,9 +74,9 @@
 .codeBadge,
 .typeBadge {
   padding: 3px 9px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
 }
 
@@ -72,12 +92,12 @@
 
 .name {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--font-size-lg);
 }
 
 .subtitle {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -94,14 +114,14 @@
 }
 
 .fact dt {
-  font-size: 11px;
+  font-size: var(--font-size-2xs);
   color: var(--color-text-muted);
 }
 
 .fact dd {
   margin: 0;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 .details {
@@ -111,14 +131,14 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text);
 }
 
 .detailHeading {
   margin: 0;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text-muted);
@@ -148,8 +168,8 @@
   justify-content: center;
   border-radius: var(--radius-sm);
   background: var(--color-bg);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
 }
 
 .sectionName {
@@ -163,9 +183,9 @@
 .coverageS {
   flex: none;
   padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
   white-space: nowrap;
 }
 
@@ -206,8 +226,8 @@
   /* Pinned to the bottom of .body, at the same spot on every collapsed card. */
   margin-top: auto;
   padding-top: 4px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
 }
 
@@ -228,8 +248,8 @@
   background: var(--color-primary);
   color: var(--color-primary-contrast);
   font: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
 }
 
@@ -243,8 +263,8 @@
 }
 
 .externalLink {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
   text-decoration: none;
 }
@@ -253,7 +273,7 @@
   text-decoration: underline;
 }
 
-/* Touch devices: finger-sized targets, as on SourceCard. */
+/* Touch devices: finger-sized targets. */
 @media (pointer: coarse) {
   .assessButton {
     min-height: 44px;

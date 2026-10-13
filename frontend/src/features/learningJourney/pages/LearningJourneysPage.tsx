@@ -92,10 +92,11 @@ export function LearningJourneysPage() {
         <p className={styles.empty}>No learning journeys are available yet.</p>
       ) : (
         <div className={styles.grid}>
-          {journeys.map((journey) => (
+          {journeys.map((journey, index) => (
             <JourneyCard
               key={journey.id}
               journey={journey}
+              index={index}
               expanded={expandedId === journey.id}
               onToggle={() => setExpandedId((id) => (id === journey.id ? null : journey.id))}
               onAssess={() => handleAssess(journey.id)}

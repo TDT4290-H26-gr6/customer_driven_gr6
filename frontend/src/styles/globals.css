@@ -16,27 +16,43 @@
      for brand artwork (the logo, the accent picker's swatches) and to derive
      other tokens from, not directly for text or surfaces. */
   --brand-purple: #7b3d8d;
-  --brand-blue: #3386a7;
+  --brand-blue: #3486a7;
   --brand-olive: #aab627;
-  /* Text/icons on a fixed-color decorative fill (e.g. the source banners). */
-  --color-on-brand: #ffffff;
+  /* Decorative banner gradients for the cards (JourneyCard, SourceCard) — a
+     stand-in "picture" per card until real artwork exists. The banner colors
+     they blend (--banner-purple/-blue/-green) and the icon color on them
+     (--color-on-banner) differ per theme, so those live in the light/dark
+     blocks below. Each gradient stays within one logo color — a lighter tint
+     of it, the color itself, then a slightly deeper shade — so the color
+     reads cleanly as the logo's instead of blending into a new hue. */
+  --banner-gradient-1: linear-gradient(
+    in oklch 135deg,
+    color-mix(in oklch, var(--banner-purple) 78%, white),
+    var(--banner-purple) 55%,
+    color-mix(in oklch, var(--banner-purple) 88%, black)
+  );
+  --banner-gradient-2: linear-gradient(
+    in oklch 135deg,
+    color-mix(in oklch, var(--banner-blue) 78%, white),
+    var(--banner-blue) 55%,
+    color-mix(in oklch, var(--banner-blue) 88%, black)
+  );
+  --banner-gradient-3: linear-gradient(
+    in oklch 135deg,
+    color-mix(in oklch, var(--banner-green) 78%, white),
+    var(--banner-green) 55%,
+    color-mix(in oklch, var(--banner-green) 88%, black)
+  );
 
-  /* Decorative banner gradients for SourceCard — a stand-in "picture" per
-     source until real artwork exists. Reads fine on both themes.
-     The banner colors are the logo's hues, evened out to roughly the same
-     lightness (the raw logo colors range from dark purple to bright olive),
-     so every card carries the same weight and the white icon has similar
-     contrast on all of them. */
-  --banner-purple: #8a5aab;
-  --banner-blue: #2f7fa3;
-  --banner-green: #5f8226;
-  /* Each gradient blends two of them, ordered so that consecutive cards hand
-     over to each other and wrap around: purple -> blue, blue -> green,
-     green -> purple. Interpolated in oklch so the midpoints stay clear
-     instead of going muddy. */
-  --banner-gradient-1: linear-gradient(in oklch 135deg, var(--banner-purple), var(--banner-blue));
-  --banner-gradient-2: linear-gradient(in oklch 135deg, var(--banner-blue), var(--banner-green));
-  --banner-gradient-3: linear-gradient(in oklch 135deg, var(--banner-green), var(--banner-purple));
+  /* Section hues for the competence sections A–E (CompetenciesPage: letter
+     badges and the strip along the top of each card) — the logo palette plus
+     two neighbours, dark enough for contrast on white. In dark mode they're
+     lightened toward --color-section-tint instead of having dark variants. */
+  --section-a: var(--brand-purple);
+  --section-b: #24647e;
+  --section-c: #5c6412;
+  --section-d: #1f6b5f;
+  --section-e: #8f3a5b;
 
   --header-height: 56px;
   --sidebar-width: 220px;
@@ -104,6 +120,21 @@
   --color-success: #15803d;
   --color-success-bg: rgba(22, 163, 74, 0.12);
   --color-overlay: rgba(15, 23, 42, 0.6);
+  /* Score bands (weak ≤ 60%, good ≤ 84%, strong) — each at least 4.5:1 on
+     its background. */
+  --color-score-weak: #a8360a;
+  --color-score-good: #24647e;
+  --color-score-strong: #4a5f0e;
+  /* --color-section-tint is deliberately unset in light mode: the section
+     hues are used as they are. */
+  /* Card banners: the logo's hues, evened out to roughly the same lightness
+     (the raw logo colors range from dark purple to bright olive), so every
+     card carries the same weight and the white icon has similar contrast
+     (≥ 4.5:1) on all of them. */
+  --banner-purple: #8a5aab;
+  --banner-blue: #2f7fa3;
+  --banner-green: #5f8226;
+  --color-on-banner: #ffffff;
 
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
@@ -133,6 +164,17 @@
     --color-success: #4ade80;
     --color-success-bg: rgba(74, 222, 128, 0.16);
     --color-overlay: rgba(15, 23, 42, 0.6);
+    --color-score-weak: #fb923c;
+    --color-score-good: #7cc4e0;
+    --color-score-strong: #c3d147;
+    --color-section-tint: #ffffff;
+    /* Card banners: the logo colors' own hues and saturation, lifted to ~68%
+       lightness so they read clearly as the logo colors on a dark page, with
+       a dark icon on them (≥ 6:1). */
+    --banner-purple: #b87eca;
+    --banner-blue: #5da3c1;
+    --banner-green: #97a126;
+    --color-on-banner: #181b21;
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
@@ -160,6 +202,14 @@
   --color-success: #4ade80;
   --color-success-bg: rgba(74, 222, 128, 0.16);
   --color-overlay: rgba(15, 23, 42, 0.6);
+  --color-score-weak: #fb923c;
+  --color-score-good: #7cc4e0;
+  --color-score-strong: #c3d147;
+  --color-section-tint: #ffffff;
+  --banner-purple: #b87eca;
+  --banner-blue: #5da3c1;
+  --banner-green: #97a126;
+  --color-on-banner: #181b21;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);

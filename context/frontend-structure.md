@@ -121,9 +121,13 @@ frontend/
     │   │   ├── types.ts             # CompetenceScore, SectionCompetenceScores
     │   │   └── index.ts
     │   │
-    │   ├── learningJourney/        # the journey recommended on the dashboard
+    │   ├── learningJourney/        # every journey, plus the ones recommended on the dashboard
     │   │   ├── components/
-    │   │   │   └── RecommendedJourneyCard.tsx
+    │   │   │   ├── JourneyCard.tsx         # expandable card on the journeys page, styled like SourceCard
+    │   │   │   ├── RecommendedJourneys.tsx
+    │   │   │   └── WeakCompetencesSection.tsx
+    │   │   ├── pages/
+    │   │   │   └── LearningJourneysPage.tsx
     │   │   ├── api.ts               # GET /learning-journeys/recommendation
     │   │   ├── types.ts             # LearningJourney, LearningJourneyModule
     │   │   └── index.ts
@@ -319,7 +323,7 @@ UX; the real gate has to be server-side, like `requireRole`. See
   `#[0-9a-f]{3,8}|rgba?\(` under `src/` before merging a new screen; any hit
   outside `styles/globals.css` itself (and the logo's SVG path data) means a
   token got skipped. Deliberately theme‑agnostic colors (the logo's brand
-  colors, `SourceCard`'s banner gradients) are tokens too — they just live
+  colors, the card banner gradients) are tokens too — they just live
   in the theme‑agnostic `:root` block instead of the light/dark ones.
 - **The same goes for the other design values:** font sizes
   (`--font-size-*`), font weights (`--font-weight-*`), font families
@@ -379,14 +383,19 @@ places in `globals.css`, right next to each other, so they can't drift):
 `--color-primary-contrast`, `--color-primary-soft`, `--color-danger`,
 `--color-danger-contrast`, `--color-warning`, `--color-warning-bg`,
 `--color-success`, `--color-success-bg`, `--color-overlay` (dialog
-backdrops), `--shadow-sm`, `--shadow-md`, `--shadow-lg`.
+backdrops), `--color-score-weak`, `--color-score-good`,
+`--color-score-strong` (CompetenciesPage's score bands),
+`--color-section-tint` (dark only), the card banner colors
+(`--banner-purple`, `--banner-blue`, `--banner-green` — the logo's hues,
+lifted to light shades in dark mode) and the icon color on them
+(`--color-on-banner`), `--shadow-sm`, `--shadow-md`, `--shadow-lg`.
 
 Theme‑agnostic tokens live once, in the first `:root` block of `globals.css`,
 and have no dark variant: the brand palette (`--brand-purple`, `--brand-blue`,
 `--brand-olive` — the logo colors, which the accent colors, the logo and the
-accent picker's swatches all read from), `--color-on-brand`, the SourceCard
-banner colors (`--banner-purple`, `--banner-blue`, `--banner-green`) and
-gradients (`--banner-gradient-1…3`), layout sizes (`--header-height`,
+accent picker's swatches all read from), the card banner gradients
+(`--banner-gradient-1…3`, one tonal gradient per themed `--banner-*` color), the competence section hues
+(`--section-a…e`), layout sizes (`--header-height`,
 `--sidebar-width*`, `--bottom-nav-height`), `--radius-*`, `--font-size-*`,
 `--font-weight-*`, `--font-family-*`, `--duration-*` and the `--z-*` stacking
 scale.

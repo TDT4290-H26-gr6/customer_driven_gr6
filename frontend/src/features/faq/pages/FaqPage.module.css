@@ -8,7 +8,7 @@
 
 .heading {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--font-size-4xl);
 }
 
 .subheading {
@@ -34,7 +34,7 @@
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
-  font-size: 15px;
+  font-size: var(--font-size-lg);
 }
 
 .search:focus-visible {
@@ -59,8 +59,8 @@
 
 .categoryHeading {
   margin: 12px 0 4px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-primary);
@@ -81,7 +81,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 14px 0;
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
   list-style: none;
 }
@@ -98,7 +98,7 @@
   border-right: 2px solid var(--color-text-muted);
   border-bottom: 2px solid var(--color-text-muted);
   transform: rotate(45deg);
-  transition: transform 0.15s ease;
+  transition: transform var(--duration-fast) ease;
 }
 
 .entry[open] > .question::after {
@@ -148,6 +148,6 @@
   }
 
   .search {
-    font-size: 16px;
+    font-size: var(--font-size-lg);
   }
 }
