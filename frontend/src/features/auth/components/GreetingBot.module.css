@@ -1,0 +1,6 @@
+/* A fixed-size stage for the robot; the canvas fills it. */
+.bot {
+  flex: none;
+  width: 300px;
+  height: 380px;
+}

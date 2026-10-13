@@ -1,26 +1,99 @@
+/* The page background: large, blurred blobs in the AIOS logo's purple, blue
+   and olive, drifting slowly over the theme's background colour (so it
+   follows light/dark). Decorative only; the drift stops for reduced motion. */
 .page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 32px;
   padding: 24px;
+  background: var(--color-bg);
+}
+
+.page::before,
+.page::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -20%;
+  filter: blur(70px);
+  pointer-events: none;
+}
+
+.page::before {
+  background:
+    radial-gradient(
+      circle at 18% 28%,
+      color-mix(in srgb, #7b3d8d 55%, transparent),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 82% 78%,
+      color-mix(in srgb, #3386a7 55%, transparent),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 50% 55%,
+      color-mix(in srgb, #7b3d8d 22%, transparent),
+      transparent 40%
+    );
+  animation: drift 26s ease-in-out infinite alternate;
+}
+
+.page::after {
+  background:
+    radial-gradient(
+      circle at 80% 20%,
+      color-mix(in srgb, #aab627 45%, transparent),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 25% 85%,
+      color-mix(in srgb, #3386a7 35%, transparent),
+      transparent 30%
+    );
+  animation: drift 34s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes drift {
+  from {
+    transform: translate(-3%, -2%) rotate(0deg) scale(1);
+  }
+
+  to {
+    transform: translate(3%, 2%) rotate(8deg) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page::before,
+  .page::after {
+    animation: none;
+  }
 }
 
 .card {
   width: 100%;
   max-width: 360px;
   padding: 32px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  /* Frosted glass: a hint of the colour behind shows through. */
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   text-align: center;
 }
 
 .logo {
-  height: 56px;
+  height: 96px;
   width: auto;
-  margin: 0 auto 12px;
+  margin: 0 auto 16px;
 }
 
 .tagline {
@@ -36,5 +109,9 @@
 
   .card {
     padding: 28px 20px;
+  }
+
+  .logo {
+    height: 80px;
   }
 }
