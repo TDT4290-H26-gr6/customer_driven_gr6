@@ -97,15 +97,6 @@ frontend/
     │   │   ├── types.ts             # Question, PieContent, Response, SatInstance
     │   │   └── index.ts
     │   │
-    │   ├── sources/                # partner-institution courses/resources
-    │   │   ├── components/
-    │   │   │   └── SourceCard.tsx        # expandable stat-card, always shows the source link
-    │   │   ├── pages/
-    │   │   │   └── SourcesPage.tsx
-    │   │   ├── api.ts               # GET /sources
-    │   │   ├── types.ts             # Source
-    │   │   └── index.ts
-    │   │
     │   ├── results/                # scores + visualisation
     │   │   ├── components/
     │   │   │   ├── CompetenceRadar.tsx      # radar / spider chart (inline SVG); `compact` on mobile
@@ -123,7 +114,7 @@ frontend/
     │   │
     │   ├── learningJourney/        # every journey, plus the ones recommended on the dashboard
     │   │   ├── components/
-    │   │   │   ├── JourneyCard.tsx         # expandable card on the journeys page, styled like SourceCard
+    │   │   │   ├── JourneyCard.tsx         # expandable card on the journeys page
     │   │   │   ├── RecommendedJourneys.tsx
     │   │   │   └── WeakCompetencesSection.tsx
     │   │   ├── pages/
@@ -254,7 +245,6 @@ is given everything it needs via props and stays reusable. A feature's
 /login        -> LoginPage        (public)
 /settings     -> SettingsPage     (RequireAuth) — reached from the header's account dropdown
 /results      -> ResultsPage      (RequireAuth)
-/sources      -> SourcesPage      (RequireAuth)
 /admin        -> AdminPage        (RequireAuth) — admin mode, reached from the header's account dropdown
 /assessment   -> AssessmentRunnerPage (RequireAuth) — not in the sidebar; only reached via
                                         the dashboard's "Assess yourself" button

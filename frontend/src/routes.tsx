@@ -10,7 +10,6 @@ import { ResultsPage, SectionDetailsPage } from "@/features/results";
 import { SettingsPage } from "@/features/settings";
 import { ProfilePage } from "@/features/profile";
 import { HistoryPage } from "@/features/history";
-import { SourcesPage } from "@/features/sources";
 import { CompetenciesPage } from "@/features/competencies";
 import { FaqPage } from "@/features/faq";
 import { LearningJourneysPage } from "@/features/learningJourney";
@@ -48,7 +47,6 @@ export function AppRoutes() {
           <Route path="/competencies" element={<CompetenciesPage />} />
           <Route path="/faq" element={<FaqPage />} />
           <Route path="/results/details" element={<SectionDetailsPage />} />
-          <Route path="/sources" element={<SourcesPage />} />
           <Route element={<RequireAdmin />}>
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/feedback" element={<FeedbackAdminPage />} />

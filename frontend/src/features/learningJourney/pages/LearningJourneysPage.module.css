@@ -1,6 +1,5 @@
-/* Same layout as SourcesPage.module.css (the customer asked for journeys to
-   be listed like the sources), plus the alert for a journey assessment that
-   couldn't start. */
+/* A responsive grid of JourneyCards, one expanded at a time, plus the alert
+   for a journey assessment that couldn't start. */
 
 .page {
   display: flex;

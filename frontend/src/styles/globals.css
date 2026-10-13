@@ -18,7 +18,7 @@
   --brand-purple: #7b3d8d;
   --brand-blue: #3486a7;
   --brand-olive: #aab627;
-  /* Decorative banner gradients for the cards (JourneyCard, SourceCard) — a
+  /* Decorative banner gradients for the journey cards (JourneyCard) — a
      stand-in "picture" per card until real artwork exists. The banner colors
      they blend (--banner-purple/-blue/-green) and the icon color on them
      (--color-on-banner) differ per theme, so those live in the light/dark
