@@ -284,6 +284,15 @@
   color: var(--color-primary);
 }
 
+/* Touch devices: pad the ~16px-tall inline link out to a finger-sized
+   target, taking the space from the gap around it so the card barely grows. */
+@media (pointer: coarse) {
+  .moodleLink {
+    padding: 10px 0;
+    margin: -8px 0;
+  }
+}
+
 @media (max-width: 767px) {
   .card,
   .relevantCard {

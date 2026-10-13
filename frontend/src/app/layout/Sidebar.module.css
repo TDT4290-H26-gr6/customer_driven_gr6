@@ -114,14 +114,29 @@
 }
 
 .bottomBar .item {
-  flex: 1;
+  /* Each tab starts from its own label's width and the spare width is shared
+     out evenly — not equal slices, where the longest label,
+     "Competencies", gets cut off on a narrow phone (64–72px a tab at
+     320–360px) while "History" has room to spare. */
+  flex: 1 1 auto;
   min-width: 0;
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  padding: 4px;
+  padding: 4px 2px;
   border-radius: 0;
   font-size: var(--font-size-xs);
+  /* One weight for every tab, the active one included (it stands out by its
+     color), so a label doesn't widen and nudge its neighbours when the tab
+     becomes active. */
+  font-weight: var(--font-weight-medium);
+}
+
+/* Narrow phones: a size smaller, so every label fits side by side. */
+@media (max-width: 400px) {
+  .bottomBar .item {
+    font-size: var(--font-size-2xs);
+  }
 }
 
 .bottomBar .item:hover,

@@ -35,12 +35,21 @@
   flex: none;
 }
 
-/* Mobile: sit just above the bottom tab bar instead of on top of it. */
+/* Mobile: sit just above the bottom tab bar instead of on top of it, and
+   shrink to a round icon-only button — the full pill covered too much of the
+   content scrolling past underneath it. */
 @media (max-width: 767px) {
   .button {
     right: max(16px, env(safe-area-inset-right, 0px));
     bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 12px);
-    padding: 10px 16px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .text {
+    display: none;
   }
 }
 

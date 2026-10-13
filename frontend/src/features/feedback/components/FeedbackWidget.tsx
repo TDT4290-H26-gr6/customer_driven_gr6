@@ -49,9 +49,11 @@ export function FeedbackWidget() {
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
         aria-expanded={open}
+        // Keeps the button's name when the text is hidden (icon-only on mobile).
+        aria-label="Feedback"
       >
         <MessageIcon className={styles.icon} aria-hidden="true" />
-        Feedback
+        <span className={styles.text}>Feedback</span>
       </button>
 
       {open && (
