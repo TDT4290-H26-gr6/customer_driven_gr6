@@ -325,6 +325,15 @@ UX; the real gate has to be server-side, like `requireRole`. See
 - Inline `style={{…}}` is only for values computed at runtime (a progress
   width, a rotation) — and even then it should reference a token
   (`var(--banner-gradient-2)`), not carry its own color.
+- **Font sizes are in `rem`** (the `--font-size-*` tokens), so text follows
+  the learner's browser font-size setting. Spacing stays in `px`.
+- **Keyboard focus** gets one global `:focus-visible` ring in the accent
+  color (`globals.css`). Don't restyle it per component and never remove it;
+  only override `outline-offset` where a clipping box (`overflow: hidden`)
+  would cut the ring off.
+- **Motion:** every `transition`/`animation` gets a
+  `@media (prefers-reduced-motion: reduce)` block in the same file that turns
+  it off — except the loading spinner, which has to move to mean anything.
 
 ### Theming: Default / Light / Dark
 
@@ -379,7 +388,7 @@ backdrops), `--color-score-weak`, `--color-score-good`,
 (`--banner-purple`, `--banner-blue`, `--banner-green` — the logo's hues,
 lifted to light shades in dark mode) and the icon color on them
 (`--color-on-banner`), `--decor-strength` (how strong decorative washes
-like the dashboard's logo backdrop are; higher in dark mode), `--shadow-sm`,
+like the dashboard's logo backdrop are; higher in dark mode),
 `--shadow-md`, `--shadow-lg`.
 
 Theme‑agnostic tokens live once, in the first `:root` block of `globals.css`,

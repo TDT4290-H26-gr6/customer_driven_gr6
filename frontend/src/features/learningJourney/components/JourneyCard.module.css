@@ -42,6 +42,12 @@
   font: inherit;
 }
 
+/* The toggle fills the card edge to edge and the card clips its overflow,
+   so draw the focus ring inside the toggle rather than around it. */
+.toggle:focus-visible {
+  outline-offset: -2px;
+}
+
 .banner {
   height: 96px;
   display: flex;

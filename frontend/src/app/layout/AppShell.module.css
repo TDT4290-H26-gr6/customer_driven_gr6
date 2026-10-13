@@ -155,3 +155,9 @@
 .skipLink:focus-visible {
   top: 8px;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .skipLink {
+    transition: none;
+  }
+}

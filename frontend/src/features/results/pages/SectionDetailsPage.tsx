@@ -103,7 +103,7 @@ export function SectionDetailsPage() {
 
   return (
     <div className={styles.page}>
-      <Button variant="secondary" className={styles.back} onClick={() => navigate("/results")}>
+      <Button variant="secondary" onClick={() => navigate("/results")}>
         ← Back to overview
       </Button>
       <h1 className={styles.heading}>Detailed view</h1>

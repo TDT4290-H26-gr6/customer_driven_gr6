@@ -81,9 +81,9 @@ export function Sidebar({ collapsed, onToggleCollapsed, layout = "side" }: Props
         >
           {/* Right-pointing by default (per its own doc comment, meant to be
               rotated via CSS) — that's exactly "expand rightward", so it
-              needs no rotation while collapsed; flipped 180deg to point
+              needs no rotation while collapsed; flipped (.flipped) to point
               left once expanded. */}
-          <ChevronIcon style={{ transform: collapsed ? undefined : "rotate(180deg)" }} />
+          <ChevronIcon className={collapsed ? undefined : styles.flipped} />
         </button>
       )}
     </aside>

@@ -18,6 +18,12 @@
   transition: width var(--duration-normal) ease;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
+}
+
 .label {
   font-size: var(--font-size-sm);
   color: var(--color-text-muted);

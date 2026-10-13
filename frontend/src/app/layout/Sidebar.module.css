@@ -84,6 +84,18 @@
   transition: transform var(--duration-normal) ease;
 }
 
+/* Expanded: the chevron points left ("collapse"); see Sidebar.tsx. */
+.labelToggle svg.flipped {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .labelToggle svg {
+    transition: none;
+  }
+}
+
 @media (pointer: coarse) {
   .labelToggle {
     min-height: 44px;

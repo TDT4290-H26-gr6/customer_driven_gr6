@@ -67,6 +67,13 @@
   color: var(--color-text);
 }
 
+/* The tab row scrolls (overflow), which would clip a ring drawn outside the
+   tab, so draw it inside. */
+.tab:focus-visible,
+.tabActive:focus-visible {
+  outline-offset: -2px;
+}
+
 .tabActive {
   color: var(--color-primary);
   border-bottom-color: var(--color-primary);

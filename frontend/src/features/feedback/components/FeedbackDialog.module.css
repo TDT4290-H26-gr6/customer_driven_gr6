@@ -102,14 +102,6 @@
   resize: vertical;
 }
 
-/* The accent color instead of the browser's default blue ring, as on the
-   FAQ search field. :focus-visible is always true for a text field, so this
-   shows for mouse and keyboard alike. */
-.textarea:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 1px;
-}
-
 .error {
   margin: 0;
   color: var(--color-danger);

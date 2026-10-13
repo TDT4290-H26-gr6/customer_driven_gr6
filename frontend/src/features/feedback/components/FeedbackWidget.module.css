@@ -26,11 +26,6 @@
   background: var(--color-primary-hover);
 }
 
-.button:focus-visible {
-  outline: 3px solid var(--color-primary-soft);
-  outline-offset: 2px;
-}
-
 .icon {
   flex: none;
 }
