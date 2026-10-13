@@ -388,7 +388,9 @@ backdrops), `--color-score-weak`, `--color-score-good`,
 `--color-section-tint` (dark only), the card banner colors
 (`--banner-purple`, `--banner-blue`, `--banner-green` — the logo's hues,
 lifted to light shades in dark mode) and the icon color on them
-(`--color-on-banner`), `--shadow-sm`, `--shadow-md`, `--shadow-lg`.
+(`--color-on-banner`), `--decor-strength` (how strong decorative washes
+like the dashboard's logo backdrop are; higher in dark mode), `--shadow-sm`,
+`--shadow-md`, `--shadow-lg`.
 
 Theme‑agnostic tokens live once, in the first `:root` block of `globals.css`,
 and have no dark variant: the brand palette (`--brand-purple`, `--brand-blue`,
