@@ -117,7 +117,7 @@
   --color-danger-contrast: #ffffff;
   --color-warning: #b45309;
   --color-warning-bg: #fef3c7;
-  --color-success: #15803d;
+  --color-success: #166534;
   --color-success-bg: rgba(22, 163, 74, 0.12);
   --color-overlay: rgba(15, 23, 42, 0.6);
   /* Score bands (weak ≤ 60%, good ≤ 84%, strong) — each at least 4.5:1 on
@@ -158,7 +158,7 @@
     --color-primary-contrast: #ffffff;
     --color-primary-soft: rgba(129, 140, 248, 0.18);
     --color-danger: #f87171;
-    --color-danger-contrast: #ffffff;
+    --color-danger-contrast: #181b21; /* dark text: white is only 2.8:1 on the light red */
     --color-warning: #fbbf24;
     --color-warning-bg: rgba(251, 191, 36, 0.16);
     --color-success: #4ade80;
@@ -196,7 +196,7 @@
   --color-primary-contrast: #ffffff;
   --color-primary-soft: rgba(129, 140, 248, 0.18);
   --color-danger: #f87171;
-  --color-danger-contrast: #ffffff;
+  --color-danger-contrast: #181b21; /* dark text: white is only 2.8:1 on the light red */
   --color-warning: #fbbf24;
   --color-warning-bg: rgba(251, 191, 36, 0.16);
   --color-success: #4ade80;
@@ -220,44 +220,74 @@
    the AIOS logo, set as `data-accent` on <html> by AccentProvider (and by the
    script in index.html before first paint). Overrides the --color-primary*
    tokens above for every theme, so each use of the primary color follows it.
-   Light mode darkens the accent for contrast on white; dark mode lightens it
-   for contrast on the dark surface. The extra attribute selector gives these
-   rules higher specificity than the theme blocks above, whatever their order. */
+   The extra attribute selector gives these rules higher specificity than the
+   theme blocks above, whatever their order.
+
+   One rule keeps the primary color readable both as a fill (buttons, with
+   --color-primary-contrast on top) and as text (links, badges on
+   --color-primary-soft): light mode uses a dark shade of the accent with
+   white text, dark mode a light shade with dark text. Every pair is at least
+   4.5:1 (WCAG AA), hover included. */
 :root[data-accent="purple"] {
   --accent: var(--brand-purple);
-  --accent-contrast: #ffffff;
 }
 
 :root[data-accent="blue"] {
   --accent: var(--brand-blue);
-  --accent-contrast: #ffffff;
 }
 
-/* White text on olive is too low-contrast, so olive takes dark text. */
 :root[data-accent="olive"] {
   --accent: var(--brand-olive);
-  --accent-contrast: #1c1f26;
 }
 
 :root[data-accent] {
   --color-primary: color-mix(in srgb, var(--accent) 80%, #000);
   --color-primary-hover: color-mix(in srgb, var(--accent) 62%, #000);
-  --color-primary-contrast: var(--accent-contrast);
+  --color-primary-contrast: #ffffff;
   --color-primary-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* Olive is so light that 80% of it is still too light for white text (and
+   too light as text on white), so it gets a deeper shade of its own. */
+:root[data-accent="olive"] {
+  --color-primary: #666e00;
+  --color-primary-hover: #525900;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"])[data-accent] {
-    --color-primary: color-mix(in srgb, var(--accent) 75%, #fff);
-    --color-primary-hover: var(--accent);
+    --color-primary-contrast: #181b21;
     --color-primary-soft: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+  :root:not([data-theme="light"])[data-accent="purple"] {
+    --color-primary: #cd90e0;
+    --color-primary-hover: #aa6ebc;
+  }
+  :root:not([data-theme="light"])[data-accent="blue"] {
+    --color-primary: #61b0d3;
+    --color-primary-hover: #3d8eb0;
+  }
+  :root:not([data-theme="light"])[data-accent="olive"] {
+    --color-primary: #bfc85d;
+    --color-primary-hover: #9da537;
   }
 }
 
 :root[data-theme="dark"][data-accent] {
-  --color-primary: color-mix(in srgb, var(--accent) 75%, #fff);
-  --color-primary-hover: var(--accent);
+  --color-primary-contrast: #181b21;
   --color-primary-soft: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+:root[data-theme="dark"][data-accent="purple"] {
+  --color-primary: #cd90e0;
+  --color-primary-hover: #aa6ebc;
+}
+:root[data-theme="dark"][data-accent="blue"] {
+  --color-primary: #61b0d3;
+  --color-primary-hover: #3d8eb0;
+}
+:root[data-theme="dark"][data-accent="olive"] {
+  --color-primary: #bfc85d;
+  --color-primary-hover: #9da537;
 }
 
 * {
