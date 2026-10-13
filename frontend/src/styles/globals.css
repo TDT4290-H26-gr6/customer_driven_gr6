@@ -22,12 +22,21 @@
   --color-on-brand: #ffffff;
 
   /* Decorative banner gradients for SourceCard — a stand-in "picture" per
-     source until real artwork exists. Reads fine on both themes. */
-  --banner-gradient-1: linear-gradient(135deg, #6366f1, #8b5cf6);
-  --banner-gradient-2: linear-gradient(135deg, #0ea5e9, #06b6d4);
-  --banner-gradient-3: linear-gradient(135deg, #f59e0b, #f97316);
-  --banner-gradient-4: linear-gradient(135deg, #10b981, #14b8a6);
-  --banner-gradient-5: linear-gradient(135deg, #ec4899, #f43f5e);
+     source until real artwork exists. Reads fine on both themes.
+     The banner colors are the logo's hues, evened out to roughly the same
+     lightness (the raw logo colors range from dark purple to bright olive),
+     so every card carries the same weight and the white icon has similar
+     contrast on all of them. */
+  --banner-purple: #8a5aab;
+  --banner-blue: #2f7fa3;
+  --banner-green: #5f8226;
+  /* Each gradient blends two of them, ordered so that consecutive cards hand
+     over to each other and wrap around: purple -> blue, blue -> green,
+     green -> purple. Interpolated in oklch so the midpoints stay clear
+     instead of going muddy. */
+  --banner-gradient-1: linear-gradient(in oklch 135deg, var(--banner-purple), var(--banner-blue));
+  --banner-gradient-2: linear-gradient(in oklch 135deg, var(--banner-blue), var(--banner-green));
+  --banner-gradient-3: linear-gradient(in oklch 135deg, var(--banner-green), var(--banner-purple));
 
   --header-height: 56px;
   --sidebar-width: 220px;
@@ -98,6 +107,7 @@
 
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 28px rgba(15, 23, 42, 0.14);
 }
 
 /* "Default" visuals setting: follow the OS/browser, unless the learner has
@@ -126,6 +136,7 @@
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -152,6 +163,7 @@
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.6);
 }
 
 /* Accent color (Settings -> "Choose your accent color"): the three colors of

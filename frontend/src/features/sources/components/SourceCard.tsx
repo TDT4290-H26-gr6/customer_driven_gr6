@@ -2,28 +2,30 @@ import { BookIcon } from "@/shared/components/icons";
 import type { Source } from "../types";
 import styles from "./SourceCard.module.css";
 
-// Deterministic banner colour per source — a stand-in "picture" until real
-// artwork exists. The gradients themselves are the --banner-gradient-* tokens
-// in styles/globals.css; keep this count in sync with them.
-const BANNER_GRADIENT_COUNT = 5;
+// Banner colour per card — a stand-in "picture" until real artwork exists.
+// Cycled by the card's position in the list rather than derived from the
+// source, so cards side by side never share a colour. The gradients
+// themselves are the --banner-gradient-* tokens in styles/globals.css; keep
+// this count in sync with them.
+const BANNER_GRADIENT_COUNT = 3;
 
 /** At or above this confidence a source is shown as "confirmed"; below it, as a warning. */
 const CONFIRMED_CONFIDENCE = 0.9;
 
-function bannerGradient(seed: string): string {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  return `var(--banner-gradient-${(hash % BANNER_GRADIENT_COUNT) + 1})`;
+function bannerGradient(index: number): string {
+  return `var(--banner-gradient-${(index % BANNER_GRADIENT_COUNT) + 1})`;
 }
 
 type Props = {
   source: Source;
+  /** The card's position in the list — picks its banner colour. */
+  index: number;
   expanded: boolean;
   onToggle: () => void;
 };
 
 /** Controlled by the page so only one card expands at a time. */
-export function SourceCard({ source, expanded, onToggle }: Props) {
+export function SourceCard({ source, index, expanded, onToggle }: Props) {
   const topics = source.topics
     ? source.topics
         .split(",")
@@ -36,10 +38,7 @@ export function SourceCard({ source, expanded, onToggle }: Props) {
   return (
     <article className={styles.card}>
       <button type="button" className={styles.toggle} onClick={onToggle} aria-expanded={expanded}>
-        <div
-          className={styles.banner}
-          style={{ backgroundImage: bannerGradient(source.institution) }}
-        >
+        <div className={styles.banner} style={{ backgroundImage: bannerGradient(index) }}>
           <BookIcon className={styles.bannerIcon} width={32} height={32} />
         </div>
 

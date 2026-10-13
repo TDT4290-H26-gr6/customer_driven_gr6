@@ -379,15 +379,17 @@ places in `globals.css`, right next to each other, so they can't drift):
 `--color-primary-contrast`, `--color-primary-soft`, `--color-danger`,
 `--color-danger-contrast`, `--color-warning`, `--color-warning-bg`,
 `--color-success`, `--color-success-bg`, `--color-overlay` (dialog
-backdrops), `--shadow-sm`, `--shadow-md`.
+backdrops), `--shadow-sm`, `--shadow-md`, `--shadow-lg`.
 
 Theme‑agnostic tokens live once, in the first `:root` block of `globals.css`,
 and have no dark variant: the brand palette (`--brand-purple`, `--brand-blue`,
 `--brand-olive` — the logo colors, which the accent colors, the logo and the
-accent picker's swatches all read from), `--color-on-brand`,
-`--banner-gradient-1…5`, layout sizes (`--header-height`, `--sidebar-width*`,
-`--bottom-nav-height`), `--radius-*`, `--font-size-*`, `--font-weight-*`,
-`--font-family-*`, `--duration-*` and the `--z-*` stacking scale.
+accent picker's swatches all read from), `--color-on-brand`, the SourceCard
+banner colors (`--banner-purple`, `--banner-blue`, `--banner-green`) and
+gradients (`--banner-gradient-1…3`), layout sizes (`--header-height`,
+`--sidebar-width*`, `--bottom-nav-height`), `--radius-*`, `--font-size-*`,
+`--font-weight-*`, `--font-family-*`, `--duration-*` and the `--z-*` stacking
+scale.
 
 ### Third-party widgets: pie-fixed-player
 

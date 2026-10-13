@@ -49,10 +49,11 @@ export function SourcesPage() {
         <p className={styles.empty}>No sources are available yet.</p>
       ) : (
         <div className={styles.grid}>
-          {sources.map((source) => (
+          {sources.map((source, index) => (
             <SourceCard
               key={source.id}
               source={source}
+              index={index}
               expanded={expandedId === source.id}
               onToggle={() => setExpandedId((id) => (id === source.id ? null : source.id))}
             />
