@@ -27,7 +27,7 @@ function renderCard(expanded = false) {
     starting: false,
     assessDisabled: false,
   };
-  render(<JourneyCard journey={journey} expanded={expanded} {...props} />);
+  render(<JourneyCard journey={journey} index={0} expanded={expanded} {...props} />);
   return props;
 }
 

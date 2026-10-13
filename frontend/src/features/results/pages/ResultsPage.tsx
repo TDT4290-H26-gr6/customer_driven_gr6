@@ -135,7 +135,8 @@ export function ResultsPage() {
   }
 
   return (
-    <div className={styles.page}>
+    // data-backdrop: the decorative logo-color background behind the cards (AppShell.module.css).
+    <div className={styles.page} data-backdrop="logo">
       <h1 className={styles.heading}>Welcome{learner?.name ? `, ${learner.name}` : ""}</h1>
       <p className={styles.subheading}>
         {progress?.previous

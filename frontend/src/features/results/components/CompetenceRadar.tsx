@@ -6,7 +6,7 @@ type Props = {
   data: CompetenceScore[];
   /**
    * Another SAT's scores on the same axes (same length and order as `data`),
-   * drawn as a dashed outline over the main shape so the two can be
+   * drawn as a dashed outline behind the main shape so the two can be
    * compared. Ignored if it doesn't line up with `data`.
    */
   compare?: CompetenceScore[];
@@ -109,7 +109,7 @@ export function outlineEdges(points: Point[]): [Point, Point][] {
  * Radar / spider chart of skill levels, one axis per competence. An entry with
  * an empty name is a padding axis (kept so the shape has at least three
  * corners): it is drawn but carries no label. With `compare`, a second SAT is
- * drawn on top as a dashed, unfilled outline.
+ * drawn behind it as a dashed, unfilled outline.
  */
 export function CompetenceRadar({ data, compare, size = 340, compact = false, tipLabels }: Props) {
   const labelsRef = useRef<SVGGElement>(null);
@@ -284,17 +284,12 @@ export function CompetenceRadar({ data, compare, size = 340, compact = false, ti
           );
         })}
 
-        <polygon points={toPolygon(dataPoints)} className={styles.area} />
-
-        {dotted(data, dataPoints).map((p, i) => (
-          <circle key={i} cx={p.x} cy={p.y} r={3.5} className={styles.point} />
-        ))}
-
         {comparePoints && (
           <g data-testid="compare-area">
-            {/* Edge by edge (see outlineEdges), so the outline stays dashed.
-                Thinner than the main line, which shows around and between
-                the dashes where the two SATs score the same. */}
+            {/* Drawn before the main shape, so it sits behind it and never
+                covers the latest result; where the two SATs score the same,
+                the main line simply hides it. Edge by edge (see
+                outlineEdges), so the outline stays dashed. */}
             {compareEdges.map(([from, to], i) => (
               <line
                 key={`edge-${i}`}
@@ -310,6 +305,12 @@ export function CompetenceRadar({ data, compare, size = 340, compact = false, ti
 
         {compareDots.map((p, i) => (
           <circle key={`compare-${i}`} cx={p.x} cy={p.y} r={3.5} className={styles.comparePoint} />
+        ))}
+
+        <polygon points={toPolygon(dataPoints)} className={styles.area} />
+
+        {dotted(data, dataPoints).map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={3.5} className={styles.point} />
         ))}
 
         {compact &&

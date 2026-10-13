@@ -1,6 +1,5 @@
 import { NavLink } from "react-router-dom";
 import {
-  BookIcon,
   ChevronIcon,
   ClipboardIcon,
   HomeIcon,
@@ -17,9 +16,8 @@ const NAV_ITEMS = [
   { to: "/competencies", label: "Competencies", Icon: TargetIcon },
   { to: "/journeys", label: "Journeys", Icon: RouteIcon },
   { to: "/history", label: "History", Icon: ClipboardIcon },
-  { to: "/sources", label: "Sources", Icon: BookIcon },
-  // Not in the mobile bottom bar — five tabs already fill a small phone's
-  // width — so there FAQ lives in the header's account menu instead.
+  // Not in the mobile bottom bar — kept to four tabs so each has room on a
+  // small phone — so there FAQ lives in the header's account menu instead.
   { to: "/faq", label: "FAQ", Icon: HelpIcon, desktopOnly: true },
 ];
 
@@ -83,9 +81,9 @@ export function Sidebar({ collapsed, onToggleCollapsed, layout = "side" }: Props
         >
           {/* Right-pointing by default (per its own doc comment, meant to be
               rotated via CSS) — that's exactly "expand rightward", so it
-              needs no rotation while collapsed; flipped 180deg to point
+              needs no rotation while collapsed; flipped (.flipped) to point
               left once expanded. */}
-          <ChevronIcon style={{ transform: collapsed ? undefined : "rotate(180deg)" }} />
+          <ChevronIcon className={collapsed ? undefined : styles.flipped} />
         </button>
       )}
     </aside>

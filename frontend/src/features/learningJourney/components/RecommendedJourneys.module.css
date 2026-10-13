@@ -11,8 +11,8 @@
 
 .heading {
   margin: 0;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text-muted);
@@ -35,11 +35,11 @@
   gap: 10px;
   padding: 24px;
   border: 2px solid var(--color-primary);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-card);
   background: linear-gradient(
     135deg,
-    color-mix(in srgb, #7b3d8d 10%, var(--color-surface)),
-    color-mix(in srgb, #3386a7 10%, var(--color-surface))
+    color-mix(in srgb, var(--brand-purple) 10%, var(--color-surface)),
+    color-mix(in srgb, var(--brand-blue) 10%, var(--color-surface))
   );
   box-shadow: 0 6px 20px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
@@ -47,17 +47,17 @@
 .bestBadge {
   align-self: flex-start;
   padding: 4px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-primary);
   color: var(--color-primary-contrast);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.02em;
 }
 
 .bestName {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--font-size-3xl);
   line-height: 1.25;
 }
 
@@ -71,11 +71,11 @@
   padding: 10px 12px;
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--color-surface) 70%, transparent);
-  font-size: 14px;
+  font-size: var(--font-size-md);
 }
 
 .reasonLabel {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 .steps {
@@ -92,11 +92,11 @@
 }
 
 .stepTitle {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .stepDescription {
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -107,8 +107,8 @@
   border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: var(--color-primary-contrast);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
   text-decoration: none;
 }
 
@@ -124,14 +124,14 @@
   gap: 4px;
   padding: 14px 18px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .runnerUpLabel {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text-muted);
@@ -139,20 +139,20 @@
 
 .runnerUpName {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--font-size-lg);
 }
 
 .runnerUpReason {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
 .moodleLink {
   align-self: flex-start;
   margin-top: 2px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
 }
 
@@ -162,7 +162,7 @@
   }
 
   .bestName {
-    font-size: 19px;
+    font-size: var(--font-size-2xl);
   }
 }
 

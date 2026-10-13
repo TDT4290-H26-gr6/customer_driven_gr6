@@ -2,27 +2,18 @@ import { RouteIcon } from "@/shared/components/icons";
 import type { LearningJourney } from "../types";
 import styles from "./JourneyCard.module.css";
 
-// Laid out like the Sources page's SourceCard (the customer asked for the
-// journeys to be listed the same way): a banner, badges, title, a short fact
-// row, "Read more" for the details, and the actions in a footer.
+// A card with a banner, badges, title, a short fact row, "Read more" for the
+// details, and the actions in a footer.
 
-// Deterministic banner colours per journey, from the AIOS logo palette
-// (purple, blue, olive) and two neighbours — a stand-in "picture" until real
-// artwork exists, like SourceCard's.
-const PALETTE: [string, string][] = [
-  ["#7b3d8d", "#3386a7"],
-  ["#3386a7", "#2a8576"],
-  ["#8a9420", "#3386a7"],
-  ["#a8466b", "#7b3d8d"],
-  ["#2a8576", "#8a9420"],
-  ["#3386a7", "#7b3d8d"],
-];
+// Banner colour per card — a stand-in "picture" until real artwork exists.
+// Cycled by the card's position in the list rather than derived from the
+// journey, so cards side by side never share a colour. The gradients
+// themselves are the --banner-gradient-* tokens in styles/globals.css; keep
+// this count in sync with them.
+const BANNER_GRADIENT_COUNT = 3;
 
-function bannerGradient(seed: string): string {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  const [from, to] = PALETTE[hash % PALETTE.length];
-  return `linear-gradient(135deg, ${from}, ${to})`;
+function bannerGradient(index: number): string {
+  return `var(--banner-gradient-${(index % BANNER_GRADIENT_COUNT) + 1})`;
 }
 
 const COVERAGE_LABEL = { M: "Core", R: "Recommended", S: "Selective" } as const;
@@ -47,6 +38,8 @@ function sortedSections(journey: LearningJourney) {
 
 type Props = {
   journey: LearningJourney;
+  /** The card's position in the list — picks its banner colour. */
+  index: number;
   expanded: boolean;
   onToggle: () => void;
   /** Starts a journey assessment — on its core (M) sections. */
@@ -60,6 +53,7 @@ type Props = {
 /** One journey, controlled by the page so only one card expands at a time. */
 export function JourneyCard({
   journey,
+  index,
   expanded,
   onToggle,
   onAssess,
@@ -77,7 +71,7 @@ export function JourneyCard({
   return (
     <article className={styles.card}>
       <button type="button" className={styles.toggle} onClick={onToggle} aria-expanded={expanded}>
-        <div className={styles.banner} style={{ backgroundImage: bannerGradient(journey.name) }}>
+        <div className={styles.banner} style={{ backgroundImage: bannerGradient(index) }}>
           <RouteIcon className={styles.bannerIcon} width={32} height={32} />
         </div>
 

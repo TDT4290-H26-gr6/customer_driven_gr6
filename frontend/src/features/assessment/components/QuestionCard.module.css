@@ -5,23 +5,23 @@
   padding: 24px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 .badge {
   align-self: flex-start;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-bg);
   color: var(--color-primary);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
 }
 
 .prompt {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--font-size-lg);
 }
 
 @media (max-width: 767px) {

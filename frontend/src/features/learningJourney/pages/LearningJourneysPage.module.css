@@ -1,6 +1,5 @@
-/* Same layout as SourcesPage.module.css (the customer asked for journeys to
-   be listed like the sources), plus the alert for a journey assessment that
-   couldn't start. */
+/* A responsive grid of JourneyCards, one expanded at a time, plus the alert
+   for a journey assessment that couldn't start. */
 
 .page {
   display: flex;
@@ -12,7 +11,7 @@
 
 .heading {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--font-size-4xl);
 }
 
 .subheading {
@@ -54,7 +53,7 @@
   }
 
   .heading {
-    font-size: 22px;
+    font-size: var(--font-size-3xl);
   }
 
   .subheading {
@@ -80,5 +79,5 @@
 .alertText {
   margin: 0;
   color: var(--color-warning);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
