@@ -513,6 +513,7 @@ export async function saveResponse(
   learnerId: string,
   questionId: string,
   answer: Prisma.InputJsonValue,
+  timeSpentMs?: number,
 ) {
   const visible = await visibleQuestionFilter(learnerId);
   if (!visible) return null;
@@ -524,7 +525,12 @@ export async function saveResponse(
 
   const instance = await getOrCreateActiveInstance(learnerId);
   const result = scoreAnswer(question, answer);
-  const data = { answer, score: result?.score ?? null, maxScore: result?.maxScore ?? null };
+  const data = {
+    answer,
+    score: result?.score ?? null,
+    maxScore: result?.maxScore ?? null,
+    timeSpentMs: timeSpentMs ?? null,
+  };
 
   return prisma.response.upsert({
     where: { satInstanceId_questionId: { satInstanceId: instance.id, questionId } },

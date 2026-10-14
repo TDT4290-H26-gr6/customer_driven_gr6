@@ -66,9 +66,11 @@ export function AssessmentRunnerPage() {
   // answer, and a save still in flight when the instance is completed would
   // create a brand-new instance for that answer.
   const pendingSaves = useRef<Promise<unknown>>(Promise.resolve());
-  // Latest answer per question whose save failed. A ref (read right after
-  // awaiting the queue), mirrored into state for rendering.
-  const unsaved = useRef(new Map<string, PieAnswer>());
+  // Latest answer (and the elapsed time recorded when it was first queued,
+  // CD-97 — a retry reuses it rather than the time since the retry, which
+  // could be much later) per question whose save failed. A ref (read right
+  // after awaiting the queue), mirrored into state for rendering.
+  const unsaved = useRef(new Map<string, { answer: PieAnswer; timeSpentMs?: number }>());
   const [unsavedCount, setUnsavedCount] = useState(0);
   // Set while an abort is deleting the instance: queued saves are skipped
   // (kept as unsaved in case the delete fails) instead of recreating it.
@@ -78,6 +80,17 @@ export function AssessmentRunnerPage() {
   const [exitError, setExitError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { markInitialAssessmentComplete } = useAuth();
+
+  // When the current question last became the one on screen (CD-97) — reset
+  // whenever it changes, so a save's elapsed time reflects just this visit,
+  // not time spent on earlier questions. Declared before the early returns
+  // below so the hook always runs, per the rules of hooks; path/index are
+  // both already in scope at this point.
+  const currentQuestionId = path?.items[Math.min(index, path.items.length - 1)]?.question.id;
+  const shownAt = useRef(Date.now());
+  useEffect(() => {
+    shownAt.current = Date.now();
+  }, [currentQuestionId]);
 
   const load = useCallback(() => {
     setLoadFailed(false);
@@ -116,21 +129,21 @@ export function AssessmentRunnerPage() {
     setQuestionsRemoved(true);
   }
 
-  function queueSave(questionId: string, answer: PieAnswer) {
+  function queueSave(questionId: string, answer: PieAnswer, timeSpentMs?: number) {
     pendingSaves.current = pendingSaves.current.then(async () => {
       if (discarding.current) {
-        unsaved.current.set(questionId, answer);
+        unsaved.current.set(questionId, { answer, timeSpentMs });
         return;
       }
       try {
-        await withRetry(() => saveResponse(questionId, answer));
+        await withRetry(() => saveResponse(questionId, answer, timeSpentMs));
         unsaved.current.delete(questionId);
       } catch (err) {
         if (isApiError(err) && err.status === 404) {
           unsaved.current.delete(questionId);
           await reloadAfterRemoval();
         } else {
-          unsaved.current.set(questionId, answer);
+          unsaved.current.set(questionId, { answer, timeSpentMs });
         }
       }
       setUnsavedCount(unsaved.current.size);
@@ -139,7 +152,9 @@ export function AssessmentRunnerPage() {
 
   function retryUnsaved() {
     setNavError(null);
-    for (const [questionId, answer] of unsaved.current) queueSave(questionId, answer);
+    for (const [questionId, { answer, timeSpentMs }] of unsaved.current) {
+      queueSave(questionId, answer, timeSpentMs);
+    }
   }
 
   if (loadFailed) {
@@ -166,7 +181,9 @@ export function AssessmentRunnerPage() {
 
   function handleAnswerChange(answer: PieAnswer) {
     setAnswers((prev) => ({ ...prev, [current.id]: answer }));
-    if (answer.complete) queueSave(current.id, answer);
+    // How long this question has been on screen since it last became the
+    // current one (CD-97) — not scoring, just a best-effort analytics value.
+    if (answer.complete) queueSave(current.id, answer, Date.now() - shownAt.current);
   }
 
   function handleBack() {

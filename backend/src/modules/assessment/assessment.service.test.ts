@@ -103,9 +103,31 @@ describe("saveResponse", () => {
     expect(mockPrisma.satInstance.create).not.toHaveBeenCalled();
     expect(mockPrisma.response.upsert).toHaveBeenCalledWith({
       where: { satInstanceId_questionId: { satInstanceId: "instance-1", questionId: "q1" } },
-      update: { answer, score: 1, maxScore: 1 },
-      create: { satInstanceId: "instance-1", questionId: "q1", answer, score: 1, maxScore: 1 },
+      update: { answer, score: 1, maxScore: 1, timeSpentMs: null },
+      create: {
+        satInstanceId: "instance-1",
+        questionId: "q1",
+        answer,
+        score: 1,
+        maxScore: 1,
+        timeSpentMs: null,
+      },
     });
+  });
+
+  it("stores the given timeSpentMs, and null when none is given", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValueOnce({ id: "instance-1" } as never);
+    mockPrisma.question.findFirst.mockResolvedValue(radioQuestion as never);
+    const answer = { session: { id: "", data: [{ id: "1", value: ["0"] }] }, complete: true };
+
+    await saveResponse("learner-1", "q1", answer, 4200);
+
+    expect(mockPrisma.response.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        update: expect.objectContaining({ timeSpentMs: 4200 }),
+        create: expect.objectContaining({ timeSpentMs: 4200 }),
+      }),
+    );
   });
 
   it("creates a new SatInstance (instanceNum = prior + 1) when the learner has no active one", async () => {
@@ -225,7 +247,7 @@ describe("saveResponse", () => {
     await saveResponse("learner-1", "q1", answer);
 
     expect(mockPrisma.response.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ update: { answer, score: 0, maxScore: 1 } }),
+      expect.objectContaining({ update: { answer, score: 0, maxScore: 1, timeSpentMs: null } }),
     );
   });
 
@@ -257,7 +279,7 @@ describe("saveResponse", () => {
     await saveResponse("learner-1", "q2", answer);
 
     expect(mockPrisma.response.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ update: { answer, score: 0, maxScore: 1 } }),
+      expect.objectContaining({ update: { answer, score: 0, maxScore: 1, timeSpentMs: null } }),
     );
   });
 

@@ -37,11 +37,20 @@ export function startReassessment(completedJourneyId: string, sectionIds: string
   });
 }
 
-/** Saves (or updates) one answer against the learner's active instance. */
-export function saveResponse(questionId: string, answer: PieAnswer): Promise<void> {
+/**
+ * Saves (or updates) one answer against the learner's active instance.
+ * `timeSpentMs` (CD-97) is how long the question was on screen before this
+ * save, from the frontend's own clock — best-effort analytics, never used
+ * for scoring; the backend drops it silently if it looks implausible.
+ */
+export function saveResponse(
+  questionId: string,
+  answer: PieAnswer,
+  timeSpentMs?: number,
+): Promise<void> {
   return apiFetch<void>(endpoints.assessment.responses, {
     method: "POST",
-    body: { questionId, answer },
+    body: { questionId, answer, timeSpentMs },
   });
 }
 
