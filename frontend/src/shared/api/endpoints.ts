@@ -30,6 +30,8 @@ export const endpoints = {
   admin: {
     visibility: "/admin/visibility",
     feedback: "/admin/feedback",
+    statsTests: "/admin/stats/tests.csv",
+    statsQuestions: "/admin/stats/questions.csv",
     roleSection: (roleId: string, sectionId: string) =>
       `/admin/roles/${encodeURIComponent(roleId)}/sections/${encodeURIComponent(sectionId)}`,
     roleCompetence: (roleId: string, competenceId: string) =>
