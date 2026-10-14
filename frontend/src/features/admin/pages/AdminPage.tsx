@@ -3,7 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
 import { GrantChecklist } from "../components/GrantChecklist";
-import { getVisibility, setCompetenceGrant, setSectionGrant } from "../api";
+import {
+  downloadQuestionsCsv,
+  downloadTestsCsv,
+  getVisibility,
+  setCompetenceGrant,
+  setSectionGrant,
+} from "../api";
 import type { VisibilityMatrix } from "../types";
 import styles from "./AdminPage.module.css";
 
@@ -22,6 +28,8 @@ export function AdminPage() {
   const [roleId, setRoleId] = useState("");
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [error, setError] = useState("");
+  const [downloading, setDownloading] = useState<"tests" | "questions" | null>(null);
+  const [downloadError, setDownloadError] = useState("");
 
   useEffect(() => {
     getVisibility()
@@ -88,6 +96,18 @@ export function AdminPage() {
     }
   }
 
+  async function handleDownload(kind: "tests" | "questions") {
+    setDownloading(kind);
+    setDownloadError("");
+    try {
+      await (kind === "tests" ? downloadTestsCsv() : downloadQuestionsCsv());
+    } catch {
+      setDownloadError("Could not download that file. Try again.");
+    } finally {
+      setDownloading(null);
+    }
+  }
+
   if (loadFailed) {
     return (
       <div className={styles.page}>
@@ -105,6 +125,20 @@ export function AdminPage() {
           <Button variant="secondary" onClick={() => navigate("/admin/feedback")}>
             View tester feedback
           </Button>
+          <Button
+            variant="secondary"
+            onClick={() => void handleDownload("tests")}
+            disabled={downloading !== null}
+          >
+            {downloading === "tests" ? "Downloading…" : "Download test stats (CSV)"}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => void handleDownload("questions")}
+            disabled={downloading !== null}
+          >
+            {downloading === "questions" ? "Downloading…" : "Download question stats (CSV)"}
+          </Button>
           <Button variant="secondary" onClick={() => navigate("/results")}>
             Exit admin mode
           </Button>
@@ -115,6 +149,12 @@ export function AdminPage() {
         question&apos;s competence or the section it&apos;s in, and nothing until something is
         granted. Changes save as you click.
       </p>
+
+      {downloadError && (
+        <p className={styles.error} role="alert">
+          {downloadError}
+        </p>
+      )}
 
       <label className={styles.roleField}>
         <span className={styles.roleLabel}>Role</span>
