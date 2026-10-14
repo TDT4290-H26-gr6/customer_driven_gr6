@@ -9,6 +9,108 @@
    app/providers/ThemeProvider.tsx for how `data-theme` gets set, and
    §8 "Theming" below for the full contract. */
 
+/* Theme-agnostic tokens: the same value in light and dark, so they're defined
+   once, here, and never repeated in the dark blocks below. */
+:root {
+  /* Brand palette — the three colors of the AIOS logo. Raw colors: use them
+     for brand artwork (the logo, the accent picker's swatches) and to derive
+     other tokens from, not directly for text or surfaces. */
+  --brand-purple: #7b3d8d;
+  --brand-blue: #3486a7;
+  --brand-olive: #aab627;
+  /* Decorative banner gradients for the journey cards (JourneyCard) — a
+     stand-in "picture" per card until real artwork exists. The banner colors
+     they blend (--banner-purple/-blue/-green) and the icon color on them
+     (--color-on-banner) differ per theme, so those live in the light/dark
+     blocks below. Each gradient stays within one logo color — a lighter tint
+     of it, the color itself, then a slightly deeper shade — so the color
+     reads cleanly as the logo's instead of blending into a new hue. */
+  --banner-gradient-1: linear-gradient(
+    in oklch 135deg,
+    color-mix(in oklch, var(--banner-purple) 78%, white),
+    var(--banner-purple) 55%,
+    color-mix(in oklch, var(--banner-purple) 88%, black)
+  );
+  --banner-gradient-2: linear-gradient(
+    in oklch 135deg,
+    color-mix(in oklch, var(--banner-blue) 78%, white),
+    var(--banner-blue) 55%,
+    color-mix(in oklch, var(--banner-blue) 88%, black)
+  );
+  --banner-gradient-3: linear-gradient(
+    in oklch 135deg,
+    color-mix(in oklch, var(--banner-green) 78%, white),
+    var(--banner-green) 55%,
+    color-mix(in oklch, var(--banner-green) 88%, black)
+  );
+
+  /* Section hues for the competence sections A–E (CompetenciesPage: letter
+     badges and the strip along the top of each card) — the logo palette plus
+     two neighbours, dark enough for contrast on white. In dark mode they're
+     lightened toward --color-section-tint instead of having dark variants. */
+  --section-a: var(--brand-purple);
+  --section-b: #24647e;
+  --section-c: #5c6412;
+  --section-d: #1f6b5f;
+  --section-e: #8f3a5b;
+
+  /* An earlier assessment drawn for comparison (the dashed outline on the
+     results radar and its legend swatches): the muted text color, so it
+     reads as neutral history rather than as good or bad, a step behind the
+     latest result's outline, and follows the theme. */
+  --color-compare: var(--color-text-muted);
+
+  --header-height: 56px;
+  --sidebar-width: 220px;
+  --sidebar-width-collapsed: 64px;
+  --bottom-nav-height: 60px; /* mobile tab bar, excluding the safe-area inset */
+
+  --radius-xs: 2px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-pill: 999px;
+  /* Every content card (dashboard, journey cards, FAQ, settings, history …):
+     small corners and a clear shadow. Dialogs, menus and
+     floating buttons keep --radius-md / --shadow-md of their own. */
+  --radius-card: var(--radius-sm);
+  --shadow-card: var(--shadow-md);
+
+  /* In rem, so text follows the learner's browser font-size setting (WCAG
+     1.4.4); the px values are what they come to at the default 16px. */
+  --font-size-2xs: 0.6875rem; /* 11px */
+  --font-size-xs: 0.75rem; /* 12px */
+  --font-size-sm: 0.8125rem; /* 13px */
+  --font-size-md: 0.875rem; /* 14px */
+  --font-size-lg: 1rem; /* 16px — also the iOS no-zoom minimum for form controls */
+  --font-size-xl: 1.125rem; /* 18px */
+  --font-size-2xl: 1.25rem; /* 20px */
+  --font-size-3xl: 1.375rem; /* 22px */
+  --font-size-4xl: 1.5rem; /* 24px */
+  --font-size-5xl: 2rem; /* 32px */
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --font-family-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --duration-fast: 0.15s;
+  --duration-normal: 0.2s;
+
+  /* Stacking order, lowest to highest. Slot new fixed/floating UI in here
+     rather than picking a number in the component. */
+  --z-dropdown: 10;
+  --z-bottom-nav: 20;
+  --z-header: 30;
+  --z-floating: 40; /* the feedback widget */
+  --z-skip-link: 100;
+  --z-dialog: 900;
+  --z-modal: 1000; /* RoleGateModal — blocks the whole app, dialogs included */
+}
+
 :root {
   color-scheme: light;
 
@@ -16,25 +118,41 @@
   --color-surface: #ffffff;
   --color-border: #e2e4ea;
   --color-text: #1c1f26;
-  --color-text-muted: #6b7280;
+  /* Secondary text: a slate with a hint of indigo rather than flat grey —
+     easier to read (7.3:1 on white, 6.8:1 on --color-bg; WCAG AA needs 4.5)
+     while still a step below --color-text. */
+  --color-text-muted: #4a5578;
   --color-primary: #4f46e5;
   --color-primary-hover: #4338ca;
   --color-primary-contrast: #ffffff;
   --color-primary-soft: rgba(79, 70, 229, 0.12);
   --color-danger: #dc2626;
+  --color-danger-contrast: #ffffff;
   --color-warning: #b45309;
   --color-warning-bg: #fef3c7;
-
-  --header-height: 56px;
-  --sidebar-width: 220px;
-  --sidebar-width-collapsed: 64px;
-  --bottom-nav-height: 60px; /* mobile tab bar, excluding the safe-area inset */
-
-  --radius-sm: 6px;
-  --radius-md: 10px;
-
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --color-success: #166534;
+  --color-success-bg: rgba(22, 163, 74, 0.12);
+  --color-overlay: rgba(15, 23, 42, 0.6);
+  /* Score bands (weak ≤ 60%, good ≤ 84%, strong) — each at least 4.5:1 on
+     its background. */
+  --color-score-weak: #a8360a;
+  --color-score-good: #24647e;
+  --color-score-strong: #4a5f0e;
+  /* --color-section-tint is deliberately unset in light mode: the section
+     hues are used as they are. */
+  /* Card banners: the logo's hues, evened out to roughly the same lightness
+     (the raw logo colors range from dark purple to bright olive), so every
+     card carries the same weight and the white icon has similar contrast
+     (≥ 4.5:1) on all of them. */
+  --banner-purple: #8a5aab;
+  --banner-blue: #2f7fa3;
+  --banner-green: #5f8226;
+  --color-on-banner: #ffffff;
+  /* How strong decorative color washes are (the logo backdrop in
+     AppShell.module.css): turned up in dark mode, where faint color fades out. */
+  --decor-strength: 1;
   --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 28px rgba(15, 23, 42, 0.14);
 }
 
 /* "Default" visuals setting: follow the OS/browser, unless the learner has
@@ -48,17 +166,32 @@
     --color-surface: #181b21;
     --color-border: #2a2f3a;
     --color-text: #e5e7eb;
-    --color-text-muted: #9aa1ac;
+    --color-text-muted: #aab3c0;
     --color-primary: #818cf8;
     --color-primary-hover: #6366f1;
     --color-primary-contrast: #ffffff;
     --color-primary-soft: rgba(129, 140, 248, 0.18);
     --color-danger: #f87171;
+    --color-danger-contrast: #181b21; /* dark text: white is only 2.8:1 on the light red */
     --color-warning: #fbbf24;
     --color-warning-bg: rgba(251, 191, 36, 0.16);
-
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --color-success: #4ade80;
+    --color-success-bg: rgba(74, 222, 128, 0.16);
+    --color-overlay: rgba(15, 23, 42, 0.6);
+    --color-score-weak: #fb923c;
+    --color-score-good: #7cc4e0;
+    --color-score-strong: #c3d147;
+    --color-section-tint: #ffffff;
+    /* Card banners: the logo colors' own hues and saturation, lifted to ~68%
+       lightness so they read clearly as the logo colors on a dark page, with
+       a dark icon on them (≥ 6:1). */
+    --banner-purple: #b87eca;
+    --banner-blue: #5da3c1;
+    --banner-green: #97a126;
+    --color-on-banner: #181b21;
+    --decor-strength: 1.35;
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.6);
   }
 }
 
@@ -70,61 +203,103 @@
   --color-surface: #181b21;
   --color-border: #2a2f3a;
   --color-text: #e5e7eb;
-  --color-text-muted: #9aa1ac;
+  --color-text-muted: #aab3c0;
   --color-primary: #818cf8;
   --color-primary-hover: #6366f1;
   --color-primary-contrast: #ffffff;
   --color-primary-soft: rgba(129, 140, 248, 0.18);
   --color-danger: #f87171;
+  --color-danger-contrast: #181b21; /* dark text: white is only 2.8:1 on the light red */
   --color-warning: #fbbf24;
   --color-warning-bg: rgba(251, 191, 36, 0.16);
-
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --color-success: #4ade80;
+  --color-success-bg: rgba(74, 222, 128, 0.16);
+  --color-overlay: rgba(15, 23, 42, 0.6);
+  --color-score-weak: #fb923c;
+  --color-score-good: #7cc4e0;
+  --color-score-strong: #c3d147;
+  --color-section-tint: #ffffff;
+  --banner-purple: #b87eca;
+  --banner-blue: #5da3c1;
+  --banner-green: #97a126;
+  --color-on-banner: #181b21;
+  --decor-strength: 1.35;
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.6);
 }
 
 /* Accent color (Settings -> "Choose your accent color"): the three colors of
    the AIOS logo, set as `data-accent` on <html> by AccentProvider (and by the
    script in index.html before first paint). Overrides the --color-primary*
    tokens above for every theme, so each use of the primary color follows it.
-   Light mode darkens the accent for contrast on white; dark mode lightens it
-   for contrast on the dark surface. The extra attribute selector gives these
-   rules higher specificity than the theme blocks above, whatever their order. */
+   The extra attribute selector gives these rules higher specificity than the
+   theme blocks above, whatever their order.
+
+   One rule keeps the primary color readable both as a fill (buttons, with
+   --color-primary-contrast on top) and as text (links, badges on
+   --color-primary-soft): light mode uses a dark shade of the accent with
+   white text, dark mode a light shade with dark text. Every pair is at least
+   4.5:1 (WCAG AA), hover included. */
 :root[data-accent="purple"] {
-  --accent: #7b3d8d;
-  --accent-contrast: #ffffff;
+  --accent: var(--brand-purple);
 }
 
 :root[data-accent="blue"] {
-  --accent: #3386a7;
-  --accent-contrast: #ffffff;
+  --accent: var(--brand-blue);
 }
 
-/* White text on olive is too low-contrast, so olive takes dark text. */
 :root[data-accent="olive"] {
-  --accent: #aab627;
-  --accent-contrast: #1c1f26;
+  --accent: var(--brand-olive);
 }
 
 :root[data-accent] {
   --color-primary: color-mix(in srgb, var(--accent) 80%, #000);
   --color-primary-hover: color-mix(in srgb, var(--accent) 62%, #000);
-  --color-primary-contrast: var(--accent-contrast);
+  --color-primary-contrast: #ffffff;
   --color-primary-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* Olive is so light that 80% of it is still too light for white text (and
+   too light as text on white), so it gets a deeper shade of its own. */
+:root[data-accent="olive"] {
+  --color-primary: #666e00;
+  --color-primary-hover: #525900;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"])[data-accent] {
-    --color-primary: color-mix(in srgb, var(--accent) 75%, #fff);
-    --color-primary-hover: var(--accent);
+    --color-primary-contrast: #181b21;
     --color-primary-soft: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+  :root:not([data-theme="light"])[data-accent="purple"] {
+    --color-primary: #cd90e0;
+    --color-primary-hover: #aa6ebc;
+  }
+  :root:not([data-theme="light"])[data-accent="blue"] {
+    --color-primary: #61b0d3;
+    --color-primary-hover: #3d8eb0;
+  }
+  :root:not([data-theme="light"])[data-accent="olive"] {
+    --color-primary: #bfc85d;
+    --color-primary-hover: #9da537;
   }
 }
 
 :root[data-theme="dark"][data-accent] {
-  --color-primary: color-mix(in srgb, var(--accent) 75%, #fff);
-  --color-primary-hover: var(--accent);
+  --color-primary-contrast: #181b21;
   --color-primary-soft: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+:root[data-theme="dark"][data-accent="purple"] {
+  --color-primary: #cd90e0;
+  --color-primary-hover: #aa6ebc;
+}
+:root[data-theme="dark"][data-accent="blue"] {
+  --color-primary: #61b0d3;
+  --color-primary-hover: #3d8eb0;
+}
+:root[data-theme="dark"][data-accent="olive"] {
+  --color-primary: #bfc85d;
+  --color-primary-hover: #9da537;
 }
 
 * {
@@ -145,13 +320,23 @@ html {
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-family-sans);
   background: var(--color-bg);
   color: var(--color-text);
 }
 
 button {
   font-family: inherit;
+}
+
+/* One keyboard-focus ring for everything — buttons, links, fields, the nav —
+   in the accent color instead of the browser's default blue. :focus-visible
+   only shows it for keyboard focus (and always for text fields, where the
+   caret's position matters), not on every mouse click. A component that
+   needs a different offset (e.g. inside a clipping box) overrides only that. */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 a {
@@ -217,8 +402,8 @@ pie-fixed-player .aios-exhibit {
   border-left: 4px solid var(--color-primary);
   border-radius: var(--radius-sm);
   background: var(--color-bg);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 14px;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-md);
   line-height: 1.5;
   overflow-wrap: anywhere;
 }

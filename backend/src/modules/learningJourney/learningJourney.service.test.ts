@@ -4,6 +4,7 @@ import {
   pickLowestImprovable,
   pickWeakestCompetence,
   recommendJourney,
+  recommendJourneys,
   suggestJourney,
   weakCompetences,
 } from "./learningJourney.service";
@@ -541,5 +542,73 @@ describe("weakCompetences: Moodle links", () => {
       name: "Legal Journey",
       moodleUrl: "https://moodle.example.org/course/view.php?id=2001",
     });
+  });
+});
+
+describe("recommendJourneys (score-based top two)", () => {
+  const journey = (id: string) => ({ id, name: `Journey ${id}`, moodleUrl: null, modules: [] });
+  const link = (journeyId: string, sectionId: string, level: "M" | "R" | "S") => ({
+    coverageLevel: level,
+    section: { id: sectionId, name: `Section ${sectionId}` },
+    journey: { id: journeyId, name: `Journey ${journeyId}`, description: null },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPrisma.satInstance.findFirst.mockResolvedValue({ id: "instance-1" } as never);
+    mockPrisma.sectionModule.findMany.mockResolvedValue([{ sectionId: "s1" }] as never);
+    mockPrisma.sectionModuleSecondaryCompetence.findMany.mockResolvedValue([]);
+    mockPrisma.journeyRecommendation.findFirst.mockResolvedValue(null);
+    mockPrisma.competence.findUnique.mockResolvedValue({ name: "Weak" } as never);
+  });
+
+  it("recommends two when something is weak: the usual pick first, then the next-best coverage", async () => {
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceId: "weak", score: 2, maxScore: 10 },
+    ] as never);
+    // recommendJourney's own lookup: "b" covers the section with M.
+    mockPrisma.journeySection.findMany
+      .mockResolvedValueOnce([{ journeyId: "b", coverageLevel: "M" }] as never)
+      .mockResolvedValueOnce([
+        link("a", "s1", "M"),
+        link("b", "s1", "M"),
+        link("c", "s1", "S"),
+      ] as never);
+    mockPrisma.learningJourney.findMany
+      .mockResolvedValueOnce([journey("b")] as never)
+      .mockResolvedValueOnce([journey("a"), journey("b")] as never);
+
+    const result = await recommendJourneys("learner-1");
+
+    expect(result?.source).toBe("recommended");
+    expect(result?.journeys.map((j) => j.id)).toEqual(["b", "a"]);
+  });
+
+  it("suggests two to keep improving with when nothing is weak", async () => {
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceId: "fine", score: 7, maxScore: 10 },
+    ] as never);
+    mockPrisma.journeySection.findMany.mockResolvedValueOnce([
+      link("x", "s1", "R"),
+      link("y", "s1", "M"),
+    ] as never);
+    mockPrisma.learningJourney.findMany.mockResolvedValueOnce([
+      journey("x"),
+      journey("y"),
+    ] as never);
+
+    const result = await recommendJourneys("learner-1");
+
+    expect(result?.source).toBe("suggested");
+    expect(result?.journeys.map((j) => j.id)).toEqual(["y", "x"]);
+    expect(mockPrisma.journeyRecommendation.create).not.toHaveBeenCalled();
+  });
+
+  it("recommends nothing after a perfect score", async () => {
+    mockPrisma.competenceScore.findMany.mockResolvedValue([
+      { competenceId: "a", score: 10, maxScore: 10 },
+    ] as never);
+
+    expect(await recommendJourneys("learner-1")).toBeNull();
   });
 });

@@ -10,6 +10,8 @@ export function getAssessmentPath(): Promise<AssessmentPath> {
 
 export type AssessmentProgress = {
   satInstanceId: string;
+  /** The journey being assessed, when the in-progress assessment is a journey assessment. */
+  journey: { id: string | null; name: string | null } | null;
   responses: { questionId: string; answer: PieAnswer }[];
 };
 

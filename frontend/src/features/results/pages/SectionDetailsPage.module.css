@@ -9,7 +9,7 @@
 
 .heading {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--font-size-4xl);
 }
 
 .subheading {
@@ -19,7 +19,7 @@
 
 .note {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
@@ -31,8 +31,8 @@
   padding: 24px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 /* One tab per completed SAT, oldest on the left. Scrolls sideways when
@@ -57,14 +57,21 @@
   margin-bottom: -1px;
   background: transparent;
   font: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-muted);
   cursor: pointer;
 }
 
 .tab:hover {
   color: var(--color-text);
+}
+
+/* The tab row scrolls (overflow), which would clip a ring drawn outside the
+   tab, so draw it inside. */
+.tab:focus-visible,
+.tabActive:focus-visible {
+  outline-offset: -2px;
 }
 
 .tabActive {
@@ -98,12 +105,12 @@
 
 .attemptTitle {
   margin: 0;
-  font-size: 18px;
+  font-size: var(--font-size-xl);
 }
 
 .attemptNote {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   color: var(--color-text-muted);
 }
 
@@ -116,14 +123,14 @@
 }
 
 .compareLabel {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
 }
 
 .compareSelect {
   padding: 8px 10px;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -139,7 +146,7 @@
   margin: 8px 0 0;
   padding: 0;
   list-style: none;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -154,7 +161,7 @@
   flex: none;
   width: 18px;
   height: 10px;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
 }
 
 .swatchMain {
@@ -163,13 +170,13 @@
 }
 
 .swatchCompare {
-  border: 2px dashed var(--color-danger);
+  border: 2px dashed var(--color-compare);
 }
 
 .sectionName {
   align-self: flex-start;
   margin: 0 0 12px;
-  font-size: 18px;
+  font-size: var(--font-size-xl);
 }
 
 @media (max-width: 767px) {
@@ -178,7 +185,7 @@
   }
 
   .heading {
-    font-size: 22px;
+    font-size: var(--font-size-3xl);
   }
 
   .subheading {
@@ -193,7 +200,7 @@
 /* Touch devices: no form control under 16px (iOS zooms the page on focus). */
 @media (pointer: coarse) {
   .compareSelect {
-    font-size: 16px;
+    font-size: var(--font-size-lg);
     min-height: 44px;
   }
 }

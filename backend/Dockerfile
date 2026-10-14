@@ -11,4 +11,6 @@ RUN npx prisma generate --schema=./prisma/schema
 
 EXPOSE 4000
 
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss --schema=./prisma/schema; npm run dev"]
+# pre-push.sql prepares existing databases for schema changes db push can't
+# make on its own in MySQL (see the file); a no-op otherwise.
+CMD ["sh", "-c", "npx prisma db execute --schema=./prisma/schema --file ./prisma/pre-push.sql; npx prisma db push --accept-data-loss --schema=./prisma/schema; npm run dev"]

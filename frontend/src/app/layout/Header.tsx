@@ -1,7 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { LogoutIcon, SettingsIcon, ShieldIcon, SidebarToggleIcon } from "@/shared/components/icons";
+import {
+  HelpIcon,
+  LogoutIcon,
+  SettingsIcon,
+  ShieldIcon,
+  SidebarToggleIcon,
+} from "@/shared/components/icons";
 import { Logo } from "@/shared/components/Logo";
 import styles from "./Header.module.css";
 
@@ -50,6 +56,13 @@ export function Header({ sidebarHidden, onToggleSidebar }: Props) {
   function goToSettings() {
     setOpen(false);
     navigate("/settings");
+  }
+
+  // Also here, not only in the sidebar: the mobile bottom bar has no room
+  // for it.
+  function goToFaq() {
+    setOpen(false);
+    navigate("/faq");
   }
 
   function goToAdmin() {
@@ -111,6 +124,15 @@ export function Header({ sidebarHidden, onToggleSidebar }: Props) {
               >
                 <SettingsIcon className={styles.dropdownIcon} />
                 Settings
+              </button>
+              <button
+                type="button"
+                className={styles.dropdownItem}
+                role="menuitem"
+                onClick={goToFaq}
+              >
+                <HelpIcon className={styles.dropdownIcon} />
+                FAQ
               </button>
               {learner.isAdmin && (
                 <button

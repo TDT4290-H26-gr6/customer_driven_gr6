@@ -26,13 +26,12 @@ export type Advice = {
   summary: string;
   steps: AdviceStep[];
   /**
-   * The journey that best fits the learner's role, among those covering
-   * their weak areas — shown in the journey card instead of the score-based
-   * pick, unless they selected one themselves. Null when there was none.
+   * The journeys that fit the learner best — ranked by the AI on their
+   * scores and profile, best first, up to two — among those covering their
+   * weak areas. Each reason is null when the app filled it in from the
+   * score-based order. Empty when there was none to choose from.
    */
-  journey: AdviceJourney | null;
-  /** Why it fits them; null when the app fell back to the score-based pick. */
-  journeyReason: string | null;
+  journeys: { journey: AdviceJourney; reason: string | null }[];
   /** The LLM that wrote it, e.g. "openai/gpt-oss-120b". */
   model: string;
   /** ISO timestamp. */

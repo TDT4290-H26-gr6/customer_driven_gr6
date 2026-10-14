@@ -1,5 +1,6 @@
 import type { Advice } from "@prisma/client";
 import { prisma } from "../../db/prisma";
+import { MAIN_KIND } from "../assessment/assessment.kinds";
 import { config } from "../../config";
 import { chatJson, type LlmSettings } from "../../lib/llm";
 import { createKeyedLock } from "../../lib/keyedLock";
@@ -204,7 +205,7 @@ async function generateAdvice(
 ): Promise<Advice> {
   const context = await buildContext(learnerId);
   const reply = await chatJson(llm, buildAdviceMessages(context));
-  const { summary, steps, journey } = parseAdvice(
+  const { summary, steps, journeys } = parseAdvice(
     reply,
     context.candidates,
     context.minSteps,
@@ -224,8 +225,12 @@ async function generateAdvice(
       satInstanceId,
       summary,
       steps: storedSteps,
-      journeyId: journey?.journeyId ?? null,
-      journeyReason: journey?.reason ?? null,
+      // Ranked by fit (scores + profile): the best one, highlighted on the
+      // dashboard, and the runner-up shown beside it.
+      journeyId: journeys[0]?.journeyId ?? null,
+      journeyReason: journeys[0]?.reason ?? null,
+      runnerUpJourneyId: journeys[1]?.journeyId ?? null,
+      runnerUpJourneyReason: journeys[1]?.reason ?? null,
       model: llm.model,
     },
   });
@@ -244,7 +249,7 @@ export async function getOrCreateAdvice(learnerId: string, llm = config.llm) {
   if (!llm) return null;
 
   const latestInstance = await prisma.satInstance.findFirst({
-    where: { learnerId, completedAt: { not: null } },
+    where: { learnerId, kind: MAIN_KIND, completedAt: { not: null } },
     orderBy: { completedAt: "desc" },
   });
   if (!latestInstance) return null;

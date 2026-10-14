@@ -1,5 +1,6 @@
 import type { CoverageLevel } from "@prisma/client";
 import { prisma } from "../../db/prisma";
+import { MAIN_KIND } from "../assessment/assessment.kinds";
 import { createKeyedLock } from "../../lib/keyedLock";
 import {
   completedCompetenceScoresQuery,
@@ -19,10 +20,23 @@ const journeyInclude = { modules: { orderBy: { order: "asc" as const } } };
 // recommends it (R) beats one that merely touches it (S).
 const COVERAGE_RANK: Record<CoverageLevel, number> = { M: 0, R: 1, S: 2 };
 
-/** Every journey with its steps and the sections it covers (for picking one before a reassessment). */
+/**
+ * Every journey with its steps and the sections it covers, with how strongly
+ * — for picking one before a reassessment, and for showing which sections
+ * assessing a journey covers (its M sections).
+ */
 export function listJourneys() {
   return prisma.learningJourney.findMany({
-    include: { ...journeyInclude, sections: { select: { sectionId: true } } },
+    include: {
+      ...journeyInclude,
+      sections: {
+        select: {
+          sectionId: true,
+          coverageLevel: true,
+          section: { select: { code: true, name: true } },
+        },
+      },
+    },
     orderBy: { name: "asc" },
   });
 }
@@ -150,7 +164,7 @@ async function bestJourneyForSections(sectionIds: string[]) {
  */
 export async function recommendJourney(learnerId: string) {
   const latestInstance = await prisma.satInstance.findFirst({
-    where: { learnerId, completedAt: { not: null } },
+    where: { learnerId, kind: MAIN_KIND, completedAt: { not: null } },
     orderBy: { completedAt: "desc" },
   });
   if (!latestInstance) return null;
@@ -212,7 +226,7 @@ export type WeakCompetence = {
  */
 export async function weakCompetences(learnerId: string): Promise<WeakCompetence[]> {
   const latestInstance = await prisma.satInstance.findFirst({
-    where: { learnerId, completedAt: { not: null } },
+    where: { learnerId, kind: MAIN_KIND, completedAt: { not: null } },
     orderBy: { completedAt: "desc" },
   });
   if (!latestInstance) return [];
@@ -322,4 +336,59 @@ export async function journeyCandidatesForSections(
 /** One journey with its steps, as the dashboard shows it. */
 export function findJourney(id: string) {
   return prisma.learningJourney.findUnique({ where: { id }, include: journeyInclude });
+}
+
+/**
+ * The dashboard's two journeys by score alone — the fallback when the AI
+ * advisor (which also weighs the learner's profile) is off or fails, and the
+ * order it starts from. Learner data never leaves the app here.
+ * - Something at or below the weak threshold: "recommended". The first is
+ *   recommendJourney()'s pick (so the recommendation log is unchanged), the
+ *   second the next-best coverage of all the learner's weak sections.
+ * - Nothing that weak (but not perfect): "suggested", the best coverage of
+ *   the lowest-scoring area's sections — journeys to keep improving with.
+ * Null when there's nothing to recommend (no completed assessment, or a
+ * perfect score).
+ */
+export async function recommendJourneys(learnerId: string) {
+  const scores = newestPerCompetence(
+    await prisma.competenceScore.findMany(completedCompetenceScoresQuery(learnerId)),
+  );
+  const weak = weakestFirst(scores);
+
+  let source: "recommended" | "suggested";
+  let competenceIds: string[];
+  let first: { id: string } | null = null;
+  if (weak.length > 0) {
+    source = "recommended";
+    competenceIds = weak.map((w) => w.competenceId);
+    first = await recommendJourney(learnerId);
+  } else {
+    const lowest = pickLowestImprovable(scores);
+    if (!lowest) return null;
+    source = "suggested";
+    competenceIds = [lowest];
+  }
+
+  const sectionIds: string[] = [];
+  for (const id of competenceIds) {
+    for (const sectionId of await sectionIdsForCompetence(id)) {
+      if (!sectionIds.includes(sectionId)) sectionIds.push(sectionId);
+    }
+  }
+  const covering = await journeyCandidatesForSections(sectionIds);
+  const ordered = first
+    ? [first.id, ...covering.map((c) => c.id).filter((id) => id !== first!.id)]
+    : covering.map((c) => c.id);
+  const ids = ordered.slice(0, 2);
+  if (ids.length === 0) return null;
+
+  const journeys = await prisma.learningJourney.findMany({
+    where: { id: { in: ids } },
+    include: journeyInclude,
+  });
+  return {
+    source,
+    journeys: ids.flatMap((id) => journeys.filter((j) => j.id === id)),
+  };
 }
