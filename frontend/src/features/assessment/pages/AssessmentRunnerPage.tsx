@@ -75,6 +75,10 @@ export function AssessmentRunnerPage() {
   // Set while an abort is deleting the instance: queued saves are skipped
   // (kept as unsaved in case the delete fails) instead of recreating it.
   const discarding = useRef(false);
+  // Set while Finish completes the instance, for the same reason: the PIE
+  // player can re-emit the current answer, and a save landing just after
+  // completion would start a brand-new (full) instance for it.
+  const finishing = useRef(false);
   const [exitOpen, setExitOpen] = useState(false);
   const [exitStatus, setExitStatus] = useState<ExitStatus>("idle");
   const [exitError, setExitError] = useState<string | null>(null);
@@ -131,7 +135,7 @@ export function AssessmentRunnerPage() {
 
   function queueSave(questionId: string, answer: PieAnswer, timeSpentMs?: number) {
     pendingSaves.current = pendingSaves.current.then(async () => {
-      if (discarding.current) {
+      if (discarding.current || finishing.current) {
         unsaved.current.set(questionId, { answer, timeSpentMs });
         return;
       }
@@ -201,7 +205,11 @@ export function AssessmentRunnerPage() {
 
   async function finish() {
     setIsFinishing(true);
+    finishing.current = true;
     try {
+      // Anything queued before Finish was pressed has already been awaited
+      // (allSaved); from here on, saves are held back as unsaved instead.
+      await pendingSaves.current;
       await withRetry(() => completeAssessment());
       // A journey assessment stands on its own: it doesn't complete the
       // self-assessment, and its result is shown under Competencies.
@@ -216,6 +224,8 @@ export function AssessmentRunnerPage() {
       // Safe to press Finish again: completing an already-completed
       // instance is a no-op on the backend.
       setNavError("Couldn't finish the assessment. Your answers are saved — please try again.");
+      finishing.current = false;
+      setUnsavedCount(unsaved.current.size);
       setIsFinishing(false);
     }
   }
