@@ -34,6 +34,90 @@
   overflow-y: auto;
 }
 
+/* Decorative backdrop a page opts into with data-backdrop="logo" on its root
+   (the dashboard does): a faint diagonal wash of the three logo colors with
+   a few large, flat circles in them, like magnified dots from the logo.
+   Set on .main itself rather than inside the page, so it fills the whole
+   area between the header and the sidebar, follows the sidebar as it
+   collapses, and stays put while the cards scroll over it (.main is the
+   scroll container). Each circle is a hard-edged radial gradient.
+   --decor-strength turns it up in dark mode, where faint color fades out. */
+.main:has([data-backdrop="logo"]) {
+  --tint-purple: color-mix(
+    in srgb,
+    var(--brand-purple) calc(27% * var(--decor-strength)),
+    transparent
+  );
+  --tint-blue: color-mix(in srgb, var(--brand-blue) calc(24% * var(--decor-strength)), transparent);
+  --tint-olive: color-mix(
+    in srgb,
+    var(--brand-olive) calc(30% * var(--decor-strength)),
+    transparent
+  );
+
+  background:
+    radial-gradient(
+      circle 180px at calc(100% - 70px) 40px,
+      var(--tint-purple) 99.5%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 100px at calc(100% - 40px) 300px,
+      var(--tint-blue) 99.5%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 70px at calc(100% - 280px) 460px,
+      color-mix(in srgb, var(--tint-purple) 70%, transparent) 99%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 150px at 40px calc(100% - 50px),
+      var(--tint-olive) 99.5%,
+      transparent 100%
+    ),
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--brand-purple) calc(16% * var(--decor-strength)), transparent),
+      color-mix(in srgb, var(--brand-blue) calc(14% * var(--decor-strength)), transparent) 50%,
+      color-mix(in srgb, var(--brand-olive) calc(18% * var(--decor-strength)), transparent)
+    );
+}
+
+/* Mobile: the same circles at about half the size, so they frame the page
+   instead of sitting right behind the heading. */
+@media (max-width: 767px) {
+  .main:has([data-backdrop="logo"]) {
+    background:
+      radial-gradient(
+        circle 90px at calc(100% - 30px) 10px,
+        var(--tint-purple) 99.5%,
+        transparent 100%
+      ),
+      radial-gradient(
+        circle 55px at calc(100% - 15px) 260px,
+        var(--tint-blue) 99.5%,
+        transparent 100%
+      ),
+      radial-gradient(
+        circle 40px at 10px 520px,
+        color-mix(in srgb, var(--tint-purple) 70%, transparent) 99%,
+        transparent 100%
+      ),
+      radial-gradient(
+        circle 80px at 15px calc(100% - 90px),
+        var(--tint-olive) 99.5%,
+        transparent 100%
+      ),
+      linear-gradient(
+        150deg,
+        color-mix(in srgb, var(--brand-purple) calc(16% * var(--decor-strength)), transparent),
+        color-mix(in srgb, var(--brand-blue) calc(14% * var(--decor-strength)), transparent) 50%,
+        color-mix(in srgb, var(--brand-olive) calc(18% * var(--decor-strength)), transparent)
+      );
+  }
+}
+
 @media (max-width: 1023px) {
   .main {
     padding: 24px;
@@ -60,14 +144,20 @@
   position: absolute;
   top: -40px;
   left: 8px;
-  z-index: 100;
+  z-index: var(--z-skip-link);
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: var(--color-primary-contrast);
-  transition: top 0.15s ease;
+  transition: top var(--duration-fast) ease;
 }
 
 .skipLink:focus-visible {
   top: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skipLink {
+    transition: none;
+  }
 }

@@ -60,3 +60,12 @@
     flex: 1;
   }
 }
+
+/* A journey assessment: which journey, and that it stands on its own. */
+.journeyBanner {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-soft);
+  font-size: var(--font-size-md);
+}

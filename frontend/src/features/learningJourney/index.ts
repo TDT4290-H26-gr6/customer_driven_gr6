@@ -1,12 +1,7 @@
-export { RecommendedJourneyCard } from "./components/RecommendedJourneyCard";
+export { RecommendedJourneys } from "./components/RecommendedJourneys";
 export { WeakCompetencesSection } from "./components/WeakCompetencesSection";
 export { LearningJourneysPage } from "./pages/LearningJourneysPage";
-export {
-  getCurrentJourney,
-  getRecommendedJourney,
-  getWeakCompetences,
-  listJourneys,
-  selectJourney,
-} from "./api";
+export { getRecommendedJourneys, getWeakCompetences, listJourneys } from "./api";
 export type { LearningJourney, LearningJourneyModule, WeakCompetence } from "./types";
-export type { CurrentJourney, JourneySource } from "./api";
+export type { JourneySource, RecommendedJourneys as RecommendedJourneysResult } from "./api";
+export type { RankedJourney } from "./components/RecommendedJourneys";

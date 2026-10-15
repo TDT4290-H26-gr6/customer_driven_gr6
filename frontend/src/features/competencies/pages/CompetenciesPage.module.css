@@ -1,0 +1,316 @@
+/* Colour on this page comes from globals.css:
+   - each section A–E has its own hue (--hue, from --section-a…e) for its
+     letter badge and the strip along the top of its card;
+   - each score has a band colour (--band, from --color-score-*): weak ≤ 60%,
+     good ≤ 84%, strong.
+   The tokens switch between darker light-mode and lighter dark-mode shades
+   (every text colour here is at least 4.5:1 on its background, WCAG AA).
+   Scores always carry a text label too. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+/* Section hues and score bands: the --section-* and --color-score-* tokens
+   in globals.css, which already switch with the theme. */
+.hueA {
+  --hue: var(--section-a);
+}
+.hueB {
+  --hue: var(--section-b);
+}
+.hueC {
+  --hue: var(--section-c);
+}
+.hueD {
+  --hue: var(--section-d);
+}
+.hueE {
+  --hue: var(--section-e);
+}
+
+.weak {
+  --band: var(--color-score-weak);
+}
+.good {
+  --band: var(--color-score-good);
+}
+.strong {
+  --band: var(--color-score-strong);
+}
+
+.heading {
+  margin: 0;
+  font-size: var(--font-size-4xl);
+}
+
+.subheading,
+.note {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.card,
+.relevantCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* The section's own colour along the top of its card. */
+.sectionCard {
+  border-top: 4px solid var(--hue, var(--color-primary));
+}
+
+/* The recommended journey's modules: a soft wash of the logo's purple and blue. */
+.relevantCard {
+  border-color: color-mix(in srgb, var(--brand-purple) 35%, var(--color-border));
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--brand-purple) 11%, var(--color-surface)),
+    color-mix(in srgb, var(--brand-blue) 11%, var(--color-surface))
+  );
+}
+
+.relevantCard > button {
+  align-self: flex-start;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.cardHeading {
+  margin: 0;
+  font-size: var(--font-size-xl);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sectionTitle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Letter badges in the section's hue (the theme's primary for no section).
+   In dark mode the hue is lightened toward white (--color-section-tint) for
+   contrast; in light mode that token is unset, so the mix is the hue itself. */
+.sectionCode,
+.moduleCode {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--hue, var(--color-primary)) 16%, transparent);
+  color: color-mix(
+    in srgb,
+    var(--hue, var(--color-primary)) 55%,
+    var(--color-section-tint, var(--hue, var(--color-primary)))
+  );
+  font-weight: var(--font-weight-bold);
+}
+
+.sectionCode {
+  width: 40px;
+  height: 40px;
+  font-size: var(--font-size-xl);
+}
+
+.moduleCode {
+  width: 34px;
+  height: 34px;
+  font-size: var(--font-size-sm);
+}
+
+/* A section's percentage as a ring: the arc is its score in the band colour. */
+@property --p {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+
+.ring {
+  --p: 0;
+  flex: none;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: conic-gradient(
+    var(--band, var(--color-border)) calc(var(--p) * 1%),
+    var(--color-bg) 0
+  );
+  animation: ring-fill 0.8s ease-out both;
+}
+
+.ringValue {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--color-surface);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+}
+
+@keyframes ring-fill {
+  from {
+    --p: 0;
+  }
+}
+
+.muted {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* A percentage as a bar in its band colour. Decorative: the number and
+   label are always shown as text. */
+.bar {
+  display: block;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--band, var(--color-primary));
+  transform-origin: left;
+  animation: bar-fill 0.7s ease-out both;
+}
+
+@keyframes bar-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring,
+  .barFill {
+    animation: none;
+  }
+}
+
+.modules {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.module {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.moduleMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.moduleName {
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.modulePercent {
+  flex: none;
+  width: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.scoreValue {
+  color: var(--band);
+  font-size: var(--font-size-lg);
+}
+
+/* "Weak" / "Good" / "Strong": the band in words, so colour isn't the only cue. */
+.bandLabel {
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--band) 15%, transparent);
+  color: var(--band);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.moodleLink {
+  align-self: flex-start;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+}
+
+/* Touch devices: pad the ~16px-tall inline link out to a finger-sized
+   target, taking the space from the gap around it so the card barely grows. */
+@media (pointer: coarse) {
+  .moodleLink {
+    padding: 10px 0;
+    margin: -8px 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .card,
+  .relevantCard {
+    padding: 16px;
+  }
+
+  .modulePercent {
+    width: 64px;
+  }
+
+  .ring {
+    width: 52px;
+    height: 52px;
+  }
+
+  .ringValue {
+    width: 40px;
+    height: 40px;
+    font-size: var(--font-size-sm);
+  }
+}

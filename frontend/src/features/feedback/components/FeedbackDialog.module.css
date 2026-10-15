@@ -3,8 +3,12 @@
   inset: 0;
   /* Fixed dark scrim regardless of theme, like RoleGateModal's. Below the
      role gate (1000) — that one must always win. */
-  background: rgba(15, 23, 42, 0.6);
-  z-index: 900;
+  background: var(--color-overlay);
+  /* Blurs the page behind as well, so its text and colors (the dashboard's
+     backdrop circles, say) don't compete with the dialog while it's open. */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: var(--z-dialog);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -37,7 +41,7 @@
 
 .title {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--font-size-2xl);
 }
 
 .closeButton {
@@ -48,7 +52,7 @@
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-muted);
-  font-size: 24px;
+  font-size: var(--font-size-4xl);
   line-height: 1;
   cursor: pointer;
 }
@@ -67,7 +71,7 @@
 .hint {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: var(--font-size-md);
 }
 
 .field {
@@ -77,20 +81,20 @@
 }
 
 .label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
 }
 
 .optional {
-  font-weight: 400;
+  font-weight: var(--font-weight-regular);
   color: var(--color-text-muted);
 }
 
 .textarea {
   padding: 10px 12px;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
@@ -101,7 +105,7 @@
 .error {
   margin: 0;
   color: var(--color-danger);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .actions {
@@ -115,7 +119,7 @@
    16px is focused, and never zooms back out — so no smaller than 16px. */
 @media (pointer: coarse) {
   .textarea {
-    font-size: 16px;
+    font-size: var(--font-size-lg);
   }
 
   .closeButton {

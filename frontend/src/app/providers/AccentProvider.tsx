@@ -3,12 +3,12 @@ import { useLocalStorage } from "@/shared/hooks/useLocalStorage";
 
 export type AccentColor = "purple" | "blue" | "olive";
 
-/** The three accent colors of the AIOS logo. `hex` is for the picker swatch only —
+/** The three accent colors of the AIOS logo. `swatch` is for the picker swatch only —
  *  the app itself is themed through `data-accent` (see styles/globals.css). */
-export const ACCENTS: { value: AccentColor; label: string; hex: string }[] = [
-  { value: "purple", label: "Purple", hex: "#7b3d8d" },
-  { value: "blue", label: "Blue", hex: "#3386a7" },
-  { value: "olive", label: "Olive", hex: "#aab627" },
+export const ACCENTS: { value: AccentColor; label: string; swatch: string }[] = [
+  { value: "purple", label: "Purple", swatch: "var(--brand-purple)" },
+  { value: "blue", label: "Blue", swatch: "var(--brand-blue)" },
+  { value: "olive", label: "Olive", swatch: "var(--brand-olive)" },
 ];
 
 type AccentContextValue = {

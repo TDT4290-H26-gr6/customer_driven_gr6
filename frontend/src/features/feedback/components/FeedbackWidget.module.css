@@ -6,18 +6,18 @@
   position: fixed;
   right: max(24px, env(safe-area-inset-right, 0px));
   bottom: max(24px, env(safe-area-inset-bottom, 0px));
-  z-index: 40;
+  z-index: var(--z-floating);
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 12px 18px;
   border: none;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-primary);
   color: var(--color-primary-contrast);
   font: inherit;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
   box-shadow: var(--shadow-md);
   cursor: pointer;
 }
@@ -26,21 +26,25 @@
   background: var(--color-primary-hover);
 }
 
-.button:focus-visible {
-  outline: 3px solid var(--color-primary-soft);
-  outline-offset: 2px;
-}
-
 .icon {
   flex: none;
 }
 
-/* Mobile: sit just above the bottom tab bar instead of on top of it. */
+/* Mobile: sit just above the bottom tab bar instead of on top of it, and
+   shrink to a round icon-only button — the full pill covered too much of the
+   content scrolling past underneath it. */
 @media (max-width: 767px) {
   .button {
     right: max(16px, env(safe-area-inset-right, 0px));
     bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 12px);
-    padding: 10px 16px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .text {
+    display: none;
   }
 }
 

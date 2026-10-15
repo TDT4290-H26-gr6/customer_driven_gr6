@@ -3,7 +3,8 @@ import {
   MAX_STEPS,
   buildAdviceMessages,
   parseAdvice,
-  parseJourneyChoice,
+  parseJourneyRanking,
+  RECOMMENDED_JOURNEYS,
   toAdviceProgress,
   type AdviceContext,
   type Candidate,
@@ -164,7 +165,7 @@ describe("parseAdvice", () => {
     expect(parseAdvice({ summary: "ok", steps: "none" }, candidates)).toEqual({
       summary: "ok",
       steps: [],
-      journey: null,
+      journeys: [],
     });
   });
 
@@ -315,58 +316,98 @@ describe("number of steps", () => {
   });
 });
 
-describe("journey choice", () => {
+describe("journey ranking", () => {
+  const option = (id: string, name: string) => ({
+    id,
+    name,
+    description: null,
+    coverage: [{ section: "Research data", level: "M" as const }],
+  });
   const journeys = [
-    {
-      id: "j-officer",
-      name: "LJ1 — Open Science Officer",
-      description: null,
-      coverage: [{ section: "Research data", level: "M" as const }],
-    },
-    {
-      id: "j-data",
-      name: "LJ2 — Research Data",
-      description: null,
-      coverage: [{ section: "Research data", level: "M" as const }],
-    },
+    option("j-officer", "LJ1 — Open Science Officer"),
+    option("j-data", "LJ2 — Research Data"),
+    option("j-teach", "LJ3 — Education"),
   ];
 
-  it("tells the model to keep the default unless another fits the role better", () => {
+  it("recommends two", () => {
+    expect(RECOMMENDED_JOURNEYS).toBe(2);
+  });
+
+  it("asks for the best two, ranked on both results and profile", () => {
     const [system, user] = buildAdviceMessages(context({ journeyCandidates: journeys }));
     const sent = JSON.parse(user.content).journeyCandidates;
 
-    expect(sent.map((j: { ref: string }) => j.ref)).toEqual(["j1", "j2"]);
+    expect(sent.map((j: { ref: string }) => j.ref)).toEqual(["j1", "j2", "j3"]);
     expect(sent[0].isDefault).toBe(true);
-    expect(sent[1]).not.toHaveProperty("isDefault");
-    expect(system.content).toMatch(/clearly fits the learner's role better/);
+    expect(system.content).toMatch(/return the best 2 in the "journeys" field, best first/);
+    expect(system.content).toMatch(/their profile: their occupation\/role/);
+    expect(system.content).toMatch(/Judge profile fit first/);
+    expect(system.content).toMatch(/why it is the better fit of the two/);
   });
 
-  it("maps the chosen ref back to the journey, with its reason", () => {
-    expect(parseJourneyChoice({ ref: "j2", reason: " Fits a data steward. " }, journeys)).toEqual({
+  it("keeps the model's ranking, with reasons", () => {
+    const ranked = parseJourneyRanking(
+      {
+        journeys: [
+          { ref: "j2", reason: " Built for data stewards. " },
+          { ref: "j1", reason: "Broader." },
+        ],
+      },
+      journeys,
+    );
+    expect(ranked).toEqual([
+      { journeyId: "j-data", reason: "Built for data stewards." },
+      { journeyId: "j-officer", reason: "Broader." },
+    ]);
+  });
+
+  it("keeps at most two, and drops unknown or repeated refs", () => {
+    const ranked = parseJourneyRanking(
+      {
+        journeys: [
+          { ref: "j9", reason: "made up" },
+          { ref: "j3", reason: "a" },
+          { ref: "j3", reason: "again" },
+          { ref: "j1", reason: "b" },
+          { ref: "j2", reason: "c" },
+        ],
+      },
+      journeys,
+    );
+    expect(ranked.map((r) => r.journeyId)).toEqual(["j-teach", "j-officer"]);
+  });
+
+  it("fills a shortfall from the score-based order, without a reason", () => {
+    expect(parseJourneyRanking({ journeys: [{ ref: "j3", reason: "a" }] }, journeys)).toEqual([
+      { journeyId: "j-teach", reason: "a" },
+      { journeyId: "j-officer", reason: null },
+    ]);
+    expect(parseJourneyRanking({}, journeys)).toEqual([
+      { journeyId: "j-officer", reason: null },
+      { journeyId: "j-data", reason: null },
+    ]);
+  });
+
+  it("accepts the older single-journey reply", () => {
+    expect(parseJourneyRanking({ journey: { ref: "j2", reason: "x" } }, journeys)[0]).toEqual({
       journeyId: "j-data",
-      reason: "Fits a data steward.",
+      reason: "x",
     });
   });
 
-  it.each([
-    ["no choice", undefined],
-    ["an unknown ref", { ref: "j9", reason: "made up" }],
-    ["a malformed choice", "LJ2"],
-  ])("falls back to the default, without a reason, for %s", (_label, choice) => {
-    expect(parseJourneyChoice(choice, journeys)).toEqual({ journeyId: "j-officer", reason: null });
-  });
-
-  it("chooses nothing when there were no journeys to choose from", () => {
-    expect(parseJourneyChoice({ ref: "j1", reason: "x" }, [])).toBeNull();
+  it("returns only as many as there were candidates", () => {
+    expect(parseJourneyRanking({}, [journeys[0]])).toHaveLength(1);
+    expect(parseJourneyRanking({ journeys: [{ ref: "j1" }] }, [])).toEqual([]);
   });
 
   it("is part of the parsed advice", () => {
     const advice = parseAdvice(
-      { summary: "ok", steps: [], journey: { ref: "j2", reason: "Fits." } },
+      { summary: "ok", steps: [], journeys: [{ ref: "j2", reason: "Fits." }] },
       [],
       0,
       journeys,
     );
-    expect(advice.journey).toEqual({ journeyId: "j-data", reason: "Fits." });
+    expect(advice.journeys[0]).toEqual({ journeyId: "j-data", reason: "Fits." });
+    expect(advice.journeys).toHaveLength(2);
   });
 });

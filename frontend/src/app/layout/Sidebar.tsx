@@ -1,10 +1,11 @@
 import { NavLink } from "react-router-dom";
 import {
-  BookIcon,
   ChevronIcon,
   ClipboardIcon,
   HomeIcon,
+  HelpIcon,
   RouteIcon,
+  TargetIcon,
 } from "@/shared/components/icons";
 import styles from "./Sidebar.module.css";
 
@@ -12,9 +13,12 @@ import styles from "./Sidebar.module.css";
 // dashboard's "Retake assessment" button, not as a page someone browses to.
 const NAV_ITEMS = [
   { to: "/results", label: "Dashboard", Icon: HomeIcon },
+  { to: "/competencies", label: "Competencies", Icon: TargetIcon },
   { to: "/journeys", label: "Journeys", Icon: RouteIcon },
   { to: "/history", label: "History", Icon: ClipboardIcon },
-  { to: "/sources", label: "Sources", Icon: BookIcon },
+  // Not in the mobile bottom bar — kept to four tabs so each has room on a
+  // small phone — so there FAQ lives in the header's account menu instead.
+  { to: "/faq", label: "FAQ", Icon: HelpIcon, desktopOnly: true },
 ];
 
 type Props = {
@@ -42,7 +46,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, layout = "side" }: Props
   return (
     <aside className={sidebarClass}>
       <nav className={styles.nav} aria-label="Main">
-        {NAV_ITEMS.map(({ to, label, Icon }) => (
+        {NAV_ITEMS.filter((item) => !(isBottom && item.desktopOnly)).map(({ to, label, Icon }) => (
           <NavLink
             key={to}
             to={to}
@@ -77,9 +81,9 @@ export function Sidebar({ collapsed, onToggleCollapsed, layout = "side" }: Props
         >
           {/* Right-pointing by default (per its own doc comment, meant to be
               rotated via CSS) — that's exactly "expand rightward", so it
-              needs no rotation while collapsed; flipped 180deg to point
+              needs no rotation while collapsed; flipped (.flipped) to point
               left once expanded. */}
-          <ChevronIcon style={{ transform: collapsed ? undefined : "rotate(180deg)" }} />
+          <ChevronIcon className={collapsed ? undefined : styles.flipped} />
         </button>
       )}
     </aside>

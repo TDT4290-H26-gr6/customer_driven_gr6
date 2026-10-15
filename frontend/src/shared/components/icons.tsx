@@ -44,21 +44,34 @@ export function ChevronIcon(props: IconProps) {
   );
 }
 
-export function BookIcon(props: IconProps) {
-  return (
-    <svg {...defaults} {...props}>
-      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-    </svg>
-  );
-}
-
 export function RouteIcon(props: IconProps) {
   return (
     <svg {...defaults} {...props}>
       <circle cx="5" cy="6" r="2.5" />
       <circle cx="19" cy="18" r="2.5" />
       <path d="M7.2 7.5C10 10 8 14 12 15.5s6-1 6.8 2" />
+    </svg>
+  );
+}
+
+/** Concentric target — the Competencies tab. */
+export function TargetIcon(props: IconProps) {
+  return (
+    <svg {...defaults} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1.5" />
+    </svg>
+  );
+}
+
+/** Question mark in a circle — the FAQ. */
+export function HelpIcon(props: IconProps) {
+  return (
+    <svg {...defaults} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14" />
+      <path d="M12 17.5h.01" />
     </svg>
   );
 }

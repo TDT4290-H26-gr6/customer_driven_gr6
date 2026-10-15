@@ -9,6 +9,8 @@ type Options = Omit<RequestInit, "body"> & {
   auth?: boolean;
   /** Give up after this long (default DEFAULT_TIMEOUT_MS). */
   timeoutMs?: number;
+  /** "json" (default) parses the body as JSON. "blob" returns it raw — e.g. a CSV download. */
+  responseType?: "json" | "blob";
 };
 
 /** Long enough for a slow network, short enough that a hung request doesn't spin forever. */
@@ -59,7 +61,15 @@ async function readErrorMessage(res: Response): Promise<string> {
  * session out on 401.
  */
 export async function apiFetch<T>(path: string, opts: Options = {}): Promise<T> {
-  const { body, auth = true, headers, timeoutMs = DEFAULT_TIMEOUT_MS, signal, ...rest } = opts;
+  const {
+    body,
+    auth = true,
+    headers,
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    signal,
+    responseType = "json",
+    ...rest
+  } = opts;
   const token = auth ? getToken() : null;
 
   // Our own controller so we can time out, still honouring a caller's signal.
@@ -106,7 +116,7 @@ export async function apiFetch<T>(path: string, opts: Options = {}): Promise<T> 
 
     if (res.status === 204) return undefined as T;
     try {
-      return (await res.json()) as T;
+      return (responseType === "blob" ? await res.blob() : await res.json()) as T;
     } catch {
       throw failure("The server sent an invalid response.", res.status);
     }

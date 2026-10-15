@@ -5,6 +5,7 @@ import { config } from "../../config";
 import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
 import { requireRole } from "../../middleware/requireRole";
 import { asyncHandler } from "../../lib/asyncHandler";
+import { hasCompletedMainAssessment } from "../assessment/assessment.service";
 import { requireString } from "../../lib/validate";
 import {
   completeInitialAssessment,
@@ -95,6 +96,11 @@ identityRouter.put(
   requireAuth,
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
+    // Only a finished main self-assessment unlocks the dashboard — not a
+    // journey assessment, which is taken on its own.
+    if (!(await hasCompletedMainAssessment(req.learnerId!))) {
+      return res.status(409).json({ error: "Finish the self-assessment first" });
+    }
     const learner = await completeInitialAssessment(req.learnerId!);
     res.json(toLearnerDto(learner));
   }),

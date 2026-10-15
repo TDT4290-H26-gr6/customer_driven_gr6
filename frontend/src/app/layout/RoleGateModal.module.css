@@ -5,8 +5,8 @@
      routed page. Deliberately a fixed dark scrim regardless of theme, like
      any modal backdrop (see the "Theming" note in
      context/frontend-structure.md for when a hardcoded color is fine). */
-  background: rgba(15, 23, 42, 0.6);
-  z-index: 1000;
+  background: var(--color-overlay);
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;
   justify-content: center;

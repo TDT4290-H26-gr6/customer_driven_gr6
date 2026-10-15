@@ -16,7 +16,7 @@
 
 .heading {
   margin: 0;
-  font-size: 24px;
+  font-size: var(--font-size-4xl);
 }
 
 .count,
@@ -28,7 +28,7 @@
 .error {
   margin: 0;
   color: var(--color-danger);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .list {
@@ -43,8 +43,8 @@
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   padding: 16px 20px;
 }
 
@@ -54,12 +54,12 @@
   align-items: center;
   gap: 4px 12px;
   margin-bottom: 12px;
-  font-size: 13px;
+  font-size: var(--font-size-sm);
   color: var(--color-text-muted);
 }
 
 .sender {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
 }
 
@@ -67,13 +67,13 @@
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   background: var(--color-bg);
-  font-size: 12px;
+  font-size: var(--font-size-xs);
 }
 
 .label {
   margin: 0 0 2px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--color-text-muted);

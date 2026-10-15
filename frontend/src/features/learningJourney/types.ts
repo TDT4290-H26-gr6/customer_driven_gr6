@@ -12,8 +12,15 @@ export type LearningJourney = {
   /** The journey's page in Moodle, where the learner takes it (placeholder until the real page exists). */
   moodleUrl?: string | null;
   modules: LearningJourneyModule[];
-  /** The sections the journey covers. Only included by listJourneys. */
-  sections?: { sectionId: string }[];
+  /**
+   * The sections the journey covers, and how strongly (M = centred on it, R =
+   * covers it well, S = touches it). Only included by listJourneys.
+   */
+  sections?: {
+    sectionId: string;
+    coverageLevel?: "M" | "R" | "S";
+    section?: { code: string | null; name: string };
+  }[];
 };
 
 /** One competence at or below the 60% threshold (CD-90), paired with the journey that addresses it. */

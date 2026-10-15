@@ -7,7 +7,7 @@
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
   padding: 16px 8px;
-  transition: width 0.18s ease;
+  transition: width var(--duration-normal) ease;
 }
 
 .sidebar.collapsed {
@@ -40,7 +40,7 @@
 .active {
   background: var(--color-bg);
   color: var(--color-primary);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
 }
 
 .icon {
@@ -81,7 +81,19 @@
    flip the same easing as the rail's own width transition instead of
    snapping instantly. */
 .labelToggle svg {
-  transition: transform 0.18s ease;
+  transition: transform var(--duration-normal) ease;
+}
+
+/* Expanded: the chevron points left ("collapse"); see Sidebar.tsx. */
+.labelToggle svg.flipped {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  .labelToggle svg {
+    transition: none;
+  }
 }
 
 @media (pointer: coarse) {
@@ -98,7 +110,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 20;
+  z-index: var(--z-bottom-nav);
   width: auto;
   padding: 0 env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px)
     env(safe-area-inset-left, 0px);
@@ -114,14 +126,29 @@
 }
 
 .bottomBar .item {
-  flex: 1;
+  /* Each tab starts from its own label's width and the spare width is shared
+     out evenly — not equal slices, where the longest label,
+     "Competencies", gets cut off on a narrow phone (64–72px a tab at
+     320–360px) while "History" has room to spare. */
+  flex: 1 1 auto;
   min-width: 0;
   flex-direction: column;
   justify-content: center;
   gap: 2px;
-  padding: 4px;
+  padding: 4px 2px;
   border-radius: 0;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
+  /* One weight for every tab, the active one included (it stands out by its
+     color), so a label doesn't widen and nudge its neighbours when the tab
+     becomes active. */
+  font-weight: var(--font-weight-medium);
+}
+
+/* Narrow phones: a size smaller, so every label fits side by side. */
+@media (max-width: 400px) {
+  .bottomBar .item {
+    font-size: var(--font-size-2xs);
+  }
 }
 
 .bottomBar .item:hover,
