@@ -84,7 +84,7 @@ describe("listTestRows", () => {
     expect(await listTestRows()).toEqual([]);
   });
 
-  it("asks Prisma for completed kind:\"main\" instances only, excluding kind:\"journey\"", async () => {
+  it('asks Prisma for completed kind:"main" instances only, excluding kind:"journey"', async () => {
     mockPrisma.satInstance.findMany.mockResolvedValue([instance()] as never);
 
     await listTestRows();
