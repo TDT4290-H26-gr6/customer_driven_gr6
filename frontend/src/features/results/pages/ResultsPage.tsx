@@ -7,50 +7,31 @@ import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import { MOBILE_QUERY } from "@/shared/lib/breakpoints";
 import { CompetenceRadar } from "../components/CompetenceRadar";
 import { ProgressCard } from "../components/ProgressCard";
+import { SectionDetailsView } from "../components/SectionDetailsView";
 import { WelcomeScreen } from "../components/WelcomeScreen";
 import { getDashboardProgress } from "../api";
 import { radarAxes } from "../progressRows";
 import type { DashboardProgress } from "../types";
-import {
-  RecommendedJourneys,
-  WeakCompetencesSection,
-  getRecommendedJourneys,
-  getWeakCompetences,
-} from "@/features/learningJourney";
-import type {
-  RankedJourney,
-  RecommendedJourneysResult,
-  WeakCompetence,
-} from "@/features/learningJourney";
+import { RecommendedJourneys, getRecommendedJourneys } from "@/features/learningJourney";
+import type { RankedJourney, RecommendedJourneysResult } from "@/features/learningJourney";
 import { AdviceCard, getAdvice } from "@/features/advisor";
 import { getProgress } from "@/features/assessment";
 import type { AdviceState } from "@/features/advisor";
 import styles from "./ResultsPage.module.css";
 
 /**
- * The main dashboard, shown only once a first assessment has been submitted:
- * an overview radar with one axis per section (each rolling up that
- * section's own competences; a section has too many competences to chart
- * individually here), a section-by-section summary (ProgressCard), the
- * two recommended learning journeys (the AI advisor's ranking on scores and
- * profile, the best fit highlighted — else the score-based top two, see
- * getRecommendedJourneys), every competence at or below 60% paired with the
- * journey for it (CD-90), AI advice that explains it, and the entry point into
- * the assessment. From a second
- * assessment on, the radar overlays the previous one and the summary shows
- * the change — always the latest two; older ones are in History and "See
- * results by section". The page remounts on every visit, so retaking the
- * SAT and returning here always fetches the fresh scores (and new advice). The
- * assessment button says "Continue" while the learner has an unfinished
- * attempt (left with Save & exit), so they know their answers weren't lost;
- * otherwise "Retake assessment", which first asks about completed learning journeys
- * (ReassessPage). A section the latest assessment didn't retake keeps its
- * last known result, so a reassessment of some sections keeps the others on
- * the radar.
+ * The main dashboard, shown once a first assessment is submitted, as two
+ * tabs. "Overview": the radar next to a section-by-section summary
+ * (ProgressCard), the two recommended learning journeys, AI advice, and the
+ * entry point into the assessment. From a second assessment on, the radar
+ * overlays the previous one and the summary shows the change (always the
+ * latest two). "Detailed view": the per-assessment, per-competence
+ * drill-down (SectionDetailsView), also reachable on its own at
+ * /results/details.
  *
- * A new learner fills in their profile first: until they've both completed
- * it and finished a first assessment, this sends them to /profile, whose
- * "Done" brings them back to the welcome screen here.
+ * A new learner fills in their profile first: until they've completed it
+ * and a first assessment, this sends them to /profile, whose "Done" brings
+ * them back here.
  */
 export function ResultsPage() {
   const { learner } = useAuth();
@@ -61,16 +42,15 @@ export function ResultsPage() {
   const isMobile = useMediaQuery(MOBILE_QUERY);
   // The score-based top two; null while loading or when there are none.
   const [scoreJourneys, setScoreJourneys] = useState<RecommendedJourneysResult | null>(null);
-  // null while loading; [] once loaded means every competence is sufficient.
-  const [weakCompetences, setWeakCompetences] = useState<WeakCompetence[] | null>(null);
   // null: no advice to show (no completed assessment, or the feature is off).
   const [advice, setAdvice] = useState<AdviceState | null>({ status: "loading" });
-  // null while loading. A failed load falls back to the "start" wording —
+  // null while loading. A failed load falls back to the "start" wording;
   // the runner restores saved answers either way.
   const [hasOngoing, setHasOngoing] = useState<boolean | null>(null);
+  const [tab, setTab] = useState<"overview" | "details">("overview");
 
   useEffect(() => {
-    // The latest SAT and the one before it — older ones are in History and
+    // The latest SAT and the one before it; older ones are in History and
     // "See results by section".
     getDashboardProgress()
       .then(setProgress)
@@ -84,9 +64,6 @@ export function ResultsPage() {
     getRecommendedJourneys()
       .then(setScoreJourneys)
       .catch(() => setScoreJourneys(null));
-    getWeakCompetences()
-      .then(setWeakCompetences)
-      .catch(() => setWeakCompetences(null));
     // Slower than the rest (an LLM call the first time), so it fills in on
     // its own instead of holding up the page.
     getAdvice()
@@ -144,57 +121,97 @@ export function ResultsPage() {
           : "Here's where your skills stand right now."}
       </p>
 
-      <div className={styles.chartCard}>
-        {loadFailed || !progress ? (
-          <p className={styles.note}>
-            Couldn&apos;t load your scores right now. Please try again in a moment.
-          </p>
-        ) : (
-          <>
-            <CompetenceRadar
-              data={radarAxes(progress, "latest")}
-              compare={progress.previous ? radarAxes(progress, "previous") : undefined}
-              compact={isMobile}
-            />
-            {progress.previous && (
-              <ul className={styles.legend} aria-label="Chart legend">
-                <li>
-                  <span className={styles.swatchLatest} aria-hidden="true" />
-                  Assessment {progress.latest.instanceNum} (latest)
-                </li>
-                <li>
-                  <span className={styles.swatchPrevious} aria-hidden="true" />
-                  Assessment {progress.previous.instanceNum}
-                </li>
-              </ul>
-            )}
-          </>
-        )}
-        {!loadFailed && progress && (
-          <Button
-            variant="secondary"
-            className={styles.details}
-            onClick={() => navigate("/results/details")}
-          >
-            See results by section
-          </Button>
-        )}
+      <div className={styles.tabs} role="tablist" aria-label="Dashboard view">
+        <button
+          type="button"
+          role="tab"
+          id="tab-overview"
+          aria-selected={tab === "overview"}
+          aria-controls="panel-overview"
+          className={tab === "overview" ? styles.tabActive : styles.tab}
+          onClick={() => setTab("overview")}
+        >
+          Overview
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-details"
+          aria-selected={tab === "details"}
+          aria-controls="panel-details"
+          className={tab === "details" ? styles.tabActive : styles.tab}
+          onClick={() => setTab("details")}
+        >
+          Detailed view
+        </button>
       </div>
 
-      {!loadFailed && progress && <ProgressCard progress={progress} />}
+      {tab === "overview" && (
+        <div
+          id="panel-overview"
+          role="tabpanel"
+          aria-labelledby="tab-overview"
+          className={styles.tabPanel}
+        >
+          <div className={styles.topRow}>
+            <div className={styles.chartCard}>
+              {loadFailed || !progress ? (
+                <p className={styles.note}>
+                  Couldn&apos;t load your scores right now. Please try again in a moment.
+                </p>
+              ) : (
+                <>
+                  <CompetenceRadar
+                    data={radarAxes(progress, "latest")}
+                    compare={progress.previous ? radarAxes(progress, "previous") : undefined}
+                    compact={isMobile}
+                  />
+                  {progress.previous && (
+                    <ul className={styles.legend} aria-label="Chart legend">
+                      <li>
+                        <span className={styles.swatchLatest} aria-hidden="true" />
+                        Assessment {progress.latest.instanceNum} (latest)
+                      </li>
+                      <li>
+                        <span className={styles.swatchPrevious} aria-hidden="true" />
+                        Assessment {progress.previous.instanceNum}
+                      </li>
+                    </ul>
+                  )}
+                </>
+              )}
+            </div>
 
-      {ranked.length > 0 && <RecommendedJourneys ranked={ranked} source={journeySource} />}
+            {!loadFailed && progress && (
+              <div className={styles.sectionCard}>
+                <ProgressCard progress={progress} />
+              </div>
+            )}
+          </div>
 
-      {weakCompetences && <WeakCompetencesSection competences={weakCompetences} />}
+          {ranked.length > 0 && <RecommendedJourneys ranked={ranked} source={journeySource} />}
 
-      {advice && <AdviceCard state={advice} />}
+          {advice && <AdviceCard state={advice} />}
 
-      <Button
-        className={styles.cta}
-        onClick={() => navigate(hasOngoing ? "/assessment" : "/assessment/reassess")}
-      >
-        {hasOngoing ? "Continue assessment" : "Retake assessment"}
-      </Button>
+          <Button
+            className={styles.cta}
+            onClick={() => navigate(hasOngoing ? "/assessment" : "/assessment/reassess")}
+          >
+            {hasOngoing ? "Continue assessment" : "Retake assessment"}
+          </Button>
+        </div>
+      )}
+
+      {tab === "details" && (
+        <div
+          id="panel-details"
+          role="tabpanel"
+          aria-labelledby="tab-details"
+          className={styles.tabPanel}
+        >
+          <SectionDetailsView />
+        </div>
+      )}
     </div>
   );
 }

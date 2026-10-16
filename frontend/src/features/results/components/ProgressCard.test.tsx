@@ -50,14 +50,13 @@ function rowFor(name: string) {
 }
 
 describe("ProgressCard after one assessment", () => {
-  it("shows each section's score and level, and invites a retake", () => {
+  it("shows each section's score and invites a retake", () => {
     render(<ProgressCard progress={once} />);
 
     expect(screen.getByRole("heading", { name: "Your results by section" })).toBeInTheDocument();
     expect(screen.getByText(/take it again later/i)).toBeInTheDocument();
     const row = rowFor("Research data");
     expect(within(row).getByText("40%")).toBeInTheDocument();
-    expect(within(row).getByText(/level a1/i)).toBeInTheDocument();
     expect(within(row).queryByText(/pts|no change/i)).not.toBeInTheDocument();
   });
 });
@@ -72,12 +71,11 @@ describe("ProgressCard after two assessments", () => {
     );
   });
 
-  it("shows an improvement with before → after, the level change and a + badge", () => {
+  it("shows an improvement with before → after and a + badge", () => {
     render(<ProgressCard progress={twice} />);
     const row = rowFor("Research data");
 
     expect(row).toHaveTextContent("40% → 70%");
-    expect(row).toHaveTextContent("Level A1 → A2");
     expect(within(row).getByLabelText("Up 30 percentage points")).toHaveTextContent("+30 pts");
   });
 
@@ -94,7 +92,7 @@ describe("ProgressCard after two assessments", () => {
     const row = rowFor("AI ethics");
 
     expect(row).toHaveTextContent("60%");
-    expect(row).toHaveTextContent(/not part of your latest assessment — result from assessment 1/i);
+    expect(row).toHaveTextContent(/not part of your latest assessment, result from assessment 1/i);
     expect(within(row).queryByText(/pts|no change/i)).not.toBeInTheDocument();
   });
 });

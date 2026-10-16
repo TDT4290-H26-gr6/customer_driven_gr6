@@ -10,12 +10,6 @@ import { DATE_FORMAT } from "@/shared/lib/format";
 vi.mock("../api", () => ({ getSectionCompetenceScores: vi.fn() }));
 vi.mock("@/features/history", () => ({ getSatHistory: vi.fn() }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
-// The radar is an SVG chart with its own tests; this stand-in only says
-// whether it was given a comparison to draw.
-vi.mock("../components/CompetenceRadar", () => ({
-  CompetenceRadar: ({ compare }: { compare?: unknown[] }) =>
-    compare ? <p>comparison drawn</p> : null,
-}));
 
 function attempt(instanceNum: number, completedAt: string, journey: string | null = null) {
   return {
@@ -42,14 +36,14 @@ const scoresOf: Record<number, AttemptScores> = {
         assessed: true,
         level: 1,
         levelCount: 4,
-        competences: [],
+        competences: [{ competence: { name: "Chopping" }, score: 1, maxScore: 4 }],
       },
       {
         section: { id: "sec-b", code: "B", name: "Baking" },
         assessed: true,
         level: 0,
         levelCount: 4,
-        competences: [],
+        competences: [{ competence: { name: "Proofing" }, score: 2, maxScore: 4 }],
       },
     ],
   },
@@ -62,7 +56,7 @@ const scoresOf: Record<number, AttemptScores> = {
         assessed: true,
         level: 3,
         levelCount: 4,
-        competences: [],
+        competences: [{ competence: { name: "Chopping" }, score: 3, maxScore: 4 }],
       },
       {
         section: { id: "sec-b", code: "B", name: "Baking" },
@@ -110,7 +104,7 @@ describe("SectionDetailsPage", () => {
     render(<SectionDetailsPage />);
 
     const knife = await screen.findByRole("region", { name: "Knife Skills" });
-    expect(within(knife).getByText("A3")).toBeInTheDocument();
+    expect(within(knife).getByText("Level 3 of 4 passed")).toBeInTheDocument();
     const baking = screen.getByRole("region", { name: "Baking" });
     expect(within(baking).getByText("Not assessed yet")).toBeInTheDocument();
   });
@@ -126,9 +120,9 @@ describe("SectionDetailsPage", () => {
       await screen.findByRole("heading", { name: `Date taken: ${format(FIRST)}` }),
     ).toBeInTheDocument();
     const knife = await screen.findByRole("region", { name: "Knife Skills" });
-    expect(await within(knife).findByText("A1")).toBeInTheDocument();
+    expect(await within(knife).findByText("Level 1 of 4 passed")).toBeInTheDocument();
     const baking = screen.getByRole("region", { name: "Baking" });
-    expect(within(baking).getByText("Not yet at B1")).toBeInTheDocument();
+    expect(within(baking).getByText("Level 1 not yet passed")).toBeInTheDocument();
     expect(screen.queryByText("Knife Ninja Journey")).not.toBeInTheDocument();
   });
 
@@ -138,9 +132,9 @@ describe("SectionDetailsPage", () => {
     await screen.findByRole("region", { name: "Knife Skills" });
 
     await user.click(screen.getByRole("tab", { name: "Assessment 1" }));
-    await screen.findByText("Not yet at B1");
+    await screen.findByText("Level 1 not yet passed");
     await user.click(screen.getByRole("tab", { name: "Assessment 2" }));
-    await screen.findByText("A3");
+    await screen.findByText("Level 3 of 4 passed");
 
     expect(getSectionCompetenceScores).toHaveBeenCalledTimes(2);
   });
@@ -162,53 +156,55 @@ describe("SectionDetailsPage", () => {
     expect(screen.queryByLabelText("Compare with")).not.toBeInTheDocument();
   });
 
-  it("compares with another assessment: overlay and legend, the level box unchanged", async () => {
+  it("compares with another assessment: both scores per competence, the level box unchanged", async () => {
     const user = userEvent.setup();
     render(<SectionDetailsPage />);
-    await screen.findByRole("region", { name: "Knife Skills" });
-    expect(screen.queryByText("comparison drawn")).not.toBeInTheDocument();
+    const knife = await screen.findByRole("region", { name: "Knife Skills" });
+    expect(within(knife).getByText("Chopping").closest("li")).not.toHaveTextContent("→");
 
     await user.selectOptions(screen.getByLabelText("Compare with"), "1");
 
-    const knife = screen.getByRole("region", { name: "Knife Skills" });
-    expect(await within(knife).findByText("comparison drawn")).toBeInTheDocument();
-    // The legend names both assessments, without dates.
-    const legend = within(knife).getByRole("list", { name: "Chart legend" });
-    expect(within(legend).getByText("Assessment 2")).toBeInTheDocument();
-    expect(within(legend).getByText("Assessment 1")).toBeInTheDocument();
-    expect(within(legend).queryByText(format(FIRST), { exact: false })).not.toBeInTheDocument();
+    // "was% → is%": Assessment 1 (compared with) scored 25%, Assessment 2 (shown) 75%.
+    await waitFor(() =>
+      expect(within(knife).getByText("Chopping").closest("li")).toHaveTextContent("25% → 75%"),
+    );
     // The level box stays about the selected assessment only.
-    expect(within(knife).getByText("A3")).toBeInTheDocument();
-    expect(within(knife).queryByText(/^Assessment 1:/)).not.toBeInTheDocument();
+    expect(within(knife).getByText("Level 3 of 4 passed")).toBeInTheDocument();
     expect(getSectionCompetenceScores).toHaveBeenCalledWith(1);
   });
 
-  it("draws the other assessment over a section this one didn't assess", async () => {
+  it("shows the other assessment's score for a competence this one didn't assess", async () => {
     const user = userEvent.setup();
     render(<SectionDetailsPage />);
-    await screen.findByRole("region", { name: "Baking" });
+    const baking = await screen.findByRole("region", { name: "Baking" });
 
     await user.selectOptions(screen.getByLabelText("Compare with"), "1");
 
-    const baking = screen.getByRole("region", { name: "Baking" });
-    expect(await within(baking).findByText("comparison drawn")).toBeInTheDocument();
+    // Assessment 2 (shown) never assessed Baking, so Proofing has no score of its own.
+    await waitFor(() =>
+      expect(within(baking).getByText("Proofing").closest("li")).toHaveTextContent("50% → –"),
+    );
     expect(within(baking).getByText("Not assessed yet")).toBeInTheDocument();
   });
 
-  it("draws no overlay for a section the compared assessment didn't assess", async () => {
+  it("shows no comparison for a section the compared assessment didn't assess", async () => {
     const user = userEvent.setup();
     render(<SectionDetailsPage />);
     await screen.findByRole("region", { name: "Knife Skills" });
     await user.click(screen.getByRole("tab", { name: "Assessment 1" }));
-    await screen.findByText("Not yet at B1");
+    await screen.findByText("Level 1 not yet passed");
 
     await user.selectOptions(screen.getByLabelText("Compare with"), "2");
 
-    // Knife Skills was assessed in both, so it gets the overlay; Baking wasn't in 2.
+    // Knife Skills was assessed in both, so it gets a comparison; Baking wasn't in 2.
     const knife = screen.getByRole("region", { name: "Knife Skills" });
-    expect(await within(knife).findByText("comparison drawn")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(within(knife).getByText("Chopping").closest("li")).toHaveTextContent("75% → 25%"),
+    );
     const baking = screen.getByRole("region", { name: "Baking" });
-    expect(within(baking).queryByText("comparison drawn")).not.toBeInTheDocument();
+    const proofing = within(baking).getByText("Proofing").closest("li");
+    expect(proofing).toHaveTextContent("50%");
+    expect(proofing).not.toHaveTextContent("→");
   });
 
   it("stops comparing when switching to the assessment being compared with", async () => {
@@ -216,13 +212,13 @@ describe("SectionDetailsPage", () => {
     render(<SectionDetailsPage />);
     await screen.findByRole("region", { name: "Knife Skills" });
     await user.selectOptions(screen.getByLabelText("Compare with"), "1");
-    await screen.findAllByText("comparison drawn");
+    await waitFor(() => expect(screen.getByText("Chopping").closest("li")).toHaveTextContent("→"));
 
     await user.click(screen.getByRole("tab", { name: "Assessment 1" }));
 
     expect(screen.getByLabelText("Compare with")).toHaveValue("");
-    await screen.findByText("Not yet at B1");
-    expect(screen.queryByText("comparison drawn")).not.toBeInTheDocument();
+    await screen.findByText("Level 1 not yet passed");
+    expect(screen.getByText("Chopping").closest("li")).not.toHaveTextContent("→");
   });
 
   it("says so when nothing has been assessed yet", async () => {

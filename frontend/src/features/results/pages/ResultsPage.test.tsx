@@ -21,7 +21,6 @@ vi.mock("@/features/assessment", () => ({ getProgress: vi.fn() }));
 vi.mock("../api", () => ({ getDashboardProgress: vi.fn() }));
 vi.mock("@/features/learningJourney", () => ({
   getRecommendedJourneys: vi.fn().mockResolvedValue(null),
-  getWeakCompetences: vi.fn().mockResolvedValue([]),
   // Shows what the dashboard hands the component: which journeys, in what
   // order, labelled how, and why.
   RecommendedJourneys: ({
@@ -36,7 +35,6 @@ vi.mock("@/features/learningJourney", () => ({
       {ranked.map((r) => `${r.journey.name}${r.reason ? ` (${r.reason})` : ""}`).join(" > ")}
     </p>
   ),
-  WeakCompetencesSection: () => null,
 }));
 vi.mock("@/features/advisor", () => ({
   getAdvice: vi.fn().mockResolvedValue(null),

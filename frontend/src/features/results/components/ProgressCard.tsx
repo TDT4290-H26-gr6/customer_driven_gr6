@@ -38,28 +38,14 @@ function Row({ row, comparing }: { row: ProgressRow; comparing: boolean }) {
               {comparing && row.change !== null ? (
                 <>
                   {row.previousPercent}% → <strong>{row.latestPercent}%</strong>
-                  {row.previousLevel !== row.latestLevel && (
-                    <span className={styles.level}>
-                      {" "}
-                      · Level {row.previousLevel ?? "–"} → <strong>{row.latestLevel}</strong>
-                    </span>
-                  )}
-                  {row.previousLevel === row.latestLevel && row.latestLevel && (
-                    <span className={styles.level}> · Level {row.latestLevel}</span>
-                  )}
                 </>
               ) : (
-                <>
-                  <strong>{row.latestPercent === null ? "–" : `${row.latestPercent}%`}</strong>
-                  {row.latestLevel && (
-                    <span className={styles.level}> · Level {row.latestLevel}</span>
-                  )}
-                </>
+                <strong>{row.latestPercent === null ? "–" : `${row.latestPercent}%`}</strong>
               )}
             </span>
             {row.carriedFrom !== null && (
               <span className={styles.muted}>
-                Not part of your latest assessment — result from Assessment {row.carriedFrom}.
+                Not part of your latest assessment, result from Assessment {row.carriedFrom}.
               </span>
             )}
           </>

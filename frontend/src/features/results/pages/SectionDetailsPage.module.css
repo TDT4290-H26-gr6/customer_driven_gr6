@@ -137,40 +137,36 @@
   color: var(--color-text);
 }
 
-/* Which shape is which when comparing — matches CompetenceRadar's styles. */
-.compareLegend {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px 16px;
-  margin: 8px 0 0;
-  padding: 0;
+.competenceList {
+  align-self: stretch;
   list-style: none;
-  font-size: var(--font-size-xs);
-  color: var(--color-text-muted);
-}
-
-.compareLegend li {
+  margin: 0;
+  padding: 0;
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
 }
 
-.swatchMain,
-.swatchCompare {
+.competenceRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.competenceRow:first-child {
+  border-top: none;
+}
+
+.competenceName {
+  overflow-wrap: anywhere;
+}
+
+.competenceValue {
   flex: none;
-  width: 18px;
-  height: 10px;
-  border-radius: var(--radius-xs);
-}
-
-.swatchMain {
-  background: color-mix(in srgb, var(--color-primary) 25%, transparent);
-  border: 2px solid var(--color-primary);
-}
-
-.swatchCompare {
-  border: 2px dashed var(--color-compare);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
 }
 
 .sectionName {
