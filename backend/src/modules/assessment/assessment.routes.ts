@@ -96,15 +96,14 @@ assessmentRouter.get(
   }),
 );
 
-// Starts a reassessment after a completed learning journey, limited to the
-// chosen sections. (Without a journey nothing needs starting — the first
-// saved answer creates a normal instance.)
+// Starts a reassessment limited to the chosen sections. (Reassessing
+// everything needs no start — the first saved answer creates a normal
+// instance.)
 assessmentRouter.post(
   "/assessment/start",
   requireAuth,
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
-    const completedJourneyId = requireString(req.body?.completedJourneyId, "completedJourneyId");
     const sectionIds = requireStringArray(req.body?.sectionIds, "sectionIds");
 
     const learner = await findLearnerById(req.learnerId!);
@@ -112,7 +111,7 @@ assessmentRouter.post(
       return res.status(403).json({ error: "Complete your profile first" });
     }
 
-    const result = await startReassessment(req.learnerId!, { completedJourneyId, sectionIds });
+    const result = await startReassessment(req.learnerId!, sectionIds);
     if (!result.ok) return res.status(result.status).json({ error: result.error });
     res.status(204).end();
   }),
