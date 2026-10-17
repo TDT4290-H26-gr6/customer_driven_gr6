@@ -1,4 +1,4 @@
-export { ResultsPage } from "./pages/ResultsPage";
+export { DashboardPage } from "./pages/DashboardPage";
 export { SectionDetailsPage } from "./pages/SectionDetailsPage";
 export { CompetenceRadar } from "./components/CompetenceRadar";
 export { WelcomeScreen } from "./components/WelcomeScreen";

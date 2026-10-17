@@ -74,7 +74,7 @@ function adminEmails(): string[] | "everyone" {
 function llm() {
   const apiKey = process.env.LLM_API_KEY;
   if (!apiKey || isPlaceholder(apiKey)) {
-    console.warn("LLM_API_KEY is not set — AI advice on the results page is turned off.");
+    console.warn("LLM_API_KEY is not set — AI advice on the dashboard is turned off.");
     return null;
   }
   return {

@@ -14,7 +14,7 @@ current flat `src/` files are migrated over incrementally (see _Migration_ below
 ## 1. Principles we agreed on
 
 1. **Feature‑first, not type‑first.** Group files by the product capability they
-   serve (`auth`, `onboarding`, `assessment`, `results`), not by technical kind
+   serve (`auth`, `onboarding`, `assessment`, `dashboard`), not by technical kind
    (`components/`, `hooks/`, `services/` at the top level). A feature folder is
    the unit we reason about, review, and hand off.
 2. **Features are islands.** A feature never imports from another feature's
@@ -97,14 +97,14 @@ frontend/
     │   │   ├── types.ts             # Question, PieContent, Response, SatInstance
     │   │   └── index.ts
     │   │
-    │   ├── results/                # scores + visualisation
+    │   ├── dashboard/               # scores + visualisation
     │   │   ├── components/
     │   │   │   ├── CompetenceRadar.tsx      # radar / spider chart (inline SVG); `compact` on mobile
     │   │   │   ├── CompetenceBreakdown.tsx
     │   │   │   ├── ScoreTable.tsx
     │   │   │   └── WelcomeScreen.tsx         # first-run state: no assessment taken yet
     │   │   ├── pages/
-    │   │   │   ├── ResultsPage.tsx          # overview: one radar axis per section (sectionAxes.ts)
+    │   │   │   ├── DashboardPage.tsx          # overview: one radar axis per section (sectionAxes.ts)
     │   │   │   └── SectionDetailsPage.tsx   # "More details": one radar per section, its own competences
     │   │   ├── api.ts               # GET /competence-scores/by-section
     │   │   ├── sectionAxes.ts       # rolls each section's competences into one overview axis
@@ -244,11 +244,11 @@ is given everything it needs via props and stays reusable. A feature's
 ```
 /login        -> LoginPage        (public)
 /settings     -> SettingsPage     (RequireAuth) — reached from the header's account dropdown
-/results      -> ResultsPage      (RequireAuth)
+/dashboard    -> DashboardPage    (RequireAuth)
 /admin        -> AdminPage        (RequireAuth) — admin mode, reached from the header's account dropdown
 /assessment   -> AssessmentRunnerPage (RequireAuth) — not in the sidebar; only reached via
                                         the dashboard's "Assess yourself" button
-/             -> redirect to /login or /results based on session
+/             -> redirect to /login or /dashboard based on session
 ```
 
 `RequireAuth` (in `app/guards/`) is the only route guard. There is no
@@ -258,7 +258,7 @@ why picking a role is a modal, not a page or a redirect target.
 ### Role gating
 
 A learner with no role yet must pick one before touching anything else,
-but as a **modal**, not a separate page — the same page (e.g. `/results`)
+but as a **modal**, not a separate page — the same page (e.g. `/dashboard`)
 stays mounted underneath, blocked:
 
 - `AppShell` computes `needsRole = learner && !learner.role`. While true, it
@@ -472,7 +472,7 @@ genuinely differ** — currently exactly two places:
    and `<Sidebar layout="bottom">` _after_ it on mobile. It's one or the
    other, not both and not CSS-reordered, so Tab order always matches what's
    on screen.
-2. `ResultsPage` passes `compact={isMobile}` to `CompetenceRadar`.
+2. `DashboardPage` passes `compact={isMobile}` to `CompetenceRadar`.
 3. `AppShell` passes `Header` its `sidebarHidden`/`onToggleSidebar` props only
    on desktop (`undefined` on mobile) — the bottom tab bar can't be hidden,
    so the header's toggle button hides itself entirely rather than
@@ -579,7 +579,7 @@ are both gone now that the logo is theme-aware.
   tech the actual numbers). Desktop keeps inline labels.
 - `CompetenceRadar` itself only knows how to chart a `CompetenceScore[]` — it
   has no idea whether each axis is a competence or something bigger.
-  `ResultsPage`'s overview feeds it 5 _section_ axes (`sectionAxes.ts` sums
+  `DashboardPage`'s overview feeds it 5 _section_ axes (`sectionAxes.ts` sums
   each section's own competences into one score); `SectionDetailsPage`'s
   "More details" drill-down feeds it real competences, one radar per section.
   With 20 competences an all-competences radar would be unreadable, hence the
@@ -665,7 +665,7 @@ Current flat layout → target:
 3. Extract `auth` feature (incl. `AuthProvider`, `session.ts`, guards).
 4. Extract `onboarding` feature (`RoleSelect`).
 5. Extract `assessment` feature (`PieQuestionPlayer`, question loading, response saving).
-6. Extract `results` feature (`CompetenceRadar`).
+6. Extract `dashboard` feature (`CompetenceRadar`).
 7. Convert inline styles to CSS Modules; add `styles/` tokens.
 8. Backfill tests per section 9.
 

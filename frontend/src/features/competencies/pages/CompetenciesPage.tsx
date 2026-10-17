@@ -35,7 +35,7 @@ function Ring({ percent }: { percent: number | null }) {
   if (percent === null) {
     return (
       <span className={styles.ring} role="img" aria-label="Not assessed yet">
-        <span className={styles.ringValue}>–</span>
+        <span className={styles.ringValue}>-</span>
       </span>
     );
   }
@@ -55,7 +55,7 @@ function Ring({ percent }: { percent: number | null }) {
 function ModuleRow({ module }: { module: CompetencyModule }) {
   return (
     <li className={styles.module}>
-      <span className={`${styles.moduleCode} ${hueClass(module.code)}`}>{module.code ?? "–"}</span>
+      <span className={`${styles.moduleCode} ${hueClass(module.code)}`}>{module.code ?? "-"}</span>
       <div className={styles.moduleMain}>
         <span className={styles.moduleName}>{module.name}</span>
         {module.best ? (
@@ -167,7 +167,7 @@ export function CompetenciesPage() {
           aria-labelledby={`section-${section.id}`}
         >
           <div className={styles.sectionHeader}>
-            <span className={styles.sectionCode}>{section.code ?? "–"}</span>
+            <span className={styles.sectionCode}>{section.code ?? "-"}</span>
             <div className={styles.sectionTitle}>
               <h2 id={`section-${section.id}`} className={styles.cardHeading}>
                 {section.name}

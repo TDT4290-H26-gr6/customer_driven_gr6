@@ -25,7 +25,7 @@ import type {
 import { AdviceCard, getAdvice } from "@/features/advisor";
 import { getProgress } from "@/features/assessment";
 import type { AdviceState } from "@/features/advisor";
-import styles from "./ResultsPage.module.css";
+import styles from "./DashboardPage.module.css";
 
 /**
  * The main dashboard, shown only once a first assessment has been submitted:
@@ -52,7 +52,7 @@ import styles from "./ResultsPage.module.css";
  * it and finished a first assessment, this sends them to /profile, whose
  * "Done" brings them back to the welcome screen here.
  */
-export function ResultsPage() {
+export function DashboardPage() {
   const { learner } = useAuth();
   const navigate = useNavigate();
   // undefined while loading; null before any completed assessment.
@@ -174,7 +174,7 @@ export function ResultsPage() {
           <Button
             variant="secondary"
             className={styles.details}
-            onClick={() => navigate("/results/details")}
+            onClick={() => navigate("/dashboard/details")}
           >
             See results by section
           </Button>

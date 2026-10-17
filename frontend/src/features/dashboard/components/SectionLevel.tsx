@@ -15,7 +15,7 @@ export function SectionLevel(props: Props) {
   if ("notAssessed" in props) {
     return (
       <div className={styles.box}>
-        <span className={styles.badgeNone}>{props.notAssessed.code || "–"}</span>
+        <span className={styles.badgeNone}>{props.notAssessed.code || "-"}</span>
         <div className={styles.info}>
           <span className={styles.title}>Your skill level</span>
           <span className={styles.levelText}>Not assessed yet</span>
@@ -30,7 +30,7 @@ export function SectionLevel(props: Props) {
   return (
     <div className={styles.box}>
       <span className={level > 0 ? styles.badge : styles.badgeNone}>
-        {level > 0 ? `${code}${level}` : code || "–"}
+        {level > 0 ? `${code}${level}` : code || "-"}
       </span>
       <div className={styles.info}>
         <span className={styles.title}>Your skill level</span>

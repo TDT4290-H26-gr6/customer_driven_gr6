@@ -59,7 +59,7 @@ async function rankedJourneys(advice: Advice) {
  * 200 with the advice (including the journeys ranked for the learner, when
  * there are any), 204 when there's none to give (no completed assessment
  * yet, or the feature is off), 503 when the LLM couldn't be reached or
- * answered nonsense — the results page then just leaves the advice out, and
+ * answered nonsense — the dashboard then just leaves the advice out, and
  * the score-based journeys still show.
  */
 advisorRouter.get(
