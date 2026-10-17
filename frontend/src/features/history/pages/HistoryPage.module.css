@@ -3,8 +3,27 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 20px;
-  max-width: 640px;
+  max-width: 1280px;
   margin: 0 auto;
+}
+
+/* Cards flow into as many columns as fit, side by side instead of one long
+   column. A single assessment fills the row (its sections then lay out
+   across it); two or three share it. */
+.list {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  align-items: start;
+  gap: 20px;
+}
+
+/* A card's sections (A-E) as columns, as many as fit its width. */
+.sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 16px 24px;
+  margin-top: 8px;
 }
 
 .heading {
@@ -85,7 +104,7 @@
 
 /* One section's modules: a heading, then its module scores. */
 .sectionGroup {
-  margin-top: 8px;
+  min-width: 0;
 }
 
 .sectionName {
@@ -106,16 +125,22 @@
 
 .areaRow {
   display: flex;
+  align-items: baseline;
   justify-content: space-between;
   gap: 12px;
   font-size: var(--font-size-sm);
 }
 
 .areaName {
+  min-width: 0;
   color: var(--color-text-muted);
 }
 
+/* "0 / 5" must never break across lines, however narrow the column gets;
+   the name beside it wraps instead. */
 .areaScore {
+  flex: none;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 

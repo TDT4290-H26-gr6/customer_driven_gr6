@@ -1,10 +1,39 @@
+/* The page is a size container: the grid below reacts to the width actually
+   available (which shrinks when the sidebar is open, and grows when it is
+   hidden), not to the viewport. One column up to 959px, then radar + results
+   side by side, journeys + advice below, and the long "where you're lacking"
+   list across the full width. Keep the 959/960 px thresholds in sync with
+   the @container rules at the bottom. */
 .page {
+  container-type: inline-size;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+  /* Single column: keep the cards a readable width instead of stretching. */
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+.header {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.intro {
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 20px;
-  max-width: 640px;
-  margin: 0 auto;
+  gap: 4px;
 }
 
 .heading {
@@ -13,15 +42,47 @@
 }
 
 .subheading {
-  margin: -12px 0 0;
+  margin: 0;
   color: var(--color-text-muted);
 }
 
-.chartCard {
+.cta {
+  flex: none;
+}
+
+/* Grid items that should match the height of their neighbour in the row. */
+.stretch {
+  align-self: stretch;
+}
+
+.cell,
+.progress,
+.weak {
+  min-width: 0;
+}
+
+/* ProgressCard is its own component; make it fill the stretched cell. */
+.progress {
+  display: flex;
+  flex-direction: column;
+}
+
+.progress > * {
+  flex: 1;
+}
+
+/* The chart keeps a sensible size however wide its card gets. */
+.radar {
   width: 100%;
+  max-width: 520px;
+}
+
+.chartCard {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   padding: 24px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -76,8 +137,34 @@
   color: var(--color-text-muted);
 }
 
+@container (min-width: 960px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    max-width: none;
+  }
+
+  .weak {
+    grid-column: 1 / -1;
+  }
+
+  /* The journeys column starts with a small heading above its first card;
+     push the advice card down by that heading's height + gap (see .heading
+     in RecommendedJourneys.module.css) so both card tops line up. */
+  .adviceBelowHeading {
+    padding-top: calc(var(--font-size-sm) * 1.25 + 10px);
+  }
+}
+
+/* Narrow: the assessment button gets its own full-width row. */
+@container (max-width: 599px) {
+  .cta {
+    width: 100%;
+  }
+}
+
 @media (max-width: 767px) {
-  .page {
+  .grid {
     gap: 16px;
   }
 
@@ -85,17 +172,7 @@
     font-size: var(--font-size-3xl);
   }
 
-  .subheading {
-    margin-top: -8px;
-  }
-
   .chartCard {
     padding: 16px;
-  }
-
-  /* The page's align-items:flex-start would otherwise shrink-wrap the primary
-     action; on a phone it should be a full-width thumb target. */
-  .cta {
-    align-self: stretch;
   }
 }

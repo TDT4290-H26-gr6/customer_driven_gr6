@@ -28,9 +28,11 @@
   margin: 8px 0 0;
   padding: 0;
   list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  /* As many columns as fit (one on a phone, three or four on a wide screen),
+     so sixteen competences don't become a sixteen-row scroll. */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+  gap: 14px 28px;
 }
 
 .row {

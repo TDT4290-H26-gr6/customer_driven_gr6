@@ -7,11 +7,14 @@
    (every text colour here is at least 4.5:1 on its background, WCAG AA).
    Scores always carry a text label too. */
 
+/* The page is a size container, so the grids below react to the width that is
+   actually available (sidebar open or hidden), not to the viewport. */
 .page {
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 760px;
+  max-width: 1280px;
   margin: 0 auto;
 }
 
@@ -81,8 +84,62 @@
   );
 }
 
-.relevantCard > button {
-  align-self: flex-start;
+/* Title on the left, "Assess this journey" on the right (wrapping under it
+   when narrow), so the action sits at the top of the card. */
+.relevantHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 24px;
+}
+
+.relevantIntro {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* The recommended journey's modules: as many columns as fit (two or three on
+   a wide screen, one on a phone), each module a small tile. */
+.modules.relevantModules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.relevantModules .module {
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+}
+
+/* The five section cards: one column on a phone, two columns from 700px.
+   An odd last card simply sits alone in the left column at half width
+   (5 cards = 2 + 2 + 1). */
+.sections {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+@container (min-width: 700px) {
+  .sections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
+
+/* A module's status line and its Moodle link share one row when there is room. */
+.moduleMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 12px;
 }
 
 .eyebrow {

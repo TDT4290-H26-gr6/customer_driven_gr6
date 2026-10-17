@@ -163,7 +163,7 @@ export function AssessmentRunnerPage() {
 
   if (loadFailed) {
     return (
-      <div className={styles.page}>
+      <div className={styles.page} data-backdrop="logo">
         <p className={styles.error} role="alert">
           Couldn&apos;t load the assessment. Check your connection and try again.
         </p>
@@ -291,7 +291,7 @@ export function AssessmentRunnerPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-backdrop="logo">
       <div className={styles.topRow}>
         {/* Left, on the same side as Back — the "leave" side of the page —
             so the right stays for moving forward (the count, then Next). */}

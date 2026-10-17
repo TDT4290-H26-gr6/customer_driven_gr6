@@ -9,9 +9,13 @@
   gap: 10px;
 }
 
+/* line-height is fixed (not "normal") because DashboardPage.module.css offsets
+   the advice card by exactly this heading's height + the .wrap gap (10px) so
+   the two cards' tops line up. Change them together. */
 .heading {
   margin: 0;
   font-size: var(--font-size-sm);
+  line-height: 1.25;
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.04em;
   text-transform: uppercase;

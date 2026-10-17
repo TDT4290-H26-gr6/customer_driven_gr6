@@ -59,7 +59,7 @@ export function LearningJourneysPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-backdrop="logo">
       <h1 className={styles.heading}>Learning journeys</h1>
       <p className={styles.subheading}>
         Assess yourself on any journey — only the sections it focuses on. It doesn&apos;t change

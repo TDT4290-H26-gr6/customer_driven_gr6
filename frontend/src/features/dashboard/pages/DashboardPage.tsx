@@ -137,64 +137,88 @@ export function DashboardPage() {
   return (
     // data-backdrop: the decorative logo-color background behind the cards (AppShell.module.css).
     <div className={styles.page} data-backdrop="logo">
-      <h1 className={styles.heading}>Welcome{learner?.name ? `, ${learner.name}` : ""}</h1>
-      <p className={styles.subheading}>
-        {progress?.previous
-          ? "Here's where your skills stand now, and how they've changed since last time."
-          : "Here's where your skills stand right now."}
-      </p>
-
-      <div className={styles.chartCard}>
-        {loadFailed || !progress ? (
-          <p className={styles.note}>
-            Couldn&apos;t load your scores right now. Please try again in a moment.
-          </p>
-        ) : (
-          <>
-            <CompetenceRadar
-              data={radarAxes(progress, "latest")}
-              compare={progress.previous ? radarAxes(progress, "previous") : undefined}
-              compact={isMobile}
-            />
-            {progress.previous && (
-              <ul className={styles.legend} aria-label="Chart legend">
-                <li>
-                  <span className={styles.swatchLatest} aria-hidden="true" />
-                  Assessment {progress.latest.instanceNum} (latest)
-                </li>
-                <li>
-                  <span className={styles.swatchPrevious} aria-hidden="true" />
-                  Assessment {progress.previous.instanceNum}
-                </li>
-              </ul>
-            )}
-          </>
-        )}
-        {!loadFailed && progress && (
+      <div className={styles.grid}>
+        <div className={styles.header}>
+          <div className={styles.intro}>
+            <h1 className={styles.heading}>Welcome{learner?.name ? `, ${learner.name}` : ""}</h1>
+            <p className={styles.subheading}>
+              {progress?.previous
+                ? "Here's where your skills stand now, and how they've changed since last time."
+                : "Here's where your skills stand right now."}
+            </p>
+          </div>
+          {/* Up here, not at the bottom: the main action is visible without scrolling. */}
           <Button
-            variant="secondary"
-            className={styles.details}
-            onClick={() => navigate("/dashboard/details")}
+            className={styles.cta}
+            onClick={() => navigate(hasOngoing ? "/assessment" : "/assessment/reassess")}
           >
-            See results by section
+            {hasOngoing ? "Continue assessment" : "Retake assessment"}
           </Button>
+        </div>
+
+        <div className={`${styles.chartCard} ${styles.stretch}`}>
+          {loadFailed || !progress ? (
+            <p className={styles.note}>
+              Couldn&apos;t load your scores right now. Please try again in a moment.
+            </p>
+          ) : (
+            <>
+              <div className={styles.radar}>
+                <CompetenceRadar
+                  data={radarAxes(progress, "latest")}
+                  compare={progress.previous ? radarAxes(progress, "previous") : undefined}
+                  compact={isMobile}
+                />
+              </div>
+              {progress.previous && (
+                <ul className={styles.legend} aria-label="Chart legend">
+                  <li>
+                    <span className={styles.swatchLatest} aria-hidden="true" />
+                    Assessment {progress.latest.instanceNum} (latest)
+                  </li>
+                  <li>
+                    <span className={styles.swatchPrevious} aria-hidden="true" />
+                    Assessment {progress.previous.instanceNum}
+                  </li>
+                </ul>
+              )}
+            </>
+          )}
+          {!loadFailed && progress && (
+            <Button
+              variant="secondary"
+              className={styles.details}
+              onClick={() => navigate("/dashboard/details")}
+            >
+              See results by section
+            </Button>
+          )}
+        </div>
+
+        {!loadFailed && progress && (
+          <div className={`${styles.progress} ${styles.stretch}`}>
+            <ProgressCard progress={progress} />
+          </div>
+        )}
+
+        {ranked.length > 0 && (
+          <div className={styles.cell}>
+            <RecommendedJourneys ranked={ranked} source={journeySource} />
+          </div>
+        )}
+
+        {advice && (
+          <div className={`${styles.cell} ${ranked.length > 0 ? styles.adviceBelowHeading : ""}`}>
+            <AdviceCard state={advice} />
+          </div>
+        )}
+
+        {weakCompetences && (
+          <div className={styles.weak}>
+            <WeakCompetencesSection competences={weakCompetences} />
+          </div>
         )}
       </div>
-
-      {!loadFailed && progress && <ProgressCard progress={progress} />}
-
-      {ranked.length > 0 && <RecommendedJourneys ranked={ranked} source={journeySource} />}
-
-      {weakCompetences && <WeakCompetencesSection competences={weakCompetences} />}
-
-      {advice && <AdviceCard state={advice} />}
-
-      <Button
-        className={styles.cta}
-        onClick={() => navigate(hasOngoing ? "/assessment" : "/assessment/reassess")}
-      >
-        {hasOngoing ? "Continue assessment" : "Retake assessment"}
-      </Button>
     </div>
   );
 }

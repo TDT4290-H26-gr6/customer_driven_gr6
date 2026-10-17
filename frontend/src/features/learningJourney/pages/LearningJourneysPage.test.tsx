@@ -51,7 +51,7 @@ describe("LearningJourneysPage", () => {
     expect(screen.getByText("Legal Deep Dive")).toBeInTheDocument();
   });
 
-  it("expands one card at a time", async () => {
+  it("opens one journey's details at a time", async () => {
     vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
     const user = userEvent.setup();
 
@@ -61,6 +61,7 @@ describe("LearningJourneysPage", () => {
     });
     await user.click(firstToggle);
     expect(firstToggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("dialog", { name: "Open Science Foundations" })).toBeInTheDocument();
 
     await user.click(secondToggle);
     expect(secondToggle).toHaveAttribute("aria-expanded", "true");

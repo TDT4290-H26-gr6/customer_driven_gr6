@@ -1,0 +1,316 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  /* Same scrim as the other dialogs; below the role gate (--z-modal). */
+  background: var(--color-overlay);
+  z-index: var(--z-dialog);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fade-in var(--duration-normal) ease-out;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 640px;
+  /* Never taller than the screen: the middle part scrolls, banner and footer stay. */
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: pop-in var(--duration-normal) ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .dialog {
+    animation: none;
+  }
+}
+
+.banner {
+  position: relative;
+  flex: none;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-banner);
+}
+
+.bannerIcon {
+  opacity: 0.9;
+}
+
+.close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--color-surface);
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 24px;
+  font-size: var(--font-size-md);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.badgeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.codeBadge,
+.typeBadge {
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.codeBadge {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.typeBadge {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-3xl);
+  line-height: 1.25;
+}
+
+.description {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.factRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  margin: 4px 0 0;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+}
+
+.fact dt {
+  font-size: var(--font-size-2xs);
+  color: var(--color-text-muted);
+}
+
+.fact dd {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* "What it covers" and "Steps" (moved here from the card, which now only
+   shows the summary). */
+.detailHeading {
+  margin: 0;
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.coverage {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.coverageRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionCode {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.sectionName {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Coverage level chips: core stands out, the others step down. */
+.coverageM,
+.coverageR,
+.coverageS {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-2xs);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.coverageM {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
+.coverageR {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.coverageS {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.steps {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stepDescription {
+  color: var(--color-text-muted);
+}
+
+
+.footer {
+  flex: none;
+  padding: 14px 24px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+}
+
+.assessButton {
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font: inherit;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.assessButton:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.assessButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.externalLink {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.externalLink:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 767px) {
+  .backdrop {
+    padding: 16px;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .footer {
+    padding: 12px 16px;
+  }
+}
+
+/* Touch devices: finger-sized targets. */
+@media (pointer: coarse) {
+  .close {
+    width: 44px;
+    height: 44px;
+  }
+
+  .assessButton {
+    min-height: 44px;
+  }
+
+  .externalLink {
+    display: inline-block;
+    padding: 12px 0;
+  }
+}

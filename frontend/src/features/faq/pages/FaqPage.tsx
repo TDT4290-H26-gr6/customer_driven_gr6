@@ -29,7 +29,7 @@ export function FaqPage() {
   const searching = query.trim() !== "";
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-backdrop="logo">
       <h1 className={styles.heading}>Frequently asked questions</h1>
       <p className={styles.subheading}>
         Answers to common questions about AIOS. Can&apos;t find what you&apos;re looking for? Use

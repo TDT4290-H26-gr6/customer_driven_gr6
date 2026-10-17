@@ -110,7 +110,7 @@ export function AdminPage() {
 
   if (loadFailed) {
     return (
-      <div className={styles.page}>
+      <div className={styles.page} data-backdrop="logo">
         <p className={styles.error}>Could not load the visibility settings.</p>
       </div>
     );
@@ -118,7 +118,7 @@ export function AdminPage() {
   if (!matrix) return <Spinner />;
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-backdrop="logo">
       <div className={styles.titleRow}>
         <h1 className={styles.heading}>Admin mode</h1>
         <div className={styles.titleActions}>

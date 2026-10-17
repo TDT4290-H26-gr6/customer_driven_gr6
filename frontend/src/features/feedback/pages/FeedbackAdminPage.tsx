@@ -22,7 +22,7 @@ export function FeedbackAdminPage() {
   }, []);
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-backdrop="logo">
       <div className={styles.titleRow}>
         <h1 className={styles.heading}>Tester feedback</h1>
         <Button variant="secondary" onClick={() => navigate("/admin")}>

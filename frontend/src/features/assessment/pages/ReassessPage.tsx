@@ -62,7 +62,7 @@ export function ReassessPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-backdrop="logo">
       <form className={styles.card} onSubmit={start}>
         <h1 className={styles.heading}>What would you like to retake?</h1>
 

@@ -49,7 +49,7 @@ describe("JourneyCard", () => {
     expect(screen.getByText("4")).toBeInTheDocument();
   });
 
-  it("shows each section's coverage, core first, and the steps when expanded", () => {
+  it("shows each section's coverage, core first, and the steps in the popup when expanded", () => {
     renderCard(true);
 
     const rows = screen
@@ -83,5 +83,47 @@ describe("JourneyCard", () => {
     const footer = screen.getByRole("link", { name: /open in moodle/i });
     expect(footer).toHaveAttribute("href", journey.moodleUrl);
     expect(within(footer.parentElement!).getByRole("button")).toBeInTheDocument();
+  });
+
+  it("shows the details as a dialog only when expanded", () => {
+    renderCard(true);
+
+    const dialog = screen.getByRole("dialog", {
+      name: "Research Data, Reproducibility and AI Practices",
+    });
+    expect(within(dialog).getByText("What it covers")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /read more/i })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+  });
+
+  it("doesn't render a dialog while collapsed", () => {
+    renderCard(false);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("closes with the X, Escape or a click outside, but not a click inside", async () => {
+    const props = renderCard(true);
+    const user = userEvent.setup();
+    const dialog = screen.getByRole("dialog");
+
+    await user.click(within(dialog).getByText("What it covers"));
+    expect(props.onToggle).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Close" }));
+    await user.keyboard("{Escape}");
+    await user.click(dialog.parentElement!);
+    expect(props.onToggle).toHaveBeenCalledTimes(3);
+  });
+
+  it("can start the assessment from inside the dialog", async () => {
+    const props = renderCard(true);
+    const user = userEvent.setup();
+
+    await user.click(
+      within(screen.getByRole("dialog")).getByRole("button", { name: "Assess this journey" }),
+    );
+    expect(props.onAssess).toHaveBeenCalledOnce();
   });
 });

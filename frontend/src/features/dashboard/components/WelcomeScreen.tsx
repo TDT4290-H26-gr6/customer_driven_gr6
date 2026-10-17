@@ -27,7 +27,8 @@ export function WelcomeScreen({ name, hasOngoing = false, onStart }: Props) {
   }, [hasSeen, setHasSeen]);
 
   return (
-    <div className={styles.page}>
+    // data-backdrop: the decorative logo-color background behind the card (AppShell.module.css).
+    <div className={styles.page} data-backdrop="logo">
       <div className={`${styles.card} ${animate ? styles.enter : ""}`}>
         <p className={styles.eyebrow}>Welcome{name ? `, ${name}` : ""}</p>
         <h1 className={styles.heading}>Let&apos;s find out where you stand.</h1>

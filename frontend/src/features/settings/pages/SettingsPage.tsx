@@ -33,7 +33,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-backdrop="logo">
       <h1 className={styles.heading}>Settings</h1>
 
       <div className={styles.card}>

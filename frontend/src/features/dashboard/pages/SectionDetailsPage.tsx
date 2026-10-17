@@ -84,7 +84,7 @@ export function SectionDetailsPage() {
 
   if (attempts === null) {
     return (
-      <div className={styles.page}>
+      <div className={styles.page} data-backdrop="logo">
         <Spinner />
       </div>
     );
@@ -102,7 +102,7 @@ export function SectionDetailsPage() {
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-backdrop="logo">
       <Button variant="secondary" onClick={() => navigate("/dashboard")}>
         ← Back to overview
       </Button>

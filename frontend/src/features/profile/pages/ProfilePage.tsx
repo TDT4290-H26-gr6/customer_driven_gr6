@@ -11,7 +11,8 @@ export function ProfilePage() {
   const navigate = useNavigate();
 
   return (
-    <div className={styles.page}>
+    // data-backdrop: the decorative logo-color background behind the card (AppShell.module.css).
+    <div className={styles.page} data-backdrop="logo">
       <h1 className={styles.heading}>Before you start</h1>
       <p className={styles.subheading}>
         Fill in your profile before taking the self-assessment. You can change it later in Settings.

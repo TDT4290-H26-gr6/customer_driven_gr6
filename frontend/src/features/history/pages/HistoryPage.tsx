@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Spinner } from "@/shared/components/Spinner";
 import { APP_LOCALE, DATE_FORMAT } from "@/shared/lib/format";
+import { HistoryTrend } from "../components/HistoryTrend";
 import { getSatHistory } from "../api";
 import type { SatHistoryEntry } from "../types";
 import styles from "./HistoryPage.module.css";
@@ -34,14 +35,14 @@ export function HistoryPage() {
 
   if (entries === null) {
     return (
-      <div className={styles.page}>
+      <div className={styles.page} data-backdrop="logo">
         <Spinner />
       </div>
     );
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-backdrop="logo">
       <h1 className={styles.heading}>History</h1>
       <p className={styles.subheading}>Every self-assessment you&apos;ve completed, in order.</p>
 
@@ -55,55 +56,69 @@ export function HistoryPage() {
         </p>
       )}
 
-      {entries.map((entry) => (
-        <div key={entry.instanceNum} className={styles.card}>
-          <div className={styles.cardHeader}>
-            <h2 className={styles.cardHeading}>Assessment {entry.instanceNum}</h2>
-            <span className={styles.date}>{DATE_FORMAT.format(new Date(entry.completedAt))}</span>
+      {entries.length >= 2 && (
+        <HistoryTrend
+          points={entries.map((entry) => ({
+            instanceNum: entry.instanceNum,
+            percent: percent(entry.sumScore, entry.sumMaxScore),
+          }))}
+        />
+      )}
+
+      <div className={styles.list}>
+        {entries.map((entry) => (
+          <div key={entry.instanceNum} className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h2 className={styles.cardHeading}>Assessment {entry.instanceNum}</h2>
+              <span className={styles.date}>{DATE_FORMAT.format(new Date(entry.completedAt))}</span>
+            </div>
+
+            {(entry.completedJourney || entry.reassessedSections.length > 0) && (
+              <div className={styles.journey}>
+                {entry.completedJourney && (
+                  <p className={styles.journeyLine}>
+                    After completing <strong>{entry.completedJourney}</strong>
+                  </p>
+                )}
+                {entry.reassessedSections.length > 0 && (
+                  <p className={styles.journeyLine}>
+                    Reassessed: {entry.reassessedSections.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <p className={styles.sumScore}>
+              {POINTS_FORMAT.format(entry.sumScore)} / {POINTS_FORMAT.format(entry.sumMaxScore)}
+              <span className={styles.sumPercent}>
+                ({percent(entry.sumScore, entry.sumMaxScore)}%)
+              </span>
+            </p>
+
+            {/* Each module's score under the section it belongs to, A–E; the
+                sections sit side by side when the card is wide enough. */}
+            <div className={styles.sections}>
+              {entry.sections.map((section) => (
+                <div key={`${section.code ?? ""}|${section.name}`} className={styles.sectionGroup}>
+                  <h3 className={styles.sectionName}>
+                    {section.code ? `Section ${section.code} · ${section.name}` : section.name}
+                  </h3>
+                  <ul className={styles.areaList}>
+                    {section.areas.map((area) => (
+                      <li key={area.name} className={styles.areaRow}>
+                        <span className={styles.areaName}>{area.name}</span>
+                        <span className={styles.areaScore}>
+                          {POINTS_FORMAT.format(area.score)} / {POINTS_FORMAT.format(area.maxScore)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
-
-          {(entry.completedJourney || entry.reassessedSections.length > 0) && (
-            <div className={styles.journey}>
-              {entry.completedJourney && (
-                <p className={styles.journeyLine}>
-                  After completing <strong>{entry.completedJourney}</strong>
-                </p>
-              )}
-              {entry.reassessedSections.length > 0 && (
-                <p className={styles.journeyLine}>
-                  Reassessed: {entry.reassessedSections.join(", ")}
-                </p>
-              )}
-            </div>
-          )}
-
-          <p className={styles.sumScore}>
-            {POINTS_FORMAT.format(entry.sumScore)} / {POINTS_FORMAT.format(entry.sumMaxScore)}
-            <span className={styles.sumPercent}>
-              ({percent(entry.sumScore, entry.sumMaxScore)}%)
-            </span>
-          </p>
-
-          {/* Each module's score under the section it belongs to, A–E. */}
-          {entry.sections.map((section) => (
-            <div key={`${section.code ?? ""}|${section.name}`} className={styles.sectionGroup}>
-              <h3 className={styles.sectionName}>
-                {section.code ? `Section ${section.code} · ${section.name}` : section.name}
-              </h3>
-              <ul className={styles.areaList}>
-                {section.areas.map((area) => (
-                  <li key={area.name} className={styles.areaRow}>
-                    <span className={styles.areaName}>{area.name}</span>
-                    <span className={styles.areaScore}>
-                      {POINTS_FORMAT.format(area.score)} / {POINTS_FORMAT.format(area.maxScore)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
