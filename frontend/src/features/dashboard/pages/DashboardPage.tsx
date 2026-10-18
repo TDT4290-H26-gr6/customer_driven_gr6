@@ -17,7 +17,7 @@ import type { RankedJourney, RecommendedJourneysResult } from "@/features/learni
 import { AdviceCard, getAdvice } from "@/features/advisor";
 import { getProgress } from "@/features/assessment";
 import type { AdviceState } from "@/features/advisor";
-import styles from "./ResultsPage.module.css";
+import styles from "./DashboardPage.module.css";
 
 /**
  * The main dashboard, shown once a first assessment is submitted, as two
@@ -27,13 +27,13 @@ import styles from "./ResultsPage.module.css";
  * overlays the previous one and the summary shows the change (always the
  * latest two). "Detailed view": the per-assessment, per-competence
  * drill-down (SectionDetailsView), also reachable on its own at
- * /results/details.
+ * /dashboard/details.
  *
  * A new learner fills in their profile first: until they've completed it
  * and a first assessment, this sends them to /profile, whose "Done" brings
  * them back here.
  */
-export function ResultsPage() {
+export function DashboardPage() {
   const { learner } = useAuth();
   const navigate = useNavigate();
   // undefined while loading; null before any completed assessment.

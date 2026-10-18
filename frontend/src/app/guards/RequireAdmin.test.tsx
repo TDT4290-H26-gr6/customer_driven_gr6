@@ -15,7 +15,7 @@ function renderAdminRoute() {
         <Route element={<RequireAdmin />}>
           <Route path="/admin" element={<p>admin page</p>} />
         </Route>
-        <Route path="/results" element={<p>dashboard</p>} />
+        <Route path="/dashboard" element={<p>dashboard</p>} />
       </Routes>
     </MemoryRouter>,
   );

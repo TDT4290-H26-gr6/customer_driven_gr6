@@ -137,7 +137,7 @@ export function FeedbackDialog({
                 disabled={sending}
                 required
                 rows={4}
-                placeholder="E.g. I wasn't sure what the score on the results page meant."
+                placeholder="E.g. I wasn't sure what the score on the dashboard meant."
               />
             </label>
 

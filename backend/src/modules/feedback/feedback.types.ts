@@ -18,7 +18,7 @@ export type FeedbackDto = {
 };
 
 export const MAX_FEEDBACK_LENGTH = 2000;
-/** An app path like "/results/details" — 191 is Prisma's MySQL VARCHAR. */
+/** An app path like "/dashboard/details" — 191 is Prisma's MySQL VARCHAR. */
 const MAX_PAGE_LENGTH = 191;
 
 /**

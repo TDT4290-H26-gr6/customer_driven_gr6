@@ -239,7 +239,7 @@ async function generateAdvice(
 /**
  * The AI advice for the learner's latest completed self-assessment:
  * generated the first time it's asked for, then read back from the table —
- * one LLM call per assessment, however often the results page is opened.
+ * one LLM call per assessment, however often the dashboard is opened.
  *
  * Returns null when there's nothing to advise on yet (no completed
  * assessment) or the feature is off (no LLM_API_KEY). Throws if the LLM

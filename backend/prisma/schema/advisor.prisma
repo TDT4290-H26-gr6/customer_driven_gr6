@@ -1,4 +1,4 @@
-/// Advisor module — AI-written advice shown on the results page: an
+/// Advisor module — AI-written advice shown on the dashboard: an
 /// explanation of the learner's results, 1–3 next steps (Moodle modules),
 /// and the two learning journeys that fit them best — ranked on their scores
 /// and their profile — among those covering their weak sections. Generated once per completed SAT instance by the

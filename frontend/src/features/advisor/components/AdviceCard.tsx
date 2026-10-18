@@ -1,7 +1,7 @@
 import type { Advice } from "../types";
 import styles from "./AdviceCard.module.css";
 
-/** What the results page knows about the advice so far. */
+/** What the dashboard knows about the advice so far. */
 export type AdviceState =
   { status: "loading" } | { status: "ready"; advice: Advice } | { status: "unavailable" };
 

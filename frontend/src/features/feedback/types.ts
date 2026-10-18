@@ -1,7 +1,7 @@
 export type FeedbackInput = {
   message: string;
   suggestion: string | null;
-  /** App path the tester was on when they wrote it, e.g. "/results". */
+  /** App path the tester was on when they wrote it, e.g. "/dashboard". */
   page: string | null;
 };
 

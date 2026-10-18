@@ -36,7 +36,7 @@ export const FAQ: FaqCategory[] = [
       {
         question: "How does the self-assessment work?",
         answer: [
-          "The questions are grouped into sections (A–E), and each section into modules. You start at the first module of a section and move up to the next when you answer most of its questions correctly. When a module is too difficult, you move on to the next section — so the number of questions depends on your answers.",
+          "The questions are grouped into sections (A-E), and each section into modules. You start at the first module of a section and move up to the next when you answer most of its questions correctly. When a module is too difficult, you move on to the next section — so the number of questions depends on your answers.",
         ],
       },
       {
@@ -79,7 +79,7 @@ export const FAQ: FaqCategory[] = [
       {
         question: 'What do "weak", "good" and "strong" mean?',
         answer: [
-          'They describe a score: weak is 60% or below, good is 61–84%, and strong is 85% or above. Areas at 60% or below are also listed under "Where you\'re lacking" on the dashboard.',
+          'They describe a score: weak is 60% or below, good is 61-84%, and strong is 85% or above. Areas at 60% or below are also listed under "Where you\'re lacking" on the dashboard.',
         ],
       },
       {

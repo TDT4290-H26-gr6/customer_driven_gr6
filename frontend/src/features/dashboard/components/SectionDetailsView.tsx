@@ -15,7 +15,7 @@ function percentOf(score: number, maxScore: number): number | null {
 /**
  * The drill-down content itself, with no page chrome (no back button or
  * heading). SectionDetailsPage wraps this for the standalone route, and
- * ResultsPage embeds it directly as its "Detailed view" tab.
+ * DashboardPage embeds it directly as its "Detailed view" tab.
  *
  * One tab per completed SAT, Assessment 1 leftmost and the latest selected.
  * Each tab shows that SAT alone: one card per section in A-E order, with
