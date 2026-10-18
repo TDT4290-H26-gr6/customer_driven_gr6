@@ -87,7 +87,7 @@ export function JourneyCard({
           <dl className={styles.factRow}>
             <div className={styles.fact}>
               <dt>Core sections</dt>
-              <dd>{core.length > 0 ? core.join(", ") : "–"}</dd>
+              <dd>{core.length > 0 ? core.join(", ") : "-"}</dd>
             </div>
             {sections.length > 0 && (
               <div className={styles.fact}>
@@ -111,7 +111,7 @@ export function JourneyCard({
                   <ul className={styles.coverage}>
                     {sections.map((s) => (
                       <li key={s.sectionId} className={styles.coverageRow}>
-                        <span className={styles.sectionCode}>{s.section?.code ?? "–"}</span>
+                        <span className={styles.sectionCode}>{s.section?.code ?? "-"}</span>
                         <span className={styles.sectionName}>{s.section?.name}</span>
                         <span className={styles[`coverage${s.coverageLevel}`]}>
                           {COVERAGE_LABEL[s.coverageLevel!]}

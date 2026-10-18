@@ -1,6 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ResultsPage } from "./ResultsPage";
+import { DashboardPage } from "./DashboardPage";
 import { getProgress } from "@/features/assessment";
 import { getRecommendedJourneys } from "@/features/learningJourney";
 import { getAdvice } from "@/features/advisor";
@@ -86,12 +86,12 @@ beforeEach(() => {
   auth.learner.hasCompletedProfile = true;
 });
 
-describe("ResultsPage profile step", () => {
+describe("DashboardPage profile step", () => {
   it("sends a new learner to fill in their profile before the welcome screen", () => {
     auth.learner.hasCompletedInitialAssessment = false;
     auth.learner.hasCompletedProfile = false;
     vi.mocked(getProgress).mockResolvedValue(null);
-    render(<ResultsPage />);
+    render(<DashboardPage />);
     expect(screen.getByText("redirected to /profile")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Take self assessment" })).not.toBeInTheDocument();
   });
@@ -99,34 +99,34 @@ describe("ResultsPage profile step", () => {
   it("keeps a returning learner on their dashboard even without a complete profile", async () => {
     auth.learner.hasCompletedProfile = false;
     vi.mocked(getProgress).mockResolvedValue(null);
-    render(<ResultsPage />);
+    render(<DashboardPage />);
     expect(await screen.findByRole("button", { name: "Retake assessment" })).toBeInTheDocument();
   });
 });
 
-describe("ResultsPage assessment button", () => {
+describe("DashboardPage assessment button", () => {
   it("says 'Retake assessment' when there's no unfinished assessment", async () => {
     vi.mocked(getProgress).mockResolvedValue(null);
-    render(<ResultsPage />);
+    render(<DashboardPage />);
     expect(await screen.findByRole("button", { name: "Retake assessment" })).toBeInTheDocument();
   });
 
   it("says 'Continue assessment' while a retake is unfinished", async () => {
     vi.mocked(getProgress).mockResolvedValue(ongoing);
-    render(<ResultsPage />);
+    render(<DashboardPage />);
     expect(await screen.findByRole("button", { name: "Continue assessment" })).toBeInTheDocument();
   });
 
   it("falls back to 'Retake assessment' when progress can't be loaded", async () => {
     vi.mocked(getProgress).mockRejectedValue({ status: 0, message: "offline" });
-    render(<ResultsPage />);
+    render(<DashboardPage />);
     expect(await screen.findByRole("button", { name: "Retake assessment" })).toBeInTheDocument();
   });
 
   it("says 'Continue assessment' on the welcome screen for an unfinished first assessment", async () => {
     auth.learner.hasCompletedInitialAssessment = false;
     vi.mocked(getProgress).mockResolvedValue(ongoing);
-    render(<ResultsPage />);
+    render(<DashboardPage />);
     expect(await screen.findByRole("button", { name: "Continue assessment" })).toBeInTheDocument();
     expect(screen.getByText(/your answers are saved/i)).toBeInTheDocument();
   });
@@ -134,18 +134,18 @@ describe("ResultsPage assessment button", () => {
   it("says 'Take self assessment' on the welcome screen before a first start", async () => {
     auth.learner.hasCompletedInitialAssessment = false;
     vi.mocked(getProgress).mockResolvedValue(null);
-    render(<ResultsPage />);
+    render(<DashboardPage />);
     expect(await screen.findByRole("button", { name: "Take self assessment" })).toBeInTheDocument();
   });
 });
 
-describe("ResultsPage results", () => {
+describe("DashboardPage results", () => {
   beforeEach(() => {
     vi.mocked(getProgress).mockResolvedValue(null);
   });
 
   it("after one assessment, shows its results without a comparison", async () => {
-    render(<ResultsPage />);
+    render(<DashboardPage />);
 
     expect(await screen.findByText("radar")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Your results by section" })).toBeInTheDocument();
@@ -154,7 +154,7 @@ describe("ResultsPage results", () => {
 
   it("after two assessments, overlays both on the radar and shows the progress", async () => {
     vi.mocked(getDashboardProgress).mockResolvedValue(twoAssessments);
-    render(<ResultsPage />);
+    render(<DashboardPage />);
 
     expect(await screen.findByText("radar with comparison")).toBeInTheDocument();
     const legend = screen.getByLabelText("Chart legend");
@@ -166,7 +166,7 @@ describe("ResultsPage results", () => {
 
   it("says so when the results can't be loaded, and still offers a retake", async () => {
     vi.mocked(getDashboardProgress).mockRejectedValue({ status: 0, message: "offline" });
-    render(<ResultsPage />);
+    render(<DashboardPage />);
 
     expect(await screen.findByText(/couldn't load your scores/i)).toBeInTheDocument();
     expect(
@@ -176,7 +176,7 @@ describe("ResultsPage results", () => {
   });
 });
 
-describe("ResultsPage recommended journeys", () => {
+describe("DashboardPage recommended journeys", () => {
   const journeyOf = (name: string) => ({
     id: name,
     name,
@@ -208,7 +208,7 @@ describe("ResultsPage recommended journeys", () => {
       ),
     );
 
-    render(<ResultsPage />);
+    render(<DashboardPage />);
 
     expect(
       await screen.findByText(
@@ -220,7 +220,7 @@ describe("ResultsPage recommended journeys", () => {
   it("tops up an older one-journey AI pick with the score-based next best", async () => {
     vi.mocked(getAdvice).mockResolvedValue(adviceRanking(["LJ1 — Officer", "Fits."]));
 
-    render(<ResultsPage />);
+    render(<DashboardPage />);
 
     expect(
       await screen.findByText("journeys [recommended]: LJ1 — Officer (Fits.) > LJ3 — Education"),
@@ -230,7 +230,7 @@ describe("ResultsPage recommended journeys", () => {
   it("shows the score-based two while the AI advice is unavailable", async () => {
     vi.mocked(getAdvice).mockRejectedValue({ status: 503, message: "unavailable" });
 
-    render(<ResultsPage />);
+    render(<DashboardPage />);
 
     expect(
       await screen.findByText("journeys [recommended]: LJ3 — Education > LJ1 — Officer"),
@@ -244,7 +244,7 @@ describe("ResultsPage recommended journeys", () => {
     });
     vi.mocked(getAdvice).mockResolvedValue(adviceRanking(["LJ6 — Policy", null]));
 
-    render(<ResultsPage />);
+    render(<DashboardPage />);
 
     expect(
       await screen.findByText("journeys [suggested]: LJ6 — Policy > LJ1 — Officer"),
@@ -255,7 +255,7 @@ describe("ResultsPage recommended journeys", () => {
     vi.mocked(getRecommendedJourneys).mockResolvedValue(null);
     vi.mocked(getAdvice).mockResolvedValue(null);
 
-    render(<ResultsPage />);
+    render(<DashboardPage />);
 
     await screen.findByText("radar");
     expect(screen.queryByText(/^journeys/)).not.toBeInTheDocument();

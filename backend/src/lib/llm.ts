@@ -6,7 +6,7 @@ export type ChatMessage = { role: "system" | "user" | "assistant"; content: stri
 
 export type LlmSettings = { baseUrl: string; apiKey: string; model: string };
 
-/** Long enough for a slow answer, short enough that the results page isn't left hanging. */
+/** Long enough for a slow answer, short enough that the dashboard isn't left hanging. */
 const DEFAULT_TIMEOUT_MS = 45_000;
 
 /** Some models wrap JSON in a ```json fence even when asked not to. */

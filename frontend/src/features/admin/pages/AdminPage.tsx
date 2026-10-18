@@ -139,7 +139,7 @@ export function AdminPage() {
           >
             {downloading === "questions" ? "Downloading…" : "Download question stats (CSV)"}
           </Button>
-          <Button variant="secondary" onClick={() => navigate("/results")}>
+          <Button variant="secondary" onClick={() => navigate("/dashboard")}>
             Exit admin mode
           </Button>
         </div>

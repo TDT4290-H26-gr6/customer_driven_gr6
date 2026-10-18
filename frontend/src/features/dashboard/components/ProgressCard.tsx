@@ -25,7 +25,7 @@ function Row({ row, comparing }: { row: ProgressRow; comparing: boolean }) {
   return (
     <li className={styles.row}>
       <span className={styles.code} aria-hidden="true">
-        {row.code ?? "–"}
+        {row.code ?? "-"}
       </span>
       <div className={styles.main}>
         <span className={styles.name}>{row.name}</span>
@@ -41,7 +41,7 @@ function Row({ row, comparing }: { row: ProgressRow; comparing: boolean }) {
                   {row.previousLevel !== row.latestLevel && (
                     <span className={styles.level}>
                       {" "}
-                      · Level {row.previousLevel ?? "–"} → <strong>{row.latestLevel}</strong>
+                      · Level {row.previousLevel ?? "-"} → <strong>{row.latestLevel}</strong>
                     </span>
                   )}
                   {row.previousLevel === row.latestLevel && row.latestLevel && (
@@ -50,7 +50,7 @@ function Row({ row, comparing }: { row: ProgressRow; comparing: boolean }) {
                 </>
               ) : (
                 <>
-                  <strong>{row.latestPercent === null ? "–" : `${row.latestPercent}%`}</strong>
+                  <strong>{row.latestPercent === null ? "-" : `${row.latestPercent}%`}</strong>
                   {row.latestLevel && (
                     <span className={styles.level}> · Level {row.latestLevel}</span>
                   )}

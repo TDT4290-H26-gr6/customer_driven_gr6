@@ -13,7 +13,7 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-function renderWidget(path = "/results") {
+function renderWidget(path = "/dashboard") {
   return render(
     <MemoryRouter initialEntries={[path]}>
       <FeedbackWidget />
@@ -51,7 +51,7 @@ describe("FeedbackWidget", () => {
   it("sends trimmed text with the current page, then thanks the tester", async () => {
     vi.mocked(sendFeedback).mockResolvedValue(undefined);
     const user = userEvent.setup();
-    renderWidget("/results/details");
+    renderWidget("/dashboard/details");
     await openForm(user);
 
     await user.type(screen.getByLabelText(/what should be improved/i), "  Chart is hard to read ");
@@ -61,7 +61,7 @@ describe("FeedbackWidget", () => {
     expect(sendFeedback).toHaveBeenCalledWith({
       message: "Chart is hard to read",
       suggestion: "Bigger labels",
-      page: "/results/details",
+      page: "/dashboard/details",
     });
     expect(await screen.findByRole("dialog", { name: /thank you/i })).toBeInTheDocument();
   });
@@ -78,7 +78,7 @@ describe("FeedbackWidget", () => {
     expect(sendFeedback).toHaveBeenCalledWith({
       message: "Slow",
       suggestion: null,
-      page: "/results",
+      page: "/dashboard",
     });
   });
 

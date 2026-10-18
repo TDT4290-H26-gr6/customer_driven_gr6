@@ -7,6 +7,6 @@ import { useAuth } from "@/app/providers/AuthProvider";
  */
 export function RequireAdmin() {
   const { learner } = useAuth();
-  if (!learner?.isAdmin) return <Navigate to="/results" replace />;
+  if (!learner?.isAdmin) return <Navigate to="/dashboard" replace />;
   return <Outlet />;
 }

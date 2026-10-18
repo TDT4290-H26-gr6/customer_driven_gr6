@@ -12,7 +12,7 @@ import styles from "./Sidebar.module.css";
 // Assessment is deliberately not a nav item — it's only reachable via the
 // dashboard's "Retake assessment" button, not as a page someone browses to.
 const NAV_ITEMS = [
-  { to: "/results", label: "Dashboard", Icon: HomeIcon },
+  { to: "/dashboard", label: "Dashboard", Icon: HomeIcon },
   { to: "/competencies", label: "Competencies", Icon: TargetIcon },
   { to: "/journeys", label: "Journeys", Icon: RouteIcon },
   { to: "/history", label: "History", Icon: ClipboardIcon },
