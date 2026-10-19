@@ -8,8 +8,8 @@
    Scores always carry a text label too. */
 
 .page {
-  --card-width: 420px;
-  --card-gap: 24px;
+  --card-width: 310px;
+  --card-gap: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -139,8 +139,22 @@
   margin: 0 auto;
 }
 
-.relevantCard > button {
-  align-self: flex-start;
+/* Title on the left, "Assess this journey" on the right (wrapping under it
+   when narrow). */
+.relevantHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 24px;
+}
+
+.relevantIntro {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .eyebrow {

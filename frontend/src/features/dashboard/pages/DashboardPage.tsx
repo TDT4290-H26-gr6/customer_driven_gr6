@@ -121,6 +121,13 @@ export function DashboardPage() {
           : "Here's where your skills stand right now."}
       </p>
 
+      <Button
+        className={styles.cta}
+        onClick={() => navigate(hasOngoing ? "/assessment" : "/assessment/reassess")}
+      >
+        {hasOngoing ? "Continue assessment" : "Retake assessment"}
+      </Button>
+
       <div className={styles.tabs} role="tablist" aria-label="Dashboard view">
         <button
           type="button"
@@ -192,13 +199,6 @@ export function DashboardPage() {
           {ranked.length > 0 && <RecommendedJourneys ranked={ranked} source={journeySource} />}
 
           {advice && <AdviceCard state={advice} />}
-
-          <Button
-            className={styles.cta}
-            onClick={() => navigate(hasOngoing ? "/assessment" : "/assessment/reassess")}
-          >
-            {hasOngoing ? "Continue assessment" : "Retake assessment"}
-          </Button>
         </div>
       )}
 

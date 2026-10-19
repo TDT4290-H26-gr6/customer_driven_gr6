@@ -69,6 +69,15 @@ describe("HistoryPage", () => {
     expect(screen.getByText("(83%)")).toBeInTheDocument();
   });
 
+  it("shows the most recently completed assessment first", async () => {
+    vi.mocked(getSatHistory).mockResolvedValue(ENTRIES);
+
+    render(<HistoryPage />);
+
+    const headings = await screen.findAllByRole("heading", { name: /^Assessment \d$/ });
+    expect(headings.map((h) => h.textContent)).toEqual(["Assessment 2", "Assessment 1"]);
+  });
+
   it("shows the completed journey and the reassessed sections, only on that attempt", async () => {
     vi.mocked(getSatHistory).mockResolvedValue(ENTRIES);
 

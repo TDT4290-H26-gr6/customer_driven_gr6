@@ -216,21 +216,25 @@ export function CompetenciesPage() {
 
       {data.recommendedJourney && relevantModules.length > 0 && (
         <section className={styles.relevantCard} aria-labelledby="relevant-heading">
-          <p className={styles.eyebrow}>Most relevant for you</p>
-          <h2 id="relevant-heading" className={styles.cardHeading}>
-            {data.recommendedJourney.name}
-          </h2>
-          <p className={styles.muted}>
-            The modules this journey focuses on, recommended after your self-assessment.
-          </p>
+          <div className={styles.relevantHeader}>
+            <div className={styles.relevantIntro}>
+              <p className={styles.eyebrow}>Most relevant for you</p>
+              <h2 id="relevant-heading" className={styles.cardHeading}>
+                {data.recommendedJourney.name}
+              </h2>
+              <p className={styles.muted}>
+                The modules this journey focuses on, recommended after your self-assessment.
+              </p>
+            </div>
+            <Button variant="secondary" onClick={() => navigate("/journeys")}>
+              Assess this journey
+            </Button>
+          </div>
           <ul className={styles.modules}>
             {relevantModules.map((module) => (
               <ModuleRow key={module.id} module={module} />
             ))}
           </ul>
-          <Button variant="secondary" onClick={() => navigate("/journeys")}>
-            Assess this journey
-          </Button>
         </section>
       )}
 

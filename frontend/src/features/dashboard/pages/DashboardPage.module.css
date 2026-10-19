@@ -76,6 +76,10 @@
   color: var(--color-text-muted);
 }
 
+.cta {
+  align-self: flex-end;
+}
+
 .chartCard {
   flex: 1;
   min-width: 0;
