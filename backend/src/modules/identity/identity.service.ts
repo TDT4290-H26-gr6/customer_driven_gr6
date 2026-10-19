@@ -47,6 +47,14 @@ export function completeInitialAssessment(learnerId: string) {
   });
 }
 
+export function acceptPrivacyNotice(learnerId: string) {
+  return prisma.learner.update({
+    where: { id: learnerId },
+    data: { privacyNoticeAcceptedAt: new Date() },
+    include: learnerInclude,
+  });
+}
+
 export function getLearnerProfile(learnerId: string) {
   return prisma.learnerProfile.findUnique({ where: { learnerId } });
 }

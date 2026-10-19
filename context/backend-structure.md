@@ -144,7 +144,7 @@ backend/src/
 │   └── data/aios_fake_food_seed.json, aios_wp2_seed.json
 ├── modules/
 │   ├── identity/
-│   │   ├── identity.routes.ts       # /auth/*, /roles, /auth/me/role
+│   │   ├── identity.routes.ts       # /auth/*, /roles, /auth/me/role, /auth/me/privacy-notice (sets Learner.privacyNoticeAcceptedAt)
 │   │   ├── identity.admin.routes.ts # /admin/* — role visibility grants (admin mode)
 │   │   ├── identity.service.ts      # all Prisma access for identity_* tables
 │   │   └── identity.types.ts

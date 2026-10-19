@@ -10,6 +10,7 @@ import { ROLE_SELECTION_ENABLED } from "@/shared/lib/features";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
 import { RoleGateModal } from "./RoleGateModal";
+import { PrivacyNoticeModal } from "./PrivacyNoticeModal";
 import styles from "./AppShell.module.css";
 
 /**
@@ -24,18 +25,24 @@ export function AppShell() {
   const { learner } = useAuth();
   // Role selection is temporarily off (shared/lib/features.ts): no gate.
   const needsRole = ROLE_SELECTION_ENABLED && Boolean(learner && !learner.role);
+  // Part of the initial "who you are" step: shown once the profile is saved
+  // (after "Done" on /profile), and it blocks the app until acknowledged.
+  const needsPrivacyAck = Boolean(
+    learner && learner.hasCompletedProfile && !learner.hasAcceptedPrivacyNotice,
+  );
+  const blocked = needsPrivacyAck || needsRole;
   const [collapsed, setCollapsed] = useLocalStorage("aios.sidebarCollapsed", false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const appRef = useRef<HTMLDivElement>(null);
   const { pathname } = useLocation();
   const toggleCollapsed = () => setCollapsed((c) => !c);
 
-  // `inert` (not just visually covered) while the role gate is up: blocks
-  // clicks AND removes everything underneath from the tab order, so there's
-  // no keyboard escape route into the rest of the app either.
+  // `inert` (not just visually covered) while a gate (privacy notice or role)
+  // is up: blocks clicks AND removes everything underneath from the tab
+  // order, so there's no keyboard escape route into the rest of the app either.
   useEffect(() => {
-    if (appRef.current) appRef.current.inert = needsRole;
-  }, [needsRole]);
+    if (appRef.current) appRef.current.inert = blocked;
+  }, [blocked]);
 
   return (
     <div className={styles.shell}>
@@ -55,7 +62,7 @@ export function AppShell() {
           <main id="main-content" tabIndex={-1} className={styles.main}>
             {/* A page that crashes while rendering shows a fallback here while
                 the header and nav keep working; navigating away resets it. */}
-            {needsRole ? null : (
+            {blocked ? null : (
               <ErrorBoundary resetKey={pathname}>
                 <Outlet />
               </ErrorBoundary>
@@ -65,11 +72,12 @@ export function AppShell() {
             <Sidebar layout="bottom" collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
           )}
         </div>
-        {/* Inside the inert wrapper: unreachable while the role gate is up. */}
+        {/* Inside the inert wrapper: unreachable while a gate is up. */}
         <FeedbackWidget />
       </div>
 
-      {needsRole && <RoleGateModal />}
+      {/* Privacy notice first; the role gate follows once it is acknowledged. */}
+      {needsPrivacyAck ? <PrivacyNoticeModal /> : needsRole && <RoleGateModal />}
     </div>
   );
 }

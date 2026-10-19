@@ -12,6 +12,8 @@ export type LearnerDto = {
   name: string | null;
   role: Role | null;
   hasCompletedInitialAssessment: boolean;
+  /** Clicked "I understand" on the first-login privacy notice. */
+  hasAcceptedPrivacyNotice: boolean;
   /** Every profile field is filled in — required before taking the assessment. */
   hasCompletedProfile: boolean;
   /** May use admin mode — so the frontend can hide it; requireAdmin is the real check. */
@@ -25,6 +27,7 @@ export function toLearnerDto(learner: LearnerWithRole): LearnerDto {
     name: learner.name,
     role: learner.userRole,
     hasCompletedInitialAssessment: learner.hasCompletedInitialAssessment,
+    hasAcceptedPrivacyNotice: learner.privacyNoticeAcceptedAt !== null,
     hasCompletedProfile: isProfileComplete(learner.name, learner.profile),
     isAdmin: isAdminEmail(learner.email),
   };

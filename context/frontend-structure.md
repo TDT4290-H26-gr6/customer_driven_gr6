@@ -53,10 +53,11 @@ frontend/
     │   │   ├── AppProviders.tsx     # composes all context providers
     │   │   └── AuthProvider.tsx     # session/token state + refresh
     │   ├── layout/
-    │   │   ├── AppShell.tsx         # header + sidebar + <Outlet/>, blocks with RoleGateModal if no role
+    │   │   ├── AppShell.tsx         # header + sidebar + <Outlet/>, blocks with PrivacyNoticeModal (after the profile step), then RoleGateModal if no role
     │   │   ├── Header.tsx           # sidebar toggle (centred above the rail's icon column) + <Logo/> left, account menu right
     │   │   ├── Sidebar.tsx          # collapsible left rail (desktop) / fixed bottom tab bar (mobile)
-    │   │   └── RoleGateModal.tsx    # forced role-pick modal — see "Role gating" below
+    │   │   ├── RoleGateModal.tsx    # forced role-pick modal — see "Role gating" below
+    │   │   └── PrivacyNoticeModal.tsx # privacy reminder after the profile step, "I understand" to continue — see "Privacy notice" below
     │   └── guards/
     │       └── RequireAuth.tsx      # no session -> redirect /login
     │
@@ -280,6 +281,28 @@ stays mounted underneath, blocked:
   persona (`GET /questions`, `GET /sources`) and returns 403 regardless of
   what the page renders. Add it to any new endpoint that shouldn't work
   before onboarding.
+
+### Privacy notice
+
+The notice is the last part of the initial "who you are" step: after a new
+learner fills in the profile on `/profile` and clicks "Done", a blocking
+`PrivacyNoticeModal` reminds them of the consent they already gave in a
+separate consent form. They must click "I understand" to continue. It uses
+the same mechanism as the role gate:
+
+- `AppShell` computes
+  `needsPrivacyAck = learner && learner.hasCompletedProfile && !learner.hasAcceptedPrivacyNotice`.
+  Saving the profile flips `hasCompletedProfile`, which raises the gate; a
+  reload before accepting hits it again. While true the modal is shown, `<Outlet/>` is skipped and the rest of the
+  shell is `inert`. It takes priority over `RoleGateModal`, which appears once
+  the notice is acknowledged.
+- The click calls `PUT /auth/me/privacy-notice` (`acceptPrivacyNotice` in
+  `features/auth/api.ts`) and replaces the session learner via `updateLearner`.
+  The acknowledgement is stored on the learner (`privacyNoticeAcceptedAt`), so
+  it shows once per account, not once per browser. Accounts that existed
+  before the notice was added see it once on their next login.
+- Like the role gate this is UX, not a security boundary: it records an
+  acknowledgement and does not gate any endpoint.
 
 ### Admin mode
 
