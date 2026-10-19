@@ -41,10 +41,13 @@ export function PrivacyNoticeModal() {
           Privacy notice
         </h2>
         <p className={styles.text}>
-          By continuing, you consent to us processing your profile details and your assessment answers. We use them to show your results, recommend learning journeys, and improve this service.
+          By continuing, you consent to us processing your profile details and your assessment
+          answers. We use them to show your results, recommend learning journeys, and improve this
+          service.
         </p>
         <p className={styles.text}>
-          You can request deletion of your account and personal data at any time from the settings page. We will process the request within 30 days.
+          You can request deletion of your account and personal data at any time from the settings
+          page. We will process the request within 30 days.
         </p>
         <div className={styles.actions}>
           <Button onClick={handleAccept} disabled={saving}>
