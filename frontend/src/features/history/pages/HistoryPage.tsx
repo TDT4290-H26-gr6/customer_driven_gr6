@@ -14,7 +14,7 @@ function percent(score: number, maxScore: number): number {
 }
 
 /**
- * Every completed self-assessment, oldest first (CD-21) — a timeline of how
+ * Every completed self-assessment, most recent first — a timeline of how
  * a learner's score has evolved, with each attempt's own area breakdown so
  * it's clear what that specific SAT actually covered (relevant if a role
  * change ever changes which questions someone gets).
@@ -25,7 +25,13 @@ export function HistoryPage() {
 
   useEffect(() => {
     getSatHistory()
-      .then(setEntries)
+      .then((loaded) =>
+        setEntries(
+          [...loaded].sort(
+            (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime(),
+          ),
+        ),
+      )
       .catch(() => {
         setEntries([]);
         setLoadFailed(true);
@@ -43,7 +49,9 @@ export function HistoryPage() {
   return (
     <div className={styles.page}>
       <h1 className={styles.heading}>History</h1>
-      <p className={styles.subheading}>Every self-assessment you&apos;ve completed, in order.</p>
+      <p className={styles.subheading}>
+        Every self-assessment you&apos;ve completed, most recent first.
+      </p>
 
       {loadFailed && (
         <p className={styles.note}>Couldn&apos;t load your history right now. Please try again.</p>

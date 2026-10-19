@@ -17,21 +17,18 @@ import styles from "./AppShell.module.css";
  * left sidebar on desktop and a bottom tab bar on mobile. A floating
  * "Feedback" button sits on top of every page while the app is in testing.
  *
- * The desktop rail has two independent, deliberately different controls:
- * the header's icon button hides the whole rail (`hidden`); the rail's own
- * bottom-right text just hides its item labels, icon-only (`collapsed`).
+ * The rail's own bottom-right control hides its item labels, icon-only
+ * (`collapsed`), but there's no way to hide the whole rail.
  */
 export function AppShell() {
   const { learner } = useAuth();
   // Role selection is temporarily off (shared/lib/features.ts): no gate.
   const needsRole = ROLE_SELECTION_ENABLED && Boolean(learner && !learner.role);
   const [collapsed, setCollapsed] = useLocalStorage("aios.sidebarCollapsed", false);
-  const [hidden, setHidden] = useLocalStorage("aios.sidebarHidden", false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const appRef = useRef<HTMLDivElement>(null);
   const { pathname } = useLocation();
   const toggleCollapsed = () => setCollapsed((c) => !c);
-  const toggleHidden = () => setHidden((h) => !h);
 
   // `inert` (not just visually covered) while the role gate is up: blocks
   // clicks AND removes everything underneath from the tab order, so there's
@@ -46,19 +43,12 @@ export function AppShell() {
         <a href="#main-content" className={styles.skipLink}>
           Skip to main content
         </a>
-        <Header
-          sidebarHidden={isMobile ? undefined : hidden}
-          onToggleSidebar={isMobile ? undefined : toggleHidden}
-        />
+        <Header />
         <div className={styles.body}>
           {/* Rendered on one side or the other (not both, not CSS-reordered)
               so the DOM/tab order always matches what's on screen: the bottom
-              bar sits after <main>, the side rail before it. Hiding the rail
-              entirely (vs. just collapsing its labels) is desktop-only too —
-              on mobile there's no other nav, so it always shows. */}
-          {!isMobile && !hidden && (
-            <Sidebar collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
-          )}
+              bar sits after <main>, the side rail before it. */}
+          {!isMobile && <Sidebar collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />}
           {/* tabIndex={-1}: not a normal Tab stop, but focusable when the skip
               link above jumps here so keyboard focus actually moves (not just
               the visible scroll position). */}

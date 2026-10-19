@@ -1,8 +1,9 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CompetenciesPage } from "./CompetenciesPage";
 import { getCompetencies } from "../api";
-import type { Competencies, CompetencyModule } from "../types";
+import type { Competencies, CompetencyModule, CompetencySection } from "../types";
 
 vi.mock("../api", () => ({ getCompetencies: vi.fn() }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
@@ -70,6 +71,24 @@ const DATA: Competencies = {
       ],
     },
   ],
+};
+
+function sectionOf(letter: string): CompetencySection {
+  return {
+    id: `sec-${letter}`,
+    code: letter,
+    name: `Section ${letter}`,
+    relevant: false,
+    percent: null,
+    assessedModules: 0,
+    moduleCount: 0,
+    modules: [],
+  };
+}
+
+const FIVE_SECTIONS: Competencies = {
+  recommendedJourney: null,
+  sections: ["A", "B", "C", "D", "E"].map(sectionOf),
 };
 
 describe("CompetenciesPage", () => {
@@ -157,5 +176,63 @@ describe("CompetenciesPage", () => {
     const sectionA = screen.getByRole("region", { name: "Fundamentals" });
     expect(within(sectionA).getByText("Weak")).toBeInTheDocument(); // A1: 50%
     expect(within(sectionA).getByRole("img", { name: "50%, weak" })).toBeInTheDocument();
+  });
+
+  it("shows no arrow buttons when there are 3 sections or fewer", async () => {
+    vi.mocked(getCompetencies).mockResolvedValue(DATA);
+
+    render(<CompetenciesPage />);
+
+    await screen.findByRole("region", { name: "Repositories" });
+    expect(screen.queryByRole("button", { name: "Next section" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Previous section" })).not.toBeInTheDocument();
+  });
+
+  it("starts at the first section with Previous disabled", async () => {
+    vi.mocked(getCompetencies).mockResolvedValue(FIVE_SECTIONS);
+
+    render(<CompetenciesPage />);
+    await screen.findByRole("region", { name: "Section A" });
+
+    expect(screen.getByRole("button", { name: "Previous section" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Next section" })).toBeEnabled();
+  });
+
+  it("stops at the last section instead of wrapping around", async () => {
+    vi.mocked(getCompetencies).mockResolvedValue(FIVE_SECTIONS);
+    const user = userEvent.setup();
+
+    render(<CompetenciesPage />);
+    await screen.findByRole("region", { name: "Section A" });
+
+    const next = screen.getByRole("button", { name: "Next section" });
+    // 5 sections, 3 shown at a time: 2 steps reaches the end.
+    await user.click(next);
+    await user.click(next);
+
+    expect(next).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Previous section" })).toBeEnabled();
+
+    // Already disabled; clicking again doesn't do anything further.
+    await user.click(next);
+    expect(next).toBeDisabled();
+  });
+
+  it("steps back with Previous until it's disabled at the start again", async () => {
+    vi.mocked(getCompetencies).mockResolvedValue(FIVE_SECTIONS);
+    const user = userEvent.setup();
+
+    render(<CompetenciesPage />);
+    await screen.findByRole("region", { name: "Section A" });
+
+    const next = screen.getByRole("button", { name: "Next section" });
+    await user.click(next);
+    await user.click(next);
+    const prev = screen.getByRole("button", { name: "Previous section" });
+    await user.click(prev);
+    await user.click(prev);
+
+    expect(prev).toBeDisabled();
+    expect(next).toBeEnabled();
   });
 });

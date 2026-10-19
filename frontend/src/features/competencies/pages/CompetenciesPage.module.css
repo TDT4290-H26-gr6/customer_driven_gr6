@@ -8,11 +8,71 @@
    Scores always carry a text label too. */
 
 .page {
+  --card-width: 310px;
+  --card-gap: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 760px;
+  /* Wide enough for the carousel at its full size: a nav button on each
+     side, the gaps either side of the track, and the 3-card track itself. */
+  max-width: calc(2 * 44px + 2 * 16px + 3 * var(--card-width) + 2 * var(--card-gap));
   margin: 0 auto;
+}
+
+.carousel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.carouselViewport {
+  overflow: hidden;
+  width: calc(3 * var(--card-width) + 2 * var(--card-gap));
+  max-width: 100%;
+}
+
+.carouselTrack {
+  display: flex;
+  gap: var(--card-gap);
+  transition: transform 0.4s ease;
+}
+
+.carouselTrack .sectionCard {
+  flex: none;
+  width: var(--card-width);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carouselTrack {
+    transition: none;
+  }
+}
+
+.navButton {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.navButton:hover:not(:disabled) {
+  background: var(--color-bg);
+}
+
+.navButton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.navIconBack {
+  transform: rotate(180deg);
 }
 
 /* Section hues and score bands: the --section-* and --color-score-* tokens
@@ -71,18 +131,30 @@
   border-top: 4px solid var(--hue, var(--color-primary));
 }
 
-/* The recommended journey's modules: a soft wash of the logo's purple and blue. */
 .relevantCard {
-  border-color: color-mix(in srgb, var(--brand-purple) 35%, var(--color-border));
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--brand-purple) 11%, var(--color-surface)),
-    color-mix(in srgb, var(--brand-blue) 11%, var(--color-surface))
-  );
+  /* Same width as the 3 cards in the carousel below, centered to match,
+     rather than the full page width every other card gets. */
+  width: 100%;
+  max-width: calc(3 * var(--card-width) + 2 * var(--card-gap));
+  margin: 0 auto;
 }
 
-.relevantCard > button {
-  align-self: flex-start;
+/* Title on the left, "Assess this journey" on the right (wrapping under it
+   when narrow). */
+.relevantHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 24px;
+}
+
+.relevantIntro {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .eyebrow {
