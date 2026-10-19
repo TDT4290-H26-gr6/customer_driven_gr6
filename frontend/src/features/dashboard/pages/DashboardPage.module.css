@@ -66,18 +66,30 @@
   min-width: 0;
 }
 
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  width: 100%;
+}
+
+.titleText {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
 .heading {
   margin: 0;
   font-size: var(--font-size-4xl);
 }
 
 .subheading {
-  margin: -12px 0 0;
+  margin: 0;
   color: var(--color-text-muted);
-}
-
-.cta {
-  align-self: flex-end;
 }
 
 .chartCard {
@@ -145,10 +157,6 @@
     font-size: var(--font-size-3xl);
   }
 
-  .subheading {
-    margin-top: -8px;
-  }
-
   .chartCard {
     padding: 16px;
   }
@@ -157,9 +165,10 @@
     flex-direction: column;
   }
 
-  /* The page's align-items:flex-start would otherwise shrink-wrap the primary
-     action; on a phone it should be a full-width thumb target. */
-  .cta {
-    align-self: stretch;
+  /* Stacked instead of side by side, and the button is a full-width thumb
+     target rather than shrink-wrapped. */
+  .titleRow {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
