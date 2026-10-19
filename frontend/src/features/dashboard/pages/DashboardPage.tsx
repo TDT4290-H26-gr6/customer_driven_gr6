@@ -114,19 +114,23 @@ export function DashboardPage() {
   return (
     // data-backdrop: the decorative logo-color background behind the cards (AppShell.module.css).
     <div className={styles.page} data-backdrop="logo">
-      <h1 className={styles.heading}>Welcome{learner?.name ? `, ${learner.name}` : ""}</h1>
-      <p className={styles.subheading}>
-        {progress?.previous
-          ? "Here's where your skills stand now, and how they've changed since last time."
-          : "Here's where your skills stand right now."}
-      </p>
-
-      <Button
-        className={styles.cta}
-        onClick={() => navigate(hasOngoing ? "/assessment" : "/assessment/reassess")}
-      >
-        {hasOngoing ? "Continue assessment" : "Retake assessment"}
-      </Button>
+      {/* The button sits to the right, centred on the heading + subheading together. */}
+      <div className={styles.titleRow}>
+        <div className={styles.titleText}>
+          <h1 className={styles.heading}>Welcome{learner?.name ? `, ${learner.name}` : ""}</h1>
+          <p className={styles.subheading}>
+            {progress?.previous
+              ? "Here's where your skills stand now, and how they've changed since last time."
+              : "Here's where your skills stand right now."}
+          </p>
+        </div>
+        <Button
+          className={styles.cta}
+          onClick={() => navigate(hasOngoing ? "/assessment" : "/assessment/reassess")}
+        >
+          {hasOngoing ? "Continue assessment" : "Retake assessment"}
+        </Button>
+      </div>
 
       <div className={styles.tabs} role="tablist" aria-label="Dashboard view">
         <button
