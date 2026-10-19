@@ -62,3 +62,16 @@ docker compose logs -f backend  # tail backend logs
 docker compose exec backend npx prisma studio   # browse the DB in a UI
 docker compose exec backend npx prisma migrate dev --name init  # run migrations
 ```
+
+## Running on the VM (production)
+
+Locally, `docker compose up` runs the Vite dev server with hot reload. On the
+VM, add the production override so the frontend is served as a minified build
+(a few files instead of one per source file, so pages load far faster):
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+The `VITE_*` values in `.env` are built into the frontend, so after changing
+them, rebuild it (the same command, or `... up -d --build frontend`).

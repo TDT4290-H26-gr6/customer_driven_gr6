@@ -51,7 +51,11 @@ services:
       - ./backend/src:/app/src
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      # The Vite dev server with hot reload. The VM uses the "prod" target
+      # instead — see docker-compose.prod.yml.
+      target: dev
     restart: unless-stopped
     environment:
       VITE_API_URL: ${VITE_API_URL}

@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
-import "@pie-framework/pie-fixed-player-static";
 import type { PieContent } from "../types";
 import { clearOthersIfIdk, IDK_VALUE } from "./idkSession";
+import { loadPiePlayer } from "./loadPiePlayer";
 import styles from "./PieQuestionPlayer.module.css";
 
 export type PieAnswer = {
@@ -33,11 +33,23 @@ export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
   const ref = useRef<PieFixedPlayerElement>(null);
 
   useEffect(() => {
-    if (ref.current) {
-      ref.current.env = { mode: "gather", role: "student" };
-      ref.current.config = content;
-      if (answer?.session) ref.current.session = answer.session;
-    }
+    // The player is loaded on first use (see loadPiePlayer); the item is
+    // handed over once it's ready, since the element ignores it before that.
+    let cancelled = false;
+    loadPiePlayer()
+      .then(() => {
+        if (cancelled || !ref.current) return;
+        ref.current.env = { mode: "gather", role: "student" };
+        ref.current.config = content;
+        if (answer?.session) ref.current.session = answer.session;
+      })
+      .catch(() => {
+        // Left empty: the question can't be shown, and the learner can still
+        // leave with Save & exit and come back.
+      });
+    return () => {
+      cancelled = true;
+    };
     // Only re-applied when the item itself changes — this component is
     // remounted per question (see QuestionCard's key), so this effectively
     // runs once per question.

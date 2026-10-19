@@ -1,12 +1,32 @@
-FROM node:20-slim
+# Two ways to run the frontend, picked with the build target:
+#   dev  (default, used by docker-compose.yml): the Vite dev server with hot
+#        reload — for working on the code.
+#   prod (docker-compose.prod.yml, the VM): a minified production build
+#        served by nginx — a handful of files instead of one per source file.
+# Both listen on 5173, so whatever proxies to the frontend doesn't change.
 
+FROM node:20-slim AS deps
 WORKDIR /app
-
 COPY package.json package-lock.json* ./
 RUN npm install
 
+# VITE_* values are baked into the bundle at build time, so they're build
+# args here, not runtime environment: change them in .env, then rebuild.
+FROM deps AS build
+ARG VITE_API_URL
+ARG VITE_GOOGLE_CLIENT_ID
+ENV VITE_API_URL=$VITE_API_URL \
+    VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 COPY . .
+RUN npm run build
 
+FROM nginx:1.27-alpine AS prod
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 5173
 
+# Last, so a plain `docker build` without --target still gives the dev server.
+FROM deps AS dev
+COPY . .
+EXPOSE 5173
 CMD ["npm", "run", "dev"]
