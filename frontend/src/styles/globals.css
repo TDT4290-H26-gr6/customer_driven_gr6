@@ -54,12 +54,6 @@
   --section-d: #1f6b5f;
   --section-e: #8f3a5b;
 
-  /* An earlier assessment drawn for comparison (the dashed outline on the
-     results radar and its legend swatches): the muted text color, so it
-     reads as neutral history rather than as good or bad, a step behind the
-     latest result's outline, and follows the theme. */
-  --color-compare: var(--color-text-muted);
-
   --header-height: 56px;
   --sidebar-width: 220px;
   --sidebar-width-collapsed: 64px;
@@ -151,8 +145,8 @@
   /* How strong decorative color washes are (the logo backdrop in
      AppShell.module.css): turned up in dark mode, where faint color fades out. */
   --decor-strength: 1;
-  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 10px 28px rgba(15, 23, 42, 0.14);
+  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.14);
+  --shadow-lg: 0 10px 28px rgba(15, 23, 42, 0.22);
 }
 
 /* "Default" visuals setting: follow the OS/browser, unless the learner has
@@ -190,8 +184,8 @@
     --banner-green: #97a126;
     --color-on-banner: #181b21;
     --decor-strength: 1.35;
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.6);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.6);
+    --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.7);
   }
 }
 
@@ -224,8 +218,8 @@
   --banner-green: #97a126;
   --color-on-banner: #181b21;
   --decor-strength: 1.35;
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.6);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.6);
+  --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.7);
 }
 
 /* Accent color (Settings -> "Choose your accent color"): the three colors of

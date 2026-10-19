@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState } from "react";
 import type { CompetenceScore } from "../types";
 import styles from "./CompetenceRadar.module.css";
 
@@ -114,6 +114,9 @@ export function outlineEdges(points: Point[]): [Point, Point][] {
 export function CompetenceRadar({ data, compare, size = 340, compact = false, tipLabels }: Props) {
   const labelsRef = useRef<SVGGElement>(null);
   const [measured, setMeasured] = useState<Bounds | null>(null);
+  // Unique per instance so two charts on one page don't share (and so
+  // fight over) the same gradient id.
+  const gradientId = `compare-gradient-${useId()}`;
 
   // Measure the labels as actually rendered, so the chart can be centred on
   // their true extent rather than a guess. Re-measured once web fonts load,
@@ -266,6 +269,22 @@ export function CompetenceRadar({ data, compare, size = 340, compact = false, ti
         role="img"
         aria-label="Skill levels radar chart"
       >
+        <defs>
+          {/* The "compare" shape's stroke: a lighter tint of the main shape's
+              own color, fading further still toward the centre, so it reads
+              as the same thing, earlier, not an unrelated line. */}
+          <radialGradient
+            id={gradientId}
+            gradientUnits="userSpaceOnUse"
+            cx={center}
+            cy={center}
+            r={radius}
+          >
+            <stop offset="0%" className={styles.compareGradientInner} />
+            <stop offset="100%" className={styles.compareGradientOuter} />
+          </radialGradient>
+        </defs>
+
         {ringPolygons.map((points, i) => (
           <polygon key={i} points={points} className={styles.ring} />
         ))}
@@ -298,6 +317,7 @@ export function CompetenceRadar({ data, compare, size = 340, compact = false, ti
                 x2={to.x}
                 y2={to.y}
                 className={styles.compareArea}
+                stroke={`url(#${gradientId})`}
               />
             ))}
           </g>

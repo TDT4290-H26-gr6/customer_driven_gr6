@@ -33,19 +33,28 @@
   fill: var(--color-primary);
 }
 
-/* A second SAT to compare with: a dashed outline only, in a neutral colour
-   (--color-compare), so it reads as history rather than as good or bad, and
-   apart from the main shape even without colour vision. */
+/* A second SAT to compare with: a dashed outline only, its colour set by the
+   <radialGradient> in CompetenceRadar.tsx (stroke="url(#...)", fed by the
+   stops below), a lighter, fading version of the main shape's own color
+   rather than a flat, unrelated tone. Apart from the main shape even
+   without colour vision, thanks to the dashing alone. */
 .compareArea {
   fill: none;
-  stroke: var(--color-compare);
   /* Thinner than the main shape's 2, so it reads as the secondary one. */
   stroke-width: 1.25;
   stroke-dasharray: 5 3;
 }
 
+.compareGradientInner {
+  stop-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
+}
+
+.compareGradientOuter {
+  stop-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
 .comparePoint {
-  fill: var(--color-compare);
+  fill: color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
 
 .label {
