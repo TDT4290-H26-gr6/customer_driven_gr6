@@ -10,6 +10,8 @@ export function getAssessmentPath(): Promise<AssessmentPath> {
 
 export type AssessmentProgress = {
   satInstanceId: string;
+  /** The journey being assessed, when the in-progress assessment is a journey assessment. */
+  journey: { id: string | null; name: string | null } | null;
   responses: { questionId: string; answer: PieAnswer }[];
 };
 
@@ -27,19 +29,28 @@ export function getAssessableSections(): Promise<AssessableSection[]> {
   return apiFetch<AssessableSection[]>(endpoints.assessment.sections);
 }
 
-/** Starts a reassessment after a completed journey, limited to the given sections. */
-export function startReassessment(completedJourneyId: string, sectionIds: string[]): Promise<void> {
+/** Starts a reassessment limited to the given sections. */
+export function startReassessment(sectionIds: string[]): Promise<void> {
   return apiFetch<void>(endpoints.assessment.start, {
     method: "POST",
-    body: { completedJourneyId, sectionIds },
+    body: { sectionIds },
   });
 }
 
-/** Saves (or updates) one answer against the learner's active instance. */
-export function saveResponse(questionId: string, answer: PieAnswer): Promise<void> {
+/**
+ * Saves (or updates) one answer against the learner's active instance.
+ * `timeSpentMs` (CD-97) is how long the question was on screen before this
+ * save, from the frontend's own clock — best-effort analytics, never used
+ * for scoring; the backend drops it silently if it looks implausible.
+ */
+export function saveResponse(
+  questionId: string,
+  answer: PieAnswer,
+  timeSpentMs?: number,
+): Promise<void> {
   return apiFetch<void>(endpoints.assessment.responses, {
     method: "POST",
-    body: { questionId, answer },
+    body: { questionId, answer, timeSpentMs },
   });
 }
 

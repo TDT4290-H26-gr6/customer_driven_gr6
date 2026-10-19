@@ -182,6 +182,30 @@ describe("apiFetch", () => {
     expect(listener).not.toHaveBeenCalled();
     expect(clearToken).not.toHaveBeenCalled();
   });
+
+  it("returns the raw Blob instead of parsing JSON when responseType is 'blob'", async () => {
+    vi.mocked(getToken).mockReturnValue("token-123");
+    vi.mocked(fetch).mockResolvedValue(
+      new Response("a,b\r\n1,2\r\n", { status: 200, headers: { "Content-Type": "text/csv" } }),
+    );
+
+    const result = await apiFetch<Blob>("/admin/stats/tests.csv", { responseType: "blob" });
+
+    // Not toBeInstanceOf(Blob): jsdom's Response.blob() can return a Blob
+    // from a different realm than the test file's global Blob constructor,
+    // so a strict instanceof check is flaky — duck-type it instead.
+    expect(typeof result.text).toBe("function");
+    expect(await result.text()).toBe("a,b\r\n1,2\r\n");
+  });
+
+  it("still returns undefined for a 204 when responseType is 'blob'", async () => {
+    vi.mocked(getToken).mockReturnValue("token-123");
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 204 }));
+
+    const result = await apiFetch("/admin/stats/tests.csv", { responseType: "blob" });
+
+    expect(result).toBeUndefined();
+  });
 });
 
 /** A fetch that only settles when its signal aborts — like a server that never answers. */

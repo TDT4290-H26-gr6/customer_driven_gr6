@@ -25,8 +25,8 @@ function answersOf(path: AssessmentPath): Record<string, PieAnswer> {
 /**
  * Runs the adaptive assessment one question at a time. The backend decides
  * the route (assessment.path.ts): sections in a random order, levels 1 → 4
- * within each, moving up a level at 2 of 3 right and on to the next section
- * once that's out of reach. So the page doesn't hold the whole question list — it
+ * within each, every question of a level asked, moving up a level at 2 of 3
+ * right and on to the next section as soon as that's out of reach. So the page doesn't hold the whole question list — it
  * holds the path so far (answered questions + the next one) and refetches it
  * after every Next. Answered questions are history: Back revisits them and
  * changing an answer only changes its score — which question comes next is
@@ -66,18 +66,35 @@ export function AssessmentRunnerPage() {
   // answer, and a save still in flight when the instance is completed would
   // create a brand-new instance for that answer.
   const pendingSaves = useRef<Promise<unknown>>(Promise.resolve());
-  // Latest answer per question whose save failed. A ref (read right after
-  // awaiting the queue), mirrored into state for rendering.
-  const unsaved = useRef(new Map<string, PieAnswer>());
+  // Latest answer (and the elapsed time recorded when it was first queued,
+  // CD-97 — a retry reuses it rather than the time since the retry, which
+  // could be much later) per question whose save failed. A ref (read right
+  // after awaiting the queue), mirrored into state for rendering.
+  const unsaved = useRef(new Map<string, { answer: PieAnswer; timeSpentMs?: number }>());
   const [unsavedCount, setUnsavedCount] = useState(0);
   // Set while an abort is deleting the instance: queued saves are skipped
   // (kept as unsaved in case the delete fails) instead of recreating it.
   const discarding = useRef(false);
+  // Set while Finish completes the instance, for the same reason: the PIE
+  // player can re-emit the current answer, and a save landing just after
+  // completion would start a brand-new (full) instance for it.
+  const finishing = useRef(false);
   const [exitOpen, setExitOpen] = useState(false);
   const [exitStatus, setExitStatus] = useState<ExitStatus>("idle");
   const [exitError, setExitError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { markInitialAssessmentComplete } = useAuth();
+
+  // When the current question last became the one on screen (CD-97) — reset
+  // whenever it changes, so a save's elapsed time reflects just this visit,
+  // not time spent on earlier questions. Declared before the early returns
+  // below so the hook always runs, per the rules of hooks; path/index are
+  // both already in scope at this point.
+  const currentQuestionId = path?.items[Math.min(index, path.items.length - 1)]?.question.id;
+  const shownAt = useRef(Date.now());
+  useEffect(() => {
+    shownAt.current = Date.now();
+  }, [currentQuestionId]);
 
   const load = useCallback(() => {
     setLoadFailed(false);
@@ -116,21 +133,21 @@ export function AssessmentRunnerPage() {
     setQuestionsRemoved(true);
   }
 
-  function queueSave(questionId: string, answer: PieAnswer) {
+  function queueSave(questionId: string, answer: PieAnswer, timeSpentMs?: number) {
     pendingSaves.current = pendingSaves.current.then(async () => {
-      if (discarding.current) {
-        unsaved.current.set(questionId, answer);
+      if (discarding.current || finishing.current) {
+        unsaved.current.set(questionId, { answer, timeSpentMs });
         return;
       }
       try {
-        await withRetry(() => saveResponse(questionId, answer));
+        await withRetry(() => saveResponse(questionId, answer, timeSpentMs));
         unsaved.current.delete(questionId);
       } catch (err) {
         if (isApiError(err) && err.status === 404) {
           unsaved.current.delete(questionId);
           await reloadAfterRemoval();
         } else {
-          unsaved.current.set(questionId, answer);
+          unsaved.current.set(questionId, { answer, timeSpentMs });
         }
       }
       setUnsavedCount(unsaved.current.size);
@@ -139,7 +156,9 @@ export function AssessmentRunnerPage() {
 
   function retryUnsaved() {
     setNavError(null);
-    for (const [questionId, answer] of unsaved.current) queueSave(questionId, answer);
+    for (const [questionId, { answer, timeSpentMs }] of unsaved.current) {
+      queueSave(questionId, answer, timeSpentMs);
+    }
   }
 
   if (loadFailed) {
@@ -166,7 +185,9 @@ export function AssessmentRunnerPage() {
 
   function handleAnswerChange(answer: PieAnswer) {
     setAnswers((prev) => ({ ...prev, [current.id]: answer }));
-    if (answer.complete) queueSave(current.id, answer);
+    // How long this question has been on screen since it last became the
+    // current one (CD-97) — not scoring, just a best-effort analytics value.
+    if (answer.complete) queueSave(current.id, answer, Date.now() - shownAt.current);
   }
 
   function handleBack() {
@@ -184,8 +205,18 @@ export function AssessmentRunnerPage() {
 
   async function finish() {
     setIsFinishing(true);
+    finishing.current = true;
     try {
+      // Anything queued before Finish was pressed has already been awaited
+      // (allSaved); from here on, saves are held back as unsaved instead.
+      await pendingSaves.current;
       await withRetry(() => completeAssessment());
+      // A journey assessment stands on its own: it doesn't complete the
+      // self-assessment, and its result is shown under Competencies.
+      if (path?.journey) {
+        navigate("/competencies", { replace: true });
+        return;
+      }
       await withRetry(() => completeInitialAssessment());
       markInitialAssessmentComplete();
       navigate("/", { replace: true });
@@ -193,6 +224,8 @@ export function AssessmentRunnerPage() {
       // Safe to press Finish again: completing an already-completed
       // instance is a no-op on the backend.
       setNavError("Couldn't finish the assessment. Your answers are saved — please try again.");
+      finishing.current = false;
+      setUnsavedCount(unsaved.current.size);
       setIsFinishing(false);
     }
   }
@@ -276,6 +309,13 @@ export function AssessmentRunnerPage() {
           />
         </div>
       </div>
+
+      {path.journey && (
+        <p className={styles.journeyBanner}>
+          Assessing the journey <strong>{path.journey.name ?? "you chose"}</strong>. Your result
+          shows under Competencies and doesn&apos;t change your self-assessment.
+        </p>
+      )}
 
       {unsavedCount > 0 && (
         <div className={styles.alert} role="alert">

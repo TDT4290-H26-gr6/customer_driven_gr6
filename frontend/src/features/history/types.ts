@@ -21,6 +21,6 @@ export type SatHistoryEntry = {
   sections: SatHistorySection[];
   /** The learning journey completed before this reassessment, or null for a normal run. */
   completedJourney: string | null;
-  /** The sections the learner ticked for this reassessment (empty for a normal run). */
+  /** The sections this reassessment was limited to (empty for a normal run). */
   reassessedSections: string[];
 };

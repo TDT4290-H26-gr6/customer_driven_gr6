@@ -1,0 +1,88 @@
+/* A box inside the section's card, under its radar. */
+.box {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.badge,
+.badgeNone {
+  flex: none;
+  min-width: 40px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  text-align: center;
+}
+
+.badge {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.badgeNone {
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+}
+
+.levelText {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.explainer {
+  margin-top: 4px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.steps {
+  flex: none;
+  display: flex;
+  gap: 4px;
+}
+
+.step,
+.stepOn {
+  width: 16px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+}
+
+.step {
+  background: var(--color-border);
+}
+
+.stepOn {
+  background: var(--color-primary);
+}
+
+@media (max-width: 767px) {
+  .box {
+    padding: 10px 12px;
+  }
+
+  .step,
+  .stepOn {
+    width: 10px;
+  }
+}

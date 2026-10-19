@@ -3,7 +3,12 @@ import type { Prisma } from "@prisma/client";
 import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
 import { requireRole } from "../../middleware/requireRole";
 import { asyncHandler } from "../../lib/asyncHandler";
-import { requireObject, requireString, requireStringArray } from "../../lib/validate";
+import {
+  plausibleDurationMs,
+  requireObject,
+  requireString,
+  requireStringArray,
+} from "../../lib/validate";
 import { findLearnerById } from "../identity/identity.service";
 import { isProfileComplete } from "../identity/identity.types";
 import {
@@ -11,6 +16,7 @@ import {
   discardActiveInstance,
   getAssessmentPath,
   getAttemptSectionScores,
+  getCompetencies,
   getDashboardProgress,
   getLatestCompetenceScores,
   getProgress,
@@ -18,6 +24,7 @@ import {
   listAssessableSections,
   listQuestions,
   saveResponse,
+  startJourneyAssessment,
   startReassessment,
 } from "./assessment.service";
 
@@ -52,6 +59,10 @@ assessmentRouter.get(
   }),
 );
 
+// A learner realistically spends well under this on one question; above it,
+// the reading is more likely a backgrounded tab than genuine time-on-task.
+const MAX_PLAUSIBLE_TIME_SPENT_MS = 60 * 60 * 1000;
+
 assessmentRouter.post(
   "/assessment/responses",
   requireAuth,
@@ -60,6 +71,7 @@ assessmentRouter.post(
     const questionId = requireString(req.body?.questionId, "questionId");
     // The frontend's PieAnswer wrapper ({ session, complete }) — always an object.
     const answer = requireObject(req.body?.answer, "answer") as Prisma.InputJsonObject;
+    const timeSpentMs = plausibleDurationMs(req.body?.timeSpentMs, MAX_PLAUSIBLE_TIME_SPENT_MS);
 
     // The profile must be filled in before the assessment. The frontend
     // sends learners to it first; this is the real boundary.
@@ -68,7 +80,7 @@ assessmentRouter.post(
       return res.status(403).json({ error: "Complete your profile first" });
     }
 
-    const saved = await saveResponse(req.learnerId!, questionId, answer);
+    const saved = await saveResponse(req.learnerId!, questionId, answer, timeSpentMs);
     if (!saved) return res.status(404).json({ error: "Unknown question" });
     res.status(204).end();
   }),
@@ -84,15 +96,14 @@ assessmentRouter.get(
   }),
 );
 
-// Starts a reassessment after a completed learning journey, limited to the
-// chosen sections. (Without a journey nothing needs starting — the first
-// saved answer creates a normal instance.)
+// Starts a reassessment limited to the chosen sections. (Reassessing
+// everything needs no start — the first saved answer creates a normal
+// instance.)
 assessmentRouter.post(
   "/assessment/start",
   requireAuth,
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
-    const completedJourneyId = requireString(req.body?.completedJourneyId, "completedJourneyId");
     const sectionIds = requireStringArray(req.body?.sectionIds, "sectionIds");
 
     const learner = await findLearnerById(req.learnerId!);
@@ -100,7 +111,27 @@ assessmentRouter.post(
       return res.status(403).json({ error: "Complete your profile first" });
     }
 
-    const result = await startReassessment(req.learnerId!, { completedJourneyId, sectionIds });
+    const result = await startReassessment(req.learnerId!, sectionIds);
+    if (!result.ok) return res.status(result.status).json({ error: result.error });
+    res.status(204).end();
+  }),
+);
+
+// Assesses one learning journey on its own: only the questions in its M
+// sections, and the result never counts towards the main self-assessment.
+assessmentRouter.post(
+  "/assessment/journey",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const journeyId = requireString(req.body?.journeyId, "journeyId");
+
+    const learner = await findLearnerById(req.learnerId!);
+    if (!learner || !isProfileComplete(learner.name, learner.profile)) {
+      return res.status(403).json({ error: "Complete your profile first" });
+    }
+
+    const result = await startJourneyAssessment(req.learnerId!, journeyId);
     if (!result.ok) return res.status(result.status).json({ error: result.error });
     res.status(204).end();
   }),
@@ -186,5 +217,17 @@ assessmentRouter.get(
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
     res.json(await getSatHistory(req.learnerId!));
+  }),
+);
+
+// The Competencies tab: each module's best result over all assessments (main
+// and journey), a percentage per section, and the recommended journey's
+// sections first.
+assessmentRouter.get(
+  "/competencies",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    res.json(await getCompetencies(req.learnerId!));
   }),
 );

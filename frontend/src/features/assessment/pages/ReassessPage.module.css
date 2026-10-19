@@ -10,35 +10,29 @@
   padding: 28px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 .heading {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--font-size-3xl);
 }
 
 .question {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--font-size-lg);
 }
 
 .hint {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  font-size: var(--font-size-md);
 }
 
 .label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
 }
 
@@ -70,7 +64,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 14px;
+  font-size: var(--font-size-md);
   cursor: pointer;
 }
 
@@ -78,6 +72,23 @@
   width: 18px;
   height: 18px;
   accent-color: var(--color-primary);
+}
+
+/* The section dropdown, indented under the "A single section" radio. */
+.sectionPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-left: 28px;
+}
+
+.select {
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .loadError {
@@ -90,7 +101,7 @@
 .error {
   margin: 0;
   color: var(--color-danger);
-  font-size: 13px;
+  font-size: var(--font-size-sm);
 }
 
 .actions {
@@ -100,15 +111,15 @@
   margin-top: 4px;
 }
 
-/* Touch devices: no form control under 16px (iOS zooms the page on focus),
-   and roomier tap targets. */
+/* Touch devices: roomier tap targets. */
 @media (pointer: coarse) {
-  .select {
-    font-size: 16px;
+  .checkboxRow {
     min-height: 44px;
   }
 
-  .checkboxRow {
+  /* iOS Safari zooms the page when a form control under 16px is focused. */
+  .select {
+    font-size: var(--font-size-lg);
     min-height: 44px;
   }
 }

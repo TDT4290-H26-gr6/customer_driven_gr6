@@ -6,7 +6,7 @@ export type ChatMessage = { role: "system" | "user" | "assistant"; content: stri
 
 export type LlmSettings = { baseUrl: string; apiKey: string; model: string };
 
-/** Long enough for a slow answer, short enough that the results page isn't left hanging. */
+/** Long enough for a slow answer, short enough that the dashboard isn't left hanging. */
 const DEFAULT_TIMEOUT_MS = 45_000;
 
 /** Some models wrap JSON in a ```json fence even when asked not to. */
@@ -36,7 +36,10 @@ export async function chatJson(
       messages,
       // Low temperature: advice should be steady, not creative.
       temperature: 0.2,
-      max_tokens: 1500,
+      // Room for the advice JSON (summary, ranked journeys, steps) plus the
+      // reasoning tokens models like gpt-oss spend before answering — at
+      // 1500 the reply could be cut off mid-JSON.
+      max_tokens: 4000,
       response_format: { type: "json_object" },
     }),
     signal: AbortSignal.timeout(timeoutMs),

@@ -1,60 +1,38 @@
 import { describe, expect, it, vi } from "vitest";
-import { getCurrentJourney } from "./api";
+import { getRecommendedJourneys, startJourneyAssessment } from "./api";
 import { apiFetch } from "@/shared/api/client";
-import type { LearningJourney } from "./types";
 
 vi.mock("@/shared/api/client", () => ({
   apiFetch: vi.fn(),
 }));
 
-const SELECTED: LearningJourney = {
-  id: "selected",
-  name: "Selected",
-  description: null,
-  modules: [],
-};
-const RECOMMENDED: LearningJourney = {
-  id: "recommended",
-  name: "Recommended",
-  description: null,
-  modules: [],
-};
+describe("getRecommendedJourneys", () => {
+  it("returns the score-based top two", async () => {
+    const result = {
+      source: "recommended" as const,
+      journeys: [{ id: "a", name: "A", description: null, modules: [] }],
+    };
+    vi.mocked(apiFetch).mockResolvedValueOnce(result);
 
-describe("getCurrentJourney", () => {
-  it("prefers the learner's explicit selection over the recommendation", async () => {
-    vi.mocked(apiFetch).mockResolvedValueOnce(SELECTED);
-
-    const result = await getCurrentJourney();
-
-    expect(result).toEqual({ journey: SELECTED, source: "selected" });
-    // The recommendation is never even fetched once a selection exists.
-    expect(apiFetch).toHaveBeenCalledTimes(1);
+    expect(await getRecommendedJourneys()).toEqual(result);
+    expect(apiFetch).toHaveBeenCalledWith("/learning-journeys/recommendations");
   });
 
-  it("falls back to the recommendation when nothing is selected", async () => {
-    vi.mocked(apiFetch).mockResolvedValueOnce(undefined).mockResolvedValueOnce(RECOMMENDED);
-
-    const result = await getCurrentJourney();
-
-    expect(result).toEqual({ journey: RECOMMENDED, source: "recommended" });
+  it("returns null when there's nothing to recommend (204)", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(undefined);
+    expect(await getRecommendedJourneys()).toBeNull();
   });
+});
 
-  it("falls back to a suggestion to keep improving when nothing is weak", async () => {
-    const SUGGESTED: LearningJourney = { ...RECOMMENDED, id: "suggested", name: "Suggested" };
-    vi.mocked(apiFetch)
-      .mockResolvedValueOnce(undefined) // nothing selected
-      .mockResolvedValueOnce(undefined) // nothing at or below 60%
-      .mockResolvedValueOnce(SUGGESTED);
+describe("startJourneyAssessment", () => {
+  it("asks the backend to start assessing that journey", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(undefined);
 
-    expect(await getCurrentJourney()).toEqual({ journey: SUGGESTED, source: "suggested" });
-  });
+    await startJourneyAssessment("journey-2");
 
-  it("returns null when there's no selection, recommendation or suggestion (e.g. a perfect score)", async () => {
-    vi.mocked(apiFetch)
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce(undefined);
-
-    expect(await getCurrentJourney()).toBeNull();
+    expect(apiFetch).toHaveBeenCalledWith("/assessment/journey", {
+      method: "POST",
+      body: { journeyId: "journey-2" },
+    });
   });
 });

@@ -4,6 +4,9 @@ import { prisma } from "../../db/prisma";
 import { findLearnerById, getRoleGrants } from "../identity/identity.service";
 import { ORDERED_QUESTION_TYPES } from "./assessment.pie";
 import { buildSectionProgress, isProgressComplete } from "./assessment.progress";
+import { JOURNEY_KIND, MAIN_KIND, type AssessmentKind } from "./assessment.kinds";
+import { bestPerModule, sectionPercent } from "./assessment.competencies";
+import { recommendJourney, suggestJourney } from "../learningJourney/learningJourney.service";
 import { completedCompetenceScoresQuery, newestPerCompetence } from "./assessment.newestScores";
 import {
   buildPath,
@@ -58,12 +61,20 @@ function withShuffledChoices<T extends Pick<Question, "questionType" | "content"
   return { ...question, content: { ...content, models: shuffledModels } as Prisma.JsonValue };
 }
 
-/** Whether this learner has never finished a SAT instance — their initial assessment is still ahead of them. */
+/**
+ * Whether this learner has never finished a main SAT instance — their
+ * initial assessment is still ahead of them. Journey assessments don't count.
+ */
 async function isInitialAssessment(learnerId: string): Promise<boolean> {
+  return !(await hasCompletedMainAssessment(learnerId));
+}
+
+/** Whether the learner has finished at least one main self-assessment. */
+export async function hasCompletedMainAssessment(learnerId: string): Promise<boolean> {
   const completedCount = await prisma.satInstance.count({
-    where: { learnerId, completedAt: { not: null } },
+    where: { learnerId, kind: MAIN_KIND, completedAt: { not: null } },
   });
-  return completedCount === 0;
+  return completedCount > 0;
 }
 
 /**
@@ -227,15 +238,19 @@ function isUniqueViolation(err: unknown) {
 }
 
 /**
- * Creates the learner's next instance (instanceNum = their highest + 1).
- * `extra` carries a reassessment's journey and section limit.
+ * Creates the learner's next instance of its kind (instanceNum = their
+ * highest of that kind + 1, so main assessments stay numbered 1, 2, 3 …
+ * whatever journey assessments happen in between). `extra` carries a
+ * reassessment's journey and section limit, or a journey assessment's kind,
+ * journey and sections.
  */
 async function createInstance(
   learnerId: string,
   extra: Omit<Prisma.SatInstanceUncheckedCreateInput, "learnerId" | "instanceNum"> = {},
 ) {
+  const kind = (extra.kind as AssessmentKind | undefined) ?? MAIN_KIND;
   const latest = await prisma.satInstance.findFirst({
-    where: { learnerId },
+    where: { learnerId, kind },
     orderBy: { instanceNum: "desc" },
     select: { instanceNum: true },
   });
@@ -261,23 +276,20 @@ async function getOrCreateActiveInstance(learnerId: string) {
   }
 }
 
-export type StartReassessmentInput = { completedJourneyId: string; sectionIds: string[] };
-
 export type StartReassessmentResult =
   { ok: true } | { ok: false; status: 400 | 409; error: string };
 
 /**
- * Starts a reassessment after the learner finished a learning journey: a new
- * instance that records the journey and is limited to the chosen sections,
- * so listQuestions only returns those. (A reassessment without a journey
- * needs no start — the first saved answer creates a normal instance.)
- * Refused while another instance is in progress, before the first
- * assessment is done (that one covers everything), for an unknown journey,
- * and for sections with no question the learner's role can see.
+ * Starts a reassessment of only some sections: a new instance limited to
+ * the chosen sections, so listQuestions only returns those. (A reassessment
+ * of everything needs no start — the first saved answer creates a normal
+ * instance.) Refused while another instance is in progress, before the first
+ * assessment is done (that one covers everything), and for sections with no
+ * question the learner's role can see.
  */
 export async function startReassessment(
   learnerId: string,
-  { completedJourneyId, sectionIds }: StartReassessmentInput,
+  sectionIds: string[],
 ): Promise<StartReassessmentResult> {
   if (await findActiveInstance(learnerId)) {
     return { ok: false, status: 409, error: "An assessment is already in progress" };
@@ -285,12 +297,6 @@ export async function startReassessment(
   if (await isInitialAssessment(learnerId)) {
     return { ok: false, status: 409, error: "Finish your first assessment before reassessing" };
   }
-
-  const journey = await prisma.learningJourney.findUnique({
-    where: { id: completedJourneyId },
-    select: { name: true },
-  });
-  if (!journey) return { ok: false, status: 400, error: "Unknown learning journey" };
 
   const assessable = new Map(
     (await listAssessableSections(learnerId)).map((s) => [s.id, s.name] as const),
@@ -302,9 +308,7 @@ export async function startReassessment(
 
   try {
     await createInstance(learnerId, {
-      completedJourneyId,
-      // Copies for History, which must outlive the journey and sections.
-      completedJourneyName: journey.name,
+      // A copy for History, which must outlive the sections.
       reassessedSectionNames: unique
         .map((id) => assessable.get(id)!)
         .sort((a, b) => a.localeCompare(b)),
@@ -349,7 +353,7 @@ async function loadPathInputs(learnerId: string) {
     active?.instanceNum ??
     ((
       await prisma.satInstance.findFirst({
-        where: { learnerId },
+        where: { learnerId, kind: MAIN_KIND },
         orderBy: { instanceNum: "desc" },
         select: { instanceNum: true },
       })
@@ -412,7 +416,7 @@ async function loadPathInputs(learnerId: string) {
 export async function getAssessmentPath(learnerId: string) {
   const inputs = await loadPathInputs(learnerId);
   if (!inputs) return null;
-  const { questions, sections, instanceNum, answers } = inputs;
+  const { questions, sections, instanceNum, answers, active } = inputs;
 
   const { answered, next } = buildPath(sections, answers);
   const sectionNumberOf = new Map(sections.map((s, i) => [s.id, i + 1]));
@@ -438,7 +442,25 @@ export async function getAssessmentPath(learnerId: string) {
     };
   });
 
-  return { items, sectionCount: sections.length, done: next === null };
+  return {
+    items,
+    sectionCount: sections.length,
+    done: next === null,
+    // Set while the learner is assessing one learning journey on its own.
+    journey: journeyBeingAssessed(active),
+  };
+}
+
+/** The journey a journey assessment covers, or null for the main self-assessment. */
+function journeyBeingAssessed(
+  instance: {
+    kind: string;
+    assessedJourneyId: string | null;
+    assessedJourneyName: string | null;
+  } | null,
+) {
+  if (instance?.kind !== JOURNEY_KIND) return null;
+  return { id: instance.assessedJourneyId, name: instance.assessedJourneyName };
 }
 
 /**
@@ -457,6 +479,7 @@ export async function getProgress(learnerId: string) {
 
   return {
     satInstanceId: active.id,
+    journey: journeyBeingAssessed(active),
     // An answer whose question was deleted has nothing to restore into.
     responses: responses.flatMap((r) =>
       r.questionId ? [{ questionId: r.questionId, answer: r.answer }] : [],
@@ -479,6 +502,7 @@ export async function saveResponse(
   learnerId: string,
   questionId: string,
   answer: Prisma.InputJsonValue,
+  timeSpentMs?: number,
 ) {
   const visible = await visibleQuestionFilter(learnerId);
   if (!visible) return null;
@@ -490,7 +514,12 @@ export async function saveResponse(
 
   const instance = await getOrCreateActiveInstance(learnerId);
   const result = scoreAnswer(question, answer);
-  const data = { answer, score: result?.score ?? null, maxScore: result?.maxScore ?? null };
+  const data = {
+    answer,
+    score: result?.score ?? null,
+    maxScore: result?.maxScore ?? null,
+    timeSpentMs: timeSpentMs ?? null,
+  };
 
   return prisma.response.upsert({
     where: { satInstanceId_questionId: { satInstanceId: instance.id, questionId } },
@@ -501,11 +530,67 @@ export async function saveResponse(
 
 export type CompleteResult = "completed" | "none" | "unfinished";
 
+export type StartJourneyAssessmentResult =
+  { ok: true; sectionIds: string[] } | { ok: false; status: 400 | 404 | 409; error: string };
+
+/**
+ * Starts a journey assessment: the learner assesses one learning journey on
+ * its own, with only the questions in the sections the journey is centred
+ * on (coverage M). A separate kind of instance (JOURNEY_KIND), numbered on
+ * its own, that never counts towards the main results — only the
+ * Competencies overview reads it. Allowed any time, even before the first
+ * main assessment, but like every assessment only one at a time.
+ */
+export async function startJourneyAssessment(
+  learnerId: string,
+  journeyId: string,
+): Promise<StartJourneyAssessmentResult> {
+  if (await findActiveInstance(learnerId)) {
+    return {
+      ok: false,
+      status: 409,
+      error: "Finish or abort the assessment you've started before assessing a journey",
+    };
+  }
+
+  const journey = await prisma.learningJourney.findUnique({
+    where: { id: journeyId },
+    select: {
+      name: true,
+      sections: { where: { coverageLevel: "M" }, select: { sectionId: true } },
+    },
+  });
+  if (!journey) return { ok: false, status: 404, error: "Unknown learning journey" };
+
+  const assessable = new Set((await listAssessableSections(learnerId)).map((s) => s.id));
+  const sectionIds = journey.sections.map((s) => s.sectionId).filter((id) => assessable.has(id));
+  if (sectionIds.length === 0) {
+    return { ok: false, status: 400, error: "This journey has no questions to assess yet" };
+  }
+
+  try {
+    await createInstance(learnerId, {
+      kind: JOURNEY_KIND,
+      assessedJourneyId: journeyId,
+      assessedJourneyName: journey.name,
+      sections: { create: sectionIds.map((sectionId) => ({ sectionId })) },
+    });
+  } catch (err) {
+    if (isUniqueViolation(err)) {
+      return { ok: false, status: 409, error: "An assessment is already in progress" };
+    }
+    throw err;
+  }
+  return { ok: true, sectionIds };
+}
+
 /**
  * Marks the learner's active instance complete — only once its path is
- * finished (assessment.path.ts) — and rolls its scored responses up into
- * one CompetenceScore row per competence touched, grouped by each
- * question's own competenceId. Every answered question counts. The only
+ * finished (assessment.path.ts) — and rolls its questions up into one
+ * CompetenceScore row per competence in the learner's bank, grouped by each
+ * question's own competenceId. Every question counts, so SATs compare like
+ * for like: one never asked (its level, or one below it, wasn't passed)
+ * scores 0 of QUESTION_MAX_SCORE. The only
  * answers deleted are ones to questions no longer in the learner's bank
  * (deleted, or hidden from their role since), so every later read of the
  * responses agrees with the scores. Each score also stores copies of its
@@ -528,21 +613,6 @@ export async function completeActiveInstance(learnerId: string): Promise<Complet
     .filter((r) => !r.questionId || !inBank.has(r.questionId))
     .map((r) => r.id);
 
-  const responses = await prisma.response.findMany({
-    where: { satInstanceId: active.id, score: { not: null }, questionId: { in: answered } },
-    include: {
-      question: {
-        select: {
-          competenceId: true,
-          competence: { select: { name: true } },
-          sectionModule: {
-            select: { level: true, section: { select: { code: true, name: true } } },
-          },
-        },
-      },
-    },
-  });
-
   const byCompetence = new Map<
     string,
     {
@@ -554,21 +624,21 @@ export async function completeActiveInstance(learnerId: string): Promise<Complet
       level: number | null;
     }
   >();
-  for (const r of responses) {
-    if (!r.question) continue;
-    const competenceId = r.question.competenceId;
-    const { section, level } = r.question.sectionModule;
-    const totals = byCompetence.get(competenceId) ?? {
+  for (const q of inputs.questions.values()) {
+    const answer = inputs.answers.get(q.id);
+    if (answer && answer.score === null) continue; // answered, but nothing scorable
+    const { section, level } = q.sectionModule;
+    const totals = byCompetence.get(q.competenceId) ?? {
       score: 0,
       maxScore: 0,
-      competenceName: r.question.competence.name,
+      competenceName: q.competence.name,
       sectionCode: section.code,
       sectionName: section.name,
       level,
     };
-    totals.score += r.score ?? 0;
-    totals.maxScore += r.maxScore ?? 0;
-    byCompetence.set(competenceId, totals);
+    totals.score += answer?.score ?? 0;
+    totals.maxScore += answer ? (answer.maxScore ?? 0) : QUESTION_MAX_SCORE;
+    byCompetence.set(q.competenceId, totals);
   }
 
   await prisma.$transaction([
@@ -649,7 +719,7 @@ function isStringArray(value: unknown): value is string[] {
  */
 export async function getSatHistory(learnerId: string) {
   const instances = await prisma.satInstance.findMany({
-    where: { learnerId, completedAt: { not: null } },
+    where: { learnerId, kind: MAIN_KIND, completedAt: { not: null } },
     orderBy: { instanceNum: "asc" },
     include: {
       competenceScores: {
@@ -744,7 +814,8 @@ function bySectionCode(
  * assessed in but this SAT didn't touch (`assessed: false`, all 0/0, no
  * level) — e.g. sections a journey retake left out. Each section lists one
  * entry per competence its modules cover (main or secondary) or its
- * questions name, in level order (A1 … A4) so its radar always starts at
+ * questions name — scored over every question of an assessed section, the
+ * ones never asked as 0 — in level order (A1 … A4) so its radar always starts at
  * level 1, and the learner's skill level in it: how many levels they passed
  * from the bottom up (skillLevel in assessment.path.ts). Sections already
  * assessed are shown even if the learner's current role no longer sees
@@ -752,7 +823,12 @@ function bySectionCode(
  */
 export async function getAttemptSectionScores(learnerId: string, instanceNum?: number) {
   const instance = await prisma.satInstance.findFirst({
-    where: { learnerId, completedAt: { not: null }, ...(instanceNum ? { instanceNum } : {}) },
+    where: {
+      learnerId,
+      kind: MAIN_KIND,
+      completedAt: { not: null },
+      ...(instanceNum ? { instanceNum } : {}),
+    },
     orderBy: { completedAt: "desc" },
     select: { id: true, instanceNum: true, completedAt: true },
   });
@@ -827,6 +903,15 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
     for (const c of covered) entry.competences.set(c.id, c.name);
     if (m.level !== null) levelOf.set(m.mainCompetence.id, m.level);
     entry.levels.push({ id: m.id, level: m.level, questionIds: m.questions.map((q) => q.id) });
+    // In a section this SAT assessed, a question never asked still counts — as 0.
+    const answers = answersBySection.get(m.section.id);
+    for (const q of answers ? m.questions : []) {
+      if (answers?.has(q.id)) continue;
+      const key = `${m.section.id}:${q.competence.id}`;
+      const total = totals.get(key) ?? { score: 0, maxScore: 0 };
+      total.maxScore += QUESTION_MAX_SCORE;
+      totals.set(key, total);
+    }
     sections.set(m.section.id, entry);
   }
   // Level 1 → 4; a competence that's no module's main one has no level and
@@ -871,7 +956,7 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
  */
 export async function getDashboardProgress(learnerId: string) {
   const completed = await prisma.satInstance.findMany({
-    where: { learnerId, completedAt: { not: null } },
+    where: { learnerId, kind: MAIN_KIND, completedAt: { not: null } },
     orderBy: { instanceNum: "desc" },
     select: { instanceNum: true, completedAt: true },
   });
@@ -892,5 +977,134 @@ export async function getDashboardProgress(learnerId: string) {
     latest: { instanceNum: latest.instanceNum, completedAt: latest.completedAt },
     previous: previous && { instanceNum: previous.instanceNum, completedAt: previous.completedAt },
     sections,
+  };
+}
+
+/**
+ * The journey recommended after the learner's latest main self-assessment,
+ * as the dashboard shows it: the AI advisor's role-aware pick when there is
+ * one, else the score-based recommendation, else the suggestion to keep
+ * improving with. Null before any main assessment (or after a perfect one).
+ */
+async function journeyRecommendedAfterMainAssessment(learnerId: string) {
+  const latestMain = await prisma.satInstance.findFirst({
+    where: { learnerId, kind: MAIN_KIND, completedAt: { not: null } },
+    orderBy: { completedAt: "desc" },
+    select: { advice: { select: { journeyId: true } } },
+  });
+  if (!latestMain) return null;
+
+  const aiPickId = latestMain.advice?.journeyId;
+  const journey = aiPickId
+    ? await prisma.learningJourney.findUnique({ where: { id: aiPickId } })
+    : ((await recommendJourney(learnerId)) ?? (await suggestJourney(learnerId)));
+  if (!journey) return null;
+
+  const core = await prisma.journeySection.findMany({
+    where: { journeyId: journey.id, coverageLevel: "M" },
+    select: { sectionId: true },
+  });
+  return {
+    id: journey.id,
+    name: journey.name,
+    moodleUrl: journey.moodleUrl,
+    sectionIds: core.map((s) => s.sectionId),
+  };
+}
+
+/**
+ * The Competencies overview: every section the learner can be assessed in,
+ * each module's best result over ALL their assessments (main and journey
+ * alike — the main results themselves are never changed by this), and a
+ * percentage per section. The sections of the journey recommended after the
+ * main self-assessment (its M sections) are marked relevant and come first,
+ * so the modules that matter most for it are at the top.
+ */
+export async function getCompetencies(learnerId: string) {
+  const assessableIds = (await listAssessableSections(learnerId)).map((s) => s.id);
+
+  const [sections, answers, recommended] = await Promise.all([
+    prisma.section.findMany({
+      where: { id: { in: assessableIds } },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        modules: {
+          select: { id: true, name: true, level: true, moodleUrl: true },
+          orderBy: [{ level: "asc" }, { name: "asc" }],
+        },
+      },
+    }),
+    prisma.response.findMany({
+      where: {
+        satInstance: { learnerId, completedAt: { not: null } },
+        questionId: { not: null },
+        score: { not: null },
+        maxScore: { not: null },
+      },
+      select: {
+        score: true,
+        maxScore: true,
+        question: { select: { sectionModuleId: true } },
+        satInstance: {
+          select: { id: true, kind: true, completedAt: true, assessedJourneyName: true },
+        },
+      },
+    }),
+    journeyRecommendedAfterMainAssessment(learnerId),
+  ]);
+
+  const best = bestPerModule(
+    answers.flatMap((a) =>
+      a.question && a.satInstance.completedAt
+        ? [
+            {
+              moduleId: a.question.sectionModuleId,
+              satInstanceId: a.satInstance.id,
+              kind: a.satInstance.kind,
+              completedAt: a.satInstance.completedAt,
+              journeyName: a.satInstance.assessedJourneyName,
+              score: a.score ?? 0,
+              maxScore: a.maxScore ?? 0,
+            },
+          ]
+        : [],
+    ),
+  );
+
+  const relevantSections = new Set(recommended?.sectionIds ?? []);
+  const shown = sections
+    .map((section) => {
+      const relevant = relevantSections.has(section.id);
+      const modules = section.modules.map((m) => ({
+        id: m.id,
+        code: section.code && m.level ? `${section.code}${m.level}` : null,
+        name: m.name,
+        moodleUrl: m.moodleUrl,
+        relevant,
+        best: best.get(m.id) ?? null,
+      }));
+      return {
+        id: section.id,
+        code: section.code,
+        name: section.name,
+        relevant,
+        percent: sectionPercent(modules.map((m) => m.best)),
+        assessedModules: modules.filter((m) => m.best).length,
+        moduleCount: modules.length,
+        modules,
+      };
+    })
+    // Relevant sections first, then A–E.
+    .sort((a, b) => Number(b.relevant) - Number(a.relevant) || bySectionCode(a, b));
+
+  return {
+    recommendedJourney: recommended && {
+      id: recommended.id,
+      name: recommended.name,
+      moodleUrl: recommended.moodleUrl,
+    },
+    sections: shown,
   };
 }

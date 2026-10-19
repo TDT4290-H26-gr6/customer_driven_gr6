@@ -1,25 +1,34 @@
-/* Capped to exactly the viewport height (not min-height, which would let the
-   shell grow taller than the screen and hand scrolling to the whole page —
-   carrying the header and sidebar away with it). With this cap, `.main`'s
-   own overflow-y:auto below is what actually scrolls: the header and sidebar
-   stay in view, and the routed page exists inside their frame. */
+/* Capped to the viewport height (not min-height, so the shell can't grow
+   taller than the screen and carry the header and sidebar away with it).
+   `.main`'s own overflow-y:auto is what scrolls: header and sidebar stay in
+   view. */
 .shell {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-/* Layout-transparent — exists only so AppShell has a single node to mark
-   `inert` while the role-gate modal is up, without disturbing the flex
-   layout of its Header/.body children. */
+/* Layout-transparent: just a node to mark `inert` while the role gate is up,
+   without disturbing the flex layout of Header/.body. */
 .inertWrapper {
   display: contents;
 }
 
+/* Faint diagonal wash of the three logo colors, on every page. Set here
+   instead of on .main so it runs behind the sidebar too (the sidebar is
+   translucent, see Sidebar.module.css). The dashboard layers large flat
+   circles on top of this same background below. --decor-strength turns it
+   up in dark mode, where faint color fades out. */
 .body {
   flex: 1;
   display: flex;
   min-height: 0;
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--brand-purple) calc(16% * var(--decor-strength)), transparent),
+    color-mix(in srgb, var(--brand-blue) calc(14% * var(--decor-strength)), transparent) 50%,
+    color-mix(in srgb, var(--brand-olive) calc(18% * var(--decor-strength)), transparent)
+  );
 }
 
 .main {
@@ -34,6 +43,86 @@
   overflow-y: auto;
 }
 
+/* The dashboard's extra decoration, opted into with data-backdrop="logo" on
+   a page's root: a few large, flat circles in the logo colors, like
+   magnified dots from the logo, on top of the wash every page already has.
+   Stays put while the cards scroll over it (.main is the scroll container). */
+.body:has([data-backdrop="logo"]) {
+  --tint-purple: color-mix(
+    in srgb,
+    var(--brand-purple) calc(27% * var(--decor-strength)),
+    transparent
+  );
+  --tint-blue: color-mix(in srgb, var(--brand-blue) calc(24% * var(--decor-strength)), transparent);
+  --tint-olive: color-mix(
+    in srgb,
+    var(--brand-olive) calc(30% * var(--decor-strength)),
+    transparent
+  );
+
+  background:
+    radial-gradient(
+      circle 180px at calc(100% - 70px) 40px,
+      var(--tint-purple) 99.5%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 100px at calc(100% - 40px) 300px,
+      var(--tint-blue) 99.5%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 70px at calc(100% - 280px) 460px,
+      color-mix(in srgb, var(--tint-purple) 70%, transparent) 99%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 150px at 40px calc(100% - 50px),
+      var(--tint-olive) 99.5%,
+      transparent 100%
+    ),
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--brand-purple) calc(16% * var(--decor-strength)), transparent),
+      color-mix(in srgb, var(--brand-blue) calc(14% * var(--decor-strength)), transparent) 50%,
+      color-mix(in srgb, var(--brand-olive) calc(18% * var(--decor-strength)), transparent)
+    );
+}
+
+/* Mobile: the same circles at about half the size, so they frame the page
+   instead of sitting right behind the heading. */
+@media (max-width: 767px) {
+  .body:has([data-backdrop="logo"]) {
+    background:
+      radial-gradient(
+        circle 90px at calc(100% - 30px) 10px,
+        var(--tint-purple) 99.5%,
+        transparent 100%
+      ),
+      radial-gradient(
+        circle 55px at calc(100% - 15px) 260px,
+        var(--tint-blue) 99.5%,
+        transparent 100%
+      ),
+      radial-gradient(
+        circle 40px at 10px 520px,
+        color-mix(in srgb, var(--tint-purple) 70%, transparent) 99%,
+        transparent 100%
+      ),
+      radial-gradient(
+        circle 80px at 15px calc(100% - 90px),
+        var(--tint-olive) 99.5%,
+        transparent 100%
+      ),
+      linear-gradient(
+        150deg,
+        color-mix(in srgb, var(--brand-purple) calc(16% * var(--decor-strength)), transparent),
+        color-mix(in srgb, var(--brand-blue) calc(14% * var(--decor-strength)), transparent) 50%,
+        color-mix(in srgb, var(--brand-olive) calc(18% * var(--decor-strength)), transparent)
+      );
+  }
+}
+
 @media (max-width: 1023px) {
   .main {
     padding: 24px;
@@ -42,9 +131,9 @@
 }
 
 /* Mobile (< 768px, see shared/lib/breakpoints.ts): the nav is a fixed bottom
-   tab bar, so the page needs bottom clearance for it plus the home-indicator
-   inset, plus the Feedback button floating above it — otherwise the last
-   piece of content sits underneath them. */
+   tab bar, so the page needs bottom clearance for it, the home-indicator
+   inset, and the floating Feedback button, or the last content sits under
+   them. */
 @media (max-width: 767px) {
   .main {
     padding: 16px max(16px, env(safe-area-inset-right, 0px))
@@ -60,14 +149,20 @@
   position: absolute;
   top: -40px;
   left: 8px;
-  z-index: 100;
+  z-index: var(--z-skip-link);
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   background: var(--color-primary);
   color: var(--color-primary-contrast);
-  transition: top 0.15s ease;
+  transition: top var(--duration-fast) ease;
 }
 
 .skipLink:focus-visible {
   top: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skipLink {
+    transition: none;
+  }
 }

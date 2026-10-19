@@ -37,8 +37,8 @@ docs describe the result; this one describes the move.
   on a `multi_choice` too. It's still a real choice, so it still counts as
   _answered_.
 - **Dashboard overview is now per-section, not per-competence.** 20
-  competences don't fit as one radar's axes; `ResultsPage` now shows 5 section
-  axes (`results/sectionAxes.ts` sums each section's competences into one
+  competences don't fit as one radar's axes; `DashboardPage` now shows 5 section
+  axes (`dashboard/sectionAxes.ts` sums each section's competences into one
   score), and "More details" (`SectionDetailsPage`, pre-existing) is now the
   only per-competence view. `GET /competence-scores` and the frontend's
   `getCompetenceScores` are removed as now-unused (the by-section endpoint
@@ -208,6 +208,6 @@ Removed: `roles.bootstrap.ts`, `courses.bootstrap.ts`, `learningJourney.bootstra
 **Frontend:** `src/features/admin/`, `src/features/sources/`,
 `src/app/layout/{Header,Sidebar}.tsx`, `src/routes.tsx`,
 `src/shared/api/endpoints.ts`, `src/shared/components/icons.tsx`, and the
-`competence` rename in `features/assessment` and `features/results`.
+`competence` rename in `features/assessment` and `features/dashboard`.
 
 **Docs:** `context/backend-structure.md`, `context/frontend-structure.md`, and this file.

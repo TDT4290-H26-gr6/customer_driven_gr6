@@ -45,7 +45,8 @@ possible without a rewrite.
 | **`sources`**         | third‑party learning resources (courses, training programmes, institutional initiatives) that build a competence                                                                                                                                                                               | `sources_source`                                                                                                                                                                                                                                                               | `GET /sources`                                                                                                                                                                                                                                         |
 | **`learningJourney`** | curated step-by-step journeys, the sections each covers, and the score-based recommendation                                                                                                                                                                                                    | `learning_journey_journey`, `learning_journey_journey_section`, `learning_journey_learning_module`, `learning_journey_recommendation`                                                                                                                                          | `GET /learning-journeys`, `GET /learning-journeys/recommendation`                                                                                                                                                                                      |
 | **`feedback`**        | what testers say should be improved, sent from the "Feedback" button on every page                                                                                                                                                                                                             | `feedback_feedback`                                                                                                                                                                                                                                                            | `POST /feedback`, `GET /admin/feedback`                                                                                                                                                                                                                |
-| **`advisor`**         | AI advice on the results page: explains the score-based journey recommendation and suggests next steps from the journey and the sources linked to the weakest competences, via the NTNU IDUN LLM (`lib/llm.ts`); one stored answer per completed SAT instance; off when `LLM_API_KEY` is unset | `advisor_advice`                                                                                                                                                                                                                                                               | `GET /advice`                                                                                                                                                                                                                                          |
+| **`advisor`**         | AI advice on the dashboard: explains the learner's results, recommends 1–3 Moodle modules, and **ranks the two learning journeys that fit them best on their scores and profile** (occupation, industry, degree, experience, goals — never name or email; best fit highlighted on the dashboard, score-only top two as the fallback: `GET /learning-journeys/recommendations`), via the NTNU IDUN LLM (`lib/llm.ts`); one stored answer per completed SAT instance; off when `LLM_API_KEY` is unset | `advisor_advice`                                                                                                                                                                                                                                                               | `GET /advice`                                                                                                                                                                                                                                          |
+| **`stats`**           | admin-only CSV export for analysis (CD-23): two tidy tables over completed full kind:"main" self-assessments only (a targeted reassessment has a different question set, and a kind:"journey" assessment never counts towards the main results — both excluded) — no name/email, years of experience bucketed; owns no tables, reads `identity`/`assessment` via Prisma             | _(none — read-only)_                                                                                                                                                                                                                                                          | `GET /admin/stats/tests.csv`, `GET /admin/stats/questions.csv`                                                                                                                                                                                          |
 | **`security`**        | privileged access and traceability                                                                                                                                                                                                                                                             | _(later)_ `security_admin`, `security_audit_event`, `security_api_key`                                                                                                                                                                                                         | _(later)_ real admin access. Until then the `/admin/*` routes live in `identity` (§11) and should move here                                                                                                                                            |
 | **`platform`**        | cross‑cutting config                                                                                                                                                                                                                                                                           | _(later)_ `platform_app_setting`, `platform_feature_flag`                                                                                                                                                                                                                      | —                                                                                                                                                                                                                                                      |
 | **`health`**          | liveness / readiness for ops                                                                                                                                                                                                                                                                   | —                                                                                                                                                                                                                                                                              | `GET /health`                                                                                                                                                                                                                                          |
@@ -456,10 +457,12 @@ so running it again never duplicates or overwrites.
   module (level) has exactly 3 questions — `fakeFoodSeed.data.test.ts` checks
   this).
 - The assessment is adaptive (`assessment.path.ts`): sections in a random order
-  per attempt, levels 1 → 4 within each, moving up a level at 2 of 3 right
-  (2/3 of the level's points) and on to the next section once that's out of
-  reach. A module's `level` therefore
-  decides when its questions are asked.
+  per attempt, levels 1 → 4 within each. Every question of a level is asked;
+  the learner moves up a level at 2 of 3 right (2/3 of the level's points)
+  and on to the next section as soon as that's out of reach. A module's
+  `level` therefore decides when its questions are asked. Questions never
+  asked (the rest of a failed level and the levels above it) still count in
+  the scores, as 0 of 1, so every SAT is scored over the same questions.
 - There is no longer a default-roles bootstrap: roles come from the seed, so the
   role picker lists the seed's (fake) roles.
 - **The real open-science content is dormant, not deleted.**
@@ -468,6 +471,42 @@ so running it again never duplicates or overwrites.
   neither `index.ts` nor `prisma/seed.ts` — so it never runs. To bring it back
   (e.g. as a _second_, later assessment rather than the initial one), call it
   from one of those two files again.
+
+### Journey assessments and the Competencies overview
+
+- **Two kinds of SAT instance** (`SatInstance.kind`, `assessment.kinds.ts`):
+  `main` (the self-assessment: the initial one and its retakes) and `journey`
+  (a learner assessing one learning journey on its own). Each kind is numbered
+  on its own (`@@unique([learnerId, kind, instanceNum])`), so main assessments
+  stay 1, 2, 3 … whatever journey assessments happen in between.
+- **A journey assessment never touches the main results.** Every main-results
+  query filters on `kind: "main"`: History, the dashboard's per-assessment
+  results and progress, the shared newest-scores query (dashboard radar,
+  journey recommendation, weak competences, AI advice), and the "has done the
+  self-assessment" check (`hasCompletedMainAssessment`, which also guards
+  `PUT /auth/me/initial-assessment`). Only one assessment of any kind can be
+  in progress at a time.
+- `POST /assessment/journey` (`startJourneyAssessment`) limits the instance to
+  the journey's **M sections** that have questions (the same `SatInstanceSection`
+  mechanism a reassessment uses). The runner shows which journey, and finishes
+  on Competencies instead of the dashboard. It replaces the old "select a
+  journey" (CD-33), which is removed.
+- `GET /competencies` (`getCompetencies`, pure logic in
+  `assessment.competencies.ts`): each module's **best** result over **all**
+  completed assessments, main and journey alike; a section's percentage is the
+  average of its modules' best results (modules without a result left out).
+  The M sections of the journey recommended after the latest main assessment
+  (the AI advisor's pick, else the score-based recommendation, else the
+  suggestion) are marked relevant and come first.
+
+### Schema changes db push can't make on its own
+
+`prisma db push` runs on every start (Dockerfile). A few MySQL changes need a
+step first: `prisma/pre-push.sql` runs before it, and is idempotent (a no-op
+when there's nothing to do, or on a fresh database). Today it creates the
+`assessment_sat_instance(learnerId)` index — MySQL won't drop the old
+`(learnerId, instanceNum)` unique key while it's the only index behind the
+learner foreign key, and `db push` drops it before creating the new index.
 
 ### Resetting the database
 

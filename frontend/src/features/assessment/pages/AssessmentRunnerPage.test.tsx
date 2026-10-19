@@ -73,8 +73,13 @@ function item(
   };
 }
 
-function path(items: PathItem[], isDone = false, sectionCount = 2): AssessmentPath {
-  return { items, sectionCount, done: isDone };
+function path(
+  items: PathItem[],
+  isDone = false,
+  sectionCount = 2,
+  journey: AssessmentPath["journey"] = null,
+): AssessmentPath {
+  return { items, sectionCount, done: isDone, journey };
 }
 
 const networkError = { status: 0, message: "offline" };
@@ -136,7 +141,7 @@ describe("AssessmentRunnerPage", () => {
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     expect(await screen.findByText("Question A2-q")).toBeInTheDocument();
-    expect(saveResponse).toHaveBeenCalledWith("1", done);
+    expect(saveResponse).toHaveBeenCalledWith("1", done, expect.any(Number));
     expect(getAssessmentPath).toHaveBeenCalledTimes(2);
   });
 
@@ -153,6 +158,68 @@ describe("AssessmentRunnerPage", () => {
     await waitFor(() => expect(navigate).toHaveBeenCalledWith("/", { replace: true }));
     expect(completeAssessment).toHaveBeenCalledOnce();
     expect(markInitialAssessmentComplete).toHaveBeenCalledOnce();
+  });
+
+  it("doesn't save an answer the player re-emits while finishing, so it can't start a new attempt", async () => {
+    vi.mocked(getAssessmentPath)
+      .mockResolvedValueOnce(path([item("1")]))
+      .mockResolvedValueOnce(path([item("1", { answered: true })], true));
+    let completeNow!: () => void;
+    vi.mocked(completeAssessment).mockReturnValueOnce(
+      new Promise<void>((resolve) => (completeNow = resolve)),
+    );
+    const user = userEvent.setup();
+
+    render(<AssessmentRunnerPage />);
+    await user.click(await screen.findByRole("button", { name: "Answer" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+    await screen.findByRole("button", { name: "Finishing…" });
+    // The PIE player firing session-changed again mid-finish.
+    await user.click(screen.getByRole("button", { name: "Answer" }));
+    completeNow();
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/", { replace: true }));
+    expect(saveResponse).toHaveBeenCalledOnce();
+  });
+
+  it("finishes a journey assessment on Competencies, without completing the self-assessment", async () => {
+    const lj2 = { id: "journey-2", name: "LJ2 — Research Data" };
+    vi.mocked(getAssessmentPath)
+      .mockResolvedValueOnce(path([item("1")], false, 2, lj2))
+      .mockResolvedValueOnce(path([item("1", { answered: true })], true, 2, lj2));
+    const user = userEvent.setup();
+
+    render(<AssessmentRunnerPage />);
+    await user.click(await screen.findByRole("button", { name: "Answer" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/competencies", { replace: true }));
+    expect(completeAssessment).toHaveBeenCalledOnce();
+    expect(completeInitialAssessment).not.toHaveBeenCalled();
+    expect(markInitialAssessmentComplete).not.toHaveBeenCalled();
+  });
+
+  it("says which journey is being assessed, and that it doesn't change the self-assessment", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path([item("1")], false, 2, {
+        id: "journey-2",
+        name: "LJ2 — Research Data",
+      }),
+    );
+
+    render(<AssessmentRunnerPage />);
+
+    expect(await screen.findByText("LJ2 — Research Data")).toBeInTheDocument();
+    expect(screen.getByText(/doesn't change your self-assessment/i)).toBeInTheDocument();
+  });
+
+  it("shows no journey banner during the self-assessment", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
+
+    render(<AssessmentRunnerPage />);
+
+    await screen.findByText("Question 1");
+    expect(screen.queryByText(/assessing the journey/i)).not.toBeInTheDocument();
   });
 
   it("labels the button Finish when resuming a path that's already complete", async () => {
@@ -191,7 +258,7 @@ describe("AssessmentRunnerPage", () => {
     await user.click(screen.getByRole("button", { name: "Next" }));
 
     expect(await screen.findByText("Question 2")).toBeInTheDocument();
-    expect(saveResponse).toHaveBeenCalledWith("1", done);
+    expect(saveResponse).toHaveBeenCalledWith("1", done, expect.any(Number));
   });
 
   it("refuses to move on while an answer is unsaved, until the save is retried", async () => {
@@ -233,7 +300,10 @@ describe("AssessmentRunnerPage", () => {
     vi.mocked(getAssessmentPath)
       .mockResolvedValueOnce(path([item("1")]))
       .mockResolvedValueOnce(path([item("2")])); // an admin hid question 1 from the role
-    vi.mocked(saveResponse).mockRejectedValueOnce({ status: 404, message: "Unknown question" });
+    vi.mocked(saveResponse).mockRejectedValueOnce({
+      status: 404,
+      message: "Unknown question",
+    });
     const user = userEvent.setup();
 
     render(<AssessmentRunnerPage />);

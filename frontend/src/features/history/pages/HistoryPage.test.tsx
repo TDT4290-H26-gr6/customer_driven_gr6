@@ -69,6 +69,15 @@ describe("HistoryPage", () => {
     expect(screen.getByText("(83%)")).toBeInTheDocument();
   });
 
+  it("shows the most recently completed assessment first", async () => {
+    vi.mocked(getSatHistory).mockResolvedValue(ENTRIES);
+
+    render(<HistoryPage />);
+
+    const headings = await screen.findAllByRole("heading", { name: /^Assessment \d$/ });
+    expect(headings.map((h) => h.textContent)).toEqual(["Assessment 2", "Assessment 1"]);
+  });
+
   it("shows the completed journey and the reassessed sections, only on that attempt", async () => {
     vi.mocked(getSatHistory).mockResolvedValue(ENTRIES);
 
@@ -77,6 +86,17 @@ describe("HistoryPage", () => {
     expect(await screen.findByText("Knife Ninja Journey")).toBeInTheDocument();
     expect(screen.getAllByText(/after completing/i)).toHaveLength(1);
     expect(screen.getByText("Reassessed: Knife Skills, Kitchen Safety")).toBeInTheDocument();
+  });
+
+  it("shows the reassessed section of a reassessment without a journey", async () => {
+    vi.mocked(getSatHistory).mockResolvedValue([
+      { ...ENTRIES[1], completedJourney: null, reassessedSections: ["Baking"] },
+    ]);
+
+    render(<HistoryPage />);
+
+    expect(await screen.findByText("Reassessed: Baking")).toBeInTheDocument();
+    expect(screen.queryByText(/after completing/i)).not.toBeInTheDocument();
   });
 
   it("lists each instance's module scores under the section they belong to", async () => {

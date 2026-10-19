@@ -7,13 +7,16 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  /* No left padding here on desktop: the rail slot inside .left owns that
-     space and sits flush at the header's left edge, matching the sidebar's
-     own left edge directly below it. The mobile media query below (no rail
-     slot there) puts the inset back. */
-  padding: env(safe-area-inset-top, 0px) max(20px, env(safe-area-inset-right, 0px)) 0 0;
+  padding: env(safe-area-inset-top, 0px) max(20px, env(safe-area-inset-right, 0px)) 0
+    max(20px, env(safe-area-inset-left, 0px));
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
+  /* Needs its own stacking context (relative + z-index): .body is a later
+     sibling at the same level and would otherwise paint its background
+     right over this shadow. */
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: 1;
 }
 
 /* Mobile: keep the header (and its account menu) reachable while scrolling a
@@ -22,7 +25,7 @@
   .header {
     position: sticky;
     top: 0;
-    z-index: 30;
+    z-index: var(--z-header);
     padding-left: max(16px, env(safe-area-inset-left, 0px));
     padding-right: max(16px, env(safe-area-inset-right, 0px));
   }
@@ -36,47 +39,8 @@
   height: 100%;
 }
 
-/* Same width as the collapsed sidebar's icon column (--sidebar-width-collapsed
-   is that column's own width, expanded or not — see Sidebar.module.css), so
-   the toggle button below is centered directly above the sidebar's icons
-   rather than just floating next to the logo. */
-.railSlot {
-  flex: none;
-  width: var(--sidebar-width-collapsed);
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.sidebarToggle {
-  flex: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.sidebarToggle:hover {
-  background: var(--color-bg);
-  color: var(--color-text);
-}
-
-@media (pointer: coarse) {
-  .sidebarToggle {
-    width: 44px;
-    height: 44px;
-  }
-}
-
 .logo {
-  height: 32px;
+  height: 40px;
   width: auto;
 }
 
@@ -91,8 +55,8 @@
   border: none;
   background: var(--color-primary);
   color: var(--color-primary-contrast);
-  font-size: 12px;
-  font-weight: 700;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
   letter-spacing: 0.02em;
   cursor: pointer;
   display: flex;
@@ -115,7 +79,7 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   padding: 8px;
-  z-index: 10;
+  z-index: var(--z-dropdown);
 }
 
 .dropdownHeader {
@@ -127,8 +91,8 @@
 }
 
 .dropdownName {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
@@ -136,7 +100,7 @@
 }
 
 .dropdownRole {
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--color-text-muted);
 }
 
@@ -149,7 +113,7 @@
   border: none;
   background: transparent;
   border-radius: var(--radius-sm);
-  font-size: 14px;
+  font-size: var(--font-size-md);
   color: var(--color-text);
   cursor: pointer;
   text-align: left;
@@ -164,12 +128,12 @@
   color: var(--color-text-muted);
 }
 
-/* Touch devices (any width — includes tablets): finger-sized targets. */
+/* Touch devices (any width, including tablets): finger-sized targets. */
 @media (pointer: coarse) {
   .avatarButton {
     width: 44px;
     height: 44px;
-    font-size: 14px;
+    font-size: var(--font-size-md);
   }
 
   .dropdownItem {

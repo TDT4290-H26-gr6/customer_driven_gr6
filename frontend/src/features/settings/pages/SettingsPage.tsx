@@ -66,7 +66,7 @@ export function SettingsPage() {
         <h2 className={styles.cardHeading}>Choose your accent color</h2>
         <p className={styles.cardHint}>The colors of the AIOS logo.</p>
         <div className={styles.accentOptions} role="radiogroup" aria-label="Accent color">
-          {ACCENTS.map(({ value, label, hex }) => (
+          {ACCENTS.map(({ value, label, swatch }) => (
             <button
               key={value}
               type="button"
@@ -79,7 +79,7 @@ export function SettingsPage() {
                   ? `${styles.accentSwatch} ${styles.accentSwatchActive}`
                   : styles.accentSwatch
               }
-              style={{ background: hex }}
+              style={{ background: swatch }}
               onClick={() => setAccent(value)}
             />
           ))}

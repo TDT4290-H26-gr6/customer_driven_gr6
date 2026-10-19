@@ -6,11 +6,12 @@ import { RequireProfile } from "@/app/guards/RequireProfile";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { LoginPage } from "@/features/auth";
 import { AssessmentRunnerPage, ReassessPage } from "@/features/assessment";
-import { ResultsPage, SectionDetailsPage } from "@/features/results";
+import { DashboardPage, SectionDetailsPage } from "@/features/dashboard";
 import { SettingsPage } from "@/features/settings";
 import { ProfilePage } from "@/features/profile";
 import { HistoryPage } from "@/features/history";
-import { SourcesPage } from "@/features/sources";
+import { CompetenciesPage } from "@/features/competencies";
+import { FaqPage } from "@/features/faq";
 import { LearningJourneysPage } from "@/features/learningJourney";
 import { AdminPage } from "@/features/admin";
 import { FeedbackAdminPage } from "@/features/feedback";
@@ -27,7 +28,7 @@ function HomeRedirect() {
 
   if (status === "loading") return <Spinner />;
   if (status === "signedOut") return <Navigate to="/login" replace />;
-  return <Navigate to="/results" replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 export function AppRoutes() {
@@ -40,11 +41,12 @@ export function AppRoutes() {
           <Route path="/settings" element={<SettingsPage />} />
           {/* Not in the sidebar — RequireProfile sends learners here. */}
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/results" element={<ResultsPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/history" element={<HistoryPage />} />
           <Route path="/journeys" element={<LearningJourneysPage />} />
-          <Route path="/results/details" element={<SectionDetailsPage />} />
-          <Route path="/sources" element={<SourcesPage />} />
+          <Route path="/competencies" element={<CompetenciesPage />} />
+          <Route path="/faq" element={<FaqPage />} />
+          <Route path="/dashboard/details" element={<SectionDetailsPage />} />
           <Route element={<RequireAdmin />}>
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/feedback" element={<FeedbackAdminPage />} />
