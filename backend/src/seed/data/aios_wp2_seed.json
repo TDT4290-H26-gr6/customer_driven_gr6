@@ -1,11 +1,11 @@
 {
   "_meta": {
     "description": "The AIOS WP2 curriculum: sections A–E, their 20 modules (A1–E4) with main and secondary competences, the 36 competences, the six tentative learning journeys, and the self-assessment items delivered so far. Built from 'AIOS competence mapping' and 'AIOS WP 2 Plan to populate the SAT' (last edit 28 Sep 2026). Loaded when SEED_DATASET=wp2.",
-    "moodle": "Every module and journey names a PLACEHOLDER Moodle course (moodleCourseId); links are built from MOODLE_BASE_URL. Replace with the real ids — or give a full moodleUrl — once the Moodle pages exist.",
-    "levels": "Each section's four modules are stored as levels 1–4 (A1 = level 1), as the current adaptive assessment expects. In the curriculum they are parallel topics, not difficulty levels — open question for the team.",
+    "moodle": "Every module and journey names a PLACEHOLDER Moodle course (moodleCourseId); links are built from MOODLE_BASE_URL. Replace with the real ids, or give a full moodleUrl, once the Moodle pages exist.",
+    "levels": "Each section's four modules are stored as levels 1-4 (A1 = level 1), as the current adaptive assessment expects. In the curriculum they are parallel topics, not difficulty levels. Open question for the team.",
     "coverage": "Mixed coverage values in the source are stored as their first letter until confirmed with the customer: LJ5 B 'M/S' -> M, LJ5 D 'R/M' -> R, LJ6 A 'M/S' -> M.",
     "gaps": "No items yet for A1 and A4; E3 and E4 have one item each. Items of unsupported types are listed in _pendingItems and not loaded. D3.2 is identical to D1.1 in the source.",
-    "sources": "The four partner-institution sources come from the earlier curated course list and link to their own web pages, not Moodle. Which competences they build (primarySourceId / competence_secondary_source) is a PROPOSED mapping from their topics and descriptions — confirm with the customer.",
+    "sources": "The four partner-institution sources come from the earlier curated course list and link to their own web pages, not Moodle. Which competences they build (primarySourceId / competence_secondary_source) is a PROPOSED mapping from their topics and descriptions. Confirm with the customer.",
     "devAuthoredItems": {
       "note": "Written by the development team as the first examples of the 'judge an example against criteria' type (criteria_check), not by the content team. Pending the content team's approval.",
       "questionIds": ["q-wp2-b4-x1", "q-wp2-b2-x1", "q-wp2-d2-x1"]
@@ -234,7 +234,7 @@
   "aios.assessment.section_module": [
     {
       "id": "mod-wp2-a1",
-      "name": "A1 — Introduction to Open Science",
+      "name": "A1 - Introduction to Open Science",
       "description": null,
       "mainCompetenceId": "comp-wp2-open-science-literacy",
       "sectionId": "sec-wp2-a",
@@ -243,7 +243,7 @@
     },
     {
       "id": "mod-wp2-a2",
-      "name": "A2 — Introduction to Open Data Management",
+      "name": "A2 - Introduction to Open Data Management",
       "description": null,
       "mainCompetenceId": "comp-wp2-manage-research-data",
       "sectionId": "sec-wp2-a",
@@ -252,7 +252,7 @@
     },
     {
       "id": "mod-wp2-a3",
-      "name": "A3 — Open Science and Research Methodologies",
+      "name": "A3 - Open Science and Research Methodologies",
       "description": null,
       "mainCompetenceId": "comp-wp2-research-execution-and-communication",
       "sectionId": "sec-wp2-a",
@@ -261,7 +261,7 @@
     },
     {
       "id": "mod-wp2-a4",
-      "name": "A4 — Introduction to Artificial Intelligence: Foundations, Impacts and Open Science Contexts",
+      "name": "A4 - Introduction to Artificial Intelligence: Foundations, Impacts and Open Science Contexts",
       "description": null,
       "mainCompetenceId": "comp-wp2-ai-literacy",
       "sectionId": "sec-wp2-a",
@@ -270,7 +270,7 @@
     },
     {
       "id": "mod-wp2-b1",
-      "name": "B1 — Repositories and OER resource literacy",
+      "name": "B1 - Repositories and OER resource literacy",
       "description": null,
       "mainCompetenceId": "comp-wp2-promote-open-access-publications",
       "sectionId": "sec-wp2-b",
@@ -279,7 +279,7 @@
     },
     {
       "id": "mod-wp2-b2",
-      "name": "B2 — Data Storage, Preservation and Versioning",
+      "name": "B2 - Data Storage, Preservation and Versioning",
       "description": null,
       "mainCompetenceId": "comp-wp2-manage-research-data",
       "sectionId": "sec-wp2-b",
@@ -288,7 +288,7 @@
     },
     {
       "id": "mod-wp2-b3",
-      "name": "B3 — Open Data Preparation, Analysis and Documentation",
+      "name": "B3 - Open Data Preparation, Analysis and Documentation",
       "description": null,
       "mainCompetenceId": "comp-wp2-research-data-handling",
       "sectionId": "sec-wp2-b",
@@ -297,7 +297,7 @@
     },
     {
       "id": "mod-wp2-b4",
-      "name": "B4 — Data and resource quality assessment",
+      "name": "B4 - Data and resource quality assessment",
       "description": null,
       "mainCompetenceId": "comp-wp2-evaluate-research",
       "sectionId": "sec-wp2-b",
@@ -306,7 +306,7 @@
     },
     {
       "id": "mod-wp2-c1",
-      "name": "C1 — Strategic Alignment and Institutional Readiness",
+      "name": "C1 - Strategic Alignment and Institutional Readiness",
       "description": null,
       "mainCompetenceId": "comp-wp2-strategic-thinking",
       "sectionId": "sec-wp2-c",
@@ -315,7 +315,7 @@
     },
     {
       "id": "mod-wp2-c2",
-      "name": "C2 — Stakeholders, Roles and Support Services",
+      "name": "C2 - Stakeholders, Roles and Support Services",
       "description": null,
       "mainCompetenceId": "comp-wp2-develop-networks",
       "sectionId": "sec-wp2-c",
@@ -324,7 +324,7 @@
     },
     {
       "id": "mod-wp2-c3",
-      "name": "C3 — Project Planning and Implementation Logic",
+      "name": "C3 - Project Planning and Implementation Logic",
       "description": null,
       "mainCompetenceId": "comp-wp2-manage-projects",
       "sectionId": "sec-wp2-c",
@@ -333,7 +333,7 @@
     },
     {
       "id": "mod-wp2-c4",
-      "name": "C4 — Sustainability, Incentives and Community Engagement",
+      "name": "C4 - Sustainability, Incentives and Community Engagement",
       "description": null,
       "mainCompetenceId": "comp-wp2-mobilise-resources",
       "sectionId": "sec-wp2-c",
@@ -342,7 +342,7 @@
     },
     {
       "id": "mod-wp2-d1",
-      "name": "D1 — Open Science Data Governance, Ethics and Legal Literacy",
+      "name": "D1 - Open Science Data Governance, Ethics and Legal Literacy",
       "description": null,
       "mainCompetenceId": "comp-wp2-data-governance",
       "sectionId": "sec-wp2-d",
@@ -351,7 +351,7 @@
     },
     {
       "id": "mod-wp2-d2",
-      "name": "D2 — Data Privacy, Protection and Sensitive Data Management in Open Science",
+      "name": "D2 - Data Privacy, Protection and Sensitive Data Management in Open Science",
       "description": null,
       "mainCompetenceId": "comp-wp2-licensing-and-privacy-literacy",
       "sectionId": "sec-wp2-d",
@@ -360,7 +360,7 @@
     },
     {
       "id": "mod-wp2-d3",
-      "name": "D3 — Ethical Risk, Access Decisions and Accountability",
+      "name": "D3 - Ethical Risk, Access Decisions and Accountability",
       "description": null,
       "mainCompetenceId": "comp-wp2-ethical-reasoning",
       "sectionId": "sec-wp2-d",
@@ -369,7 +369,7 @@
     },
     {
       "id": "mod-wp2-d4",
-      "name": "D4 — AI Legal Use, Caveats, Countermeasures and Open Science Use Cases",
+      "name": "D4 - AI Legal Use, Caveats, Countermeasures and Open Science Use Cases",
       "description": null,
       "mainCompetenceId": "comp-wp2-ai-governance-and-regulatory-compliance",
       "sectionId": "sec-wp2-d",
@@ -378,7 +378,7 @@
     },
     {
       "id": "mod-wp2-e1",
-      "name": "E1 — Open Science Data and Research Resources in Education Practice",
+      "name": "E1 - Open Science Data and Research Resources in Education Practice",
       "description": null,
       "mainCompetenceId": "comp-wp2-teach-in-academic-or-vocational-contexts",
       "sectionId": "sec-wp2-e",
@@ -387,7 +387,7 @@
     },
     {
       "id": "mod-wp2-e2",
-      "name": "E2 — Designing, Adapting and Communicating Open Educational Resources",
+      "name": "E2 - Designing, Adapting and Communicating Open Educational Resources",
       "description": null,
       "mainCompetenceId": "comp-wp2-teach-in-academic-or-vocational-contexts",
       "sectionId": "sec-wp2-e",
@@ -396,7 +396,7 @@
     },
     {
       "id": "mod-wp2-e3",
-      "name": "E3 — Case Studies, Emerging Trends and Institutional Applications of Open Science",
+      "name": "E3 - Case Studies, Emerging Trends and Institutional Applications of Open Science",
       "description": null,
       "mainCompetenceId": "comp-wp2-critical-thinking",
       "sectionId": "sec-wp2-e",
@@ -405,7 +405,7 @@
     },
     {
       "id": "mod-wp2-e4",
-      "name": "E4 — Practical AI for Open Science and Education",
+      "name": "E4 - Practical AI for Open Science and Education",
       "description": null,
       "mainCompetenceId": "comp-wp2-leverage-ai",
       "sectionId": "sec-wp2-e",
@@ -1234,7 +1234,7 @@
     },
     {
       "id": "q-wp2-a3-3",
-      "prompt": "How comfortable are you identifying unsupported claims or weak evidence when critically reviewing a research output — including one produced or summarized with AI assistance?",
+      "prompt": "How comfortable are you identifying unsupported claims or weak evidence when critically reviewing a research output, including one produced or summarized with AI assistance?",
       "questionType": "likert",
       "content": {
         "scale": {
@@ -2273,37 +2273,37 @@
   "aios.learningJourney.journey": [
     {
       "id": "journey-wp2-lj1",
-      "name": "LJ1 — Institutional AI-Driven Open Science Officer",
+      "name": "LJ1 - Institutional AI-Driven Open Science Officer",
       "description": "Final applied output: Institutional Open Science implementation plan and capstone portfolio.",
       "moodleCourseId": 2001
     },
     {
       "id": "journey-wp2-lj2",
-      "name": "LJ2 — Research Data, Reproducibility and AI Practices",
+      "name": "LJ2 - Research Data, Reproducibility and AI Practices",
       "description": "Final applied output: Documented research-data and responsible-AI workflow package.",
       "moodleCourseId": 2002
     },
     {
       "id": "journey-wp2-lj3",
-      "name": "LJ3 — Open Science Education, OER and Engagement",
+      "name": "LJ3 - Open Science Education, OER and Engagement",
       "description": "Final applied output: OER or engagement resource with accessibility and assessment plan.",
       "moodleCourseId": 2003
     },
     {
       "id": "journey-wp2-lj4",
-      "name": "LJ4 — Open Science Train-the-Trainer",
+      "name": "LJ4 - Open Science Train-the-Trainer",
       "description": "Final applied output: Trainer package, facilitation plan and responsible-AI guidance.",
       "moodleCourseId": 2004
     },
     {
       "id": "journey-wp2-lj5",
-      "name": "LJ5 — Open Science for Business and Innovation",
+      "name": "LJ5 - Open Science for Business and Innovation",
       "description": "Final applied output: Open innovation or academia-industry implementation case.",
       "moodleCourseId": 2005
     },
     {
       "id": "journey-wp2-lj6",
-      "name": "LJ6 — Open Science for Policy and Public Decision-Making",
+      "name": "LJ6 - Open Science for Policy and Public Decision-Making",
       "description": "Final applied output: Policy roadmap, stakeholder plan or public-value Open Science case.",
       "moodleCourseId": 2006
     }
@@ -2519,7 +2519,7 @@
       "id": "src-wp2-hou-daissy",
       "institution": "Hellenic Open University (HOU)",
       "country": "Greece",
-      "courseName": "DAISSy Research Group — Open Education & MOOC Quality",
+      "courseName": "DAISSy Research Group - Open Education & MOOC Quality",
       "type": "Research group / EU project involvement",
       "level": null,
       "degreeProgramme": null,
@@ -2529,7 +2529,7 @@
       "format": null,
       "topics": null,
       "prerequisites": null,
-      "description": "DAISSy research group at HOU participates as a partner in EU-funded projects on open education/MOOC quality (e.g. MOOQ) — not a standalone open-science course for enrolled students.",
+      "description": "DAISSy research group at HOU participates as a partner in EU-funded projects on open education/MOOC quality (e.g. MOOQ). Not a standalone open-science course for enrolled students.",
       "sourceUrl": "http://mooc-quality.eu/about/hellenic-open-university",
       "confidence": 0.25
     }

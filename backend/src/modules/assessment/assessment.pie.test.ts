@@ -64,9 +64,9 @@ describe("buildPieContent: likert labels", () => {
       scale: { min: 1, max: 3, minLabel: "Not at all", maxLabel: "Very" },
     });
     expect(labelled(content).map((c) => c.label)).toEqual([
-      "<div>1 — Not at all</div>",
+      "<div>1 - Not at all</div>",
       "<div>2</div>",
-      "<div>3 — Very</div>",
+      "<div>3 - Very</div>",
       expect.any(String), // "I don't know"
     ]);
   });

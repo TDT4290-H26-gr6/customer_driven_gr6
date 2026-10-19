@@ -37,7 +37,7 @@ export function AdviceCard({ state }: { state: AdviceState }) {
       {state.status === "unavailable" && (
         <p className={styles.muted}>
           Personalised advice isn&apos;t available right now. Your recommended journey above is
-          still up to date — try again later.
+          still up to date. Try again later.
         </p>
       )}
 
@@ -70,7 +70,7 @@ export function AdviceCard({ state }: { state: AdviceState }) {
 
           <p className={styles.disclaimer}>
             Written by an AI model hosted by NTNU, based on your latest self-assessment. It can make
-            mistakes — use it as a starting point.
+            mistakes, so use it as a starting point.
           </p>
         </>
       )}

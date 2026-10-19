@@ -64,7 +64,7 @@
       "id": "src-real-hou-daissy",
       "institution": "Hellenic Open University (HOU)",
       "country": "Greece",
-      "courseName": "DAISSy Research Group — Open Education & MOOC Quality",
+      "courseName": "DAISSy Research Group - Open Education & MOOC Quality",
       "type": "Research group / EU project involvement",
       "level": null,
       "degreeProgramme": null,
@@ -74,7 +74,7 @@
       "format": null,
       "topics": null,
       "prerequisites": null,
-      "description": "DAISSy research group at HOU participates as a partner in EU-funded projects on open education/MOOC quality (e.g. MOOQ) — not a standalone open-science course for enrolled students.",
+      "description": "DAISSy research group at HOU participates as a partner in EU-funded projects on open education/MOOC quality (e.g. MOOQ). It is not a standalone open-science course for enrolled students.",
       "sourceUrl": "http://mooc-quality.eu/about/hellenic-open-university",
       "confidence": 0.25,
       "createdAt": "2026-09-25T00:00:00.000Z",
@@ -110,7 +110,7 @@
     {
       "id": "comp-real-legal-ethics-governance",
       "name": "Legal, Ethical, and Governance Aspects",
-      "description": "GDPR, the EU Data Governance Act and Open Data Directive, IP/licensing (incl. Creative Commons), and the legal vs. ethical distinction in data practices. Primary source is an approximate fit — no dedicated legal/governance course has been confirmed yet.",
+      "description": "GDPR, the EU Data Governance Act and Open Data Directive, IP/licensing (incl. Creative Commons), and the legal vs. ethical distinction in data practices. Primary source is an approximate fit; no dedicated legal/governance course has been confirmed yet.",
       "primarySourceId": "src-real-uth-open-access",
       "createdAt": "2026-09-25T00:00:00.000Z",
       "updatedAt": "2026-09-25T00:00:00.000Z"
@@ -118,7 +118,7 @@
     {
       "id": "comp-real-ai-tools",
       "name": "Use of AI Tools in Open Science",
-      "description": "Evaluating and using generative AI tools as part of open-science work. Primary source is an approximate fit — no dedicated AI-tools course has been confirmed yet.",
+      "description": "Evaluating and using generative AI tools as part of open-science work. Primary source is an approximate fit; no dedicated AI-tools course has been confirmed yet.",
       "primarySourceId": "src-real-unibo-open-science",
       "createdAt": "2026-09-25T00:00:00.000Z",
       "updatedAt": "2026-09-25T00:00:00.000Z"
@@ -188,15 +188,15 @@
         "options": [
           {
             "id": "a",
-            "text": "Article 27.1 — the right of everyone to share in scientific advancement and its benefits"
+            "text": "Article 27.1: the right of everyone to share in scientific advancement and its benefits"
           },
           {
             "id": "b",
-            "text": "Article 26.3 — parents' right to choose the kind of education their children receive"
+            "text": "Article 26.3: parents' right to choose the kind of education their children receive"
           },
           {
             "id": "c",
-            "text": "Article 27.2 — protection of material interests resulting from individuals' scientific production"
+            "text": "Article 27.2: protection of material interests resulting from individuals' scientific production"
           }
         ],
         "correctOptionIds": ["a"]
@@ -275,7 +275,7 @@
     },
     {
       "id": "q-real-os-5",
-      "prompt": "Which term matches this definition: \"Findable, Accessible, Interoperable, and Reusable — guiding principles for research data.\"?",
+      "prompt": "Which term matches this definition: \"Findable, Accessible, Interoperable, and Reusable: guiding principles for research data.\"?",
       "questionType": "single_choice",
       "content": {
         "options": [

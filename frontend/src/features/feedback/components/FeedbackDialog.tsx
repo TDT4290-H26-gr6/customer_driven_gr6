@@ -122,7 +122,7 @@ export function FeedbackDialog({
             }}
           >
             <p className={styles.hint}>
-              You&apos;re testing an early version of AIOS. Tell us what could be better — a couple
+              You&apos;re testing an early version of AIOS. Tell us what could be better, a couple
               of sentences is plenty.
             </p>
 

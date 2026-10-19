@@ -96,7 +96,7 @@ export function ProfileForm({ onSaved, submitLabel = "Save" }: Props) {
     <form className={styles.wrap} onSubmit={submit} noValidate>
       <h2 className={styles.heading}>Your profile</h2>
       <p className={styles.hint}>
-        Tell us a bit about yourself — this helps tailor what we recommend you next. Everything but
+        Tell us a bit about yourself, it helps tailor what we recommend you next. Everything but
         goals is required before you can take the assessment.
       </p>
 

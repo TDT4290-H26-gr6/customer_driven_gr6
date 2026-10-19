@@ -33,8 +33,8 @@ export function WelcomeScreen({ name, hasOngoing = false, onStart }: Props) {
         <h1 className={styles.heading}>Let&apos;s find out where you stand.</h1>
         <p className={styles.subheading}>
           {hasOngoing
-            ? "You've started the self-assessment — your answers are saved, so you can pick up where you left off."
-            : "You haven't taken the self-assessment yet — it only takes a few minutes and gives you a personal breakdown of your skills."}
+            ? "You've started the self-assessment, your answers are saved, so you can pick up where you left off."
+            : "You haven't taken the self-assessment yet. It only takes a few minutes and gives you a personal breakdown of your skills."}
         </p>
         <Button className={styles.cta} onClick={onStart}>
           {hasOngoing ? "Continue assessment" : "Take self assessment"}

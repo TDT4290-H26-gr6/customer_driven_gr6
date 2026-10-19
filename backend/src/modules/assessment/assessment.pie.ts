@@ -85,7 +85,7 @@ function likertChoices(scale: NonNullable<AuthoredContent["scale"]>): PieChoice[
     // number itself — that is the score.
     const own = scale.labels?.[n - scale.min];
     const end = n === scale.min ? scale.minLabel : n === scale.max ? scale.maxLabel : undefined;
-    const text = own ?? (end ? `${n} — ${end}` : String(n));
+    const text = own ?? (end ? `${n} - ${end}` : String(n));
     choices.push({ value: String(n), label: `<div>${escapeHtml(text)}</div>`, correct: false });
   }
   return choices;
