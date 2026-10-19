@@ -18,7 +18,7 @@ export function Logo({ className }: Props) {
       className={[styles.logo, className].filter(Boolean).join(" ")}
       viewBox="0 0 400 188"
       role="img"
-      aria-label="AIOS — AI-Driven Open Science"
+      aria-label="AIOS - AI-Driven Open Science"
     >
       <path
         fill="currentColor"

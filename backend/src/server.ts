@@ -25,7 +25,7 @@ const apiLimiter = rateLimit({
   limit: 1000,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { error: "Too many requests — please slow down and try again shortly." },
+  message: { error: "Too many requests. Please slow down and try again shortly." },
 });
 
 const loginLimiter = rateLimit({
@@ -33,7 +33,7 @@ const loginLimiter = rateLimit({
   limit: 50,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { error: "Too many sign-in attempts — please wait a few minutes." },
+  message: { error: "Too many sign-in attempts. Please wait a few minutes." },
 });
 
 // Assembles the Express app. Registering a module = one import + one app.use().

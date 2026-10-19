@@ -59,7 +59,7 @@ export function HistoryPage() {
 
       {!loadFailed && entries.length === 0 && (
         <p className={styles.note}>
-          You haven&apos;t completed a self-assessment yet — finish one to see it here.
+          You haven&apos;t completed a self-assessment yet. Finish one to see it here.
         </p>
       )}
 

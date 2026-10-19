@@ -132,7 +132,7 @@ export function JourneyCard({
                       <li key={module.id}>
                         <strong>{module.title}</strong>
                         {module.description && (
-                          <span className={styles.stepDescription}> — {module.description}</span>
+                          <span className={styles.stepDescription}>: {module.description}</span>
                         )}
                       </li>
                     ))}

@@ -27,7 +27,7 @@ export function RoleGateModal() {
     <div className={styles.backdrop} role="presentation">
       <div className={styles.dialog} role="dialog" aria-modal="true" aria-label="Choose your role">
         <RoleSelect
-          heading="Welcome — choose your role"
+          heading="Welcome, choose your role"
           description="Pick the role that best describes you to start your learning journey."
           confirmLabel="Continue"
           onDone={handleDone}

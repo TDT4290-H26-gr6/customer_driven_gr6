@@ -44,7 +44,7 @@ describe("WP2 seed data: shape", () => {
       const own = modules.filter((m) => m.sectionId === section.id);
       expect(own.map((m) => m.level).sort()).toEqual([1, 2, 3, 4]);
       for (const m of own)
-        expect(String(m.name)).toMatch(new RegExp(`^${section.code}${m.level} — `));
+        expect(String(m.name)).toMatch(new RegExp(`^${section.code}${m.level} - `));
     }
   });
 

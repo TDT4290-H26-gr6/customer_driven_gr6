@@ -62,8 +62,8 @@ export function LearningJourneysPage() {
     <div className={styles.page}>
       <h1 className={styles.heading}>Learning journeys</h1>
       <p className={styles.subheading}>
-        Assess yourself on any journey — only the sections it focuses on. It doesn&apos;t change
-        your self-assessment; your result shows under Competencies.
+        Assess yourself on any journey, only the sections it focuses on. It doesn&apos;t change your
+        self-assessment; your result shows under Competencies.
       </p>
 
       {startError && (

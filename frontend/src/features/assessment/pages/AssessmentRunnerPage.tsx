@@ -223,7 +223,7 @@ export function AssessmentRunnerPage() {
     } catch {
       // Safe to press Finish again: completing an already-completed
       // instance is a no-op on the backend.
-      setNavError("Couldn't finish the assessment. Your answers are saved — please try again.");
+      setNavError("Couldn't finish the assessment. Your answers are saved, please try again.");
       finishing.current = false;
       setUnsavedCount(unsaved.current.size);
       setIsFinishing(false);
@@ -245,7 +245,7 @@ export function AssessmentRunnerPage() {
       try {
         fresh = await withRetry(() => getAssessmentPath());
       } catch {
-        setNavError("Couldn't load the next question. Your answers are saved — please try again.");
+        setNavError("Couldn't load the next question. Your answers are saved, please try again.");
         return;
       }
       setPath(fresh);

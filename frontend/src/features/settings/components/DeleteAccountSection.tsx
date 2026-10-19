@@ -31,7 +31,7 @@ export function DeleteAccountSection() {
     <div className={styles.wrap}>
       <h2 className={styles.heading}>Delete account</h2>
       <p className={styles.hint}>
-        Permanently deletes your account and everything tied to it — your assessments, scores, and
+        Permanently deletes your account and everything tied to it: your assessments, scores, and
         profile. This can&apos;t be undone.
       </p>
 

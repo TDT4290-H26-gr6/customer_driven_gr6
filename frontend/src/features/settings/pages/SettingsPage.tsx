@@ -100,7 +100,7 @@ export function SettingsPage() {
             onDone={handleRoleChange}
           />
           {saved && (
-            <p className={styles.confirmation}>Saved — you&apos;re now set as {saved.name}.</p>
+            <p className={styles.confirmation}>Saved. You&apos;re now set as {saved.name}.</p>
           )}
         </div>
       )}

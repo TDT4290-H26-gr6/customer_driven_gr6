@@ -21,7 +21,7 @@ export function WeakCompetencesSection({ competences }: Props) {
       <p className={styles.eyebrow}>Where you&apos;re lacking</p>
 
       {competences.length === 0 ? (
-        <p className={styles.sufficient}>You&apos;re sufficient in every area — nice work.</p>
+        <p className={styles.sufficient}>You&apos;re sufficient in every area. Nice work.</p>
       ) : (
         <ul className={styles.list}>
           {competences.map((c) => (
