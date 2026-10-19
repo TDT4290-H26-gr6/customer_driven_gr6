@@ -1,0 +1,11 @@
+# For images built from the repository root (the backend: it needs
+# database/prisma/schema too). Keep the context to what it uses.
+**/node_modules
+**/dist
+**/coverage
+**/*.tsbuildinfo
+.git
+.env
+frontend
+database/src
+backend/prisma

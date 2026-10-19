@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../db/prisma";
-import { buildPieContent, type AuthoredContent } from "../modules/assessment/assessment.pie";
+import { buildPieContent, type AuthoredContent } from "./pie";
 import { withMoodleLink } from "./datasetLoader";
 
 // `npm run content:sync` (see contentSync.cli.ts): makes the database match

@@ -22,9 +22,28 @@ jobs:
       - run: npm install
       - run: npm run format:check
       - run: npm run lint
-      - run: npx prisma generate
+      - run: npm run prisma:generate # from database/prisma/schema
       - run: npm run test:coverage # fails below the 90% thresholds in vitest.config.ts / vite.config.ts
       - run: npm run build
+
+  database:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: database
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: database/package-lock.json
+      - run: npm install
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npx prisma generate
+      - run: npm run test:coverage # fails below the 90% thresholds in vitest.config.ts / vite.config.ts
+      - run: npm run typecheck
 
   frontend:
     runs-on: ubuntu-latest

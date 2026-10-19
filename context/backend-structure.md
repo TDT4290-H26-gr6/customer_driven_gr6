@@ -72,7 +72,8 @@ Split the single `prisma/schema.prisma` into a folder (Prisma's
 `prismaSchemaFolder` — preview in Prisma 5.15+, GA in 6.x):
 
 ```
-backend/prisma/
+database/prisma/             # the database package owns the schema (§4)
+├── pre-push.sql             # runs before every db push (see "Schema changes db push can't make")
 ├── schema/
 │   ├── schema.prisma        # generator + datasource ONLY
 │   ├── identity.prisma      # Learner, Role, RoleSection, RoleCompetence, (Session)
@@ -81,8 +82,7 @@ backend/prisma/
 │   ├── learningJourney.prisma  # LearningJourney, JourneySection, LearningModule, JourneyRecommendation
 │   ├── security.prisma      # (Admin, AuditEvent)  — added when the module lands
 │   └── platform.prisma      # (AppSetting, FeatureFlag) — later
-├── migrations/              # created when we switch to Prisma Migrate (§7)
-└── seed.ts
+└── migrations/              # created when we switch to Prisma Migrate (§7)
 ```
 
 - Prisma merges every `*.prisma` file in `prisma/schema/`. Models in
@@ -94,10 +94,14 @@ backend/prisma/
     previewFeatures = ["prismaSchemaFolder"]
   }
   ```
-  and point the CLI at the folder via `backend/package.json`:
+  and point the CLI at the folder via `database/package.json`:
   ```jsonc
-  "prisma": { "schema": "./prisma/schema", "seed": "tsx prisma/seed.ts" }
+  "prisma": { "schema": "./prisma/schema", "seed": "tsx src/index.ts" }
   ```
+  The backend generates its own client from the same schema:
+  `npm run prisma:generate` in `backend/` copies it into the git-ignored
+  `backend/prisma/schema` first, so the client always lands in the backend's
+  own `node_modules`. Edit the schema in `database/` only.
 - Model names stay unprefixed PascalCase (`Question`). The **table** name gets
   the module prefix:
   ```prisma
@@ -123,11 +127,32 @@ backend/prisma/
 
 ## 4. `src/` layout
 
-Mirror the modules; keep framework wiring thin.
+Mirror the modules; keep framework wiring thin. The backend is **the API only**:
+everything that prepares the database (the schema, `pre-push.sql`, the content
+datasets and the code that loads them) lives in the separate `database/`
+package, which runs as the one-off `db-init` container before the backend
+starts (`docker-compose.yml`: mysql → db-init → backend).
 
 ```
+database/
+├── Dockerfile               # db-init: pre-push.sql, prisma db push, then the seed; exits
+├── prisma/                  # the schema (§3) and pre-push.sql
+├── scripts/seed-dev-scores.ts  # old dev helper; predates schema v3 and no longer runs
+└── src/
+    ├── index.ts             # db-init's last step: seedChosenDataset(), logged, never fatal
+    ├── config.ts            # SEED_DATASET, MOODLE_BASE_URL
+    ├── db/prisma.ts         # this package's PrismaClient
+    └── seed/                # content datasets — see §11
+        ├── index.ts         # seedChosenDataset(): the SEED_DATASET one, never mixed
+        ├── datasetLoader.ts # createDatasetLoader(): load / bring up to date one dataset JSON
+        ├── pie.ts           # authored question -> PIE item content (buildPieContent)
+        ├── contentSync.ts   # `npm run content:sync`: make the DB match the WP2 JSON
+        ├── fakeFoodSeed.ts  # the fake food dataset (default)
+        ├── wp2Seed.ts       # the real WP2 curriculum (SEED_DATASET=wp2)
+        └── data/aios_fake_food_seed.json, aios_wp2_seed.json
+
 backend/src/
-├── index.ts                 # process entry: seed a fresh database, then start the server
+├── index.ts                 # process entry: start the server (the database is already prepared)
 ├── server.ts                # buildServer(): express app + router registration + error handler
 ├── db/
 │   └── prisma.ts            # the single shared PrismaClient
@@ -136,12 +161,6 @@ backend/src/
 │   └── requireRole.ts       # requires req.learnerId's persona to be set (403 otherwise)
 ├── lib/
 │   └── asyncHandler.ts      # forwards a rejected async route handler to the error handler
-├── seed/                    # content datasets, loaded at start — see §11
-│   ├── index.ts             # seedChosenDataset(): the SEED_DATASET one, never mixed
-│   ├── datasetLoader.ts     # createDatasetLoader(): load / bring up to date one dataset JSON
-│   ├── fakeFoodSeed.ts      # the fake food dataset (default)
-│   ├── wp2Seed.ts           # the real WP2 curriculum (SEED_DATASET=wp2)
-│   └── data/aios_fake_food_seed.json, aios_wp2_seed.json
 ├── modules/
 │   ├── identity/
 │   │   ├── identity.routes.ts       # /auth/*, /roles, /auth/me/role
@@ -151,8 +170,7 @@ backend/src/
 │   ├── assessment/
 │   │   ├── assessment.routes.ts   # /questions, /assessment/*, /competence-scores (all requireRole)
 │   │   ├── assessment.service.ts  # role-filtered questions, saving/scoring answers, score roll-up
-│   │   ├── assessment.scoring.ts  # pure scoring rules (multiple choice, likert, drag-and-drop)
-│   │   └── assessment.pie.ts      # authored question -> PIE item content
+│   │   └── assessment.scoring.ts  # pure scoring rules (multiple choice, likert, drag-and-drop)
 │   ├── sources/
 │   │   ├── sources.routes.ts      # /sources (requireRole)
 │   │   └── sources.service.ts
@@ -177,7 +195,13 @@ backend/src/
 - `*.types.ts` — request/response and domain types for the module.
 - `*.bootstrap.ts` — idempotent startup data for a single module (e.g. a
   future `ensureAdmin`), invoked from `index.ts`. No module has one today: the
-  dev dataset spans every module, so it lives in `src/seed/` instead (§11).
+  content datasets span every module, so they live in `database/src/seed/`
+  instead (§11).
+- **The PIE item format is the contract** between the two packages:
+  `database/src/seed/pie.ts` writes each question's `content`, and
+  `assessment.service.ts` / `assessment.scoring.ts` read it back to score
+  answers (choice `value` + `correct`, plus the "I don't know" choice,
+  `IDK_VALUE`, defined on both sides). Change it on both sides together.
 - `server.ts` — imports each module's router and `app.use()`s it. Adding a
   module = one import + one line here.
 
@@ -226,8 +250,8 @@ backend/src/
 
 ## 7. Migrations — prerequisite for the table renames
 
-Today the stack runs `prisma db push --accept-data-loss` on container start
-(`backend/Dockerfile`). That is fine for a throw‑away scaffold but it is
+Today the stack runs `prisma db push --accept-data-loss` on every start, in
+the `db-init` container (`database/Dockerfile`). That is fine for a throw‑away scaffold but it is
 unversioned and destructive.
 
 **Before we add `@@map` prefixes** (which rename existing tables) we switch to
@@ -235,7 +259,7 @@ unversioned and destructive.
 
 1. `prisma migrate dev --name init` to capture the current schema into
    `prisma/migrations/` (committed to git).
-2. Container start command becomes `prisma migrate deploy` instead of `db push`.
+2. db-init's start command becomes `prisma migrate deploy` instead of `db push`.
 3. The `@@map` rename then ships as a normal migration that MySQL executes as
    `RENAME TABLE`, preserving data.
 
@@ -355,7 +379,7 @@ real users exist.
 ### Question types and scoring
 
 Authored simply, stored as PIE. A question's `questionType` decides how
-`assessment.pie.ts` builds its PIE item; **all five use PIE's `multiple-choice`
+`database/src/seed/pie.ts` builds its PIE item; **all five use PIE's `multiple-choice`
 element** (already rendered and scored by the app):
 
 | `questionType`  | Authored `content`                        | PIE                       | Score                                                                                                  |
@@ -378,8 +402,8 @@ Every question is out of 1 point; "I don't know" scores 0 out of 1.
 - `completeActiveInstance` sums a finished run's `Response.score` / `maxScore`
   per `question.competenceId` into `assessment_competence_score`.
 
-**"I don't know":** `assessment.pie.ts` appends one extra choice
-(`IDK_VALUE`/`IDK_LABEL` in `assessment.scoring.ts`) to _every_ generated
+**"I don't know":** `database/src/seed/pie.ts` appends one extra choice
+(`IDK_VALUE`/`IDK_LABEL`, matched by the backend's `assessment.scoring.ts`) to _every_ generated
 model, of every type — not authored per-question. Picking it scores `0/0` for
 the whole question, checked in `scoreAnswer` before any type-specific scoring
 runs, so it overrides everything else even a `multi_choice`'s other ticks. It
@@ -406,8 +430,8 @@ A recommendation row is logged only when the recommended journey changes.
 
 ### Seeding
 
-There are two content datasets, and `SEED_DATASET` picks which one the backend
-loads (`src/seed/index.ts`):
+There are two content datasets, and `SEED_DATASET` picks which one db-init
+loads (`database/src/seed/index.ts`):
 
 | `SEED_DATASET` | File | What it is |
 | --- | --- | --- |
@@ -416,8 +440,8 @@ loads (`src/seed/index.ts`):
 
 - **Never mixed.** A learner's first assessment covers the whole question bank,
   so two datasets in one database would hand learners both. If the database
-  already holds the other dataset, the backend refuses to load (logged at start,
-  nothing changed). Switching an existing database = back it up, start from an
+  already holds the other dataset, db-init refuses to load it (logged in
+  `docker compose logs db-init`, nothing changed; the backend still starts). Switching an existing database = back it up, start from an
   empty one.
 - **WP2 is not complete yet**, which is why `fake` stays the default: A1 and A4
   have no items, several modules have 1–2, and items of types the app can't
@@ -433,7 +457,7 @@ loads (`src/seed/index.ts`):
   which wins. Changing the base URL or ids updates existing rows on the next
   start, so swapping the placeholders for real links is a data change.
 
-`src/seed/fakeFoodSeed.ts` loads `src/seed/data/aios_fake_food_seed.json` — a
+`database/src/seed/fakeFoodSeed.ts` loads `database/src/seed/data/aios_fake_food_seed.json` — a
 **fake**, food-themed dataset that _is_ every learner's initial assessment:
 **5 sections (A–E) × 4 section modules (levels 1–4, one competence each) ×
 3 questions = 60 questions**, plus 26
@@ -443,13 +467,14 @@ fills in (`sat_instance`, `response`, `competence_score`, `recommendation`). It
 is inserted in dependency order with `createMany({ skipDuplicates: true })`,
 so running it again never duplicates or overwrites.
 
-- **Automatically:** `index.ts` runs `seedChosenDataset()` before the server
-  starts — when any of the dataset's questions are missing, it loads the
+- **Automatically:** db-init runs `seedChosenDataset()` (`database/src/index.ts`)
+  before the backend starts — when any of the dataset's questions are missing, it loads the
   whole thing (adding only what's missing), then makes sure section codes,
   module levels, competence names and Moodle links match the JSON. A fresh
   database therefore opens with every question, and an older one picks up new
   questions, codes, levels and links, with no manual step.
-- **By hand:** `npx prisma db seed` runs the same loader.
+- **By hand:** `docker compose run --rm db-init npm run seed` (or `npm run seed`
+  in `database/`) runs the same loader.
 - The seed authors questions in the simple shape above; the loader converts them
   with `buildPieContent` (which also appends the "I don't know" choice — see
   above). To add or change questions, edit the JSON (a new question needs a
@@ -466,11 +491,10 @@ so running it again never duplicates or overwrites.
 - There is no longer a default-roles bootstrap: roles come from the seed, so the
   role picker lists the seed's (fake) roles.
 - **The real open-science content is dormant, not deleted.**
-  `src/seed/openScienceSeed.ts` + `data/aios_open_science_seed.json` are
-  untouched and still valid, but nothing calls `seedOpenScienceContent()` —
-  neither `index.ts` nor `prisma/seed.ts` — so it never runs. To bring it back
-  (e.g. as a _second_, later assessment rather than the initial one), call it
-  from one of those two files again.
+  `database/src/seed/openScienceSeed.ts` + `data/aios_open_science_seed.json`
+  are untouched and still valid, but nothing calls `seedOpenScienceContent()`,
+  so it never runs. To bring it back (e.g. as a _second_, later assessment
+  rather than the initial one), call it from `database/src/index.ts`.
 
 ### Journey assessments and the Competencies overview
 
@@ -501,8 +525,8 @@ so running it again never duplicates or overwrites.
 
 ### Schema changes db push can't make on its own
 
-`prisma db push` runs on every start (Dockerfile). A few MySQL changes need a
-step first: `prisma/pre-push.sql` runs before it, and is idempotent (a no-op
+`prisma db push` runs on every start (db-init, `database/Dockerfile`). A few
+MySQL changes need a step first: `database/prisma/pre-push.sql` runs before it, and is idempotent (a no-op
 when there's nothing to do, or on a fresh database). Today it creates the
 `assessment_sat_instance(learnerId)` index — MySQL won't drop the old
 `(learnerId, instanceNum)` unique key while it's the only index behind the
@@ -517,8 +541,8 @@ in a way `db push` refuses, wipe the local volume and start over:
 ```
 docker compose down
 docker volume rm customer_driven_gr6_mysql_data
-docker compose up -d --build     # rebuild: prisma/ is baked into the image, not bind-mounted
+docker compose up -d --build     # rebuild: the schema is baked into the images, not bind-mounted
 ```
 
-The backend recreates the tables and seeds itself on the next start. This
+db-init recreates the tables and loads the dataset on the next start. This
 deletes all local data, including your own learner account and answers.

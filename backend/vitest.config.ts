@@ -13,15 +13,10 @@ export default defineConfig({
         "src/**/*.test.ts",
         // Shared test helpers, not app code.
         "src/test/**",
-        // Process startup and shutdown: listening, signals, the first seed.
+        // Process startup and shutdown: listening, signals.
         "src/index.ts",
-        // The command-line wrapper around contentSync.ts (which is tested).
-        "src/seed/contentSync.cli.ts",
         // Constructs the Prisma client; every test mocks it.
         "src/db/prisma.ts",
-        // Dormant: nothing calls it (see the file's header). Delete or test it
-        // when it's brought back.
-        "src/seed/openScienceSeed.ts",
       ],
       // CI fails below these (npm run test:coverage).
       thresholds: {

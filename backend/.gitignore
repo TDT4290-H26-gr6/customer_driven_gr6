@@ -1,0 +1,3 @@
+# A copy of database/prisma/schema, made by `npm run prisma:generate` so the
+# client is generated into this package. Edit the schema in database/.
+prisma/

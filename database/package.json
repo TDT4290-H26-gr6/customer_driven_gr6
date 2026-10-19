@@ -1,0 +1,40 @@
+{
+  "name": "aios-database",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "schema:prepare": "prisma db execute --schema=./prisma/schema --file ./prisma/pre-push.sql",
+    "schema:push": "prisma db push --accept-data-loss --skip-generate",
+    "seed": "tsx src/index.ts",
+    "content:sync": "tsx src/seed/contentSync.cli.ts",
+    "studio": "prisma studio",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "prisma": {
+    "schema": "./prisma/schema",
+    "seed": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.19.0",
+    "prisma": "^5.19.0",
+    "tsx": "^4.16.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.1",
+    "@types/node": "^20.14.9",
+    "@vitest/coverage-v8": "^2.1.9",
+    "eslint": "^9.9.1",
+    "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.9.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.4.0",
+    "vitest": "^2.1.9"
+  }
+}

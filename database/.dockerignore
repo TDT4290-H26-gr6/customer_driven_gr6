@@ -1,0 +1,3 @@
+# Installed fresh inside the image (for Linux).
+node_modules
+coverage
