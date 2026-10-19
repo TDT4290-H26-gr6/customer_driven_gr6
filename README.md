@@ -47,9 +47,28 @@ The frontend config also enables `eslint-plugin-jsx-a11y`, which statically
 flags common keyboard-accessibility mistakes (e.g. a clickable element with
 no keyboard handler) as part of the normal lint run.
 
-CI (`.github/workflows/ci.yml`) runs `format:check` and `lint` before
-`build` for both packages on every push and pull request to `main`, so a
-PR with lint or formatting problems fails before it can be merged.
+CI (`.github/workflows/ci.yml`) runs `format:check`, `lint` and
+`test:coverage` before `build` for both packages on every push and pull
+request to `main` and `dev`, so a PR with lint or formatting problems,
+failing tests, or too little test coverage fails before it can be merged.
+
+### Test coverage
+
+Both packages must keep **at least 90%** line, statement, branch and function
+coverage. The thresholds live in `backend/vitest.config.ts` and
+`frontend/vite.config.ts`; CI fails below them.
+
+```bash
+npm run test:coverage   # tests + coverage report; open coverage/index.html for detail
+```
+
+New code comes with tests. The few files excluded from coverage (process
+startup, the WebGL robot scene, one-line barrels…) are listed with the reason
+in those configs: only code a unit test can't meaningfully run belongs there.
+
+Backend route tests start the real Express app on a random port with the
+services mocked; see `backend/src/test/httpTestServer.ts` and any
+`*.routes.test.ts` for the pattern.
 
 ## Next steps
 
