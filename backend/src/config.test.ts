@@ -27,8 +27,6 @@ const SETTINGS = [
   "LLM_API_KEY",
   "LLM_BASE_URL",
   "LLM_MODEL",
-  "SEED_DATASET",
-  "MOODLE_BASE_URL",
 ];
 
 beforeEach(() => {
@@ -50,8 +48,6 @@ describe("in development", () => {
     expect(config.corsOrigins).toBe(true);
     expect(config.adminEmails).toBe("everyone");
     expect(config.llm).toBeNull();
-    expect(config.seedDataset).toBe("fake");
-    expect(config.moodleBaseUrl).toBe("https://moodle.example.org");
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining("JWT_SECRET"));
   });
 
@@ -71,8 +67,6 @@ describe("in production", () => {
       LLM_API_KEY: "sk-test",
       LLM_BASE_URL: "https://llm.example.org/v1///",
       LLM_MODEL: "some-model",
-      SEED_DATASET: " WP2 ",
-      MOODLE_BASE_URL: "https://moodle.ntnu.no/",
     });
 
     expect(config.port).toBe(4100);
@@ -84,8 +78,6 @@ describe("in production", () => {
       baseUrl: "https://llm.example.org/v1",
       model: "some-model",
     });
-    expect(config.seedDataset).toBe("wp2");
-    expect(config.moodleBaseUrl).toBe("https://moodle.ntnu.no");
   });
 
   it("uses NTNU's LLM endpoint and model by default", async () => {
@@ -122,9 +114,5 @@ describe("in production", () => {
 describe("validation", () => {
   it.each(["0", "70000", "abc", "40.5"])("rejects BACKEND_PORT=%s", async (port) => {
     await expect(loadConfig({ BACKEND_PORT: port })).rejects.toThrow("BACKEND_PORT");
-  });
-
-  it("rejects an unknown SEED_DATASET", async () => {
-    await expect(loadConfig({ SEED_DATASET: "real" })).rejects.toThrow("SEED_DATASET");
   });
 });

@@ -1,7 +1,6 @@
 import { buildServer } from "./server";
 import { config } from "./config";
 import { prisma } from "./db/prisma";
-import { seedChosenDataset } from "./seed";
 
 /** How long in-flight requests get to finish on shutdown before we exit anyway. */
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -19,19 +18,9 @@ process.on("uncaughtException", (err) => {
 });
 
 async function main() {
-  // A fresh database gets the dataset SEED_DATASET names (the fake one by
-  // default; "wp2" for the real curriculum), and an older one gets whatever
-  // that dataset has gained since. Awaited before listening so the first
-  // request never sees an empty or half-updated question bank. A failure here
-  // is logged, not fatal — the API still starts, it just has nothing (new)
-  // to show. That includes refusing to mix two datasets (see seed/index.ts).
-  try {
-    if (await seedChosenDataset())
-      console.log(`Dataset "${config.seedDataset}" loaded or brought up to date.`);
-  } catch (err) {
-    console.error("Startup seeding failed:", err);
-  }
-
+  // The database is prepared before this starts: db-init pushes the schema
+  // and loads the content (see database/ and docker-compose.yml), so the
+  // backend only serves the API.
   const server = buildServer().listen(config.port, () => {
     console.log(`AIOS backend listening on http://localhost:${config.port}`);
   });

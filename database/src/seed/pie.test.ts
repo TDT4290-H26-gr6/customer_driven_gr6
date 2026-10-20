@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPieContent } from "./assessment.pie";
-import { IDK_VALUE } from "./assessment.scoring";
+import { buildPieContent, IDK_VALUE } from "./pie";
 
 type Choice = { value: string; correct: boolean };
 function choicesOf(content: ReturnType<typeof buildPieContent>): Choice[] {

@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../db/prisma";
 import { config } from "../config";
-import { buildPieContent, type AuthoredContent } from "../modules/assessment/assessment.pie";
+import { buildPieContent, type AuthoredContent } from "./pie";
 
 // Loads one content dataset (a JSON file in data/) into the database: every
 // table of schema v3 except the ones a learner fills in themselves

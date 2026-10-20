@@ -2,7 +2,6 @@ import { Prisma, type Question } from "@prisma/client";
 import { config } from "../../config";
 import { prisma } from "../../db/prisma";
 import { findLearnerById, getRoleGrants } from "../identity/identity.service";
-import { ORDERED_QUESTION_TYPES } from "./assessment.pie";
 import { buildSectionProgress, isProgressComplete } from "./assessment.progress";
 import { JOURNEY_KIND, MAIN_KIND, type AssessmentKind } from "./assessment.kinds";
 import { bestPerModule, sectionPercent } from "./assessment.competencies";
@@ -29,6 +28,9 @@ import {
 } from "./assessment.scoring";
 
 // All Prisma access for assessment_* tables lives here.
+
+/** Question types whose on-screen choice order is meaningful and must never be shuffled. */
+const ORDERED_QUESTION_TYPES: readonly string[] = ["likert", "true_false"];
 
 /**
  * Randomizes the on-screen order of a question's answer choices (Fisher–

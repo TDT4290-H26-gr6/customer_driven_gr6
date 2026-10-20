@@ -70,7 +70,7 @@ export function scoreMultipleChoice(
 /**
  * Scores a likert (self-rated) response, out of 1. There is no right answer:
  * the score is the scale value the learner picked divided by the top of the
- * scale. Each choice's `value` is that scale number (see assessment.pie.ts).
+ * scale. Each choice's `value` is that scale number (see database/src/seed/pie.ts).
  * The session comes from the client, so a value that isn't on the scale
  * (e.g. "1000") scores 0 rather than inflating the competence score.
  */

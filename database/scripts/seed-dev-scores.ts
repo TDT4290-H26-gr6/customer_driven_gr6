@@ -5,7 +5,7 @@
  * pipeline exists. Not wired into the container boot or `prisma db seed` —
  * run by hand against your local DB:
  *
- *   npx tsx prisma/seed-dev-scores.ts <learner-email>
+ *   npx tsx scripts/seed-dev-scores.ts <learner-email>
  *
  * Safe to re-run: each run adds one more completed instance for that
  * learner, so the recommendation always has the latest one to read.
@@ -17,7 +17,7 @@ const prisma = new PrismaClient();
 async function main() {
   const email = process.argv[2];
   if (!email) {
-    console.error("Usage: npx tsx prisma/seed-dev-scores.ts <learner-email>");
+    console.error("Usage: npx tsx scripts/seed-dev-scores.ts <learner-email>");
     process.exit(1);
   }
 

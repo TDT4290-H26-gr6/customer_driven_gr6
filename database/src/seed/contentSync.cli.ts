@@ -17,8 +17,9 @@ import {
 // restarting the app — it reads content from the database on every request.
 // A dry run by default: prints what would change. --apply writes it.
 //
-// In Docker (only src/ is mounted, so this file and the data are live):
-//   docker exec customer_driven_gr6-backend-1 npx tsx src/seed/contentSync.cli.ts --apply
+// In Docker, through the db-init service (its src/ is mounted, so this file
+// and the data are live):
+//   docker compose run --rm db-init npm run content:sync -- --apply
 
 const DEFAULT_FILE = path.join(__dirname, "data", "aios_wp2_seed.json");
 
