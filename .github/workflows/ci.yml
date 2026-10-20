@@ -23,7 +23,7 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npx prisma generate
-      - run: npm run test
+      - run: npm run test:coverage # fails below the 90% thresholds in vitest.config.ts / vite.config.ts
       - run: npm run build
 
   frontend:
@@ -41,5 +41,5 @@ jobs:
       - run: npm install
       - run: npm run format:check
       - run: npm run lint
-      - run: npm run test
+      - run: npm run test:coverage # fails below the 90% thresholds in vitest.config.ts / vite.config.ts
       - run: npm run build
