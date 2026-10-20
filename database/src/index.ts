@@ -8,9 +8,10 @@ import { seedChosenDataset } from "./seed";
 // with whatever that dataset has gained since. Also `npm run seed` /
 // `npx prisma db seed` by hand.
 //
-// A seeding failure is logged but doesn't fail db-init, so the backend still
-// starts: it just has nothing (new) to show. That includes refusing to mix two
-// datasets (see seed/index.ts). A schema push that fails does stop it.
+// A seeding failure stops db-init (exit code 1), so the backend doesn't start
+// on a database that doesn't hold what SEED_DATASET asks for. That includes
+// refusing to mix two datasets (see seed/index.ts): nothing is changed, and
+// the reason is in `docker compose logs db-init`.
 async function main() {
   try {
     const changed = await seedChosenDataset();
@@ -21,6 +22,7 @@ async function main() {
     );
   } catch (err) {
     console.error("Seeding failed:", err);
+    process.exitCode = 1;
   }
 }
 

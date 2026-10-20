@@ -96,6 +96,23 @@ docker compose run --rm db-init npm run content:sync -- --apply   # apply them
 After changing the schema (`database/prisma/schema`), rebuild both:
 `docker compose up -d --build db-init backend`.
 
+### Schema changes that would lose data
+
+db-init applies the schema with `prisma db push`, but never with
+`--accept-data-loss`: a change that would drop a column or table, or narrow a
+type, makes db-init fail (and the backend stays down) instead of deleting data.
+`docker compose logs db-init` shows what would be lost. To apply it on purpose,
+back the database up first, then run it once by hand and start again:
+
+```bash
+# <database>: the name at the end of DATABASE_URL in .env
+docker compose exec mysql sh -c 'mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" <database>' > backup.sql
+docker compose run --rm db-init npm run schema:push:accept-data-loss
+docker compose up -d
+```
+
+`backup*.sql` is git-ignored, and `.dockerignore` keeps dumps out of images.
+
 ## Running on the VM (production)
 
 Locally, `docker compose up` runs the Vite dev server with hot reload. On the

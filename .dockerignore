@@ -5,7 +5,15 @@
 **/coverage
 **/*.tsbuildinfo
 .git
-.env
 frontend
 database/src
 backend/prisma
+# Never bake secrets or database dumps into an image layer, wherever they are.
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.dump
+**/*.sql
+**/*.sql.gz

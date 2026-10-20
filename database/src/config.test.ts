@@ -37,6 +37,20 @@ describe("config", () => {
     expect((await loadConfig({ SEED_DATASET: "fake" })).seedDataset).toBe("fake");
   });
 
+  it("accepts a local Moodle test server over http", async () => {
+    const config = await loadConfig({ MOODLE_BASE_URL: "http://localhost:8080/" });
+    expect(config.moodleBaseUrl).toBe("http://localhost:8080");
+  });
+
+  it.each([
+    "moodle.ntnu.no",
+    "http://moodle.ntnu.no",
+    "javascript:alert(1)",
+    "ftp://moodle.ntnu.no",
+  ])("rejects MOODLE_BASE_URL=%s", async (value) => {
+    await expect(loadConfig({ MOODLE_BASE_URL: value })).rejects.toThrow("MOODLE_BASE_URL");
+  });
+
   it("rejects an unknown dataset", async () => {
     await expect(loadConfig({ SEED_DATASET: "real" })).rejects.toThrow("SEED_DATASET");
   });

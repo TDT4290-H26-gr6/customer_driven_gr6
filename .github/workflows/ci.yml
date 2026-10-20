@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main, dev]
 
+# Read-only token: CI only checks code, it never writes to the repository.
+permissions:
+  contents: read
+
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -19,7 +23,7 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      - run: npm install
+      - run: npm ci
       - run: npm run format:check
       - run: npm run lint
       - run: npm run prisma:generate # from database/prisma/schema
@@ -38,7 +42,7 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: database/package-lock.json
-      - run: npm install
+      - run: npm ci
       - run: npm run format:check
       - run: npm run lint
       - run: npx prisma generate
@@ -57,7 +61,7 @@ jobs:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm install
+      - run: npm ci
       - run: npm run format:check
       - run: npm run lint
       - run: npm run test:coverage # fails below the 90% thresholds in vitest.config.ts / vite.config.ts

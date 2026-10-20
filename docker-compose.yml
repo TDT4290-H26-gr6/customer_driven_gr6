@@ -19,7 +19,9 @@ services:
 
   # Prepares the database, then exits: applies the schema and loads the
   # SEED_DATASET content (see database/Dockerfile). Runs on every `up`; both
-  # steps are no-ops once the database is current.
+  # steps are no-ops once the database is current. If either fails (including
+  # a schema change that would lose data), it exits with an error and the
+  # backend doesn't start: see `docker compose logs db-init`.
   db-init:
     build: ./database
     restart: "no"
@@ -33,7 +35,7 @@ services:
       mysql:
         condition: service_healthy
     volumes:
-      - ./database/src:/app/src
+      - ./database/src:/app/src:ro
 
   # The API only. Built from the repository root so it can generate its
   # Prisma client from database/prisma/schema (see backend/Dockerfile).
@@ -66,7 +68,7 @@ services:
       db-init:
         condition: service_completed_successfully
     volumes:
-      - ./backend/src:/app/src
+      - ./backend/src:/app/src:ro
 
   frontend:
     build:

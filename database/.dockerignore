@@ -1,3 +1,13 @@
 # Installed fresh inside the image (for Linux).
 node_modules
 coverage
+# Never bake secrets or database dumps into an image layer.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.dump
+*.sql
+*.sql.gz
+!prisma/pre-push.sql

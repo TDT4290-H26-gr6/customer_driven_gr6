@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "schema:prepare": "prisma db execute --schema=./prisma/schema --file ./prisma/pre-push.sql",
-    "schema:push": "prisma db push --accept-data-loss --skip-generate",
+    "schema:push": "prisma db push --skip-generate",
+    "schema:push:accept-data-loss": "prisma db push --accept-data-loss --skip-generate",
     "seed": "tsx src/index.ts",
     "content:sync": "tsx src/seed/contentSync.cli.ts",
     "studio": "prisma studio",

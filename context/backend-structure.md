@@ -139,7 +139,7 @@ database/
 ├── prisma/                  # the schema (§3) and pre-push.sql
 ├── scripts/seed-dev-scores.ts  # old dev helper; predates schema v3 and no longer runs
 └── src/
-    ├── index.ts             # db-init's last step: seedChosenDataset(), logged, never fatal
+    ├── index.ts             # db-init's last step: seedChosenDataset(); a failure stops db-init
     ├── config.ts            # SEED_DATASET, MOODLE_BASE_URL
     ├── db/prisma.ts         # this package's PrismaClient
     └── seed/                # content datasets — see §11
@@ -250,9 +250,12 @@ backend/src/
 
 ## 7. Migrations — prerequisite for the table renames
 
-Today the stack runs `prisma db push --accept-data-loss` on every start, in
-the `db-init` container (`database/Dockerfile`). That is fine for a throw‑away scaffold but it is
-unversioned and destructive.
+Today the stack runs `prisma db push` on every start, in the `db-init`
+container (`database/Dockerfile`). That is unversioned. It runs **without**
+`--accept-data-loss`, so a schema change that would drop or narrow data stops
+db-init (and the backend with it) instead of deleting anything; a person then
+backs up and applies it deliberately (`npm run schema:push:accept-data-loss`,
+see the README).
 
 **Before we add `@@map` prefixes** (which rename existing tables) we switch to
 **Prisma Migrate**:
@@ -441,8 +444,9 @@ loads (`database/src/seed/index.ts`):
 - **Never mixed.** A learner's first assessment covers the whole question bank,
   so two datasets in one database would hand learners both. If the database
   already holds the other dataset, db-init refuses to load it (logged in
-  `docker compose logs db-init`, nothing changed; the backend still starts). Switching an existing database = back it up, start from an
-  empty one.
+  `docker compose logs db-init`, nothing changed) and exits with an error, so
+  the backend doesn't start until `SEED_DATASET` is fixed. Switching an
+  existing database = back it up, start from an empty one.
 - **WP2 is not complete yet**, which is why `fake` stays the default: A1 and A4
   have no items, several modules have 1–2, and items of types the app can't
   render yet (matrices, ordering, matching) are kept in the file's
@@ -535,8 +539,10 @@ learner foreign key, and `db push` drops it before creating the new index.
 ### Resetting the database
 
 The stack still uses `prisma db push` (§7), which cannot rename tables or
-tighten a unique constraint over existing duplicates. When the schema changes
-in a way `db push` refuses, wipe the local volume and start over:
+tighten a unique constraint over existing duplicates, and db-init never accepts
+data loss on its own. When a schema change would lose data, either apply it
+deliberately after a backup (README, "Schema changes that would lose data"),
+or, locally, wipe the volume and start over:
 
 ```
 docker compose down

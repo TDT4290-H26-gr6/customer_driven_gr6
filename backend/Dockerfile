@@ -6,13 +6,17 @@
 FROM node:20-slim
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
+# Runs as the image's unprivileged `node` user, not root.
 WORKDIR /app
+RUN chown node:node /app
+USER node
 
-COPY backend/package.json backend/package-lock.json* ./
-RUN npm install
+# npm ci: installs exactly what package-lock.json pins.
+COPY --chown=node:node backend/package.json backend/package-lock.json ./
+RUN npm ci
 
-COPY backend/ ./
-COPY database/prisma/schema ./prisma/schema
+COPY --chown=node:node backend/ ./
+COPY --chown=node:node database/prisma/schema ./prisma/schema
 RUN npx prisma generate
 
 EXPOSE 4000
