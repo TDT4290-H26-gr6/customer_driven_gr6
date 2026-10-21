@@ -4,7 +4,7 @@ import styles from "./InformationLetterPage.module.css";
 
 /**
  * The project's information letter, in full. Public (outside the signed-in
- * shell) so the login page's consent checkbox can link to it, and linked from
+ * shell) so the profile step's consent checkbox can link to it, and linked from
  * Settings for later review.
  */
 export function InformationLetterPage() {

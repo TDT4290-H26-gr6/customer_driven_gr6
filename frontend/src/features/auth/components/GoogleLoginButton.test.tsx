@@ -29,7 +29,7 @@ afterEach(() => {
 
 describe("GoogleLoginButton", () => {
   it("draws Google's button, outlined in light mode", () => {
-    const { container } = render(<GoogleLoginButton onLogin={vi.fn()} accepted />);
+    const { container } = render(<GoogleLoginButton onLogin={vi.fn()} />);
     expect(renderButton).toHaveBeenCalledWith(container.firstChild, {
       theme: "outline",
       size: "large",
@@ -38,9 +38,9 @@ describe("GoogleLoginButton", () => {
   });
 
   it("redraws it dark, once, when the theme turns dark", () => {
-    const { container, rerender } = render(<GoogleLoginButton onLogin={vi.fn()} accepted />);
+    const { container, rerender } = render(<GoogleLoginButton onLogin={vi.fn()} />);
     vi.mocked(useTheme).mockReturnValue({ resolvedTheme: "dark" } as never);
-    rerender(<GoogleLoginButton onLogin={vi.fn()} accepted />);
+    rerender(<GoogleLoginButton onLogin={vi.fn()} />);
 
     expect(renderButton).toHaveBeenLastCalledWith(container.firstChild, {
       theme: "filled_black",
@@ -53,61 +53,26 @@ describe("GoogleLoginButton", () => {
     const learner = { id: "learner-1" };
     vi.mocked(googleLogin).mockResolvedValue({ token: "t", learner } as never);
     const onLogin = vi.fn();
-    render(<GoogleLoginButton onLogin={onLogin} accepted />);
+    render(<GoogleLoginButton onLogin={onLogin} />);
 
     await googleCallback()({ credential: "google-credential" });
 
-    expect(googleLogin).toHaveBeenCalledWith("google-credential", true);
+    expect(googleLogin).toHaveBeenCalledWith("google-credential");
     expect(onLogin).toHaveBeenCalledWith(learner);
   });
 
   it("stays put when the backend refuses the sign-in", async () => {
     vi.mocked(googleLogin).mockRejectedValue(new Error("401"));
     const onLogin = vi.fn();
-    render(<GoogleLoginButton onLogin={onLogin} accepted />);
+    render(<GoogleLoginButton onLogin={onLogin} />);
 
     await expect(googleCallback()({ credential: "forged" })).resolves.toBeUndefined();
     expect(onLogin).not.toHaveBeenCalled();
   });
 
-  it("ignores a sign-in while the information letter is not acknowledged", async () => {
-    const onLogin = vi.fn();
-    render(<GoogleLoginButton onLogin={onLogin} accepted={false} />);
-
-    await googleCallback()({ credential: "google-credential" });
-
-    expect(googleLogin).not.toHaveBeenCalled();
-    expect(onLogin).not.toHaveBeenCalled();
-  });
-
-  it("dims and disables the button until the information letter is acknowledged", () => {
-    const { container, rerender } = render(
-      <GoogleLoginButton onLogin={vi.fn()} accepted={false} />,
-    );
-    const slot = container.firstChild as HTMLElement & { inert: boolean };
-    expect(slot).toHaveAttribute("aria-disabled", "true");
-    expect(slot.inert).toBe(true);
-
-    rerender(<GoogleLoginButton onLogin={vi.fn()} accepted />);
-    expect(slot).toHaveAttribute("aria-disabled", "false");
-    expect(slot.inert).toBe(false);
-  });
-
-  it("signs in after the box is ticked, without drawing the button again", async () => {
-    vi.mocked(googleLogin).mockResolvedValue({ token: "t", learner: { id: "l1" } } as never);
-    const onLogin = vi.fn();
-    const { rerender } = render(<GoogleLoginButton onLogin={onLogin} accepted={false} />);
-    rerender(<GoogleLoginButton onLogin={onLogin} accepted />);
-
-    await googleCallback()({ credential: "google-credential" });
-
-    expect(initialize).toHaveBeenCalledTimes(1);
-    expect(googleLogin).toHaveBeenCalledWith("google-credential", true);
-  });
-
   it("renders an empty slot when Google's script hasn't loaded (e.g. blocked)", () => {
     delete window.google;
-    const { container } = render(<GoogleLoginButton onLogin={vi.fn()} accepted />);
+    const { container } = render(<GoogleLoginButton onLogin={vi.fn()} />);
     expect(container.firstChild).toBeEmptyDOMElement();
   });
 });

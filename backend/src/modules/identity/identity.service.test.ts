@@ -53,55 +53,20 @@ describe("findLearnerById", () => {
 });
 
 describe("upsertLearnerFromGoogle", () => {
-  const accepted = { id: "learner-1", privacyNoticeAcceptedAt: new Date("2026-02-01") };
-
   it("creates a new learner with Google's name, keyed on Google's subject id", async () => {
-    mockPrisma.learner.upsert.mockResolvedValue(accepted as never);
-
     await identity.upsertLearnerFromGoogle("sub-1", "a@example.com", "Ada");
 
     const args = mockPrisma.learner.upsert.mock.calls[0][0];
     expect(args.where).toEqual({ googleSubId: "sub-1" });
-    expect(args.create).toEqual({
-      email: "a@example.com",
-      name: "Ada",
-      googleSubId: "sub-1",
-      privacyNoticeAcceptedAt: expect.any(Date),
-    });
+    expect(args.create).toEqual({ email: "a@example.com", name: "Ada", googleSubId: "sub-1" });
   });
 
   it("never overwrites the name a returning learner may have edited", async () => {
-    mockPrisma.learner.upsert.mockResolvedValue(accepted as never);
-
     await identity.upsertLearnerFromGoogle("sub-1", "new@example.com", "Google Name");
 
     const args = mockPrisma.learner.upsert.mock.calls[0][0];
     expect(args.update).toEqual({ email: "new@example.com" });
     expect(args.update).not.toHaveProperty("name");
-  });
-
-  it("keeps the date a returning learner already accepted the information letter", async () => {
-    mockPrisma.learner.upsert.mockResolvedValue(accepted as never);
-
-    const learner = await identity.upsertLearnerFromGoogle("sub-1", "a@example.com", "Ada");
-
-    expect(learner).toBe(accepted);
-    expect(mockPrisma.learner.update).not.toHaveBeenCalled();
-  });
-
-  it("records the acceptance for an older account that never had it", async () => {
-    mockPrisma.learner.upsert.mockResolvedValue({
-      id: "learner-1",
-      privacyNoticeAcceptedAt: null,
-    } as never);
-
-    await identity.upsertLearnerFromGoogle("sub-1", "a@example.com", "Ada");
-
-    expect(mockPrisma.learner.update).toHaveBeenCalledWith({
-      where: { id: "learner-1" },
-      data: { privacyNoticeAcceptedAt: expect.any(Date) },
-      include,
-    });
   });
 });
 

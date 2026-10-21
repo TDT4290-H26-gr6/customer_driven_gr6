@@ -1,7 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProfileForm } from "./ProfileForm";
+import { acceptPrivacyNotice } from "@/features/auth";
 import { getProfile, saveProfile } from "../api";
 
 vi.mock("../api", () => ({
@@ -9,15 +11,21 @@ vi.mock("../api", () => ({
   saveProfile: vi.fn(),
 }));
 
+vi.mock("@/features/auth", () => ({ acceptPrivacyNotice: vi.fn() }));
+
 const updateLearner = vi.fn();
+const session = vi.hoisted(() => ({
+  learner: { name: "Ada Lovelace" } as Record<string, unknown>,
+}));
 vi.mock("@/app/providers/AuthProvider", () => ({
-  useAuth: () => ({ learner: { name: "Ada Lovelace" }, updateLearner }),
+  useAuth: () => ({ learner: session.learner, updateLearner }),
 }));
 
 const savedLearner = { id: "learner-1", name: "Ada King", hasCompletedProfile: true };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  session.learner = { name: "Ada Lovelace" };
 });
 
 async function fillEverythingButName(user: ReturnType<typeof userEvent.setup>) {
@@ -138,5 +146,80 @@ describe("ProfileForm", () => {
     expect(screen.queryByText("Saved.")).not.toBeInTheDocument();
     expect(onSaved).not.toHaveBeenCalled();
     expect(updateLearner).not.toHaveBeenCalled();
+  });
+  describe("information letter consent (first-time profile step)", () => {
+    async function renderConsentForm() {
+      vi.mocked(getProfile).mockResolvedValue(null);
+      vi.mocked(saveProfile).mockResolvedValue(savedLearner as never);
+      vi.mocked(acceptPrivacyNotice).mockResolvedValue({} as never);
+      const user = userEvent.setup();
+      render(
+        <MemoryRouter>
+          <ProfileForm requireConsent submitLabel="Done" />
+        </MemoryRouter>,
+      );
+      await waitFor(() => expect(screen.getByLabelText("Name")).toBeEnabled());
+      await fillEverythingButName(user);
+      return user;
+    }
+
+    it("keeps Done disabled until the information letter is acknowledged", async () => {
+      const user = await renderConsentForm();
+      const done = screen.getByRole("button", { name: "Done" });
+      expect(done).toBeDisabled();
+      expect(screen.getByRole("link", { name: "information letter" })).toHaveAttribute(
+        "href",
+        "/information-letter",
+      );
+
+      await user.click(screen.getByRole("checkbox"));
+      expect(done).toBeEnabled();
+    });
+
+    it("records the acceptance, then saves the profile", async () => {
+      const user = await renderConsentForm();
+
+      await user.click(screen.getByRole("checkbox"));
+      await user.click(screen.getByRole("button", { name: "Done" }));
+
+      await waitFor(() => expect(saveProfile).toHaveBeenCalledOnce());
+      expect(acceptPrivacyNotice).toHaveBeenCalledOnce();
+      expect(vi.mocked(acceptPrivacyNotice).mock.invocationCallOrder[0]).toBeLessThan(
+        vi.mocked(saveProfile).mock.invocationCallOrder[0],
+      );
+    });
+
+    it("saves nothing when recording the acceptance fails", async () => {
+      const user = await renderConsentForm();
+      vi.mocked(acceptPrivacyNotice).mockRejectedValue(new Error("network"));
+
+      await user.click(screen.getByRole("checkbox"));
+      await user.click(screen.getByRole("button", { name: "Done" }));
+
+      expect(await screen.findByText(/could not save/i)).toBeInTheDocument();
+      expect(saveProfile).not.toHaveBeenCalled();
+    });
+
+    it("doesn't ask again from someone who has already accepted", async () => {
+      session.learner = { name: "Ada Lovelace", hasAcceptedPrivacyNotice: true };
+      vi.mocked(getProfile).mockResolvedValue(null);
+      render(
+        <MemoryRouter>
+          <ProfileForm requireConsent submitLabel="Done" />
+        </MemoryRouter>,
+      );
+      await waitFor(() => expect(screen.getByLabelText("Name")).toBeEnabled());
+
+      expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    });
+
+    it("has no checkbox where it isn't required (Settings)", async () => {
+      vi.mocked(getProfile).mockResolvedValue(null);
+      render(<ProfileForm />);
+      await waitFor(() => expect(screen.getByLabelText("Name")).toBeEnabled());
+
+      expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+      expect(acceptPrivacyNotice).not.toHaveBeenCalled();
+    });
   });
 });

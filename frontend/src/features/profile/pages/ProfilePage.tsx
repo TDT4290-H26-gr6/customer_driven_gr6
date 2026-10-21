@@ -18,7 +18,11 @@ export function ProfilePage() {
       </p>
 
       <div className={styles.card}>
-        <ProfileForm submitLabel="Done" onSaved={() => navigate("/", { replace: true })} />
+        <ProfileForm
+          submitLabel="Done"
+          requireConsent
+          onSaved={() => navigate("/", { replace: true })}
+        />
       </div>
     </div>
   );

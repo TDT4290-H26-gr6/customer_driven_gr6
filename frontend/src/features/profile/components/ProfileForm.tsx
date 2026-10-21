@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { acceptPrivacyNotice } from "@/features/auth";
 import { Button } from "@/shared/components/Button";
 import { getProfile, saveProfile } from "../api";
 import {
@@ -15,6 +17,12 @@ type Props = {
   onSaved?: () => void;
   /** The submit button's text. */
   submitLabel?: string;
+  /**
+   * The first-time profile step: shows the information-letter checkbox under
+   * the fields, which must be ticked before the profile can be saved (unless
+   * the learner has already accepted). Settings leaves this off.
+   */
+  requireConsent?: boolean;
 };
 
 /**
@@ -25,7 +33,7 @@ type Props = {
  * the AI advice. Saving refreshes the session's learner, so the header's
  * name and hasCompletedProfile update right away.
  */
-export function ProfileForm({ onSaved, submitLabel = "Save" }: Props) {
+export function ProfileForm({ onSaved, submitLabel = "Save", requireConsent = false }: Props) {
   const { learner, updateLearner } = useAuth();
   const [loaded, setLoaded] = useState(false);
   const [name, setName] = useState(learner?.name ?? "");
@@ -37,6 +45,8 @@ export function ProfileForm({ onSaved, submitLabel = "Save" }: Props) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const needsConsent = requireConsent && !learner?.hasAcceptedPrivacyNotice;
 
   useEffect(() => {
     getProfile()
@@ -72,15 +82,25 @@ export function ProfileForm({ onSaved, submitLabel = "Save" }: Props) {
       return;
     }
 
+    if (needsConsent && !consent) {
+      setError("Please confirm that you have read the information letter.");
+      return;
+    }
+
     setSaving(true);
-    saveProfile({
-      name: name.trim(),
-      industry,
-      academicDegree,
-      background: background.trim(),
-      yearsOfExperience: years,
-      goals: goals.trim() || null,
-    })
+    // Record the consent first; the profile save below returns the learner
+    // that goes into the session, so it carries the acceptance too.
+    (needsConsent ? acceptPrivacyNotice() : Promise.resolve())
+      .then(() =>
+        saveProfile({
+          name: name.trim(),
+          industry,
+          academicDegree,
+          background: background.trim(),
+          yearsOfExperience: years,
+          goals: goals.trim() || null,
+        }),
+      )
       .then((updated) => {
         updateLearner(updated);
         setSaved(true);
@@ -199,8 +219,34 @@ export function ProfileForm({ onSaved, submitLabel = "Save" }: Props) {
         />
       </label>
 
+      {needsConsent && (
+        <div className={styles.consent}>
+          <label className={styles.consentLabel}>
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              disabled={disabled}
+            />
+            <span>
+              By checking this box, you acknowledge that you have read and understood the{" "}
+              <Link to="/information-letter" target="_blank">
+                information letter
+              </Link>{" "}
+              and consent to participate.
+            </span>
+          </label>
+          <p className={styles.consentNote}>
+            We use your profile details and assessment answers to show your results, recommend
+            learning journeys and research the AIOS curriculum. You can request deletion of your
+            account and personal data at any time from the settings page. We will process the
+            request within 30 days.
+          </p>
+        </div>
+      )}
+
       <div className={styles.actions}>
-        <Button type="submit" disabled={disabled}>
+        <Button type="submit" disabled={disabled || (needsConsent && !consent)}>
           {saving ? "Saving…" : submitLabel}
         </Button>
       </div>

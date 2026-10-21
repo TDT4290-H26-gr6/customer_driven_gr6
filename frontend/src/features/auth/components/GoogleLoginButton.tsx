@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { env } from "@/config/env";
 import { useTheme } from "@/app/providers/ThemeProvider";
 import { googleLogin } from "../api";
@@ -26,28 +26,8 @@ declare global {
   }
 }
 
-/**
- * Google's widget can't be disabled, so while `accepted` (the information-letter
- * checkbox) is false the wrapper is dimmed and ignores pointer and keyboard
- * input. The callback reads the latest value through a ref because the widget
- * is only initialised again when the theme changes.
- */
-export function GoogleLoginButton({
-  onLogin,
-  accepted,
-}: {
-  onLogin: (learner: Learner) => void;
-  accepted: boolean;
-}) {
+export function GoogleLoginButton({ onLogin }: { onLogin: (learner: Learner) => void }) {
   const { resolvedTheme } = useTheme();
-  const acceptedRef = useRef(accepted);
-  acceptedRef.current = accepted;
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // `inert` (as in AppShell) also takes the widget out of the tab order.
-  useEffect(() => {
-    if (containerRef.current) containerRef.current.inert = !accepted;
-  }, [accepted]);
 
   useEffect(() => {
     if (!window.google) return;
@@ -55,9 +35,8 @@ export function GoogleLoginButton({
     window.google.accounts.id.initialize({
       client_id: env.GOOGLE_CLIENT_ID,
       callback: async (response: { credential: string }) => {
-        if (!acceptedRef.current) return;
         try {
-          const { learner } = await googleLogin(response.credential, true);
+          const { learner } = await googleLogin(response.credential);
           onLogin(learner);
         } catch {
           // Leave the button in place; the next session check will show state.
@@ -76,12 +55,5 @@ export function GoogleLoginButton({
     });
   }, [resolvedTheme]);
 
-  return (
-    <div
-      ref={containerRef}
-      id="google-signin-button"
-      aria-disabled={!accepted}
-      style={accepted ? undefined : { opacity: 0.5, pointerEvents: "none" }}
-    ></div>
-  );
+  return <div id="google-signin-button"></div>;
 }

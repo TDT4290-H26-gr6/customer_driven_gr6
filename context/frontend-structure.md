@@ -132,7 +132,7 @@ frontend/
     │   │   ├── types.ts             # VisibilityMatrix, Grantable
     │   │   └── index.ts
     │   │
-    │   ├── privacy/                # information letter the login checkbox refers to
+    │   ├── privacy/                # information letter the profile-step checkbox refers to
     │   │   ├── pages/
     │   │   │   └── InformationLetterPage.tsx  # public /information-letter, linked from login and Settings
     │   │   ├── informationLetterContent.ts    # the letter text (Sikt template)
@@ -289,24 +289,26 @@ stays mounted underneath, blocked:
 
 ### Information letter and consent
 
-There is no post-login modal. Consent is a checkbox on the login page, under
-the Google button: "By checking this box, you acknowledge that you have read
-and understood the information letter", with a short note about how the data
-is used and how to request deletion.
+There is no post-login modal. Consent is a checkbox on the first-time profile
+step (`/profile`, "Before you start"), under the fields and above "Done":
+"By checking this box, you acknowledge that you have read and understood the
+information letter", with a short note about how the data is used and how to
+request deletion.
 
-- `GoogleLoginButton` gets an `accepted` prop. Google's widget can't be
-  disabled, so while unticked the wrapper is dimmed and `inert`; the callback
-  also checks the latest value through a ref (the widget is only initialised
-  again on a theme change).
-- `googleLogin(credential, true)` sends `acceptedPrivacyNotice`; the backend
-  rejects the login with 400 without it and stores `privacyNoticeAcceptedAt`
-  on the learner (on creation, or at the next login for older accounts that
-  never had it). `hasAcceptedPrivacyNotice` stays on the DTO but no longer
-  gates anything in the UI.
+- `ProfilePage` renders `ProfileForm` with `requireConsent`. While the learner
+  hasn't accepted (`learner.hasAcceptedPrivacyNotice`), the checkbox shows and
+  "Done" stays disabled until it is ticked. Settings uses the same form
+  without it.
+- On save the form first calls `PUT /auth/me/privacy-notice`
+  (`acceptPrivacyNotice` in `features/auth/api.ts`, stores
+  `Learner.privacyNoticeAcceptedAt`), then saves the profile, whose response
+  replaces the session learner. If recording the acceptance fails, nothing is
+  saved. Like the role gate, this is UX, not a security boundary: no endpoint
+  is gated on it.
 - The letter itself is `features/privacy`: `informationLetterContent.ts` (the
   text) and `InformationLetterPage`, served at the public route
-  `/information-letter` (outside `RequireAuth`, so the login checkbox can link
-  to it). Settings has an "Information letter" card linking to it.
+  `/information-letter` (outside `RequireAuth`; the checkbox link opens it in
+  a new tab). Settings has an "Information letter" card linking to it.
 
 ### Admin mode
 

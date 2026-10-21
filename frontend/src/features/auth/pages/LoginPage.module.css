@@ -102,39 +102,6 @@
   font-size: var(--font-size-md);
 }
 
-.googleButton {
-  display: flex;
-  justify-content: center;
-}
-
-.consent {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 20px;
-  font-size: var(--font-size-sm);
-  text-align: left;
-  cursor: pointer;
-}
-
-.consent input {
-  flex: none;
-  margin-top: 3px;
-  accent-color: var(--color-primary);
-}
-
-.consent a {
-  color: var(--color-primary);
-}
-
-.note {
-  margin: 12px 0 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-xs);
-  text-align: left;
-  line-height: 1.5;
-}
-
 @media (max-width: 767px) {
   .page {
     padding: 16px;

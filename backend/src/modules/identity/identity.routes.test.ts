@@ -37,9 +37,7 @@ describe("POST /auth/google", () => {
     );
     vi.mocked(identity.upsertLearnerFromGoogle).mockResolvedValue(learner());
 
-    const res = await api.request("POST", "/auth/google", {
-      body: { credential: "google-jwt", acceptedPrivacyNotice: true },
-    });
+    const res = await api.request("POST", "/auth/google", { body: { credential: "google-jwt" } });
 
     expect(res.status).toBe(200);
     expect(identity.upsertLearnerFromGoogle).toHaveBeenCalledWith(
@@ -59,26 +57,11 @@ describe("POST /auth/google", () => {
     expect(verifyIdToken).not.toHaveBeenCalled();
   });
 
-  it("rejects a sign-in without the information letter accepted with 400", async () => {
-    for (const body of [
-      { credential: "google-jwt" },
-      { credential: "google-jwt", acceptedPrivacyNotice: false },
-      { credential: "google-jwt", acceptedPrivacyNotice: "true" },
-    ]) {
-      const res = await api.request("POST", "/auth/google", { body });
-      expect(res.status).toBe(400);
-    }
-    expect(verifyIdToken).not.toHaveBeenCalled();
-    expect(identity.upsertLearnerFromGoogle).not.toHaveBeenCalled();
-  });
-
   it("rejects a credential Google doesn't accept with 401", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     verifyIdToken.mockRejectedValue(new Error("bad signature"));
 
-    const res = await api.request("POST", "/auth/google", {
-      body: { credential: "forged", acceptedPrivacyNotice: true },
-    });
+    const res = await api.request("POST", "/auth/google", { body: { credential: "forged" } });
 
     expect(res.status).toBe(401);
     expect(identity.upsertLearnerFromGoogle).not.toHaveBeenCalled();
@@ -86,9 +69,7 @@ describe("POST /auth/google", () => {
 
   it("rejects a Google token without an email with 400", async () => {
     verifyIdToken.mockResolvedValue(googleTicket({ sub: "google-sub-1" }));
-    const res = await api.request("POST", "/auth/google", {
-      body: { credential: "google-jwt", acceptedPrivacyNotice: true },
-    });
+    const res = await api.request("POST", "/auth/google", { body: { credential: "google-jwt" } });
     expect(res.status).toBe(400);
   });
 });

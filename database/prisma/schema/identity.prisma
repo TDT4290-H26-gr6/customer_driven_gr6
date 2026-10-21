@@ -10,7 +10,7 @@ model Learner {
   roleId                        String? // chosen persona (identity_role)
   userRole                      Role?    @relation(fields: [roleId], references: [id])
   hasCompletedInitialAssessment Boolean  @default(false) // true once every visible question in the first SAT instance is answered
-  privacyNoticeAcceptedAt       DateTime? // set when the learner ticks the information-letter checkbox on the login page
+  privacyNoticeAcceptedAt       DateTime? // set when the learner ticks the information-letter checkbox on the profile step
   createdAt                     DateTime @default(now())
   updatedAt                     DateTime @updatedAt
 

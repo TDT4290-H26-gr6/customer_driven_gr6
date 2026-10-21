@@ -16,18 +16,18 @@ describe("auth api", () => {
     const result = { token: "session-jwt", learner: { id: "learner-1" } };
     vi.mocked(apiFetch).mockResolvedValueOnce(result);
 
-    expect(await googleLogin("google-credential", true)).toEqual(result);
+    expect(await googleLogin("google-credential")).toEqual(result);
     expect(apiFetch).toHaveBeenCalledWith("/auth/google", {
       method: "POST",
       auth: false,
-      body: { credential: "google-credential", acceptedPrivacyNotice: true },
+      body: { credential: "google-credential" },
     });
     expect(setToken).toHaveBeenCalledWith("session-jwt");
   });
 
   it("googleLogin stores nothing when the backend refuses", async () => {
     vi.mocked(apiFetch).mockRejectedValueOnce(new Error("401"));
-    await expect(googleLogin("forged", true)).rejects.toThrow("401");
+    await expect(googleLogin("forged")).rejects.toThrow("401");
     expect(setToken).not.toHaveBeenCalled();
   });
 

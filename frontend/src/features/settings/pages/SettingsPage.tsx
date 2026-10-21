@@ -110,7 +110,8 @@ export function SettingsPage() {
       <div className={styles.card}>
         <h2 className={styles.cardHeading}>Information letter</h2>
         <p className={styles.cardHint}>
-          The information about the research project that you consented to when you signed in.
+          The information about the research project that you consented to when you set up your
+          profile.
         </p>
         <Link to="/information-letter" className={styles.link}>
           Read the information letter

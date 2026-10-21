@@ -36,7 +36,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      {/* Public: linked from the login page's consent checkbox and from Settings. */}
+      {/* Public: linked from the profile step's consent checkbox and from Settings. */}
       <Route path="/information-letter" element={<InformationLetterPage />} />
 
       <Route element={<RequireAuth />}>
