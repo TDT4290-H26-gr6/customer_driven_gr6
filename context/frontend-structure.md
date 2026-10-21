@@ -307,8 +307,10 @@ request deletion.
   is gated on it.
 - The letter itself is `features/privacy`: `informationLetterContent.ts` (the
   text) and `InformationLetterPage`, served at the public route
-  `/information-letter` (outside `RequireAuth`; the checkbox link opens it in
-  a new tab). Settings has an "Information letter" card linking to it.
+  `/information-letter` (outside `RequireAuth`; the checkbox link opens it in the same tab, and Back
+  returns to the form). The first-time fields are kept in `sessionStorage`
+  (`aios.profileDraft`, cleared on save) so reading the letter never wipes
+  them. Settings has an "Information letter" card linking to it.
 
 ### Admin mode
 
@@ -535,7 +537,7 @@ states** — easy to conflate, so worth being explicit about:
   doesn't shift between collapsed/expanded — only the labels do) instead of
   just floating next to the logo. `SidebarToggleIcon` also takes an `open`
   prop (`open={!hidden}`) and draws its left panel filled solid when the
-  rail is showing, hollow when it isn't — the icon depicts the *current*
+  rail is showing, hollow when it isn't — the icon depicts the _current_
   state, not just a generic toggle glyph, so a click's effect is visible
   before it happens, not just spelled out in the `aria-label`.
 - **`Sidebar`'s own bottom-right button** (`.labelToggle`) toggles the
@@ -552,7 +554,7 @@ states** — easy to conflate, so worth being explicit about:
   corner by making
   `.sidebar` a flex column and giving the button `margin-top: auto` (pushes
   it to the bottom, however many nav items sit above it) plus `align-self:
-  flex-end` (pins it to the right instead of stretching full-width like the
+flex-end` (pins it to the right instead of stretching full-width like the
   nav links above it).
 
 Both replaced an earlier single floating chevron button (absolutely

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -26,6 +26,7 @@ const savedLearner = { id: "learner-1", name: "Ada King", hasCompletedProfile: t
 beforeEach(() => {
   vi.clearAllMocks();
   session.learner = { name: "Ada Lovelace" };
+  sessionStorage.clear();
 });
 
 async function fillEverythingButName(user: ReturnType<typeof userEvent.setup>) {
@@ -198,6 +199,34 @@ describe("ProfileForm", () => {
 
       expect(await screen.findByText(/could not save/i)).toBeInTheDocument();
       expect(saveProfile).not.toHaveBeenCalled();
+    });
+
+    it("keeps what was typed when the form is left for the letter and comes back", async () => {
+      const user = await renderConsentForm();
+      await user.type(screen.getByLabelText(/goals/i), "Share data openly");
+      cleanup();
+
+      vi.mocked(getProfile).mockResolvedValue(null);
+      render(
+        <MemoryRouter>
+          <ProfileForm requireConsent submitLabel="Done" />
+        </MemoryRouter>,
+      );
+
+      expect(await screen.findByDisplayValue("Data steward")).toBeInTheDocument();
+      expect(screen.getByLabelText("Industry")).toHaveValue("government");
+      expect(screen.getByLabelText(/years of experience/i)).toHaveValue(2);
+      expect(screen.getByLabelText(/goals/i)).toHaveValue("Share data openly");
+      expect(screen.getByRole("checkbox")).not.toBeChecked();
+    });
+
+    it("forgets the draft once the profile is saved", async () => {
+      const user = await renderConsentForm();
+      await user.click(screen.getByRole("checkbox"));
+      await user.click(screen.getByRole("button", { name: "Done" }));
+      await waitFor(() => expect(saveProfile).toHaveBeenCalledOnce());
+
+      expect(sessionStorage.getItem("aios.profileDraft")).toBeNull();
     });
 
     it("doesn't ask again from someone who has already accepted", async () => {

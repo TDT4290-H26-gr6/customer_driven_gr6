@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { LETTER_QUESTION, LETTER_TITLE, letterSections } from "../informationLetterContent";
 import styles from "./InformationLetterPage.module.css";
 
@@ -8,11 +8,20 @@ import styles from "./InformationLetterPage.module.css";
  * Settings for later review.
  */
 export function InformationLetterPage() {
+  const navigate = useNavigate();
+
+  // Back to wherever the learner came from (e.g. the profile step, so nothing
+  // they typed is lost); opened directly, there is nothing to go back to.
+  function goBack() {
+    if (window.history.state?.idx > 0) navigate(-1);
+    else navigate("/", { replace: true });
+  }
+
   return (
     <div className={styles.page}>
-      <Link to="/" className={styles.back}>
+      <button type="button" className={styles.back} onClick={goBack}>
         &larr; Back
-      </Link>
+      </button>
       <h1 className={styles.heading}>{LETTER_TITLE}</h1>
       <p className={styles.question}>{LETTER_QUESTION}</p>
 
