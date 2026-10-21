@@ -56,9 +56,13 @@ afterEach(() => {
   flags.roleSelection = false;
 });
 
+function renderPage() {
+  render(<SettingsPage />);
+}
+
 describe("SettingsPage", () => {
   it("shows the current visuals choice and changes it", async () => {
-    render(<SettingsPage />);
+    renderPage();
     const visuals = screen.getByRole("radiogroup", { name: "Visuals" });
     expect(screen.getByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
     expect(screen.getByRole("radio", { name: "Light" })).toHaveAttribute("aria-checked", "false");
@@ -70,7 +74,7 @@ describe("SettingsPage", () => {
   });
 
   it("shows the current accent color and changes it", async () => {
-    render(<SettingsPage />);
+    renderPage();
     const accents = screen.getByRole("radiogroup", { name: "Accent color" });
     expect(accents.children).toHaveLength(3);
     const checked = screen
@@ -88,19 +92,28 @@ describe("SettingsPage", () => {
   });
 
   it("includes the profile form and account deletion", () => {
-    render(<SettingsPage />);
+    renderPage();
     expect(screen.getByText("profile form")).toBeInTheDocument();
     expect(screen.getByText("delete account")).toBeInTheDocument();
   });
 
+  it("opens the information letter in a modal", async () => {
+    renderPage();
+    expect(screen.getByRole("heading", { name: "Information letter" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Read the information letter" }));
+
+    expect(screen.getByRole("dialog", { name: "Information letter" })).toBeInTheDocument();
+  });
+
   it("hides the role card while role selection is off", () => {
-    render(<SettingsPage />);
+    renderPage();
     expect(screen.queryByText(/role select/)).not.toBeInTheDocument();
   });
 
   it("lets the learner change their role when role selection is on", async () => {
     flags.roleSelection = true;
-    render(<SettingsPage />);
+    renderPage();
 
     await userEvent.click(screen.getByRole("button", { name: "role select (r1)" }));
 

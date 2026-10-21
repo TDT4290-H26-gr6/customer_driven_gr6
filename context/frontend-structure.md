@@ -56,7 +56,7 @@ frontend/
     │   │   ├── AppShell.tsx         # header + sidebar + <Outlet/>, blocks with RoleGateModal if no role
     │   │   ├── Header.tsx           # sidebar toggle (centred above the rail's icon column) + <Logo/> left, account menu right
     │   │   ├── Sidebar.tsx          # collapsible left rail (desktop) / fixed bottom tab bar (mobile)
-    │   │   └── RoleGateModal.tsx    # forced role-pick modal — see "Role gating" below
+    │   │   ├── RoleGateModal.tsx    # forced role-pick modal — see "Role gating" below
     │   └── guards/
     │       └── RequireAuth.tsx      # no session -> redirect /login
     │
@@ -114,7 +114,9 @@ frontend/
     │   │
     │   ├── learningJourney/        # every journey, plus the ones recommended on the dashboard
     │   │   ├── components/
-    │   │   │   ├── JourneyCard.tsx         # expandable card on the journeys page
+    │   │   │   ├── JourneyCard.tsx         # summary card on the journeys page; click opens JourneyModal
+    │   │   │   ├── JourneyModal.tsx        # one journey in focus: coverage, steps, assess / Moodle (X, outside click, Escape close it)
+    │   │   │   ├── journeyDisplay.ts       # shared by card and modal: name split, section order, banner gradient
     │   │   │   ├── RecommendedJourneys.tsx
     │   │   │   └── WeakCompetencesSection.tsx
     │   │   ├── pages/
@@ -130,6 +132,13 @@ frontend/
     │   │   │   └── AdminPage.tsx        # role picker + Sections / Competences checklists
     │   │   ├── api.ts               # GET /admin/visibility, PUT/DELETE grants
     │   │   ├── types.ts             # VisibilityMatrix, Grantable
+    │   │   └── index.ts
+    │   │
+    │   ├── privacy/                # information letter the profile-step checkbox refers to
+    │   │   ├── components/
+    │   │   │   ├── InformationLetterLink.tsx   # link-styled button that opens the modal (profile step, Settings)
+    │   │   │   └── InformationLetterModal.tsx  # the letter in a dialog, closes on X / outside click / Escape
+    │   │   ├── informationLetterContent.ts     # the letter text (Sikt template)
     │   │   └── index.ts
     │   │
     │   └── settings/                # account settings — role change for now, more later
@@ -151,6 +160,7 @@ frontend/
     │   │   └── Logo.tsx            # the AIOS wordmark as inline SVG — see "Logo" below
     │   ├── hooks/
     │   │   ├── useAsync.ts
+    │   │   ├── useDialogKeys.ts       # Escape closes, Tab wraps inside a modal (JourneyModal, InformationLetterModal)
     │   │   ├── useLocalStorage.ts
     │   │   ├── useMediaQuery.ts       # live window.matchMedia — only for when the DOM/props differ on mobile
     │   │   └── useSessionStorage.ts   # like useLocalStorage, but cleared when the tab/session ends
@@ -280,6 +290,32 @@ stays mounted underneath, blocked:
   persona (`GET /questions`, `GET /sources`) and returns 403 regardless of
   what the page renders. Add it to any new endpoint that shouldn't work
   before onboarding.
+
+### Information letter and consent
+
+There is no post-login modal. Consent is a checkbox on the first-time profile
+step (`/profile`, "Before you start"), under the fields and above "Done":
+"By checking this box, you acknowledge that you have read and understood the
+information letter", with a short note about how the data is used and how to
+request deletion.
+
+- `ProfilePage` renders `ProfileForm` with `requireConsent`. While the learner
+  hasn't accepted (`learner.hasAcceptedPrivacyNotice`), the checkbox shows and
+  "Done" stays disabled until it is ticked. Settings uses the same form
+  without it.
+- On save the form first calls `PUT /auth/me/privacy-notice`
+  (`acceptPrivacyNotice` in `features/auth/api.ts`, stores
+  `Learner.privacyNoticeAcceptedAt`), then saves the profile, whose response
+  replaces the session learner. If recording the acceptance fails, nothing is
+  saved. Like the role gate, this is UX, not a security boundary: no endpoint
+  is gated on it.
+- The letter itself is `features/privacy`: `informationLetterContent.ts` (the
+  text) and `InformationLetterModal`, opened by `InformationLetterLink`, a
+  link-styled button used by the checkbox label and by Settings' "Information
+  letter" card. It is a modal (same behaviour as `FeedbackDialog`: X, a click
+  outside and Escape close it, Tab stays inside, focus returns to the link),
+  rendered into `<body>`. There is no route for it, so nothing navigates away
+  from the form and nothing typed is lost.
 
 ### Admin mode
 
@@ -506,7 +542,7 @@ states** — easy to conflate, so worth being explicit about:
   doesn't shift between collapsed/expanded — only the labels do) instead of
   just floating next to the logo. `SidebarToggleIcon` also takes an `open`
   prop (`open={!hidden}`) and draws its left panel filled solid when the
-  rail is showing, hollow when it isn't — the icon depicts the *current*
+  rail is showing, hollow when it isn't — the icon depicts the _current_
   state, not just a generic toggle glyph, so a click's effect is visible
   before it happens, not just spelled out in the `aria-label`.
 - **`Sidebar`'s own bottom-right button** (`.labelToggle`) toggles the
@@ -523,7 +559,7 @@ states** — easy to conflate, so worth being explicit about:
   corner by making
   `.sidebar` a flex column and giving the button `margin-top: auto` (pushes
   it to the bottom, however many nav items sit above it) plus `align-self:
-  flex-end` (pins it to the right instead of stretching full-width like the
+flex-end` (pins it to the right instead of stretching full-width like the
   nav links above it).
 
 Both replaced an earlier single floating chevron button (absolutely

@@ -6,6 +6,8 @@ export type Learner = {
   name: string;
   role?: Role | null;
   hasCompletedInitialAssessment: boolean;
+  /** Ticked the information-letter checkbox on the profile step. */
+  hasAcceptedPrivacyNotice: boolean;
   /** Every profile field is filled in. Required before taking the assessment. */
   hasCompletedProfile: boolean;
   /** May use admin mode. Only hides the UI — the backend enforces it. */

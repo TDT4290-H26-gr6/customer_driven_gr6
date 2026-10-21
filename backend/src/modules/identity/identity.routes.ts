@@ -8,6 +8,7 @@ import { asyncHandler } from "../../lib/asyncHandler";
 import { hasCompletedMainAssessment } from "../assessment/assessment.service";
 import { requireString } from "../../lib/validate";
 import {
+  acceptPrivacyNotice,
   completeInitialAssessment,
   deleteLearner,
   findLearnerById,
@@ -87,6 +88,16 @@ identityRouter.put(
     if (!role) return res.status(404).json({ error: "Unknown role" });
 
     const learner = await setLearnerRole(req.learnerId!, roleId);
+    res.json(toLearnerDto(learner));
+  }),
+);
+
+// No requireRole: the notice is shown before the learner has picked a role.
+identityRouter.put(
+  "/auth/me/privacy-notice",
+  requireAuth,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const learner = await acceptPrivacyNotice(req.learnerId!);
     res.json(toLearnerDto(learner));
   }),
 );

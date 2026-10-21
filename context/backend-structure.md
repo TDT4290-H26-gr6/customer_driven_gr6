@@ -163,7 +163,7 @@ backend/src/
 │   └── asyncHandler.ts      # forwards a rejected async route handler to the error handler
 ├── modules/
 │   ├── identity/
-│   │   ├── identity.routes.ts       # /auth/*, /roles, /auth/me/role
+│   │   ├── identity.routes.ts       # /auth/*, /roles, /auth/me/role, /auth/me/privacy-notice (sets Learner.privacyNoticeAcceptedAt)
 │   │   ├── identity.admin.routes.ts # /admin/* — role visibility grants (admin mode)
 │   │   ├── identity.service.ts      # all Prisma access for identity_* tables
 │   │   └── identity.types.ts

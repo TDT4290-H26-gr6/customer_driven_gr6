@@ -167,6 +167,12 @@ export const FAQ: FaqCategory[] = [
         ],
       },
       {
+        question: "Where can I read the information letter I consented to?",
+        answer: [
+          'In Settings, under "Information letter". It describes the research project, how your data is used and your rights.',
+        ],
+      },
+      {
         question: "How do I delete my account?",
         answer: [
           'In Settings, under "Delete account". It permanently deletes your account and everything tied to it: answers, scores, profile, advice and feedback. This can\'t be undone.',

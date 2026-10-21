@@ -15,6 +15,7 @@ export function learner(overrides: Partial<LearnerWithRole> = {}): LearnerWithRo
     userRole: null,
     profile: null,
     hasCompletedInitialAssessment: false,
+    privacyNoticeAcceptedAt: null,
     createdAt: NOW,
     updatedAt: NOW,
     ...overrides,

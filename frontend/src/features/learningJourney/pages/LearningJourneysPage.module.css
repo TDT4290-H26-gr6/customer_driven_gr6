@@ -1,4 +1,4 @@
-/* A responsive grid of JourneyCards, one expanded at a time, plus the alert
+/* A responsive grid of JourneyCards, each opening in a modal, plus the alert
    for a journey assessment that couldn't start. */
 
 .page {
@@ -24,10 +24,6 @@
   /* min(100%, 280px): a plain minmax(280px, …) column would overflow on a
      screen narrower than 280px + padding instead of shrinking. */
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  /* start (not the grid default stretch): an expanded card grows the row's
-     height and pushes the next row down, without stretching its unexpanded
-     row-mates to match it. */
-  align-items: start;
   gap: 20px;
 }
 

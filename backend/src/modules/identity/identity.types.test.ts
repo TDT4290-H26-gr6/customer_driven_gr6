@@ -31,6 +31,7 @@ function learner(overrides: Partial<LearnerWithRole> = {}): LearnerWithRole {
       updatedAt: new Date("2026-01-01"),
     },
     hasCompletedInitialAssessment: false,
+    privacyNoticeAcceptedAt: null,
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
     profile: completeProfile,
@@ -53,6 +54,7 @@ describe("toLearnerDto", () => {
         updatedAt: new Date("2026-01-01"),
       },
       hasCompletedInitialAssessment: false,
+      hasAcceptedPrivacyNotice: false,
       hasCompletedProfile: true,
       // ADMIN_EMAILS is unset under test: everyone is an admin, as in development.
       isAdmin: true,
@@ -62,6 +64,11 @@ describe("toLearnerDto", () => {
   it("carries role as null when no persona has been picked yet", () => {
     const dto = toLearnerDto(learner({ userRole: null, roleId: null }));
     expect(dto.role).toBeNull();
+  });
+
+  it("reports hasAcceptedPrivacyNotice once the notice has been accepted", () => {
+    const accepted = learner({ privacyNoticeAcceptedAt: new Date("2026-02-01") });
+    expect(toLearnerDto(accepted).hasAcceptedPrivacyNotice).toBe(true);
   });
 
   it("reports hasCompletedProfile false without a profile", () => {

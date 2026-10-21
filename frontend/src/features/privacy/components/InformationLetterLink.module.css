@@ -1,0 +1,16 @@
+/* Looks like a link, behaves like a button (it opens a modal, it doesn't navigate). */
+.link {
+  display: inline;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font: inherit;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration-thickness: 2px;
+}
