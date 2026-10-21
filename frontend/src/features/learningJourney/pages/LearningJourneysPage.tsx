@@ -1,16 +1,17 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { isApiError } from "@/shared/api/client";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
 import { JourneyCard } from "../components/JourneyCard";
+import { JourneyModal } from "../components/JourneyModal";
 import { listJourneys, startJourneyAssessment } from "../api";
 import type { LearningJourney } from "../types";
 import styles from "./LearningJourneysPage.module.css";
 
 /**
  * Every learning journey, listed like the Sources page (the customer's
- * request): a grid of cards, one expanded at a time. Each can be assessed on
+ * request): a grid of cards; clicking one opens its details in a modal. Each can be assessed on
  * its own — only the questions in the sections it's centred on (M) — which
  * never overrides or compares with the main self-assessment; the result
  * shows under Competencies.
@@ -21,7 +22,9 @@ export function LearningJourneysPage() {
   // Kept apart from an empty list: "couldn't load" and "there are none" are
   // different messages, and only the first is worth retrying.
   const [loadFailed, setLoadFailed] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  // Whatever had focus when a modal opened (the card), so closing returns there.
+  const opener = useRef<Element | null>(null);
   const [startingId, setStartingId] = useState<string | null>(null);
   const [startError, setStartError] = useState<{ message: string; inProgress: boolean } | null>(
     null,
@@ -39,7 +42,24 @@ export function LearningJourneysPage() {
     load();
   }, [load]);
 
+  /** Any assessment is starting, or the journey has no core (M) sections to assess. */
+  const assessDisabled = (journey: LearningJourney) =>
+    startingId !== null || !(journey.sections ?? []).some((s) => s.coverageLevel === "M");
+  const selected = journeys?.find((j) => j.id === openId) ?? null;
+
+  function openJourney(id: string) {
+    opener.current = document.activeElement;
+    setOpenId(id);
+  }
+
+  function closeJourney() {
+    setOpenId(null);
+    (opener.current as HTMLElement | null)?.focus();
+  }
+
   function handleAssess(id: string) {
+    // The alert for a failed start is on the page, so don't leave the modal over it.
+    setOpenId(null);
     setStartingId(id);
     setStartError(null);
     startJourneyAssessment(id)
@@ -97,17 +117,24 @@ export function LearningJourneysPage() {
               key={journey.id}
               journey={journey}
               index={index}
-              expanded={expandedId === journey.id}
-              onToggle={() => setExpandedId((id) => (id === journey.id ? null : journey.id))}
+              onOpen={() => openJourney(journey.id)}
               onAssess={() => handleAssess(journey.id)}
               starting={startingId === journey.id}
-              assessDisabled={
-                startingId !== null ||
-                !(journey.sections ?? []).some((s) => s.coverageLevel === "M")
-              }
+              assessDisabled={assessDisabled(journey)}
             />
           ))}
         </div>
+      )}
+
+      {selected && (
+        <JourneyModal
+          journey={selected}
+          index={journeys!.indexOf(selected)}
+          onClose={closeJourney}
+          onAssess={() => handleAssess(selected.id)}
+          starting={startingId === selected.id}
+          assessDisabled={assessDisabled(selected)}
+        />
       )}
     </div>
   );

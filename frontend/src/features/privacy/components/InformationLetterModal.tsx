@@ -1,13 +1,12 @@
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useDialogKeys } from "@/shared/hooks/useDialogKeys";
 import { LETTER_QUESTION, LETTER_TITLE, letterSections } from "../informationLetterContent";
 import styles from "./InformationLetterModal.module.css";
 
-const FOCUSABLE = "button:not([disabled]), [href]";
-
 /**
  * The information letter, as a modal. A click on the backdrop, the X or
- * Escape closes it; Tab stays inside. Same behaviour as FeedbackDialog, and
+ * Escape closes it; Tab stays inside. Same behaviour as FeedbackDialog (useDialogKeys), and
  * rendered into <body> so it covers the page whatever form or card it was
  * opened from.
  */
@@ -20,32 +19,7 @@ export function InformationLetterModal({ onClose }: { onClose: () => void }) {
     closeRef.current?.focus();
   }, []);
 
-  // On the document, so Escape and Tab work wherever focus is.
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (e.key !== "Tab" || !dialogRef.current) return;
-
-      const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
-      if (focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      const inside = dialogRef.current.contains(document.activeElement);
-      if (e.shiftKey && (!inside || document.activeElement === first)) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && (!inside || document.activeElement === last)) {
-        e.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  useDialogKeys(dialogRef, onClose);
 
   return createPortal(
     <div

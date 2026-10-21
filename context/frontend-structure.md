@@ -114,7 +114,9 @@ frontend/
     │   │
     │   ├── learningJourney/        # every journey, plus the ones recommended on the dashboard
     │   │   ├── components/
-    │   │   │   ├── JourneyCard.tsx         # expandable card on the journeys page
+    │   │   │   ├── JourneyCard.tsx         # summary card on the journeys page; click opens JourneyModal
+    │   │   │   ├── JourneyModal.tsx        # one journey in focus: coverage, steps, assess / Moodle (X, outside click, Escape close it)
+    │   │   │   ├── journeyDisplay.ts       # shared by card and modal: name split, section order, banner gradient
     │   │   │   ├── RecommendedJourneys.tsx
     │   │   │   └── WeakCompetencesSection.tsx
     │   │   ├── pages/
@@ -158,6 +160,7 @@ frontend/
     │   │   └── Logo.tsx            # the AIOS wordmark as inline SVG — see "Logo" below
     │   ├── hooks/
     │   │   ├── useAsync.ts
+    │   │   ├── useDialogKeys.ts       # Escape closes, Tab wraps inside a modal (JourneyModal, InformationLetterModal)
     │   │   ├── useLocalStorage.ts
     │   │   ├── useMediaQuery.ts       # live window.matchMedia — only for when the DOM/props differ on mobile
     │   │   └── useSessionStorage.ts   # like useLocalStorage, but cleared when the tab/session ends
