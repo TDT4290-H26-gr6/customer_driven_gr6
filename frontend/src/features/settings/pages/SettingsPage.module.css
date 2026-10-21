@@ -36,6 +36,11 @@
   color: var(--color-text-muted);
 }
 
+.link {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
 .visualOptions {
   display: flex;
   gap: 8px;

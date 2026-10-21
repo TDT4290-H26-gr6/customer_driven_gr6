@@ -53,11 +53,10 @@ frontend/
     │   │   ├── AppProviders.tsx     # composes all context providers
     │   │   └── AuthProvider.tsx     # session/token state + refresh
     │   ├── layout/
-    │   │   ├── AppShell.tsx         # header + sidebar + <Outlet/>, blocks with PrivacyNoticeModal (after the profile step), then RoleGateModal if no role
+    │   │   ├── AppShell.tsx         # header + sidebar + <Outlet/>, blocks with RoleGateModal if no role
     │   │   ├── Header.tsx           # sidebar toggle (centred above the rail's icon column) + <Logo/> left, account menu right
     │   │   ├── Sidebar.tsx          # collapsible left rail (desktop) / fixed bottom tab bar (mobile)
     │   │   ├── RoleGateModal.tsx    # forced role-pick modal — see "Role gating" below
-    │   │   └── PrivacyNoticeModal.tsx # privacy reminder after the profile step, "I understand" to continue — see "Privacy notice" below
     │   └── guards/
     │       └── RequireAuth.tsx      # no session -> redirect /login
     │
@@ -131,6 +130,12 @@ frontend/
     │   │   │   └── AdminPage.tsx        # role picker + Sections / Competences checklists
     │   │   ├── api.ts               # GET /admin/visibility, PUT/DELETE grants
     │   │   ├── types.ts             # VisibilityMatrix, Grantable
+    │   │   └── index.ts
+    │   │
+    │   ├── privacy/                # information letter the login checkbox refers to
+    │   │   ├── pages/
+    │   │   │   └── InformationLetterPage.tsx  # public /information-letter, linked from login and Settings
+    │   │   ├── informationLetterContent.ts    # the letter text (Sikt template)
     │   │   └── index.ts
     │   │
     │   └── settings/                # account settings — role change for now, more later
@@ -282,27 +287,26 @@ stays mounted underneath, blocked:
   what the page renders. Add it to any new endpoint that shouldn't work
   before onboarding.
 
-### Privacy notice
+### Information letter and consent
 
-The notice is the last part of the initial "who you are" step: after a new
-learner fills in the profile on `/profile` and clicks "Done", a blocking
-`PrivacyNoticeModal` reminds them of the consent they already gave in a
-separate consent form. They must click "I understand" to continue. It uses
-the same mechanism as the role gate:
+There is no post-login modal. Consent is a checkbox on the login page, under
+the Google button: "By checking this box, you acknowledge that you have read
+and understood the information letter", with a short note about how the data
+is used and how to request deletion.
 
-- `AppShell` computes
-  `needsPrivacyAck = learner && learner.hasCompletedProfile && !learner.hasAcceptedPrivacyNotice`.
-  Saving the profile flips `hasCompletedProfile`, which raises the gate; a
-  reload before accepting hits it again. While true the modal is shown, `<Outlet/>` is skipped and the rest of the
-  shell is `inert`. It takes priority over `RoleGateModal`, which appears once
-  the notice is acknowledged.
-- The click calls `PUT /auth/me/privacy-notice` (`acceptPrivacyNotice` in
-  `features/auth/api.ts`) and replaces the session learner via `updateLearner`.
-  The acknowledgement is stored on the learner (`privacyNoticeAcceptedAt`), so
-  it shows once per account, not once per browser. Accounts that existed
-  before the notice was added see it once on their next login.
-- Like the role gate this is UX, not a security boundary: it records an
-  acknowledgement and does not gate any endpoint.
+- `GoogleLoginButton` gets an `accepted` prop. Google's widget can't be
+  disabled, so while unticked the wrapper is dimmed and `inert`; the callback
+  also checks the latest value through a ref (the widget is only initialised
+  again on a theme change).
+- `googleLogin(credential, true)` sends `acceptedPrivacyNotice`; the backend
+  rejects the login with 400 without it and stores `privacyNoticeAcceptedAt`
+  on the learner (on creation, or at the next login for older accounts that
+  never had it). `hasAcceptedPrivacyNotice` stays on the DTO but no longer
+  gates anything in the UI.
+- The letter itself is `features/privacy`: `informationLetterContent.ts` (the
+  text) and `InformationLetterPage`, served at the public route
+  `/information-letter` (outside `RequireAuth`, so the login checkbox can link
+  to it). Settings has an "Information letter" card linking to it.
 
 ### Admin mode
 

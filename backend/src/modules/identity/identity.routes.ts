@@ -8,7 +8,6 @@ import { asyncHandler } from "../../lib/asyncHandler";
 import { hasCompletedMainAssessment } from "../assessment/assessment.service";
 import { requireString } from "../../lib/validate";
 import {
-  acceptPrivacyNotice,
   completeInitialAssessment,
   deleteLearner,
   findLearnerById,
@@ -32,6 +31,10 @@ identityRouter.post(
   "/auth/google",
   asyncHandler(async (req, res) => {
     const credential = requireString(req.body?.credential, "credential", MAX_CREDENTIAL_LENGTH);
+    // The login page's consent checkbox (information letter): no sign-in without it.
+    if (req.body?.acceptedPrivacyNotice !== true) {
+      return res.status(400).json({ error: "The information letter must be accepted" });
+    }
 
     // Only the Google check itself is a 401 — a database failure after it
     // is ours, and falls through to the error handler as a 500.
@@ -88,16 +91,6 @@ identityRouter.put(
     if (!role) return res.status(404).json({ error: "Unknown role" });
 
     const learner = await setLearnerRole(req.learnerId!, roleId);
-    res.json(toLearnerDto(learner));
-  }),
-);
-
-// No requireRole: the notice is shown before the learner has picked a role.
-identityRouter.put(
-  "/auth/me/privacy-notice",
-  requireAuth,
-  asyncHandler<AuthedRequest>(async (req, res) => {
-    const learner = await acceptPrivacyNotice(req.learnerId!);
     res.json(toLearnerDto(learner));
   }),
 );

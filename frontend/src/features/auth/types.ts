@@ -6,7 +6,7 @@ export type Learner = {
   name: string;
   role?: Role | null;
   hasCompletedInitialAssessment: boolean;
-  /** Clicked "I understand" on the first-login privacy notice. */
+  /** Ticked the information-letter checkbox when signing in. */
   hasAcceptedPrivacyNotice: boolean;
   /** Every profile field is filled in. Required before taking the assessment. */
   hasCompletedProfile: boolean;

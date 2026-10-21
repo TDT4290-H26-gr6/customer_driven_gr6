@@ -3,12 +3,19 @@ import { endpoints } from "@/shared/api/endpoints";
 import { setToken } from "./session";
 import type { Learner, LoginResult } from "./types";
 
-/** Exchange a Google credential for a session; stores the token on success. */
-export async function googleLogin(credential: string): Promise<LoginResult> {
+/**
+ * Exchange a Google credential for a session; stores the token on success.
+ * `acceptedPrivacyNotice` is the login page's information-letter checkbox,
+ * which the backend requires.
+ */
+export async function googleLogin(
+  credential: string,
+  acceptedPrivacyNotice: boolean,
+): Promise<LoginResult> {
   const result = await apiFetch<LoginResult>(endpoints.auth.google, {
     method: "POST",
     auth: false,
-    body: { credential },
+    body: { credential, acceptedPrivacyNotice },
   });
   setToken(result.token);
   return result;
@@ -22,11 +29,6 @@ export function getMe(): Promise<Learner> {
 /** Marks the signed-in learner as having finished every question in the initial assessment. */
 export function completeInitialAssessment(): Promise<Learner> {
   return apiFetch<Learner>(endpoints.auth.myInitialAssessment, { method: "PUT" });
-}
-
-/** Records that the signed-in learner has read the first-login privacy notice. */
-export function acceptPrivacyNotice(): Promise<Learner> {
-  return apiFetch<Learner>(endpoints.auth.myPrivacyNotice, { method: "PUT" });
 }
 
 /** Permanently deletes the signed-in learner's account and all their data (CD-60, GDPR). */

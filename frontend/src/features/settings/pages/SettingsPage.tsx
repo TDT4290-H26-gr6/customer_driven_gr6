@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ACCENTS, useAccent } from "@/app/providers/AccentProvider";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useTheme, type ThemePreference } from "@/app/providers/ThemeProvider";
@@ -17,7 +18,8 @@ const VISUAL_OPTIONS: { value: ThemePreference; label: string; Icon: typeof Moni
 ];
 
 /**
- * Account settings: visuals, profile, role and account deletion. The role
+ * Account settings: visuals, profile, role, the information letter and
+ * account deletion. The role
  * card is hidden while role selection is temporarily off
  * (shared/lib/features.ts).
  */
@@ -104,6 +106,16 @@ export function SettingsPage() {
           )}
         </div>
       )}
+
+      <div className={styles.card}>
+        <h2 className={styles.cardHeading}>Information letter</h2>
+        <p className={styles.cardHint}>
+          The information about the research project that you consented to when you signed in.
+        </p>
+        <Link to="/information-letter" className={styles.link}>
+          Read the information letter
+        </Link>
+      </div>
 
       <div className={styles.card}>
         <DeleteAccountSection />

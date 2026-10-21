@@ -12,13 +12,22 @@ export function findLearnerById(id: string) {
 
 /**
  * Google's name is only the starting value: the learner can edit it in their
- * profile, so a later sign-in must not overwrite it.
+ * profile, so a later sign-in must not overwrite it. The caller has checked
+ * that the information letter was accepted: that is recorded on creation, and
+ * on a later sign-in only if the learner never accepted it before.
  */
-export function upsertLearnerFromGoogle(sub: string, email: string, name?: string | null) {
-  return prisma.learner.upsert({
+export async function upsertLearnerFromGoogle(sub: string, email: string, name?: string | null) {
+  const now = new Date();
+  const learner = await prisma.learner.upsert({
     where: { googleSubId: sub },
     update: { email },
-    create: { email, name, googleSubId: sub },
+    create: { email, name, googleSubId: sub, privacyNoticeAcceptedAt: now },
+    include: learnerInclude,
+  });
+  if (learner.privacyNoticeAcceptedAt) return learner;
+  return prisma.learner.update({
+    where: { id: learner.id },
+    data: { privacyNoticeAcceptedAt: now },
     include: learnerInclude,
   });
 }
@@ -43,14 +52,6 @@ export function completeInitialAssessment(learnerId: string) {
   return prisma.learner.update({
     where: { id: learnerId },
     data: { hasCompletedInitialAssessment: true },
-    include: learnerInclude,
-  });
-}
-
-export function acceptPrivacyNotice(learnerId: string) {
-  return prisma.learner.update({
-    where: { id: learnerId },
-    data: { privacyNoticeAcceptedAt: new Date() },
     include: learnerInclude,
   });
 }

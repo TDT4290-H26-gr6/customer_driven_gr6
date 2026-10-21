@@ -12,7 +12,7 @@ export type LearnerDto = {
   name: string | null;
   role: Role | null;
   hasCompletedInitialAssessment: boolean;
-  /** Clicked "I understand" on the first-login privacy notice. */
+  /** Ticked the information-letter checkbox when signing in. */
   hasAcceptedPrivacyNotice: boolean;
   /** Every profile field is filled in — required before taking the assessment. */
   hasCompletedProfile: boolean;

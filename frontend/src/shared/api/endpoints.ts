@@ -4,7 +4,6 @@ export const endpoints = {
     google: "/auth/google",
     me: "/auth/me",
     myRole: "/auth/me/role",
-    myPrivacyNotice: "/auth/me/privacy-notice",
     myInitialAssessment: "/auth/me/initial-assessment",
     myProfile: "/auth/me/profile",
   },
