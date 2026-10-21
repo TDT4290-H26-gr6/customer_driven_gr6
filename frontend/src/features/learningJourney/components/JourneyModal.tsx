@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
-import { RouteIcon } from "@/shared/components/icons";
+import { CloseIcon, RouteIcon } from "@/shared/components/icons";
 import { useDialogKeys } from "@/shared/hooks/useDialogKeys";
 import type { LearningJourney } from "../types";
 import {
@@ -72,7 +72,7 @@ export function JourneyModal({
             onClick={onClose}
             aria-label="Close journey"
           >
-            ×
+            <CloseIcon width={18} height={18} />
           </button>
         </div>
 
