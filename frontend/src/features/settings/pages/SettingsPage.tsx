@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { ACCENTS, useAccent } from "@/app/providers/AccentProvider";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useTheme, type ThemePreference } from "@/app/providers/ThemeProvider";
 import { MonitorIcon, MoonIcon, SunIcon } from "@/shared/components/icons";
 import { RoleSelect } from "@/features/onboarding";
 import type { Role } from "@/features/onboarding";
+import { InformationLetterLink } from "@/features/privacy";
 import { ProfileForm } from "@/features/profile";
 import { ROLE_SELECTION_ENABLED } from "@/shared/lib/features";
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
@@ -113,9 +113,7 @@ export function SettingsPage() {
           The information about the research project that you consented to when you set up your
           profile.
         </p>
-        <Link to="/information-letter" className={styles.link}>
-          Read the information letter
-        </Link>
+        <InformationLetterLink>Read the information letter</InformationLetterLink>
       </div>
 
       <div className={styles.card}>

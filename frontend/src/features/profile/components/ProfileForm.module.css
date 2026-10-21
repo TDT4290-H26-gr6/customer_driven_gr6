@@ -106,10 +106,6 @@
   accent-color: var(--color-primary);
 }
 
-.consentLabel a {
-  color: var(--color-primary);
-}
-
 .consentNote {
   margin: 0;
   color: var(--color-text-muted);

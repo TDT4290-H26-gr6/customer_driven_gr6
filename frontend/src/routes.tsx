@@ -12,7 +12,6 @@ import { ProfilePage } from "@/features/profile";
 import { HistoryPage } from "@/features/history";
 import { CompetenciesPage } from "@/features/competencies";
 import { FaqPage } from "@/features/faq";
-import { InformationLetterPage } from "@/features/privacy";
 import { LearningJourneysPage } from "@/features/learningJourney";
 import { AdminPage } from "@/features/admin";
 import { FeedbackAdminPage } from "@/features/feedback";
@@ -36,8 +35,6 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      {/* Public: linked from the profile step's consent checkbox and from Settings. */}
-      <Route path="/information-letter" element={<InformationLetterPage />} />
 
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>

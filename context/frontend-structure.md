@@ -133,9 +133,10 @@ frontend/
     │   │   └── index.ts
     │   │
     │   ├── privacy/                # information letter the profile-step checkbox refers to
-    │   │   ├── pages/
-    │   │   │   └── InformationLetterPage.tsx  # public /information-letter, linked from login and Settings
-    │   │   ├── informationLetterContent.ts    # the letter text (Sikt template)
+    │   │   ├── components/
+    │   │   │   ├── InformationLetterLink.tsx   # link-styled button that opens the modal (profile step, Settings)
+    │   │   │   └── InformationLetterModal.tsx  # the letter in a dialog, closes on X / outside click / Escape
+    │   │   ├── informationLetterContent.ts     # the letter text (Sikt template)
     │   │   └── index.ts
     │   │
     │   └── settings/                # account settings — role change for now, more later
@@ -306,11 +307,12 @@ request deletion.
   saved. Like the role gate, this is UX, not a security boundary: no endpoint
   is gated on it.
 - The letter itself is `features/privacy`: `informationLetterContent.ts` (the
-  text) and `InformationLetterPage`, served at the public route
-  `/information-letter` (outside `RequireAuth`; the checkbox link opens it in the same tab, and Back
-  returns to the form). The first-time fields are kept in `sessionStorage`
-  (`aios.profileDraft`, cleared on save) so reading the letter never wipes
-  them. Settings has an "Information letter" card linking to it.
+  text) and `InformationLetterModal`, opened by `InformationLetterLink`, a
+  link-styled button used by the checkbox label and by Settings' "Information
+  letter" card. It is a modal (same behaviour as `FeedbackDialog`: X, a click
+  outside and Escape close it, Tab stays inside, focus returns to the link),
+  rendered into `<body>`. There is no route for it, so nothing navigates away
+  from the form and nothing typed is lost.
 
 ### Admin mode
 

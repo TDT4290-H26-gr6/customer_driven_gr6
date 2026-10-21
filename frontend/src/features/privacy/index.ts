@@ -1,1 +1,1 @@
-export { InformationLetterPage } from "./pages/InformationLetterPage";
+export { InformationLetterLink } from "./components/InformationLetterLink";

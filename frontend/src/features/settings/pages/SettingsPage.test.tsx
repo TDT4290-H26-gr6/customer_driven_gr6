@@ -1,6 +1,5 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAccent } from "@/app/providers/AccentProvider";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -57,13 +56,8 @@ afterEach(() => {
   flags.roleSelection = false;
 });
 
-// The information-letter card links to another route.
 function renderPage() {
-  render(
-    <MemoryRouter>
-      <SettingsPage />
-    </MemoryRouter>,
-  );
+  render(<SettingsPage />);
 }
 
 describe("SettingsPage", () => {
@@ -103,13 +97,13 @@ describe("SettingsPage", () => {
     expect(screen.getByText("delete account")).toBeInTheDocument();
   });
 
-  it("links to the information letter", () => {
+  it("opens the information letter in a modal", async () => {
     renderPage();
     expect(screen.getByRole("heading", { name: "Information letter" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Read the information letter" })).toHaveAttribute(
-      "href",
-      "/information-letter",
-    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Read the information letter" }));
+
+    expect(screen.getByRole("dialog", { name: "Information letter" })).toBeInTheDocument();
   });
 
   it("hides the role card while role selection is off", () => {
