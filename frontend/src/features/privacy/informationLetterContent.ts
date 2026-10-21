@@ -1,4 +1,4 @@
-// The AIOS information letter (Sikt template), shown at /information-letter.
+// The AIOS information letter (Sikt template), shown in a modal (InformationLetterModal).
 // Wording comes from the project's approved letter: change it only when the
 // letter itself changes.
 
