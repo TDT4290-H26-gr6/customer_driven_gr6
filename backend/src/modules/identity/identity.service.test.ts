@@ -13,7 +13,7 @@ vi.mock("../../db/prisma", () => {
   });
   return {
     prisma: {
-      learner: model(),
+      learner: { ...model(), create: vi.fn() },
       learnerProfile: model(),
       role: model(),
       roleSection: model(),
@@ -67,6 +67,75 @@ describe("upsertLearnerFromGoogle", () => {
     const args = mockPrisma.learner.upsert.mock.calls[0][0];
     expect(args.update).toEqual({ email: "new@example.com" });
     expect(args.update).not.toHaveProperty("name");
+  });
+});
+
+describe("upsertLearnerFromOrcid", () => {
+  const ORCID = "0000-0002-1825-0097";
+  const find = () => mockPrisma.learner.findUnique;
+
+  it("returns the learner already linked to this ORCID iD", async () => {
+    find().mockResolvedValueOnce({ id: "l1" } as never);
+
+    await identity.upsertLearnerFromOrcid(ORCID, "a@example.com", true, "Ada");
+
+    expect(find()).toHaveBeenCalledWith({ where: { orcidId: ORCID }, include });
+    expect(mockPrisma.learner.create).not.toHaveBeenCalled();
+    expect(mockPrisma.learner.update).not.toHaveBeenCalled();
+  });
+
+  it("links the ORCID iD to the learner that has the same verified email", async () => {
+    find()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "l1", orcidId: null } as never);
+
+    await identity.upsertLearnerFromOrcid(ORCID, "A@Example.com", true, "Ada");
+
+    expect(find()).toHaveBeenLastCalledWith({ where: { email: "a@example.com" } });
+    expect(mockPrisma.learner.update).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { orcidId: ORCID },
+      include,
+    });
+  });
+
+  it("creates a learner with a verified email when it is free", async () => {
+    find().mockResolvedValue(null);
+
+    await identity.upsertLearnerFromOrcid(ORCID, "a@example.com", true, "Ada");
+
+    expect(mockPrisma.learner.create).toHaveBeenCalledWith({
+      data: { email: "a@example.com", name: "Ada", orcidId: ORCID },
+      include,
+    });
+  });
+
+  it.each([
+    ["has no email", null, false],
+    ["has an unverified email", "a@example.com", false],
+  ])("uses a placeholder email when the ORCID record %s", async (_label, email, verified) => {
+    find().mockResolvedValue(null);
+
+    await identity.upsertLearnerFromOrcid(ORCID, email, verified, "Ada");
+
+    expect(mockPrisma.learner.create).toHaveBeenCalledWith({
+      data: { email: `${ORCID}@orcid.invalid`, name: "Ada", orcidId: ORCID },
+      include,
+    });
+  });
+
+  it("uses a placeholder when the verified email belongs to a learner with another ORCID iD", async () => {
+    find()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "l1", orcidId: "other" } as never);
+
+    await identity.upsertLearnerFromOrcid(ORCID, "a@example.com", true, "Ada");
+
+    expect(mockPrisma.learner.update).not.toHaveBeenCalled();
+    expect(mockPrisma.learner.create).toHaveBeenCalledWith({
+      data: { email: `${ORCID}@orcid.invalid`, name: "Ada", orcidId: ORCID },
+      include,
+    });
   });
 });
 

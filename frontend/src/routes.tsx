@@ -4,7 +4,7 @@ import { RequireAuth } from "@/app/guards/RequireAuth";
 import { RequireAdmin } from "@/app/guards/RequireAdmin";
 import { RequireProfile } from "@/app/guards/RequireProfile";
 import { useAuth } from "@/app/providers/AuthProvider";
-import { LoginPage } from "@/features/auth";
+import { LoginPage, OrcidCallbackPage } from "@/features/auth";
 import { AssessmentRunnerPage, ReassessPage } from "@/features/assessment";
 import { DashboardPage, SectionDetailsPage } from "@/features/dashboard";
 import { SettingsPage } from "@/features/settings";
@@ -35,6 +35,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/auth/orcid/callback" element={<OrcidCallbackPage />} />
 
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>

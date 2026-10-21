@@ -2,6 +2,7 @@
 export const endpoints = {
   auth: {
     google: "/auth/google",
+    orcid: "/auth/orcid",
     me: "/auth/me",
     myRole: "/auth/me/role",
     myPrivacyNotice: "/auth/me/privacy-notice",

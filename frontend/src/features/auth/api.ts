@@ -14,6 +14,17 @@ export async function googleLogin(credential: string): Promise<LoginResult> {
   return result;
 }
 
+/** Exchange an ORCID authorization code for a session; stores the token on success. */
+export async function orcidLogin(code: string): Promise<LoginResult> {
+  const result = await apiFetch<LoginResult>(endpoints.auth.orcid, {
+    method: "POST",
+    auth: false,
+    body: { code },
+  });
+  setToken(result.token);
+  return result;
+}
+
 /** Current signed-in learner (includes the chosen role, or null). */
 export function getMe(): Promise<Learner> {
   return apiFetch<Learner>(endpoints.auth.me);

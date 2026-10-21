@@ -4,6 +4,7 @@ import { useAuth } from "@/app/providers/AuthProvider";
 import { Logo } from "@/shared/components/Logo";
 import { GoogleLoginButton } from "../components/GoogleLoginButton";
 import { GreetingBot } from "../components/GreetingBot";
+import { OrcidLoginButton } from "../components/OrcidLoginButton";
 import type { Learner } from "../types";
 import styles from "./LoginPage.module.css";
 
@@ -30,6 +31,7 @@ export function LoginPage() {
         <Logo className={styles.logo} />
         <p className={styles.tagline}>Assess and grow your AI &amp; open-science skills.</p>
         <GoogleLoginButton onLogin={handleLogin} />
+        <OrcidLoginButton />
       </div>
     </div>
   );

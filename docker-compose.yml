@@ -49,6 +49,10 @@ services:
       BACKEND_PORT: ${BACKEND_PORT}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       JWT_SECRET: ${JWT_SECRET}
+      # "Sign in with ORCID" — off unless all three are set.
+      ORCID_CLIENT_ID: ${ORCID_CLIENT_ID:-}
+      ORCID_CLIENT_SECRET: ${ORCID_CLIENT_SECRET:-}
+      ORCID_REDIRECT_URI: ${ORCID_REDIRECT_URI:-}
       # Optional in development — see .env.example.
       CORS_ORIGIN: ${CORS_ORIGIN:-}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
@@ -80,6 +84,8 @@ services:
     environment:
       VITE_API_URL: ${VITE_API_URL}
       VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+      VITE_ORCID_CLIENT_ID: ${VITE_ORCID_CLIENT_ID:-}
+      VITE_ORCID_REDIRECT_URI: ${VITE_ORCID_REDIRECT_URI:-}
     ports:
       - "${FRONTEND_PORT}:5173"
     depends_on:

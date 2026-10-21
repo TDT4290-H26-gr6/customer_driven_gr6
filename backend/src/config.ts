@@ -84,6 +84,31 @@ function llm() {
   };
 }
 
+/**
+ * "Sign in with ORCID" (OAuth authorization-code flow, server side because the
+ * code exchange needs the client secret). Optional: unless all three settings
+ * are set, ORCID login is off and POST /auth/orcid answers 404.
+ */
+function orcid() {
+  const clientId = process.env.ORCID_CLIENT_ID;
+  const clientSecret = process.env.ORCID_CLIENT_SECRET;
+  const redirectUri = process.env.ORCID_REDIRECT_URI;
+  if (!clientId || !clientSecret || !redirectUri || [clientId, clientSecret].some(isPlaceholder)) {
+    console.warn(
+      "ORCID_CLIENT_ID / ORCID_CLIENT_SECRET / ORCID_REDIRECT_URI not set — ORCID login is off.",
+    );
+    return null;
+  }
+  return {
+    clientId,
+    clientSecret,
+    redirectUri,
+    // Production ORCID by default; the sandbox is https://sandbox.orcid.org.
+    baseUrl: (process.env.ORCID_BASE_URL || "https://orcid.org").replace(/\/+$/, ""),
+    publicApiUrl: (process.env.ORCID_PUBLIC_API_URL || "https://pub.orcid.org").replace(/\/+$/, ""),
+  };
+}
+
 export const config = {
   /**
    * TEMPORARILY OFF. When on, a learner picks a persona role after first
@@ -101,4 +126,5 @@ export const config = {
   corsOrigins: corsOrigins(),
   adminEmails: adminEmails(),
   llm: llm(),
+  orcid: orcid(),
 };

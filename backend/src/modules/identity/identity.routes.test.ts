@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { learner } from "../../test/fixtures";
 import { tokenFor, useTestServer } from "../../test/httpTestServer";
 import { hasCompletedMainAssessment } from "../assessment/assessment.service";
@@ -8,6 +8,21 @@ const { verifyIdToken } = vi.hoisted(() => ({ verifyIdToken: vi.fn() }));
 vi.mock("google-auth-library", () => ({
   OAuth2Client: vi.fn(() => ({ verifyIdToken })),
 }));
+vi.mock("../../config", async (importOriginal) => {
+  const { config } = await importOriginal<typeof import("../../config")>();
+  return {
+    config: {
+      ...config,
+      orcid: {
+        clientId: "APP-1",
+        clientSecret: "secret",
+        redirectUri: "http://localhost:5173/auth/orcid/callback",
+        baseUrl: "https://orcid.test",
+        publicApiUrl: "https://pub.orcid.test",
+      },
+    },
+  };
+});
 vi.mock("./identity.service");
 vi.mock("../assessment/assessment.service");
 
@@ -71,6 +86,83 @@ describe("POST /auth/google", () => {
     verifyIdToken.mockResolvedValue(googleTicket({ sub: "google-sub-1" }));
     const res = await api.request("POST", "/auth/google", { body: { credential: "google-jwt" } });
     expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /auth/orcid", () => {
+  const json = (body: unknown, ok = true) => ({
+    ok,
+    status: ok ? 200 : 400,
+    json: async () => body,
+  });
+  const ORCID = "0000-0002-1825-0097";
+  // The test server itself is reached over real HTTP, so only ORCID's hosts are faked.
+  const realFetch = globalThis.fetch;
+
+  function fakeOrcid(handlers: { token: () => unknown; email?: () => unknown }) {
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
+      if (url.startsWith("https://orcid.test/oauth/token"))
+        return Promise.resolve(handlers.token());
+      if (url.startsWith("https://pub.orcid.test/")) {
+        return Promise.resolve(handlers.email?.() ?? json({ email: [] }));
+      }
+      return realFetch(url, init);
+    });
+  }
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("exchanges the code, links by the public verified email and returns a session", async () => {
+    fakeOrcid({
+      token: () => json({ orcid: ORCID, name: "Ada Lovelace" }),
+      email: () => json({ email: [{ email: "ada@example.com", verified: true, primary: true }] }),
+    });
+    vi.mocked(identity.upsertLearnerFromOrcid).mockResolvedValue(learner());
+
+    const res = await api.request("POST", "/auth/orcid", { body: { code: "abc123" } });
+
+    expect(res.status).toBe(200);
+    expect(identity.upsertLearnerFromOrcid).toHaveBeenCalledWith(
+      ORCID,
+      "ada@example.com",
+      true,
+      "Ada Lovelace",
+    );
+    expect(res.body).toMatchObject({ token: expect.any(String), learner: { id: "learner-1" } });
+  });
+
+  it("still signs in, without an email, when the record shares none", async () => {
+    fakeOrcid({ token: () => json({ orcid: ORCID }) });
+    vi.mocked(identity.upsertLearnerFromOrcid).mockResolvedValue(learner());
+
+    const res = await api.request("POST", "/auth/orcid", { body: { code: "abc123" } });
+
+    expect(res.status).toBe(200);
+    expect(identity.upsertLearnerFromOrcid).toHaveBeenCalledWith(ORCID, null, false, null);
+  });
+
+  it("rejects a missing code with 400", async () => {
+    const res = await api.request("POST", "/auth/orcid", { body: {} });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a code ORCID doesn't accept with 401", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    fakeOrcid({ token: () => json({ error: "invalid_grant" }, false) });
+
+    const res = await api.request("POST", "/auth/orcid", { body: { code: "stale" } });
+
+    expect(res.status).toBe(401);
+    expect(identity.upsertLearnerFromOrcid).not.toHaveBeenCalled();
+  });
+
+  it("rejects a response without a valid ORCID iD with 401", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    fakeOrcid({ token: () => json({ orcid: "not-an-id" }) });
+
+    const res = await api.request("POST", "/auth/orcid", { body: { code: "abc123" } });
+
+    expect(res.status).toBe(401);
   });
 });
 
