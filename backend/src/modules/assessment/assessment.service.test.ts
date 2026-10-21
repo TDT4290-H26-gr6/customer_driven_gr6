@@ -19,7 +19,6 @@ import { config } from "../../config";
 import { prisma } from "../../db/prisma";
 import { findLearnerById, getRoleGrants } from "../identity/identity.service";
 import { IDK_VALUE } from "./assessment.scoring";
-import { buildPieContent } from "./assessment.pie";
 import { recommendJourney, suggestJourney } from "../learningJourney/learningJourney.service";
 
 vi.mock("../../db/prisma", () => ({
@@ -287,16 +286,26 @@ describe("saveResponse", () => {
     const criteriaQuestion = {
       id: "q3",
       questionType: "criteria_check",
-      content: buildPieContent("criteria_check", "Which criteria does the README meet?", {
-        exhibit: "README.md\nLicence: CC BY 4.0",
-        options: [
-          { id: "a", text: "States a licence" },
-          { id: "b", text: "Names the file" },
-          { id: "c", text: "Gives a DOI" },
-          { id: "d", text: "Explains every variable" },
+      // Stored PIE content as the database package writes it for a
+      // criteria_check item (database/src/seed/pie.ts): criteria a and b met.
+      content: {
+        elements: { "multiple-choice": "@pie-element/multiple-choice@latest" },
+        models: [
+          {
+            id: "1",
+            element: "multiple-choice",
+            choiceMode: "checkbox",
+            choices: [
+              { value: "a", label: "<div>States a licence</div>", correct: true },
+              { value: "b", label: "<div>Names the file</div>", correct: true },
+              { value: "c", label: "<div>Gives a DOI</div>", correct: false },
+              { value: "d", label: "<div>Explains every variable</div>", correct: false },
+              { value: IDK_VALUE, label: "<div>I don't know</div>", correct: false },
+            ],
+          },
         ],
-        correctOptionIds: ["a", "b"],
-      }),
+        markup: "<multiple-choice id='1'></multiple-choice>",
+      },
     };
     mockPrisma.question.findFirst.mockResolvedValue(criteriaQuestion as never);
     const tick = (...values: string[]) => ({

@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../db/prisma";
-import { buildPieContent, type AuthoredContent } from "../modules/assessment/assessment.pie";
+import { buildPieContent, type AuthoredContent } from "./pie";
 import seedData from "./data/aios_open_science_seed.json";
 
 // Loads the REAL open-science content (CD-74): the sources, competences,
@@ -12,10 +12,9 @@ import seedData from "./data/aios_open_science_seed.json";
 // are seeded as bare Competence rows only — no section/module/questions have
 // ever been authored for them, in the old schema or this one.
 //
-// Currently DORMANT: neither index.ts nor prisma/seed.ts calls
-// seedOpenScienceContent(); everyone's initial assessment is the fake
-// dataset instead (see assessment.service.ts's isInitialAssessment). Kept
-// here to seed later — call it from either of those two files to re-enable.
+// Currently DORMANT: nothing calls seedOpenScienceContent(); the database is
+// seeded with the SEED_DATASET dataset instead (see seed/index.ts). Kept here
+// to seed later: call it from src/index.ts to re-enable.
 // Every insert skips rows that already exist, so it is safe to run again.
 
 type Row = Record<string, unknown>;

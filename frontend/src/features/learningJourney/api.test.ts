@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { getRecommendedJourneys, startJourneyAssessment } from "./api";
+import {
+  getRecommendedJourneys,
+  getWeakCompetences,
+  listJourneys,
+  startJourneyAssessment,
+} from "./api";
 import { apiFetch } from "@/shared/api/client";
 
 vi.mock("@/shared/api/client", () => ({
@@ -34,5 +39,21 @@ describe("startJourneyAssessment", () => {
       method: "POST",
       body: { journeyId: "journey-2" },
     });
+  });
+});
+
+describe("listJourneys", () => {
+  it("fetches every learning journey", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce([]);
+    expect(await listJourneys()).toEqual([]);
+    expect(apiFetch).toHaveBeenCalledWith("/learning-journeys");
+  });
+});
+
+describe("getWeakCompetences", () => {
+  it("fetches the competences at or below the weak threshold", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce([]);
+    expect(await getWeakCompetences()).toEqual([]);
+    expect(apiFetch).toHaveBeenCalledWith("/learning-journeys/weak-competences");
   });
 });

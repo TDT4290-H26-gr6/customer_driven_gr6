@@ -6,8 +6,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "prisma:generate": "prisma generate",
-    "content:sync": "tsx src/seed/contentSync.cli.ts",
+    "prisma:generate": "node -e \"const fs=require('fs');fs.rmSync('prisma',{recursive:true,force:true});fs.cpSync('../database/prisma/schema','prisma/schema',{recursive:true})\" && prisma generate",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -16,8 +15,7 @@
     "format:check": "prettier --check ."
   },
   "prisma": {
-    "schema": "./prisma/schema",
-    "seed": "tsx prisma/seed.ts"
+    "schema": "./prisma/schema"
   },
   "dependencies": {
     "@prisma/client": "^5.19.0",

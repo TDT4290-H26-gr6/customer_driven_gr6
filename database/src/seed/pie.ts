@@ -4,10 +4,18 @@
 // scores; they differ only in radio-vs-checkbox, in how choices are built,
 // and (criteria_check) in an example shown above the question.
 //
-// The stored `content` is what the frontend feeds the player, and what
-// assessment.service.ts reads back to score answers (choice `value` + `correct`).
+// The stored `content` is what the frontend feeds the player, and what the
+// backend's assessment.service.ts reads back to score answers (choice `value`
+// + `correct`). That stored shape is the contract between this package and the
+// backend: change it on both sides together.
 
-import { IDK_LABEL, IDK_VALUE } from "./assessment.scoring";
+/**
+ * The "I don't know" choice added to every question. Must match IDK_VALUE /
+ * IDK_LABEL in backend/src/modules/assessment/assessment.scoring.ts (which
+ * scores it as 0) and frontend/src/features/assessment/components/idkSession.ts.
+ */
+export const IDK_VALUE = "__idk__";
+export const IDK_LABEL = "I don't know";
 
 export type PieContent = {
   elements: Record<string, string>;
@@ -42,9 +50,6 @@ export const QUESTION_TYPES = [
   "criteria_check",
 ] as const;
 export type QuestionType = (typeof QUESTION_TYPES)[number];
-
-/** Question types whose on-screen choice order is meaningful and must never be shuffled. */
-export const ORDERED_QUESTION_TYPES: readonly string[] = ["likert", "true_false"];
 
 function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

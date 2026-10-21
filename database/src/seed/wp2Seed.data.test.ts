@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import seedData from "./data/aios_wp2_seed.json";
-import {
-  buildPieContent,
-  QUESTION_TYPES,
-  type AuthoredContent,
-} from "../modules/assessment/assessment.pie";
+import { buildPieContent, QUESTION_TYPES, type AuthoredContent } from "./pie";
 
 // Structural checks on the WP2 curriculum dataset itself — no DB, no loader.
 // Catches a broken id reference or a malformed item before it reaches a

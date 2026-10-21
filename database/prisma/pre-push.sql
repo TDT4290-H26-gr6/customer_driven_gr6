@@ -1,4 +1,4 @@
--- Runs before `prisma db push` on every backend start (see the Dockerfile).
+-- Runs before `prisma db push` every time db-init starts (see database/Dockerfile).
 --
 -- Why: assessment_sat_instance's unique key moved from (learnerId,
 -- instanceNum) to (learnerId, kind, instanceNum), so journey assessments can

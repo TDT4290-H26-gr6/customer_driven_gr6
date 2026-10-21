@@ -50,9 +50,29 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "html"],
+      reporter: ["text", "html", "json-summary"],
       include: ["src/**"],
-      exclude: ["src/**/*.test.{ts,tsx}", "src/main.tsx", "src/vite-env.d.ts"],
+      // Only code a unit test can't meaningfully run — keep this list short.
+      exclude: [
+        "src/**/*.test.{ts,tsx}",
+        // Shared test helpers, not app code.
+        "src/test/**",
+        // Mounts the app into the real page.
+        "src/main.tsx",
+        // Barrels: one-line re-exports with no logic of their own.
+        "src/features/*/index.ts",
+        "src/vite-env.d.ts",
+        // The robot's three.js scene: needs WebGL, which jsdom doesn't have.
+        // GreetingBot.tsx, which loads it, is tested.
+        "src/features/auth/components/greetingBotScene.ts",
+      ],
+      // CI fails below these (npm run test:coverage).
+      thresholds: {
+        lines: 90,
+        statements: 90,
+        branches: 90,
+        functions: 90,
+      },
     },
   },
 });
