@@ -23,6 +23,7 @@ import {
   getSatHistory,
   listAssessableSections,
   listQuestions,
+  recordQuestionView,
   saveResponse,
   startJourneyAssessment,
   startReassessment,
@@ -82,6 +83,27 @@ assessmentRouter.post(
 
     const saved = await saveResponse(req.learnerId!, questionId, answer, timeSpentMs);
     if (!saved) return res.status(404).json({ error: "Unknown question" });
+    res.status(204).end();
+  }),
+);
+
+// The learner was shown a question (CD-125, drop-off analytics). Fire-and-forget
+// from the frontend; records only the first view per question and attempt.
+assessmentRouter.post(
+  "/assessment/views",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const questionId = requireString(req.body?.questionId, "questionId");
+
+    const learner = await findLearnerById(req.learnerId!);
+    if (!learner || !isProfileComplete(learner.name, learner.profile)) {
+      return res.status(403).json({ error: "Complete your profile first" });
+    }
+
+    if (!(await recordQuestionView(req.learnerId!, questionId))) {
+      return res.status(404).json({ error: "Unknown question" });
+    }
     res.status(204).end();
   }),
 );

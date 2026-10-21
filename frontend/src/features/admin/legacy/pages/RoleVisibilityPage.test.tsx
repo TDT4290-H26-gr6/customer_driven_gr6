@@ -2,17 +2,13 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getVisibility, setCompetenceGrant, setSectionGrant } from "../api";
-import type { VisibilityMatrix } from "../types";
-import { AdminPage } from "./AdminPage";
+import { getVisibility } from "../../api";
+import type { VisibilityMatrix } from "../../types";
+import { setCompetenceGrant, setSectionGrant } from "../api";
+import { RoleVisibilityPage } from "./RoleVisibilityPage";
 
-vi.mock("../api", () => ({
-  getVisibility: vi.fn(),
-  setSectionGrant: vi.fn(),
-  setCompetenceGrant: vi.fn(),
-  downloadTestsCsv: vi.fn(),
-  downloadQuestionsCsv: vi.fn(),
-}));
+vi.mock("../../api", () => ({ getVisibility: vi.fn() }));
+vi.mock("../api", () => ({ setSectionGrant: vi.fn(), setCompetenceGrant: vi.fn() }));
 
 const MATRIX: VisibilityMatrix = {
   roles: [
@@ -30,11 +26,10 @@ const MATRIX: VisibilityMatrix = {
 
 function renderPage() {
   render(
-    <MemoryRouter initialEntries={["/admin"]}>
+    <MemoryRouter initialEntries={["/admin/roles"]}>
       <Routes>
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/admin/feedback" element={<p>feedback page</p>} />
-        <Route path="/dashboard" element={<p>dashboard page</p>} />
+        <Route path="/admin/roles" element={<RoleVisibilityPage />} />
+        <Route path="/admin" element={<p>admin page</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -49,10 +44,10 @@ beforeEach(() => {
   vi.mocked(setCompetenceGrant).mockResolvedValue(undefined);
 });
 
-describe("AdminPage grants", () => {
+describe("RoleVisibilityPage grants", () => {
   it("shows what the first role is granted", async () => {
     renderPage();
-    await screen.findByText("Admin mode");
+    await screen.findByText("Role visibility");
 
     expect(screen.getByRole("combobox", { name: "Role" })).toHaveValue("steward");
     expect(within(card("Sections")).getByText("1 of 2")).toBeInTheDocument();
@@ -64,7 +59,7 @@ describe("AdminPage grants", () => {
 
   it("switches to another role's grants", async () => {
     renderPage();
-    await screen.findByText("Admin mode");
+    await screen.findByText("Role visibility");
 
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "Role" }), "researcher");
 
@@ -74,7 +69,7 @@ describe("AdminPage grants", () => {
 
   it("saves a section grant as soon as it's ticked", async () => {
     renderPage();
-    await screen.findByText("Admin mode");
+    await screen.findByText("Role visibility");
 
     await userEvent.click(screen.getByRole("checkbox", { name: /Open access/ }));
 
@@ -85,7 +80,7 @@ describe("AdminPage grants", () => {
 
   it("revokes a competence grant as soon as it's unticked", async () => {
     renderPage();
-    await screen.findByText("Admin mode");
+    await screen.findByText("Role visibility");
     await userEvent.selectOptions(screen.getByRole("combobox", { name: "Role" }), "researcher");
 
     await userEvent.click(screen.getByRole("checkbox", { name: /FAIR data/ }));
@@ -98,7 +93,7 @@ describe("AdminPage grants", () => {
     let finish!: () => void;
     vi.mocked(setSectionGrant).mockReturnValue(new Promise((resolve) => (finish = resolve)));
     renderPage();
-    await screen.findByText("Admin mode");
+    await screen.findByText("Role visibility");
 
     await userEvent.click(screen.getByRole("checkbox", { name: /Open access/ }));
     expect(screen.getByRole("checkbox", { name: /Open access/ })).toBeDisabled();
@@ -112,7 +107,7 @@ describe("AdminPage grants", () => {
   it("undoes a change that couldn't be saved and says so", async () => {
     vi.mocked(setSectionGrant).mockRejectedValue(new Error("500"));
     renderPage();
-    await screen.findByText("Admin mode");
+    await screen.findByText("Role visibility");
 
     await userEvent.click(screen.getByRole("checkbox", { name: /Data management/ }));
 
@@ -126,13 +121,10 @@ describe("AdminPage grants", () => {
     expect(await screen.findByText("Could not load the visibility settings.")).toBeInTheDocument();
   });
 
-  it.each([
-    ["View tester feedback", "feedback page"],
-    ["Exit admin mode", "dashboard page"],
-  ])("“%s” goes to the %s", async (button, page) => {
+  it("“Back to admin mode” goes to the admin page", async () => {
     renderPage();
-    await screen.findByText("Admin mode");
-    await userEvent.click(screen.getByRole("button", { name: button }));
-    expect(screen.getByText(page)).toBeInTheDocument();
+    await screen.findByText("Role visibility");
+    await userEvent.click(screen.getByRole("button", { name: "Back to admin mode" }));
+    expect(screen.getByText("admin page")).toBeInTheDocument();
   });
 });

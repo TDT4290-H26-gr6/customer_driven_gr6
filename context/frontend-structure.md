@@ -91,7 +91,7 @@ frontend/
     │   │   │   ├── AssessmentIntroPage.tsx
     │   │   │   ├── AssessmentRunnerPage.tsx
     │   │   │   └── AssessmentCompletePage.tsx
-    │   │   ├── api.ts               # GET /questions, POST /sat-instances, POST /responses
+    │   │   ├── api.ts               # GET /questions, POST /sat-instances, POST /responses, POST /assessment/views (question shown, CD-125)
     │   │   ├── hooks.ts             # useAssessment(), useSaveResponse()
     │   │   ├── pie.ts               # map our Question <-> PIE config; read PIE sessions
     │   │   ├── types.ts             # Question, PieContent, Response, SatInstance
@@ -125,13 +125,20 @@ frontend/
     │   │   ├── types.ts             # LearningJourney, LearningJourneyModule
     │   │   └── index.ts
     │   │
-    │   ├── admin/                  # admin mode: which sections/competences each role may see
+    │   ├── admin/                  # admin mode: where learners drop off, tester feedback, CSV exports
     │   │   ├── components/
-    │   │   │   └── GrantChecklist.tsx   # one card of checkboxes — the selected role's grants
+    │   │   │   ├── DropoffChart.tsx     # hand-drawn SVG bars: drop-off rate by question order
+    │   │   │   └── DropoffTable.tsx     # sortable ranked table, low-sample badge
     │   │   ├── pages/
-    │   │   │   └── AdminPage.tsx        # role picker + Sections / Competences checklists
-    │   │   ├── api.ts               # GET /admin/visibility, PUT/DELETE grants
-    │   │   ├── types.ts             # VisibilityMatrix, Grantable
+    │   │   │   └── AdminPage.tsx        # /admin: drop-off filters, cards, chart, table + feedback / CSV / exit buttons
+    │   │   ├── legacy/              # parked, NOT routed: role-visibility screen (role selection is off)
+    │   │   │   ├── components/GrantChecklist.tsx   # one card of checkboxes — the selected role's grants
+    │   │   │   ├── pages/RoleVisibilityPage.tsx    # role picker + Sections / Competences checklists
+    │   │   │   ├── api.ts           # PUT/DELETE role grants
+    │   │   │   └── index.ts
+    │   │   ├── api.ts               # GET /admin/sat/dropoff, GET /admin/visibility (section filter list), CSV downloads
+    │   │   ├── dropoff.ts           # shortTitle + default/column sorting for the drop-off table
+    │   │   ├── types.ts             # Dropoff*, VisibilityMatrix, Grantable
     │   │   └── index.ts
     │   │
     │   ├── privacy/                # information letter the profile-step checkbox refers to
@@ -255,7 +262,7 @@ is given everything it needs via props and stays reusable. A feature's
 /login        -> LoginPage        (public)
 /settings     -> SettingsPage     (RequireAuth) — reached from the header's account dropdown
 /dashboard    -> DashboardPage    (RequireAuth)
-/admin        -> AdminPage        (RequireAuth) — admin mode, reached from the header's account dropdown
+/admin        -> AdminPage        (RequireAuth, admin) — admin mode: question drop-off (CD-125), reached from the header's account dropdown
 /assessment   -> AssessmentRunnerPage (RequireAuth) — not in the sidebar; only reached via
                                         the dashboard's "Assess yourself" button
 /             -> redirect to /login or /dashboard based on session
@@ -321,14 +328,17 @@ request deletion.
 
 Reached from the account menu ("Admin mode", next to Settings) and left with the
 "Exit admin mode" button — it is a route (`/admin`), not a hidden app state. The
-page (`features/admin`) picks a role and shows two checklists, Sections and
-Competences; each tick is a `PUT` / `DELETE` to `/admin/roles/...`, applied
-optimistically and rolled back with an error message if the request fails.
+page (`features/admin`) is the **question drop-off** view (CD-125): filters,
+summary cards, a bar chart and a ranked table of where learners stop (the last
+question they were shown before abandoning). Its title row also links to the
+tester feedback (`/admin/feedback`) and holds the two CSV exports.
 
-It edits the role visibility allow-lists described in
-`context/backend-structure.md` §11: a role sees a question if it is granted the
-question's competence **or** the section its module sits in, and nothing until
-something is granted.
+The old role-visibility screen (pick a role, tick sections and competences,
+`PUT` / `DELETE` to `/admin/roles/...`) is parked, unrouted, in
+`features/admin/legacy/` while role selection is switched off. The backend
+allow-list endpoints (`context/backend-structure.md` §11) are unchanged;
+bringing the screen back is one `<Route>` in `routes.tsx`. The drop-off section
+filter still reads its section list from `GET /admin/visibility`.
 
 **Not secured yet.** Any signed-in learner with a role sees the menu item and
 can use the page — a demo-stage decision. Hiding the button later would only be
