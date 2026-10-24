@@ -397,7 +397,8 @@ a single toggle:
    or removes the `data-theme` attribute on `<html>` to match. It also
    exposes `resolvedTheme` (`"light" | "dark"`, resolving what "Default"
    currently means) for the rare case a component can't rely on CSS
-   variables — e.g. `GoogleLoginButton` picks a matching Google‑widget theme.
+   variables. (`GoogleLoginButton` doesn't use it: Google's button is always
+   the white "outline" one, which stands out on the dark login card too.)
 3. `index.html` has a small inline script that applies a stored `data-theme`
    _before_ React mounts, so there's no flash of the wrong theme on first
    paint. It reads the same `localStorage` key `ThemeProvider` writes
@@ -611,7 +612,9 @@ height and with no plate behind them in either theme.
   logo (40px) so the three read as equals. The caller sets that height
   through `--funding-logo-height`. On phones too narrow for 40px,
   Header.module.css shrinks it to the room left beside the AIOS logo and the
-  avatar.
+  avatar. While signed out they're on the login page instead, centered at
+  the foot of the card below a divider, at 56px (they still just fit the
+  card on a 320px phone).
 
 **App shell on mobile**
 
