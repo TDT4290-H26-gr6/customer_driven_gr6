@@ -18,6 +18,9 @@
   --brand-purple: #7b3d8d;
   --brand-blue: #3486a7;
   --brand-olive: #aab627;
+  /* The EU emblem's official colors (FundingLogos), the same in both themes. */
+  --eu-blue: #003399;
+  --eu-yellow: #ffcc00;
   /* Decorative banner gradients for the journey cards (JourneyCard) — a
      stand-in "picture" per card until real artwork exists. The banner colors
      they blend (--banner-purple/-blue/-green) and the icon color on them
@@ -89,6 +92,8 @@
 
   --font-family-sans:
     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* The EU funding statement: Arial is one of the fonts the EU allows for it. */
+  --font-family-eu: Arial, "Helvetica Neue", Helvetica, "Liberation Sans", sans-serif;
   --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --duration-fast: 0.15s;
@@ -145,6 +150,8 @@
   /* How strong decorative color washes are (the logo backdrop in
      AppShell.module.css): turned up in dark mode, where faint color fades out. */
   --decor-strength: 1;
+  /* The EU funding statement's text (FundingLogos): EU blue on light. */
+  --color-eu-text: var(--eu-blue);
   --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.14);
   --shadow-lg: 0 10px 28px rgba(15, 23, 42, 0.22);
 }
@@ -184,6 +191,8 @@
     --banner-green: #97a126;
     --color-on-banner: #181b21;
     --decor-strength: 1.35;
+    /* White on dark, as in the EU's own version for dark backgrounds. */
+    --color-eu-text: #ffffff;
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.6);
     --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.7);
   }
@@ -218,6 +227,7 @@
   --banner-green: #97a126;
   --color-on-banner: #181b21;
   --decor-strength: 1.35;
+  --color-eu-text: #ffffff;
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.6);
   --shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.7);
 }
