@@ -29,7 +29,15 @@ export function acceptPrivacyNotice(): Promise<Learner> {
   return apiFetch<Learner>(endpoints.auth.myPrivacyNotice, { method: "PUT" });
 }
 
-/** Permanently deletes the signed-in learner's account and all their data (CD-60, GDPR). */
-export function deleteAccount(): Promise<void> {
-  return apiFetch<void>(endpoints.auth.me, { method: "DELETE" });
+/**
+ * "Delete account" (CD-60, CD-124): schedules the deletion of the signed-in
+ * learner's personal data 30 days from now. Their assessments are kept.
+ */
+export function scheduleAccountDeletion(): Promise<Learner> {
+  return apiFetch<Learner>(endpoints.auth.myDeletion, { method: "POST" });
+}
+
+/** Cancels a pending account deletion. */
+export function cancelAccountDeletion(): Promise<Learner> {
+  return apiFetch<Learner>(endpoints.auth.myDeletion, { method: "DELETE" });
 }

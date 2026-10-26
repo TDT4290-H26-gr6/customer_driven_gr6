@@ -8,6 +8,7 @@ vi.mock("../../db/prisma", () => {
     findMany: vi.fn(),
     upsert: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
     delete: vi.fn(),
     deleteMany: vi.fn(),
   });
@@ -15,6 +16,7 @@ vi.mock("../../db/prisma", () => {
     prisma: {
       learner: model(),
       learnerProfile: model(),
+      advice: model(),
       role: model(),
       roleSection: model(),
       roleCompetence: model(),
@@ -34,19 +36,108 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe("deleteLearner", () => {
-  it("deletes the learner by id — everything else cascades at the DB level", async () => {
-    await identity.deleteLearner("learner-1");
+describe("account deletion", () => {
+  const now = new Date("2026-01-01T12:00:00.000Z");
 
-    expect(mockPrisma.learner.delete).toHaveBeenCalledWith({ where: { id: "learner-1" } });
+  it("schedules the deletion 30 days out, only if none is pending", async () => {
+    await identity.scheduleDeletion("learner-1", now);
+
+    expect(mockPrisma.learner.update).toHaveBeenCalledWith({
+      where: { id: "learner-1", deletedAt: null, deletionScheduledFor: null },
+      data: { deletionScheduledFor: new Date("2026-01-31T12:00:00.000Z") },
+      include,
+    });
+  });
+
+  it("cancels a pending deletion", async () => {
+    await identity.cancelDeletion("learner-1");
+
+    expect(mockPrisma.learner.update).toHaveBeenCalledWith({
+      where: { id: "learner-1", deletedAt: null },
+      data: { deletionScheduledFor: null },
+      include,
+    });
+  });
+
+  describe("deletePersonalData", () => {
+    beforeEach(() => {
+      // An interactive transaction: run the callback against the mocked client.
+      mockPrisma.$transaction.mockImplementation(((fn: (tx: unknown) => unknown) =>
+        fn(mockPrisma)) as never);
+    });
+
+    it("wipes the personal data and advice, keeping the row and the assessments", async () => {
+      mockPrisma.learner.updateMany.mockResolvedValue({ count: 1 });
+
+      expect(await identity.deletePersonalData("learner-1", now)).toBe(true);
+
+      expect(mockPrisma.learner.updateMany).toHaveBeenCalledWith({
+        where: { id: "learner-1", deletedAt: null, deletionScheduledFor: { lte: now } },
+        data: {
+          email: null,
+          name: null,
+          googleSubId: null,
+          deletionScheduledFor: null,
+          deletedAt: now,
+        },
+      });
+      expect(mockPrisma.learnerProfile.updateMany).toHaveBeenCalledWith({
+        where: { learnerId: "learner-1" },
+        data: { background: null, goals: null },
+      });
+      expect(mockPrisma.advice.deleteMany).toHaveBeenCalledWith({
+        where: { satInstance: { learnerId: "learner-1" } },
+      });
+      expect(mockPrisma.learner.delete).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when the deletion was cancelled (or isn't due) in the meantime", async () => {
+      mockPrisma.learner.updateMany.mockResolvedValue({ count: 0 });
+
+      expect(await identity.deletePersonalData("learner-1", now)).toBe(false);
+
+      expect(mockPrisma.learnerProfile.updateMany).not.toHaveBeenCalled();
+      expect(mockPrisma.advice.deleteMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deleteDuePersonalData", () => {
+    beforeEach(() => {
+      mockPrisma.$transaction.mockImplementation(((fn: (tx: unknown) => unknown) =>
+        fn(mockPrisma)) as never);
+    });
+
+    it("deletes every learner whose date has passed, and counts them", async () => {
+      mockPrisma.learner.findMany.mockResolvedValue([{ id: "a" }, { id: "b" }] as never);
+      mockPrisma.learner.updateMany.mockResolvedValue({ count: 1 });
+
+      expect(await identity.deleteDuePersonalData(now)).toBe(2);
+
+      expect(mockPrisma.learner.findMany).toHaveBeenCalledWith({
+        where: { deletedAt: null, deletionScheduledFor: { lte: now } },
+        select: { id: true },
+      });
+      expect(mockPrisma.learner.updateMany).toHaveBeenCalledTimes(2);
+    });
+
+    it("carries on past a learner that fails, to retry it on the next run", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      mockPrisma.learner.findMany.mockResolvedValue([{ id: "a" }, { id: "b" }] as never);
+      mockPrisma.learner.updateMany
+        .mockRejectedValueOnce(new Error("lock timeout"))
+        .mockResolvedValueOnce({ count: 1 });
+
+      expect(await identity.deleteDuePersonalData(now)).toBe(1);
+      expect(console.error).toHaveBeenCalled();
+    });
   });
 });
 
 describe("findLearnerById", () => {
-  it("reads the learner with their role and profile", async () => {
+  it("reads the learner with their role and profile, skipping deleted accounts", async () => {
     await identity.findLearnerById("learner-1");
     expect(mockPrisma.learner.findUnique).toHaveBeenCalledWith({
-      where: { id: "learner-1" },
+      where: { id: "learner-1", deletedAt: null },
       include,
     });
   });
@@ -84,7 +175,7 @@ describe("roles", () => {
   it("sets the learner's role", async () => {
     await identity.setLearnerRole("learner-1", "role-1");
     expect(mockPrisma.learner.update).toHaveBeenCalledWith({
-      where: { id: "learner-1" },
+      where: { id: "learner-1", deletedAt: null },
       data: { roleId: "role-1" },
       include,
     });
@@ -95,7 +186,7 @@ describe("completeInitialAssessment", () => {
   it("marks the first assessment as done", async () => {
     await identity.completeInitialAssessment("learner-1");
     expect(mockPrisma.learner.update).toHaveBeenCalledWith({
-      where: { id: "learner-1" },
+      where: { id: "learner-1", deletedAt: null },
       data: { hasCompletedInitialAssessment: true },
       include,
     });
@@ -139,7 +230,7 @@ describe("profile", () => {
       create: { learnerId: "learner-1", ...profile },
     });
     expect(mockPrisma.learner.update).toHaveBeenCalledWith({
-      where: { id: "learner-1" },
+      where: { id: "learner-1", deletedAt: null },
       data: { name: "Ada Lovelace" },
       include,
     });

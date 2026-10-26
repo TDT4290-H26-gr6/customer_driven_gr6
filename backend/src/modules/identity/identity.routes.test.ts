@@ -198,15 +198,55 @@ describe("profile", () => {
   });
 });
 
-describe("DELETE /auth/me", () => {
-  it("deletes the signed-in learner's account", async () => {
-    const res = await api.request("DELETE", "/auth/me", { token });
-    expect(res.status).toBe(204);
-    expect(identity.deleteLearner).toHaveBeenCalledWith("learner-1");
+describe("POST /auth/me/deletion", () => {
+  const scheduledFor = new Date("2026-12-01T00:00:00.000Z");
+
+  it("schedules the deletion and returns the learner with its date", async () => {
+    vi.mocked(identity.scheduleDeletion).mockResolvedValue(
+      learner({ deletionScheduledFor: scheduledFor }),
+    );
+
+    const res = await api.request("POST", "/auth/me/deletion", { token });
+
+    expect(res.status).toBe(200);
+    expect(identity.scheduleDeletion).toHaveBeenCalledWith("learner-1");
+    expect(res.body).toMatchObject({ deletionScheduledFor: scheduledFor.toISOString() });
   });
 
-  it("can't be called without a session", async () => {
-    expect((await api.request("DELETE", "/auth/me")).status).toBe(401);
-    expect(identity.deleteLearner).not.toHaveBeenCalled();
+  it("keeps the original date when a deletion is already pending", async () => {
+    vi.mocked(identity.findLearnerById).mockResolvedValue(
+      learner({ deletionScheduledFor: scheduledFor }),
+    );
+
+    const res = await api.request("POST", "/auth/me/deletion", { token });
+
+    expect(res.body).toMatchObject({ deletionScheduledFor: scheduledFor.toISOString() });
+    expect(identity.scheduleDeletion).not.toHaveBeenCalled();
+  });
+
+  it("is 401 without a session or for a deleted account", async () => {
+    expect((await api.request("POST", "/auth/me/deletion")).status).toBe(401);
+    vi.mocked(identity.findLearnerById).mockResolvedValue(null);
+    expect((await api.request("POST", "/auth/me/deletion", { token })).status).toBe(401);
+    expect(identity.scheduleDeletion).not.toHaveBeenCalled();
+  });
+});
+
+describe("DELETE /auth/me/deletion", () => {
+  it("cancels a pending deletion", async () => {
+    vi.mocked(identity.cancelDeletion).mockResolvedValue(learner());
+
+    const res = await api.request("DELETE", "/auth/me/deletion", { token });
+
+    expect(res.status).toBe(200);
+    expect(identity.cancelDeletion).toHaveBeenCalledWith("learner-1");
+    expect(res.body).toMatchObject({ deletionScheduledFor: null });
+  });
+
+  it("is 401 without a session or for a deleted account", async () => {
+    expect((await api.request("DELETE", "/auth/me/deletion")).status).toBe(401);
+    vi.mocked(identity.findLearnerById).mockResolvedValue(null);
+    expect((await api.request("DELETE", "/auth/me/deletion", { token })).status).toBe(401);
+    expect(identity.cancelDeletion).not.toHaveBeenCalled();
   });
 });

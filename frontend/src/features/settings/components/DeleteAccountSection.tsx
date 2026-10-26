@@ -1,62 +1,113 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { Button } from "@/shared/components/Button";
-import { deleteAccount } from "@/features/auth";
+import { DATE_FORMAT } from "@/shared/lib/format";
+import { cancelAccountDeletion, scheduleAccountDeletion } from "@/features/auth";
 import styles from "./DeleteAccountSection.module.css";
 
-/** GDPR right-to-erasure (CD-60): permanently deletes the account and everything tied to it. */
+/**
+ * Account deletion (CD-60, CD-124): "Delete account" schedules the deletion
+ * of the learner's personal data 30 days out, and they stay signed in so
+ * they can cancel until then. Their assessment answers and scores are kept
+ * for the research either way.
+ */
 export function DeleteAccountSection() {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
+  const { learner, updateLearner } = useAuth();
   const [confirming, setConfirming] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  function handleDelete() {
-    setDeleting(true);
+  function run(request: typeof scheduleAccountDeletion, failure: string) {
+    setBusy(true);
     setError("");
-    deleteAccount()
-      .then(() => {
-        logout();
-        navigate("/login", { replace: true });
+    request()
+      .then((updated) => {
+        updateLearner(updated);
+        setConfirming(false);
       })
-      .catch(() => {
-        setError("Could not delete your account. Try again.");
-        setDeleting(false);
-      });
+      .catch(() => setError(failure))
+      .finally(() => setBusy(false));
   }
+
+  const scheduledFor = learner?.deletionScheduledFor;
 
   return (
     <div className={styles.wrap}>
       <h2 className={styles.heading}>Delete account</h2>
-      <p className={styles.hint}>
-        Permanently deletes your account and everything tied to it: your assessments, scores, and
-        profile. This can&apos;t be undone.
-      </p>
 
-      {!confirming ? (
-        <div className={styles.actions}>
-          <Button
-            variant="secondary"
-            className={styles.dangerButton}
-            onClick={() => setConfirming(true)}
-          >
-            Delete account
-          </Button>
-        </div>
+      {scheduledFor ? (
+        <>
+          <p className={styles.hint}>
+            Your account is scheduled for deletion on{" "}
+            <strong>{DATE_FORMAT.format(new Date(scheduledFor))}</strong>. Your name, email, Google
+            sign-in, background, goals and advice will then be deleted. Until then you can keep
+            using AIOS and cancel the deletion.
+          </p>
+          {!confirming ? (
+            <div className={styles.actions}>
+              <Button variant="secondary" onClick={() => setConfirming(true)}>
+                Cancel deletion
+              </Button>
+            </div>
+          ) : (
+            <div className={`${styles.confirmBox} ${styles.confirmBoxNeutral}`}>
+              <p className={styles.confirmText}>
+                Keep your account? The scheduled deletion will be cancelled.
+              </p>
+              <div className={styles.actions}>
+                <Button variant="secondary" onClick={() => setConfirming(false)} disabled={busy}>
+                  Back
+                </Button>
+                <Button
+                  onClick={() =>
+                    run(cancelAccountDeletion, "Could not cancel the deletion. Try again.")
+                  }
+                  disabled={busy}
+                >
+                  {busy ? "Cancelling…" : "Yes, keep my account"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       ) : (
-        <div className={styles.confirmBox}>
-          <p className={styles.confirmText}>Are you sure? This is permanent.</p>
-          <div className={styles.actions}>
-            <Button variant="secondary" onClick={() => setConfirming(false)} disabled={deleting}>
-              Cancel
-            </Button>
-            <Button className={styles.dangerButton} onClick={handleDelete} disabled={deleting}>
-              {deleting ? "Deleting…" : "Yes, delete my account"}
-            </Button>
-          </div>
-        </div>
+        <>
+          <p className={styles.hint}>
+            Deletes your personal data: your name, email, Google sign-in, background, goals and
+            advice. This happens 30 days after you confirm, and you can cancel until then.
+          </p>
+
+          {!confirming ? (
+            <div className={styles.actions}>
+              <Button
+                variant="secondary"
+                className={styles.dangerButton}
+                onClick={() => setConfirming(true)}
+              >
+                Delete account
+              </Button>
+            </div>
+          ) : (
+            <div className={styles.confirmBox}>
+              <p className={styles.confirmText}>
+                Are you sure? Your personal data will be deleted in 30 days.
+              </p>
+              <div className={styles.actions}>
+                <Button variant="secondary" onClick={() => setConfirming(false)} disabled={busy}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() =>
+                    run(scheduleAccountDeletion, "Could not delete your account. Try again.")
+                  }
+                  disabled={busy}
+                >
+                  {busy ? "Deleting…" : "Yes, delete my account"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {error && <p className={styles.error}>{error}</p>}

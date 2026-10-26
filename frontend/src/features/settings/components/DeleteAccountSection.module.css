@@ -43,6 +43,11 @@ button.dangerButton:hover:not(:disabled) {
   border-radius: var(--radius-sm);
 }
 
+/* Confirming the cancel keeps the account: the safe choice, so green, not red. */
+.confirmBoxNeutral {
+  border-color: var(--color-success);
+}
+
 .confirmText {
   margin: 0;
   font-size: var(--font-size-md);
