@@ -175,7 +175,7 @@ export const FAQ: FaqCategory[] = [
       {
         question: "How do I delete my account?",
         answer: [
-          'In Settings, under "Delete account". Your personal data (name, email, Google sign-in, background, goals and advice) is deleted 30 days later, and until then you can cancel the deletion in the same place.',
+          'In Settings, under "Delete account". Your personal data (name, email, Google sign-in, role, profile and advice) is deleted 30 days later, and until then you can cancel the deletion in the same place.',
         ],
       },
       {

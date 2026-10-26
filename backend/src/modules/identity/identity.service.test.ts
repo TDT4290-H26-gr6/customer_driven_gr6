@@ -77,13 +77,13 @@ describe("account deletion", () => {
           email: null,
           name: null,
           googleSubId: null,
+          roleId: null,
           deletionScheduledFor: null,
           deletedAt: now,
         },
       });
-      expect(mockPrisma.learnerProfile.updateMany).toHaveBeenCalledWith({
+      expect(mockPrisma.learnerProfile.deleteMany).toHaveBeenCalledWith({
         where: { learnerId: "learner-1" },
-        data: { background: null, goals: null },
       });
       expect(mockPrisma.advice.deleteMany).toHaveBeenCalledWith({
         where: { satInstance: { learnerId: "learner-1" } },
@@ -96,7 +96,7 @@ describe("account deletion", () => {
 
       expect(await identity.deletePersonalData("learner-1", now)).toBe(false);
 
-      expect(mockPrisma.learnerProfile.updateMany).not.toHaveBeenCalled();
+      expect(mockPrisma.learnerProfile.deleteMany).not.toHaveBeenCalled();
       expect(mockPrisma.advice.deleteMany).not.toHaveBeenCalled();
     });
   });

@@ -117,12 +117,14 @@ export function cancelDeletion(learnerId: string) {
 
 /**
  * Deletes one learner's personal data, if their deletion is (still) due —
- * a cancel that lands first wins. Cleared: email, name and Google id (so
- * signing in again starts a new account), the free-text background and
- * goals, and the AI advice (written from that profile, so it can repeat
- * it). Kept for the research: their assessments, answers and scores, role,
- * industry, degree and years of experience, journey recommendations and
- * feedback (shown unsigned to admins). Returns whether it deleted anything.
+ * a cancel that lands first wins. Deleted: email, name and Google id (so
+ * signing in again starts a new account), role, the whole profile
+ * (industry, degree, years of experience, background, goals), and the AI
+ * advice (written from that profile, so it can repeat it). Kept for the
+ * research: their assessments, answers and scores, journey
+ * recommendations, question views and feedback (shown unsigned to
+ * admins); the stats export shows their role and profile columns empty.
+ * Returns whether it deleted anything.
  */
 export function deletePersonalData(learnerId: string, now = new Date()) {
   return prisma.$transaction(async (tx) => {
@@ -132,15 +134,13 @@ export function deletePersonalData(learnerId: string, now = new Date()) {
         email: null,
         name: null,
         googleSubId: null,
+        roleId: null,
         deletionScheduledFor: null,
         deletedAt: now,
       },
     });
     if (count === 0) return false;
-    await tx.learnerProfile.updateMany({
-      where: { learnerId },
-      data: { background: null, goals: null },
-    });
+    await tx.learnerProfile.deleteMany({ where: { learnerId } });
     await tx.advice.deleteMany({ where: { satInstance: { learnerId } } });
     return true;
   });

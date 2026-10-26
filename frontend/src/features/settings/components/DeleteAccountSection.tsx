@@ -39,9 +39,8 @@ export function DeleteAccountSection() {
         <>
           <p className={styles.hint}>
             Your account is scheduled for deletion on{" "}
-            <strong>{DATE_FORMAT.format(new Date(scheduledFor))}</strong>. Your name, email, Google
-            sign-in, background, goals and advice will then be deleted. Until then you can keep
-            using AIOS and cancel the deletion.
+            <strong>{DATE_FORMAT.format(new Date(scheduledFor))}</strong>. Your personal data will
+            then be deleted. Until then you can keep using AIOS and cancel the deletion.
           </p>
           {!confirming ? (
             <div className={styles.actions}>
@@ -73,8 +72,8 @@ export function DeleteAccountSection() {
       ) : (
         <>
           <p className={styles.hint}>
-            Deletes your personal data: your name, email, Google sign-in, background, goals and
-            advice. This happens 30 days after you confirm, and you can cancel until then.
+            Deletes your personal data. This happens 30 days after you confirm, and you can cancel
+            until then.
           </p>
 
           {!confirming ? (
