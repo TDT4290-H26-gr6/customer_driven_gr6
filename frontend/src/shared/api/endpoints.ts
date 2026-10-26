@@ -22,6 +22,7 @@ export const endpoints = {
     progress: "/assessment/progress",
     path: "/assessment/path",
     responses: "/assessment/responses",
+    views: "/assessment/views",
     complete: "/assessment/complete",
     active: "/assessment/active",
     sections: "/assessment/sections",
@@ -32,6 +33,7 @@ export const endpoints = {
   admin: {
     visibility: "/admin/visibility",
     feedback: "/admin/feedback",
+    dropoff: "/admin/sat/dropoff",
     statsTests: "/admin/stats/tests.csv",
     statsQuestions: "/admin/stats/questions.csv",
     roleSection: (roleId: string, sectionId: string) =>

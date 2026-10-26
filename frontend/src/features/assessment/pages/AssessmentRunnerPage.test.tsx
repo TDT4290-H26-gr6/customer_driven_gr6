@@ -2,13 +2,20 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AssessmentRunnerPage } from "./AssessmentRunnerPage";
-import { completeAssessment, discardAssessment, getAssessmentPath, saveResponse } from "../api";
+import {
+  completeAssessment,
+  discardAssessment,
+  getAssessmentPath,
+  recordQuestionView,
+  saveResponse,
+} from "../api";
 import { completeInitialAssessment } from "@/features/auth";
 import type { AssessmentPath, PathItem, Question } from "../types";
 
 vi.mock("../api", () => ({
   getAssessmentPath: vi.fn(),
   saveResponse: vi.fn(),
+  recordQuestionView: vi.fn(),
   completeAssessment: vi.fn(),
   discardAssessment: vi.fn(),
 }));
@@ -87,9 +94,59 @@ const networkError = { status: 0, message: "offline" };
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(saveResponse).mockResolvedValue(undefined);
+  vi.mocked(recordQuestionView).mockResolvedValue(undefined);
   vi.mocked(completeAssessment).mockResolvedValue(undefined);
   vi.mocked(discardAssessment).mockResolvedValue(undefined);
   vi.mocked(completeInitialAssessment).mockResolvedValue({} as never);
+});
+
+describe("AssessmentRunnerPage question views (CD-125)", () => {
+  it("records that the first question was shown, before anything is answered", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
+
+    render(<AssessmentRunnerPage />);
+    await screen.findByText("Question 1");
+
+    await waitFor(() => expect(recordQuestionView).toHaveBeenCalledWith("1"));
+    expect(recordQuestionView).toHaveBeenCalledTimes(1);
+    expect(saveResponse).not.toHaveBeenCalled();
+  });
+
+  it("records the next question once it appears, and not the one already answered", async () => {
+    vi.mocked(getAssessmentPath)
+      .mockResolvedValueOnce(path([item("1")]))
+      .mockResolvedValueOnce(path([item("1", { answered: true }), item("2")]));
+    const user = userEvent.setup();
+
+    render(<AssessmentRunnerPage />);
+    await user.click(await screen.findByRole("button", { name: "Answer" }));
+    await user.click(screen.getByRole("button", { name: /next/i }));
+    await screen.findByText("Question 2");
+
+    await waitFor(() => expect(recordQuestionView).toHaveBeenCalledWith("2"));
+    expect(vi.mocked(recordQuestionView).mock.calls.map(([id]) => id)).toEqual(["1", "2"]);
+  });
+
+  it("does not record questions that were answered before (resume, Back)", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path([item("1", { answered: true }), item("2", { answered: true })], true),
+    );
+
+    render(<AssessmentRunnerPage />);
+    await screen.findByText("Question 2");
+
+    expect(recordQuestionView).not.toHaveBeenCalled();
+  });
+
+  it("carries on when recording a view fails", async () => {
+    vi.mocked(recordQuestionView).mockRejectedValue(networkError);
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
+
+    render(<AssessmentRunnerPage />);
+
+    expect(await screen.findByText("Question 1")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 });
 
 describe("AssessmentRunnerPage", () => {

@@ -54,6 +54,15 @@ export function saveResponse(
   });
 }
 
+/**
+ * Records that a question was shown to the learner (CD-125), so the admin
+ * drop-off view can tell "stopped at" from "answered last". Best-effort
+ * analytics; the first view per question and attempt is the only one kept.
+ */
+export function recordQuestionView(questionId: string): Promise<void> {
+  return apiFetch<void>(endpoints.assessment.views, { method: "POST", body: { questionId } });
+}
+
 /** Aborts the learner's active instance, deleting every answer saved to it. */
 export function discardAssessment(): Promise<void> {
   return apiFetch<void>(endpoints.assessment.active, { method: "DELETE" });

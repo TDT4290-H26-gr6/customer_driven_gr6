@@ -102,6 +102,27 @@
   font-size: var(--font-size-md);
 }
 
+/* Centers Google's button: its widget is a fixed-width iframe that
+   text-align doesn't move, so shrink-wrap it in a flex row instead.
+   color-scheme: light matches the iframe's own page; in dark mode a
+   mismatch makes the browser paint a white backdrop behind it. */
+.signIn {
+  display: flex;
+  justify-content: center;
+  color-scheme: light;
+}
+
+/* The funding logos, centered at the foot of the card below a divider. At
+   56px tall they're ~238px wide, which still just fits the card's content
+   box (~248px) on a 320px phone. */
+.funding {
+  --funding-logo-height: 56px;
+  justify-content: center;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
 @media (max-width: 767px) {
   .page {
     padding: 16px;

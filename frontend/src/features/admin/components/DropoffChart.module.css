@@ -1,0 +1,31 @@
+.scroll {
+  overflow-x: auto;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.chart {
+  display: block;
+}
+
+.grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.axisLabel {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.bar {
+  fill: var(--color-primary);
+}
+
+/* Low-sample bars are unreliable, so they read as lighter. */
+.barLow {
+  fill: var(--color-primary);
+  opacity: 0.4;
+}
