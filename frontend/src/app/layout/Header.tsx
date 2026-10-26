@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { FundingLogos } from "@/shared/components/FundingLogos";
 import { HelpIcon, LogoutIcon, SettingsIcon, ShieldIcon } from "@/shared/components/icons";
 import { Logo } from "@/shared/components/Logo";
 import styles from "./Header.module.css";
@@ -63,64 +64,69 @@ export function Header() {
         <Logo className={styles.logo} />
       </div>
       {learner && (
-        <div className={styles.userMenu} ref={menuRef}>
-          <button
-            type="button"
-            className={styles.avatarButton}
-            onClick={() => setOpen((o) => !o)}
-            aria-haspopup="menu"
-            aria-expanded={open}
-            aria-label="Account menu"
-          >
-            {initials}
-          </button>
+        <div className={styles.right}>
+          {/* Funders' logos, just left of the avatar, the same height as
+              the AIOS logo (shrinking on narrow phones, see the CSS). */}
+          <FundingLogos className={styles.funding} />
+          <div className={styles.userMenu} ref={menuRef}>
+            <button
+              type="button"
+              className={styles.avatarButton}
+              onClick={() => setOpen((o) => !o)}
+              aria-haspopup="menu"
+              aria-expanded={open}
+              aria-label="Account menu"
+            >
+              {initials}
+            </button>
 
-          {open && (
-            <div className={styles.dropdown} role="menu">
-              <div className={styles.dropdownHeader}>
-                <span className={styles.dropdownName}>{displayName}</span>
-                {learner.role && <span className={styles.dropdownRole}>{learner.role.name}</span>}
-              </div>
-              <button
-                type="button"
-                className={styles.dropdownItem}
-                role="menuitem"
-                onClick={goToSettings}
-              >
-                <SettingsIcon className={styles.dropdownIcon} />
-                Settings
-              </button>
-              <button
-                type="button"
-                className={styles.dropdownItem}
-                role="menuitem"
-                onClick={goToFaq}
-              >
-                <HelpIcon className={styles.dropdownIcon} />
-                FAQ
-              </button>
-              {learner.isAdmin && (
+            {open && (
+              <div className={styles.dropdown} role="menu">
+                <div className={styles.dropdownHeader}>
+                  <span className={styles.dropdownName}>{displayName}</span>
+                  {learner.role && <span className={styles.dropdownRole}>{learner.role.name}</span>}
+                </div>
                 <button
                   type="button"
                   className={styles.dropdownItem}
                   role="menuitem"
-                  onClick={goToAdmin}
+                  onClick={goToSettings}
                 >
-                  <ShieldIcon className={styles.dropdownIcon} />
-                  Admin mode
+                  <SettingsIcon className={styles.dropdownIcon} />
+                  Settings
                 </button>
-              )}
-              <button
-                type="button"
-                className={styles.dropdownItem}
-                role="menuitem"
-                onClick={handleLogout}
-              >
-                <LogoutIcon className={styles.dropdownIcon} />
-                Sign out
-              </button>
-            </div>
-          )}
+                <button
+                  type="button"
+                  className={styles.dropdownItem}
+                  role="menuitem"
+                  onClick={goToFaq}
+                >
+                  <HelpIcon className={styles.dropdownIcon} />
+                  FAQ
+                </button>
+                {learner.isAdmin && (
+                  <button
+                    type="button"
+                    className={styles.dropdownItem}
+                    role="menuitem"
+                    onClick={goToAdmin}
+                  >
+                    <ShieldIcon className={styles.dropdownIcon} />
+                    Admin mode
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={styles.dropdownItem}
+                  role="menuitem"
+                  onClick={handleLogout}
+                >
+                  <LogoutIcon className={styles.dropdownIcon} />
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </header>

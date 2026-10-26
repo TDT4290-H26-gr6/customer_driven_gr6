@@ -1,10 +1,8 @@
 import { render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useTheme } from "@/app/providers/ThemeProvider";
 import { googleLogin } from "../api";
 import { GoogleLoginButton } from "./GoogleLoginButton";
 
-vi.mock("@/app/providers/ThemeProvider", () => ({ useTheme: vi.fn() }));
 vi.mock("../api", () => ({ googleLogin: vi.fn() }));
 
 // A stand-in for Google's sign-in script (loaded from accounts.google.com).
@@ -19,7 +17,6 @@ const googleCallback = () =>
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(useTheme).mockReturnValue({ resolvedTheme: "light" } as never);
   window.google = { accounts: { id: { initialize, renderButton } } };
 });
 
@@ -28,25 +25,13 @@ afterEach(() => {
 });
 
 describe("GoogleLoginButton", () => {
-  it("draws Google's button, outlined in light mode", () => {
+  it("draws Google's white, outlined button", () => {
     const { container } = render(<GoogleLoginButton onLogin={vi.fn()} />);
     expect(renderButton).toHaveBeenCalledWith(container.firstChild, {
       theme: "outline",
       size: "large",
     });
     expect(container).toHaveTextContent("Sign in with Google");
-  });
-
-  it("redraws it dark, once, when the theme turns dark", () => {
-    const { container, rerender } = render(<GoogleLoginButton onLogin={vi.fn()} />);
-    vi.mocked(useTheme).mockReturnValue({ resolvedTheme: "dark" } as never);
-    rerender(<GoogleLoginButton onLogin={vi.fn()} />);
-
-    expect(renderButton).toHaveBeenLastCalledWith(container.firstChild, {
-      theme: "filled_black",
-      size: "large",
-    });
-    expect(container.querySelectorAll("button")).toHaveLength(1);
   });
 
   it("signs in with the credential Google hands back", async () => {

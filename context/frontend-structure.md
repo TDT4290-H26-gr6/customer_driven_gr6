@@ -157,7 +157,10 @@ frontend/
     │   │   ├── Spinner.tsx
     │   │   ├── ErrorBanner.tsx
     │   │   ├── icons.tsx           # small inline SVG icon set (incl. SidebarToggleIcon)
-    │   │   └── Logo.tsx            # the AIOS wordmark as inline SVG — see "Logo" below
+    │   │   ├── Logo.tsx            # the AIOS wordmark as inline SVG — see "Logo" below
+    │   │   └── FundingLogos.tsx    # EU (inline SVG) + IKY funding logos — see "Funding logos" below
+    │   ├── assets/                 # raster images imported by components (Vite fingerprints them)
+    │   │   └── iky.jpg
     │   ├── hooks/
     │   │   ├── useAsync.ts
     │   │   ├── useDialogKeys.ts       # Escape closes, Tab wraps inside a modal (JourneyModal, InformationLetterModal)
@@ -394,7 +397,8 @@ a single toggle:
    or removes the `data-theme` attribute on `<html>` to match. It also
    exposes `resolvedTheme` (`"light" | "dark"`, resolving what "Default"
    currently means) for the rare case a component can't rely on CSS
-   variables — e.g. `GoogleLoginButton` picks a matching Google‑widget theme.
+   variables. (`GoogleLoginButton` doesn't use it: Google's button is always
+   the white "outline" one, which stands out on the dark login card too.)
 3. `index.html` has a small inline script that applies a stored `data-theme`
    _before_ React mounts, so there's no flash of the wrong theme on first
    paint. It reads the same `localStorage` key `ThemeProvider` writes
@@ -581,6 +585,36 @@ fixed height for the header, `LoginPage.module.css`'s centers a larger one
 on the card. This replaced a PNG in `public/aios-logo.png` that was seated on
 a hardcoded white chip to stay visible on a dark header; that file and hack
 are both gone now that the logo is theme-aware.
+
+### Funding logos
+
+`shared/components/FundingLogos.tsx` shows the "Co-funded by the European
+Union" logo with the Erasmus+ project number, and IKY's logo, at the same
+height and with no plate behind them in either theme.
+
+- **EU logo:** inline SVG, for the same reason as the AIOS logo: so it can
+  follow the theme. It's laid out to match the image the customer sent. The
+  flag is drawn from the emblem's official geometry in `--eu-blue` /
+  `--eu-yellow`. The "Co-funded by…" text is `--color-eu-text`: EU blue in
+  light mode and white in dark, like the EU's own versions for light and dark
+  backgrounds. The project lines use `--color-text`. Each line has a fixed
+  `textLength`, so a fallback font can't make it run wider. Don't recolor the
+  flag or swap the statement's font for one the EU doesn't allow (Arial is
+  allowed).
+- **IKY logo:** the customer's image as it is (`shared/assets/iky.jpg`):
+  the blue square in a thin white frame. The frame is part of IKY's logo
+  (their own site shows it on a dark background), so don't crop it off. It's
+  imported from the component, not put in `public/`, so Vite gives it a
+  content-hashed URL.
+
+- **Where:** in the header, just left of the account avatar, on every
+  screen size and only while signed in. They're the same height as the AIOS
+  logo (40px) so the three read as equals. The caller sets that height
+  through `--funding-logo-height`. On phones too narrow for 40px,
+  Header.module.css shrinks it to the room left beside the AIOS logo and the
+  avatar. While signed out they're on the login page instead, centered at
+  the foot of the card below a divider, at 56px (they still just fit the
+  card on a 320px phone).
 
 **App shell on mobile**
 
