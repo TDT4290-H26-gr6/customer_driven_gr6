@@ -1,13 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "@/shared/api/client";
 import { downloadBlob } from "@/shared/lib/download";
-import {
-  downloadQuestionsCsv,
-  downloadTestsCsv,
-  getVisibility,
-  setCompetenceGrant,
-  setSectionGrant,
-} from "./api";
+import { downloadQuestionsCsv, downloadTestsCsv, getDropoff, getVisibility } from "./api";
 
 vi.mock("@/shared/api/client", () => ({ apiFetch: vi.fn() }));
 vi.mock("@/shared/lib/download", () => ({ downloadBlob: vi.fn() }));
@@ -24,27 +18,32 @@ describe("admin api", () => {
     expect(apiFetch).toHaveBeenCalledWith("/admin/visibility");
   });
 
-  it("setSectionGrant grants with PUT and revokes with DELETE", async () => {
-    await setSectionGrant("role 1", "sec/1", true);
-    await setSectionGrant("role 1", "sec/1", false);
-    // Ids are escaped so they can't change the path.
-    expect(apiFetch).toHaveBeenNthCalledWith(1, "/admin/roles/role%201/sections/sec%2F1", {
-      method: "PUT",
+  it("getDropoff sends the filters, with the end date inclusive", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({ questions: [] });
+
+    await getDropoff({
+      type: "targeted_reevaluation",
+      sectionId: "s 1",
+      from: "2026-10-01",
+      to: "2026-10-31",
+      inactiveDays: 14,
     });
-    expect(apiFetch).toHaveBeenNthCalledWith(2, "/admin/roles/role%201/sections/sec%2F1", {
-      method: "DELETE",
+
+    const url = new URL(String(vi.mocked(apiFetch).mock.calls[0][0]), "http://x");
+    expect(url.pathname).toBe("/admin/sat/dropoff");
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      type: "targeted_reevaluation",
+      inactiveDays: "14",
+      sectionId: "s 1",
+      from: "2026-10-01T00:00:00.000Z",
+      to: "2026-10-31T23:59:59.999Z",
     });
   });
 
-  it("setCompetenceGrant grants with PUT and revokes with DELETE", async () => {
-    await setCompetenceGrant("role-1", "c-1", true);
-    await setCompetenceGrant("role-1", "c-1", false);
-    expect(apiFetch).toHaveBeenNthCalledWith(1, "/admin/roles/role-1/competences/c-1", {
-      method: "PUT",
-    });
-    expect(apiFetch).toHaveBeenNthCalledWith(2, "/admin/roles/role-1/competences/c-1", {
-      method: "DELETE",
-    });
+  it("getDropoff omits empty optional filters", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce({ questions: [] });
+    await getDropoff({ type: "initial", sectionId: "", from: "", to: "", inactiveDays: 7 });
+    expect(apiFetch).toHaveBeenCalledWith("/admin/sat/dropoff?type=initial&inactiveDays=7");
   });
 
   it.each([

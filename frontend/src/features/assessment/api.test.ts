@@ -6,6 +6,7 @@ import {
   getAssessableSections,
   getAssessmentPath,
   getProgress,
+  recordQuestionView,
   saveResponse,
   startReassessment,
 } from "./api";
@@ -53,6 +54,14 @@ describe("assessment api", () => {
     expect(apiFetch).toHaveBeenCalledWith("/assessment/responses", {
       method: "POST",
       body: { questionId: "q1", answer, timeSpentMs: 4200 },
+    });
+  });
+
+  it("recordQuestionView tells the backend a question was shown", async () => {
+    await recordQuestionView("q1");
+    expect(apiFetch).toHaveBeenCalledWith("/assessment/views", {
+      method: "POST",
+      body: { questionId: "q1" },
     });
   });
 

@@ -15,6 +15,7 @@ model Learner {
   updatedAt                     DateTime @updatedAt
 
   satInstances    SatInstance[]
+  questionViews   QuestionView[]
   profile          LearnerProfile?
   recommendations  JourneyRecommendation[]
   sectionGrants    RoleSection[]

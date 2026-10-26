@@ -11,6 +11,7 @@ import {
   hasCompletedMainAssessment,
   listAssessableSections,
   listQuestions,
+  recordQuestionView,
   saveResponse,
   startJourneyAssessment,
   startReassessment,
@@ -37,6 +38,7 @@ vi.mock("../../db/prisma", () => ({
     learningJourney: { findUnique: vi.fn() },
     journeySection: { findMany: vi.fn() },
     response: { findMany: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
+    questionView: { createMany: vi.fn(), deleteMany: vi.fn() },
     competenceScore: { findMany: vi.fn(), upsert: vi.fn() },
     sectionModule: { findMany: vi.fn() },
     $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
@@ -659,8 +661,65 @@ describe("completeActiveInstance", () => {
   });
 });
 
+describe("recordQuestionView", () => {
+  beforeEach(() => {
+    vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);
+    vi.mocked(getRoleGrants).mockResolvedValue({ sectionIds: ["section-1"], competenceIds: [] });
+    mockPrisma.satInstance.count.mockResolvedValue(1);
+    mockPrisma.question.findFirst.mockResolvedValue({ id: "q1" } as never);
+  });
+
+  it("keys the view to the active instance's attempt", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValueOnce({
+      id: "instance-1",
+      kind: "main",
+      instanceNum: 2,
+    } as never);
+
+    expect(await recordQuestionView("learner-1", "q1")).toBe(true);
+
+    expect(mockPrisma.questionView.createMany).toHaveBeenCalledWith({
+      data: [{ learnerId: "learner-1", kind: "main", instanceNum: 2, questionId: "q1" }],
+      skipDuplicates: true,
+    });
+    expect(mockPrisma.satInstance.create).not.toHaveBeenCalled();
+  });
+
+  it("before any answer, keys it to the upcoming main attempt without creating an instance", async () => {
+    mockPrisma.satInstance.findFirst
+      .mockResolvedValueOnce(null) // no active instance
+      .mockResolvedValueOnce({ instanceNum: 1 } as never); // latest main
+
+    await recordQuestionView("learner-1", "q1");
+
+    expect(mockPrisma.questionView.createMany).toHaveBeenCalledWith({
+      data: [{ learnerId: "learner-1", kind: "main", instanceNum: 2, questionId: "q1" }],
+      skipDuplicates: true,
+    });
+    expect(mockPrisma.satInstance.create).not.toHaveBeenCalled();
+  });
+
+  it("records nothing for an unknown or hidden question", async () => {
+    mockPrisma.question.findFirst.mockResolvedValue(null);
+
+    expect(await recordQuestionView("learner-1", "nope")).toBe(false);
+    expect(mockPrisma.questionView.createMany).not.toHaveBeenCalled();
+  });
+
+  it("records nothing for a learner without a role", async () => {
+    vi.mocked(findLearnerById).mockResolvedValue({ roleId: null } as never);
+
+    expect(await recordQuestionView("learner-1", "q1")).toBe(false);
+    expect(mockPrisma.questionView.createMany).not.toHaveBeenCalled();
+  });
+});
+
 describe("discardActiveInstance", () => {
-  it("deletes only the learner's unfinished instances, never a completed one", async () => {
+  it("deletes only the learner's unfinished instances (never a completed one) and their views", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValueOnce([
+      { kind: "main", instanceNum: 2 },
+    ] as never);
+    mockPrisma.questionView.deleteMany.mockResolvedValueOnce({ count: 3 });
     mockPrisma.satInstance.deleteMany.mockResolvedValueOnce({ count: 1 });
 
     const result = await discardActiveInstance("learner-1");
@@ -669,6 +728,17 @@ describe("discardActiveInstance", () => {
     expect(mockPrisma.satInstance.deleteMany).toHaveBeenCalledWith({
       where: { learnerId: "learner-1", completedAt: null },
     });
+    expect(mockPrisma.questionView.deleteMany).toHaveBeenCalledWith({
+      where: { learnerId: "learner-1", OR: [{ kind: "main", instanceNum: 2 }] },
+    });
+  });
+
+  it("does nothing when there is no unfinished instance", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValueOnce([]);
+
+    expect(await discardActiveInstance("learner-1")).toBe(0);
+    expect(mockPrisma.satInstance.deleteMany).not.toHaveBeenCalled();
+    expect(mockPrisma.questionView.deleteMany).not.toHaveBeenCalled();
   });
 });
 

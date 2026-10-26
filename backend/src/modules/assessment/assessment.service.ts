@@ -326,6 +326,16 @@ export async function startReassessment(
   return { ok: true };
 }
 
+/** The number the learner's next main instance will get (their highest + 1). */
+async function nextMainInstanceNum(learnerId: string) {
+  const latest = await prisma.satInstance.findFirst({
+    where: { learnerId, kind: MAIN_KIND },
+    orderBy: { instanceNum: "desc" },
+    select: { instanceNum: true },
+  });
+  return (latest?.instanceNum ?? 0) + 1;
+}
+
 /** Everything buildPath needs for the learner's current (or upcoming) attempt. */
 async function loadPathInputs(learnerId: string) {
   const where = await visibleQuestionFilter(learnerId);
@@ -351,15 +361,7 @@ async function loadPathInputs(learnerId: string) {
 
   // Before the first answer there's no instance yet; its number will be the
   // next one, so the order chosen now is the order it keeps once created.
-  const instanceNum =
-    active?.instanceNum ??
-    ((
-      await prisma.satInstance.findFirst({
-        where: { learnerId, kind: MAIN_KIND },
-        orderBy: { instanceNum: "desc" },
-        select: { instanceNum: true },
-      })
-    )?.instanceNum ?? 0) + 1;
+  const instanceNum = active?.instanceNum ?? (await nextMainInstanceNum(learnerId));
 
   const sectionsById = new Map<string, PathSection>();
   for (const q of questions) {
@@ -530,6 +532,37 @@ export async function saveResponse(
   });
 }
 
+/**
+ * Records that the question was shown to the learner in their current attempt
+ * (CD-125), for the admin drop-off page. Only the first view per question and
+ * attempt is stored. The attempt is the active instance, or — before the first
+ * answer creates one — the upcoming main instance, so a learner who opens the
+ * first question and leaves is still seen. Nothing is created besides the view.
+ *
+ * Returns false, and records nothing, when the question doesn't exist or the
+ * learner's role may not see it (same rule as saveResponse).
+ */
+export async function recordQuestionView(learnerId: string, questionId: string) {
+  const visible = await visibleQuestionFilter(learnerId);
+  if (!visible) return false;
+
+  const question = await prisma.question.findFirst({
+    where: { AND: [{ id: questionId }, visible] },
+    select: { id: true },
+  });
+  if (!question) return false;
+
+  const active = await findActiveInstance(learnerId);
+  const kind = active?.kind ?? MAIN_KIND;
+  const instanceNum = active?.instanceNum ?? (await nextMainInstanceNum(learnerId));
+
+  await prisma.questionView.createMany({
+    data: [{ learnerId, kind, instanceNum, questionId }],
+    skipDuplicates: true,
+  });
+  return true;
+}
+
 export type CompleteResult = "completed" | "none" | "unfinished";
 
 export type StartJourneyAssessmentResult =
@@ -663,12 +696,26 @@ export async function completeActiveInstance(learnerId: string): Promise<Complet
  * with it (onDelete: Cascade) every answer saved to it — as if it was never
  * started. Only ever touches unfinished instances, so completed ones and
  * their scores can't be deleted through here. No-ops if there isn't one.
- * Returns how many instances were deleted.
+ * Returns how many instances were deleted. The attempt's recorded question
+ * views go too — its number is reused by the next attempt, which must start
+ * with none.
  */
 export async function discardActiveInstance(learnerId: string) {
-  const { count } = await prisma.satInstance.deleteMany({
+  const unfinished = await prisma.satInstance.findMany({
     where: { learnerId, completedAt: null },
+    select: { kind: true, instanceNum: true },
   });
+  if (unfinished.length === 0) return 0;
+
+  const [, { count }] = await prisma.$transaction([
+    prisma.questionView.deleteMany({
+      where: {
+        learnerId,
+        OR: unfinished.map(({ kind, instanceNum }) => ({ kind, instanceNum })),
+      },
+    }),
+    prisma.satInstance.deleteMany({ where: { learnerId, completedAt: null } }),
+  ]);
   return count;
 }
 

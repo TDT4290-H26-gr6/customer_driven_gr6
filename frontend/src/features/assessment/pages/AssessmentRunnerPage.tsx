@@ -11,7 +11,13 @@ import { AssessmentProgress } from "../components/AssessmentProgress";
 import { ExitAssessmentDialog, type ExitStatus } from "../components/ExitAssessmentDialog";
 import { QuestionCard } from "../components/QuestionCard";
 import type { PieAnswer } from "../components/PieQuestionPlayer";
-import { completeAssessment, discardAssessment, getAssessmentPath, saveResponse } from "../api";
+import {
+  completeAssessment,
+  discardAssessment,
+  getAssessmentPath,
+  recordQuestionView,
+  saveResponse,
+} from "../api";
 import type { AssessmentPath } from "../types";
 import styles from "./AssessmentRunnerPage.module.css";
 
@@ -95,6 +101,20 @@ export function AssessmentRunnerPage() {
   useEffect(() => {
     shownAt.current = Date.now();
   }, [currentQuestionId]);
+
+  // Tell the backend a question was shown (CD-125, drop-off analytics) — only
+  // ones not yet answered, since an answered question was seen before. Fire
+  // and forget: a lost request just means one missing view (an answer implies
+  // one anyway), so it's never retried or surfaced, and it never blocks the
+  // learner. Skipped while aborting or finishing, like saves, so nothing gets
+  // recorded against an attempt that is being deleted or closed.
+  const currentUnanswered =
+    path !== null && path.items[Math.min(index, path.items.length - 1)]?.answer == null;
+  useEffect(() => {
+    if (!currentQuestionId || !currentUnanswered) return;
+    if (discarding.current || finishing.current) return;
+    recordQuestionView(currentQuestionId).catch(() => {});
+  }, [currentQuestionId, currentUnanswered]);
 
   const load = useCallback(() => {
     setLoadFailed(false);
