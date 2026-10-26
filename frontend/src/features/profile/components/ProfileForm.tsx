@@ -237,8 +237,8 @@ export function ProfileForm({ onSaved, submitLabel = "Save", requireConsent = fa
           <p className={styles.consentNote}>
             We use your profile details and assessment answers to show your results, recommend
             learning journeys and research the AIOS curriculum. You can delete your account and
-            personal data at any time from the settings page; it is deleted 30 days later, and your
-            assessment answers are kept anonymously for the research.
+            personal data at any time from the settings page. It is deleted 30 days later, after it
+            is initialized.
           </p>
         </div>
       )}
