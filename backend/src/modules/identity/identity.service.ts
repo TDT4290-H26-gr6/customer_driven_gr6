@@ -6,8 +6,15 @@ import type { LearnerProfileInput } from "./identity.types";
 /** What toLearnerDto needs: the role, and the profile for hasCompletedProfile. */
 const learnerInclude = { userRole: true, profile: true } as const;
 
+/**
+ * A deleted account keeps its row (see deletePersonalData), so every read
+ * and write by id skips it: to the rest of the app it doesn't exist, and a
+ * token that outlived it is a dead session.
+ */
+const notDeleted = { deletedAt: null } as const;
+
 export function findLearnerById(id: string) {
-  return prisma.learner.findUnique({ where: { id }, include: learnerInclude });
+  return prisma.learner.findUnique({ where: { id, ...notDeleted }, include: learnerInclude });
 }
 
 /**
@@ -33,7 +40,7 @@ export function findRole(id: string) {
 
 export function setLearnerRole(learnerId: string, roleId: string) {
   return prisma.learner.update({
-    where: { id: learnerId },
+    where: { id: learnerId, ...notDeleted },
     data: { roleId },
     include: learnerInclude,
   });
@@ -41,7 +48,7 @@ export function setLearnerRole(learnerId: string, roleId: string) {
 
 export function completeInitialAssessment(learnerId: string) {
   return prisma.learner.update({
-    where: { id: learnerId },
+    where: { id: learnerId, ...notDeleted },
     data: { hasCompletedInitialAssessment: true },
     include: learnerInclude,
   });
@@ -49,7 +56,7 @@ export function completeInitialAssessment(learnerId: string) {
 
 export function acceptPrivacyNotice(learnerId: string) {
   return prisma.learner.update({
-    where: { id: learnerId },
+    where: { id: learnerId, ...notDeleted },
     data: { privacyNoticeAcceptedAt: new Date() },
     include: learnerInclude,
   });
@@ -72,21 +79,92 @@ export async function saveLearnerProfile(learnerId: string, input: LearnerProfil
       update: profile,
       create: { learnerId, ...profile },
     }),
-    prisma.learner.update({ where: { id: learnerId }, data: { name }, include: learnerInclude }),
+    prisma.learner.update({
+      where: { id: learnerId, ...notDeleted },
+      data: { name },
+      include: learnerInclude,
+    }),
   ]);
   return learner;
 }
 
+// --- Account deletion (CD-60, CD-124) ---
+
+/** How long after "Delete account" the personal data is deleted; the learner can cancel until then. */
+export const DELETION_GRACE_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /**
- * GDPR account deletion (CD-60). Everything the learner owns — SAT
- * instances/responses/scores, their profile, their journey
- * recommendations, any grants they made, and feedback they sent — cascades
- * at the DB level (onDelete: Cascade throughout assessment.prisma/
- * identity.prisma/learningJourney.prisma/feedback.prisma), so this is just
- * the one delete.
+ * Starts the countdown: the personal data is deleted DELETION_GRACE_DAYS
+ * from now, by deleteDuePersonalData. Asking again while one is pending
+ * keeps the original date, so it can't be pushed back by accident.
  */
-export function deleteLearner(learnerId: string) {
-  return prisma.learner.delete({ where: { id: learnerId } });
+export function scheduleDeletion(learnerId: string, now = new Date()) {
+  return prisma.learner.update({
+    where: { id: learnerId, ...notDeleted, deletionScheduledFor: null },
+    data: { deletionScheduledFor: new Date(now.getTime() + DELETION_GRACE_DAYS * DAY_MS) },
+    include: learnerInclude,
+  });
+}
+
+export function cancelDeletion(learnerId: string) {
+  return prisma.learner.update({
+    where: { id: learnerId, ...notDeleted },
+    data: { deletionScheduledFor: null },
+    include: learnerInclude,
+  });
+}
+
+/**
+ * Deletes one learner's personal data, if their deletion is (still) due —
+ * a cancel that lands first wins. Deleted: email, name and Google id (so
+ * signing in again starts a new account), role, the whole profile
+ * (industry, degree, years of experience, background, goals), and the AI
+ * advice (written from that profile, so it can repeat it). Kept for the
+ * research: their assessments, answers and scores, journey
+ * recommendations, question views and feedback (shown unsigned to
+ * admins); the stats export shows their role and profile columns empty.
+ * Returns whether it deleted anything.
+ */
+export function deletePersonalData(learnerId: string, now = new Date()) {
+  return prisma.$transaction(async (tx) => {
+    const { count } = await tx.learner.updateMany({
+      where: { id: learnerId, ...notDeleted, deletionScheduledFor: { lte: now } },
+      data: {
+        email: null,
+        name: null,
+        googleSubId: null,
+        roleId: null,
+        deletionScheduledFor: null,
+        deletedAt: now,
+      },
+    });
+    if (count === 0) return false;
+    await tx.learnerProfile.deleteMany({ where: { learnerId } });
+    await tx.advice.deleteMany({ where: { satInstance: { learnerId } } });
+    return true;
+  });
+}
+
+/**
+ * Deletes the personal data of every learner whose 30 days are up. Run on a
+ * timer (see startDeletionJob). One failure doesn't stop the rest; they are
+ * all retried on the next run. Returns how many were deleted.
+ */
+export async function deleteDuePersonalData(now = new Date()) {
+  const due = await prisma.learner.findMany({
+    where: { ...notDeleted, deletionScheduledFor: { lte: now } },
+    select: { id: true },
+  });
+  let deleted = 0;
+  for (const { id } of due) {
+    try {
+      if (await deletePersonalData(id, now)) deleted++;
+    } catch (err) {
+      console.error(`Deleting personal data for learner ${id} failed:`, err);
+    }
+  }
+  return deleted;
 }
 
 // --- Role visibility allow-lists (identity_role_section / identity_role_competence) ---

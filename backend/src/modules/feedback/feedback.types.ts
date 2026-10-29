@@ -14,7 +14,7 @@ export type FeedbackDto = {
   suggestion: string | null;
   page: string | null;
   createdAt: Date;
-  learner: { email: string; name: string | null };
+  learner: { email: string | null; name: string | null }; // both null once the sender's account is deleted
 };
 
 export const MAX_FEEDBACK_LENGTH = 2000;

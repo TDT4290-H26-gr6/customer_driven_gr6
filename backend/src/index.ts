@@ -1,6 +1,7 @@
 import { buildServer } from "./server";
 import { config } from "./config";
 import { prisma } from "./db/prisma";
+import { startDeletionJob } from "./modules/identity/identity.deletionJob";
 
 /** How long in-flight requests get to finish on shutdown before we exit anyway. */
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -31,6 +32,9 @@ async function main() {
     process.exit(1);
   });
 
+  // Deletes the personal data of accounts whose 30 days are up.
+  const stopDeletionJob = startDeletionJob();
+
   // Stop taking new requests, let in-flight ones finish, then release the
   // database connections — so a restart (docker stop, tsx watch reload)
   // never cuts a response or a transaction off halfway.
@@ -45,6 +49,7 @@ async function main() {
       process.exit(1);
     }, SHUTDOWN_TIMEOUT_MS).unref();
 
+    stopDeletionJob();
     server.close(() => {
       prisma
         .$disconnect()

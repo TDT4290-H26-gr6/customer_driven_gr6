@@ -13,7 +13,7 @@ export type Feedback = {
   page: string | null;
   /** ISO timestamp. */
   createdAt: string;
-  learner: { email: string; name: string | null };
+  learner: { email: string | null; name: string | null }; // both null once the sender's account is deleted
 };
 
 /** Server-side cap on each text field — mirrored so the form can show a counter. */

@@ -236,9 +236,9 @@ export function ProfileForm({ onSaved, submitLabel = "Save", requireConsent = fa
           </label>
           <p className={styles.consentNote}>
             We use your profile details and assessment answers to show your results, recommend
-            learning journeys and research the AIOS curriculum. You can request deletion of your
-            account and personal data at any time from the settings page. We will process the
-            request within 30 days.
+            learning journeys and research the AIOS curriculum. You can delete your account and
+            personal data at any time from the settings page. It is deleted 30 days later, after
+            being initialized.
           </p>
         </div>
       )}

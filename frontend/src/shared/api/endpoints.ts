@@ -7,6 +7,7 @@ export const endpoints = {
     myPrivacyNotice: "/auth/me/privacy-notice",
     myInitialAssessment: "/auth/me/initial-assessment",
     myProfile: "/auth/me/profile",
+    myDeletion: "/auth/me/deletion",
   },
   roles: "/roles",
   competenceScoresBySection: "/competence-scores/by-section",

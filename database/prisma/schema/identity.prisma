@@ -4,13 +4,20 @@
 
 model Learner {
   id                            String   @id @default(uuid())
-  email                         String   @unique
+  email                         String?  @unique // null once the personal data is deleted (see deletedAt)
   name                          String?
-  googleSubId                   String?  @unique // "sub" claim from Google's ID token
+  googleSubId                   String?  @unique // "sub" claim from Google's ID token; null once deleted
   roleId                        String? // chosen persona (identity_role)
   userRole                      Role?    @relation(fields: [roleId], references: [id])
   hasCompletedInitialAssessment Boolean  @default(false) // true once every visible question in the first SAT instance is answered
   privacyNoticeAcceptedAt       DateTime? // set when the learner ticks the information-letter checkbox on the profile step
+  /// Set when the learner deletes their account in Settings: their personal
+  /// data is deleted at this time (30 days later), unless they cancel first.
+  deletionScheduledFor          DateTime?
+  /// Set once the personal data has been deleted. The row stays, so the
+  /// learner's assessments still count in the research data, but it no
+  /// longer identifies anyone and can't be signed in to.
+  deletedAt                     DateTime?
   createdAt                     DateTime @default(now())
   updatedAt                     DateTime @updatedAt
 

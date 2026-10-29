@@ -9,13 +9,14 @@ import { hasCompletedMainAssessment } from "../assessment/assessment.service";
 import { requireString } from "../../lib/validate";
 import {
   acceptPrivacyNotice,
+  cancelDeletion,
   completeInitialAssessment,
-  deleteLearner,
   findLearnerById,
   findRole,
   getLearnerProfile,
   listRoles,
   saveLearnerProfile,
+  scheduleDeletion,
   setLearnerRole,
   upsertLearnerFromGoogle,
 } from "./identity.service";
@@ -153,11 +154,29 @@ identityRouter.put(
   }),
 );
 
-identityRouter.delete(
-  "/auth/me",
+// "Delete account" in Settings: the personal data is deleted 30 days from
+// now (see scheduleDeletion), and the learner can cancel until then. No
+// requireRole, like the profile routes: anyone signed in may leave.
+identityRouter.post(
+  "/auth/me/deletion",
   requireAuth,
   asyncHandler<AuthedRequest>(async (req, res) => {
-    await deleteLearner(req.learnerId!);
-    res.status(204).end();
+    const learner = await findLearnerById(req.learnerId!);
+    if (!learner) return res.status(401).json({ error: "Account not found" });
+    // Already pending: keep the original date.
+    if (learner.deletionScheduledFor) return res.json(toLearnerDto(learner));
+
+    res.json(toLearnerDto(await scheduleDeletion(req.learnerId!)));
+  }),
+);
+
+identityRouter.delete(
+  "/auth/me/deletion",
+  requireAuth,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    if (!(await findLearnerById(req.learnerId!))) {
+      return res.status(401).json({ error: "Account not found" });
+    }
+    res.json(toLearnerDto(await cancelDeletion(req.learnerId!)));
   }),
 );

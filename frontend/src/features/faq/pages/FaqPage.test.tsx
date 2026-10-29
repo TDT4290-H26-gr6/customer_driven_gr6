@@ -24,7 +24,7 @@ describe("FaqPage", () => {
     expect(screen.getByText("How do I delete my account?").closest("details")).toHaveAttribute(
       "open",
     );
-    expect(screen.getByText(/permanently deletes your account/i)).toBeVisible();
+    expect(screen.getByText(/your personal data \(name, email/i)).toBeVisible();
   });
 
   it("filters to matching questions, opened, as you type", async () => {
@@ -52,9 +52,7 @@ describe("FaqPage", () => {
 
 describe("filterFaq", () => {
   it("matches questions and answers, case-insensitively, needing every word", () => {
-    const hits = filterFaq(FAQ, "DELETE everything").flatMap((c) =>
-      c.entries.map((e) => e.question),
-    );
+    const hits = filterFaq(FAQ, "DELETE cancel").flatMap((c) => c.entries.map((e) => e.question));
     expect(hits).toEqual(["How do I delete my account?"]);
   });
 

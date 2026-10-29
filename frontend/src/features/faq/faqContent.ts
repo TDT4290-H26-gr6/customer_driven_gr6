@@ -175,7 +175,7 @@ export const FAQ: FaqCategory[] = [
       {
         question: "How do I delete my account?",
         answer: [
-          'In Settings, under "Delete account". It permanently deletes your account and everything tied to it: answers, scores, profile, advice and feedback. This can\'t be undone.',
+          'In Settings, under "Delete account". Your personal data (name, email, Google sign-in, role, profile and advice) is deleted 30 days later, and until then you can cancel the deletion in the same place.',
         ],
       },
       {

@@ -16,6 +16,7 @@ vi.mock("@/shared/lib/features", () => ({
   },
 }));
 vi.mock("@/features/feedback", () => ({ FeedbackWidget: () => <button>Feedback</button> }));
+vi.mock("@/features/settings", () => ({ DeletionReminderModal: () => null }));
 vi.mock("./RoleGateModal", () => ({ RoleGateModal: () => <div role="dialog">role gate</div> }));
 
 const learner = { name: "Ada", email: "ada@example.com", role: null, isAdmin: false };

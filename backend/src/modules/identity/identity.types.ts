@@ -18,18 +18,23 @@ export type LearnerDto = {
   hasCompletedProfile: boolean;
   /** May use admin mode — so the frontend can hide it; requireAdmin is the real check. */
   isAdmin: boolean;
+  /** When the account's personal data will be deleted, or null if no deletion is pending. */
+  deletionScheduledFor: Date | null;
 };
 
 export function toLearnerDto(learner: LearnerWithRole): LearnerDto {
   return {
     id: learner.id,
-    email: learner.email,
+    // Only a deleted account has no email, and those never get a DTO
+    // (findLearnerById doesn't return them).
+    email: learner.email ?? "",
     name: learner.name,
     role: learner.userRole,
     hasCompletedInitialAssessment: learner.hasCompletedInitialAssessment,
     hasAcceptedPrivacyNotice: learner.privacyNoticeAcceptedAt !== null,
     hasCompletedProfile: isProfileComplete(learner.name, learner.profile),
     isAdmin: isAdminEmail(learner.email),
+    deletionScheduledFor: learner.deletionScheduledFor,
   };
 }
 
