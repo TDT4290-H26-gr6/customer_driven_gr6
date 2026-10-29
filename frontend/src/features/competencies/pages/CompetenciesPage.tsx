@@ -198,6 +198,7 @@ export function CompetenciesPage() {
 
   const relevantModules = data.sections.flatMap((s) => s.modules.filter((m) => m.relevant));
   const anyResult = data.sections.some((s) => s.assessedModules > 0);
+  const recommendedJourney = data.recommendedJourney;
 
   return (
     <div className={styles.page}>
@@ -214,19 +215,24 @@ export function CompetenciesPage() {
         </p>
       )}
 
-      {data.recommendedJourney && relevantModules.length > 0 && (
+      {recommendedJourney && relevantModules.length > 0 && (
         <section className={styles.relevantCard} aria-labelledby="relevant-heading">
           <div className={styles.relevantHeader}>
             <div className={styles.relevantIntro}>
               <p className={styles.eyebrow}>Most relevant for you</p>
               <h2 id="relevant-heading" className={styles.cardHeading}>
-                {data.recommendedJourney.name}
+                {recommendedJourney.name}
               </h2>
               <p className={styles.muted}>
                 The modules this journey focuses on, recommended after your self-assessment.
               </p>
             </div>
-            <Button variant="secondary" onClick={() => navigate("/journeys")}>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                navigate("/journeys", { state: { openJourneyId: recommendedJourney.id } })
+              }
+            >
               Assess this journey
             </Button>
           </div>

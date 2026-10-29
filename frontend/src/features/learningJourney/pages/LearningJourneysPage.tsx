@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { isApiError } from "@/shared/api/client";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
@@ -18,6 +18,7 @@ import styles from "./LearningJourneysPage.module.css";
  */
 export function LearningJourneysPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [journeys, setJourneys] = useState<LearningJourney[] | null>(null);
   // Kept apart from an empty list: "couldn't load" and "there are none" are
   // different messages, and only the first is worth retrying.
@@ -41,6 +42,16 @@ export function LearningJourneysPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Arriving from elsewhere (e.g. the Competencies page's "Assess this
+  // journey") can ask for a specific journey's modal to open straight away.
+  // Cleared from history once applied, so it doesn't reopen on back/forward.
+  useEffect(() => {
+    const openJourneyId = (location.state as { openJourneyId?: string } | null)?.openJourneyId;
+    if (!openJourneyId || !journeys?.some((j) => j.id === openJourneyId)) return;
+    setOpenId(openJourneyId);
+    navigate(location.pathname, { replace: true, state: null });
+  }, [journeys, location.state, location.pathname, navigate]);
 
   /** Any assessment is starting, or the journey has no core (M) sections to assess. */
   const assessDisabled = (journey: LearningJourney) =>

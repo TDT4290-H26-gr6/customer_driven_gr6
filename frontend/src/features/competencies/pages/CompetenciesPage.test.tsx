@@ -6,7 +6,8 @@ import { getCompetencies } from "../api";
 import type { Competencies, CompetencyModule, CompetencySection } from "../types";
 
 vi.mock("../api", () => ({ getCompetencies: vi.fn() }));
-vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
+const navigate = vi.fn();
+vi.mock("react-router-dom", () => ({ useNavigate: () => navigate }));
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -101,6 +102,18 @@ describe("CompetenciesPage", () => {
     expect(within(relevant).getByText("B1 — Repositories")).toBeInTheDocument();
     expect(within(relevant).getByText("B2 — Storage")).toBeInTheDocument();
     expect(within(relevant).queryByText("A1 — Intro")).not.toBeInTheDocument();
+  });
+
+  it("opens the recommended journey's modal when assessing it", async () => {
+    vi.mocked(getCompetencies).mockResolvedValue(DATA);
+    const user = userEvent.setup();
+
+    render(<CompetenciesPage />);
+    await user.click(await screen.findByRole("button", { name: "Assess this journey" }));
+
+    expect(navigate).toHaveBeenCalledWith("/journeys", {
+      state: { openJourneyId: "journey-2" },
+    });
   });
 
   it("shows each section's percentage and how many modules have a result", async () => {

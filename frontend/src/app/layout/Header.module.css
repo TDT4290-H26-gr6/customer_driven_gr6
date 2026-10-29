@@ -44,7 +44,7 @@
   width: auto;
 }
 
-/* The funding logos and the account menu, side by side. */
+/* The account menu, on its own. */
 .right {
   display: flex;
   align-items: center;
@@ -62,8 +62,8 @@
    plus their gap); 200px covers the AIOS logo, the avatar, the gaps and
    the header's side padding. */
 @media (max-width: 767px) {
-  .right {
-    gap: 12px;
+  .left {
+    gap: 8px;
   }
 
   .funding {
