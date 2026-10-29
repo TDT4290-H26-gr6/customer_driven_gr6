@@ -2273,38 +2273,26 @@
   "aios.learningJourney.journey": [
     {
       "id": "journey-wp2-lj1",
-      "name": "LJ1 - Institutional AI-Driven Open Science Officer",
-      "description": "Final applied output: Institutional Open Science implementation plan and capstone portfolio.",
+      "name": "LJ1 - Athena: Institutional AI-Driven Open Science Expert",
+      "description": "Institutional AIOS Implementation Plan: readiness, stakeholders and services, governance, risk management, sustainability and monitoring.",
       "moodleCourseId": 2001
     },
     {
       "id": "journey-wp2-lj2",
-      "name": "LJ2 - Research Data, Reproducibility and AI Practices",
-      "description": "Final applied output: Documented research-data and responsible-AI workflow package.",
+      "name": "LJ3 - Hephaestus: Research Data, Reproducibility, Education and AI Practices",
+      "description": "Applied Open Science Practice Portfolio: resource/repository workflow, metadata, licensing, quality and AI-use record, education/communication component; optional data analysis and/or trainer evidence.",
       "moodleCourseId": 2002
     },
     {
-      "id": "journey-wp2-lj3",
-      "name": "LJ3 - Open Science Education, OER and Engagement",
-      "description": "Final applied output: OER or engagement resource with accessibility and assessment plan.",
-      "moodleCourseId": 2003
-    },
-    {
-      "id": "journey-wp2-lj4",
-      "name": "LJ4 - Open Science Train-the-Trainer",
-      "description": "Final applied output: Trainer package, facilitation plan and responsible-AI guidance.",
-      "moodleCourseId": 2004
-    },
-    {
       "id": "journey-wp2-lj5",
-      "name": "LJ5 - Open Science for Business and Innovation",
-      "description": "Final applied output: Open innovation or academia-industry implementation case.",
+      "name": "LJ4 - Prometheus: Open Science for Business and Innovation",
+      "description": "Open Innovation and Responsible AI Case: readiness, data reuse, stakeholders, IP/confidentiality, reproducible R&D and safeguards.",
       "moodleCourseId": 2005
     },
     {
       "id": "journey-wp2-lj6",
-      "name": "LJ6 - Open Science for Policy and Public Decision-Making",
-      "description": "Final applied output: Policy roadmap, stakeholder plan or public-value Open Science case.",
+      "name": "LJ5 - Themis: Open Science for Policy and Public Decision-Making",
+      "description": "Policy-oriented Open Science roadmap or brief: public value, stakeholder consultation, resource allocation, regulatory and AI-risk assessment.",
       "moodleCourseId": 2006
     }
   ],
@@ -2342,7 +2330,7 @@
     {
       "journeyId": "journey-wp2-lj2",
       "sectionId": "sec-wp2-b",
-      "coverageLevel": "M"
+      "coverageLevel": "R"
     },
     {
       "journeyId": "journey-wp2-lj2",
@@ -2356,63 +2344,13 @@
     },
     {
       "journeyId": "journey-wp2-lj2",
-      "sectionId": "sec-wp2-e",
-      "coverageLevel": "R"
-    },
-    {
-      "journeyId": "journey-wp2-lj3",
-      "sectionId": "sec-wp2-a",
-      "coverageLevel": "M"
-    },
-    {
-      "journeyId": "journey-wp2-lj3",
-      "sectionId": "sec-wp2-b",
-      "coverageLevel": "S"
-    },
-    {
-      "journeyId": "journey-wp2-lj3",
-      "sectionId": "sec-wp2-c",
-      "coverageLevel": "R"
-    },
-    {
-      "journeyId": "journey-wp2-lj3",
-      "sectionId": "sec-wp2-d",
-      "coverageLevel": "R"
-    },
-    {
-      "journeyId": "journey-wp2-lj3",
-      "sectionId": "sec-wp2-e",
-      "coverageLevel": "M"
-    },
-    {
-      "journeyId": "journey-wp2-lj4",
-      "sectionId": "sec-wp2-a",
-      "coverageLevel": "M"
-    },
-    {
-      "journeyId": "journey-wp2-lj4",
-      "sectionId": "sec-wp2-b",
-      "coverageLevel": "S"
-    },
-    {
-      "journeyId": "journey-wp2-lj4",
-      "sectionId": "sec-wp2-c",
-      "coverageLevel": "R"
-    },
-    {
-      "journeyId": "journey-wp2-lj4",
-      "sectionId": "sec-wp2-d",
-      "coverageLevel": "R"
-    },
-    {
-      "journeyId": "journey-wp2-lj4",
       "sectionId": "sec-wp2-e",
       "coverageLevel": "M"
     },
     {
       "journeyId": "journey-wp2-lj5",
       "sectionId": "sec-wp2-a",
-      "coverageLevel": "R"
+      "coverageLevel": "M"
     },
     {
       "journeyId": "journey-wp2-lj5",
@@ -2427,12 +2365,12 @@
     {
       "journeyId": "journey-wp2-lj5",
       "sectionId": "sec-wp2-d",
-      "coverageLevel": "R"
+      "coverageLevel": "M"
     },
     {
       "journeyId": "journey-wp2-lj5",
       "sectionId": "sec-wp2-e",
-      "coverageLevel": "S"
+      "coverageLevel": "R"
     },
     {
       "journeyId": "journey-wp2-lj6",

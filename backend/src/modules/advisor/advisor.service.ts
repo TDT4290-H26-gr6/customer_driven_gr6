@@ -33,8 +33,8 @@ import { selectTargets } from "./advisor.candidates";
 // through their services.
 
 const MAX_CANDIDATES = 15;
-/** There are six learning journeys today; more than this would just be noise for the model. */
-const MAX_JOURNEY_CANDIDATES = 6;
+/** There are four learning journeys today; more than this would just be noise for the model. */
+const MAX_JOURNEY_CANDIDATES = 4;
 
 const adviceLock = createKeyedLock();
 

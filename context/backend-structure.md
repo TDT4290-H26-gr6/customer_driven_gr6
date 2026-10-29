@@ -439,7 +439,7 @@ loads (`database/src/seed/index.ts`):
 | `SEED_DATASET` | File | What it is |
 | --- | --- | --- |
 | `fake` (default) | `data/aios_fake_food_seed.json` | Fake food-themed test data, described below |
-| `wp2` | `data/aios_wp2_seed.json` | The real AIOS WP2 curriculum: sections A–E, 20 modules (A1–E4) with main and secondary competences, 36 competences, the 6 learning journeys, and the self-assessment items delivered so far |
+| `wp2` | `data/aios_wp2_seed.json` | The real AIOS WP2 curriculum: sections A–E, 20 modules (A1–E4) with main and secondary competences, 36 competences, the 4 learning journeys, and the self-assessment items delivered so far |
 
 - **Never mixed.** A learner's first assessment covers the whole question bank,
   so two datasets in one database would hand learners both. If the database
