@@ -23,6 +23,12 @@
   gap: 12px;
 }
 
+/* Without Back, space-between would leave Next at the start instead of the
+   end (its usual side) since it's the only item. */
+.nextAlone {
+  margin-left: auto;
+}
+
 .alert {
   display: flex;
   align-items: center;

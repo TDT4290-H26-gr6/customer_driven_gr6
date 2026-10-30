@@ -41,4 +41,11 @@ export type AssessmentPath = {
    * Null for the main self-assessment.
    */
   journey: { id: string | null; name: string | null } | null;
+  /**
+   * A reassessment of chosen sections only, started from the dashboard's
+   * "Retake assessment" (not the full self-assessment, and not a journey
+   * assessment either). Every question of those sections is asked
+   * regardless of score, see assessment.path.ts's `exhaustive` mode.
+   */
+  partial: boolean;
 };

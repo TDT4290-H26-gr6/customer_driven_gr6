@@ -196,6 +196,53 @@ describe("buildPath: answered questions are history", () => {
   });
 });
 
+describe("buildPath: exhaustive (partial reassessment)", () => {
+  it("keeps asking the rest of a level even once 2 of 3 is already out of reach", () => {
+    // Non-exhaustive would fail the level here and skip straight to B.
+    const path = buildPath(
+      [section("A"), section("B")],
+      answers({ "A1-1": wrong, "A1-2": wrong }),
+      true,
+    );
+    expect(path.next).toBe("A1-3");
+  });
+
+  it("moves on to the next level even once the current one has failed", () => {
+    const path = buildPath(
+      [section("A")],
+      answers({ "A1-1": wrong, "A1-2": wrong, "A1-3": wrong }),
+      true,
+    );
+    expect(path.next).toBe("A2-1");
+  });
+
+  it("asks every question of every level before finishing the section", () => {
+    const all: Record<string, Score> = {};
+    for (const level of [1, 2, 3]) {
+      all[`A${level}-1`] = wrong;
+      all[`A${level}-2`] = wrong;
+      all[`A${level}-3`] = wrong;
+    }
+    const path = buildPath([section("A", 4)], answers(all), true);
+    expect(path.next).toBe("A4-1");
+  });
+
+  it("finishes once every question in every section is answered", () => {
+    const all: Record<string, Score> = {};
+    for (const level of [1, 2, 3, 4]) {
+      all[`A${level}-1`] = wrong;
+      all[`A${level}-2`] = wrong;
+      all[`A${level}-3`] = wrong;
+    }
+    expect(buildPath([section("A")], answers(all), true).next).toBeNull();
+  });
+
+  it("isn't exhaustive by default (unaffected callers keep the adaptive route)", () => {
+    const given = answers({ "A1-1": wrong, "A1-2": wrong });
+    expect(buildPath([section("A"), section("B")], given).next).toBe("B1-1");
+  });
+});
+
 describe("seededRandom / shuffle", () => {
   it("gives the same order for the same seed", () => {
     const items = ["A", "B", "C", "D", "E"];

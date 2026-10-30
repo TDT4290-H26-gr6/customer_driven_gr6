@@ -202,6 +202,9 @@ export function AssessmentRunnerPage() {
   const isLast = path.done && index === path.items.length - 1;
   const hasAnswered = answers[current.id]?.complete === true;
   const busy = isMoving || isFinishing;
+  // Back is hidden only for the full self-assessment; a partial
+  // reassessment and a journey assessment both keep it.
+  const canGoBack = path.journey !== null || path.partial;
 
   function handleAnswerChange(answer: PieAnswer) {
     setAnswers((prev) => ({ ...prev, [current.id]: answer }));
@@ -368,10 +371,16 @@ export function AssessmentRunnerPage() {
       )}
 
       <div className={styles.nav}>
-        <Button variant="secondary" onClick={handleBack} disabled={isFirst || busy}>
-          Back
-        </Button>
-        <Button onClick={() => void handleNext()} disabled={!hasAnswered || busy}>
+        {canGoBack && (
+          <Button variant="secondary" onClick={handleBack} disabled={isFirst || busy}>
+            Back
+          </Button>
+        )}
+        <Button
+          className={!canGoBack ? styles.nextAlone : undefined}
+          onClick={() => void handleNext()}
+          disabled={!hasAnswered || busy}
+        >
           {isFinishing ? "Finishing…" : isLast ? "Finish" : "Next"}
         </Button>
       </div>

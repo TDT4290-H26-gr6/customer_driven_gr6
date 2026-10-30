@@ -12,6 +12,11 @@
 // Questions never asked (the rest of a failed level, and the levels above
 // it) still count toward the scores, as 0 points (see assessment.service.ts).
 //
+// A partial reassessment (startReassessment's chosen sections) runs
+// `exhaustive` instead: every question of every level in the section is
+// asked regardless of score, since the learner picked that section
+// specifically to retake it in full, not to be routed away from it early.
+//
 // Questions already answered are history: they stay on the path, in the
 // order they were first answered, whatever happens to their answers later.
 // Going Back and changing an answer only changes its score — except that
@@ -58,10 +63,13 @@ export type LevelOutcome =
  * it's still undecided, else the levels above it — then each section not
  * visited yet, in the given order. Answers to questions that aren't in
  * `sections` (deleted, or hidden from the learner's role) are ignored.
+ * `exhaustive` (a partial reassessment) never stops a level early for being
+ * out of reach, see the module comment above.
  */
 export function buildPath(
   sections: PathSection[],
   answers: ReadonlyMap<string, PathAnswer>,
+  exhaustive = false,
 ): AssessmentPath {
   const ordered = sections.map((s) => ({ ...s, modules: byLevel(s.modules) }));
 
@@ -87,30 +95,31 @@ export function buildPath(
   const latest = answered.at(-1);
   if (latest) {
     const { section, module } = position.get(latest)!;
-    const next = continueSection(ordered[section], module, answers);
+    const next = continueSection(ordered[section], module, answers, exhaustive);
     if (next) return { answered, next };
   }
 
   const visited = new Set(answered.map((id) => position.get(id)!.section));
   for (let si = 0; si < ordered.length; si++) {
     if (visited.has(si)) continue;
-    const next = continueSection(ordered[si], 0, answers);
+    const next = continueSection(ordered[si], 0, answers, exhaustive);
     if (next) return { answered, next };
   }
 
   return { answered, next: null };
 }
 
-/** From module `from` upwards: the next question of the first undecided level, or null once the section is over (a level failed, or every level passed). */
+/** From module `from` upwards: the next question of the first undecided level, or null once the section is over (a level failed, or every level passed; never cut short early when `exhaustive`). */
 function continueSection(
   section: PathSection,
   from: number,
   answers: ReadonlyMap<string, PathAnswer>,
+  exhaustive: boolean,
 ): string | null {
   for (let mi = from; mi < section.modules.length; mi++) {
-    const outcome = levelOutcome(section.modules[mi], answers);
+    const outcome = levelOutcome(section.modules[mi], answers, exhaustive);
     if (outcome.status === "open") return outcome.next;
-    if (outcome.status === "failed") return null;
+    if (outcome.status === "failed" && !exhaustive) return null;
   }
   return null;
 }
@@ -118,14 +127,17 @@ function continueSection(
 /**
  * Whether a level is passed, failed, or still open (and its next unanswered
  * question). A level stays open until every question is answered, unless
- * the threshold is already out of reach.
+ * the threshold is already out of reach, unless `exhaustive`, which keeps
+ * it open (asking every remaining question) regardless of reach.
  */
 export function levelOutcome(
   module: PathModule,
   answers: ReadonlyMap<string, Pick<PathAnswer, "score" | "maxScore">>,
+  exhaustive = false,
 ): LevelOutcome {
   const { earned, needed, remaining, firstUnanswered } = levelPoints(module, answers);
   if (firstUnanswered) {
+    if (exhaustive) return { status: "open", next: firstUnanswered };
     return earned + remaining < needed
       ? { status: "failed" }
       : { status: "open", next: firstUnanswered };
