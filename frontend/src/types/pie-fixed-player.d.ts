@@ -9,5 +9,11 @@
 declare namespace JSX {
   interface IntrinsicElements {
     "pie-fixed-player": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+    // @pie-element/placement-ordering's delivery element, registered under
+    // this tag by loadNativeElement.ts — see PieQuestionPlayer.tsx.
+    "aios-placement-ordering": React.DetailedHTMLProps<
+      React.HTMLAttributes<HTMLElement>,
+      HTMLElement
+    >;
   }
 }

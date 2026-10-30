@@ -21,11 +21,13 @@
 // which questions come.
 
 /**
- * A level counts as passed at 2/3 of its points — 2 of its 3 questions
- * right, once all are answered. Partial credit (multiple-answer questions)
- * adds up toward it.
+ * A level counts as passed at 60% of its points, once all are answered —
+ * the same line as "weak" on the Competencies page (frontend's scoreBand.ts)
+ * and WEAK_THRESHOLD in learningJourney.service.ts, so a level that reads as
+ * "Good" or better also advances; one that reads "Weak" doesn't. Partial
+ * credit (multiple-answer questions) adds up toward it.
  */
-export const PASS_THRESHOLD = 2 / 3;
+export const PASS_THRESHOLD = 0.6;
 
 /** What an unanswered question is worth — every question is out of 1 point (see assessment.scoring.ts). */
 const UNANSWERED_MAX_SCORE = 1;

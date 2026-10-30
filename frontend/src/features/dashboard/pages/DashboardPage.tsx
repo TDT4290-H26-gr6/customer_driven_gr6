@@ -164,6 +164,10 @@ export function DashboardPage() {
           aria-labelledby="tab-overview"
           className={styles.tabPanel}
         >
+          <p className={styles.note}>
+            Based on your full self-assessments — a partial reassessment (limited to some
+            sections) isn&apos;t reflected here. See Detailed view for those.
+          </p>
           <div className={styles.topRow}>
             <div className={styles.chartCard}>
               {loadFailed || !progress ? (

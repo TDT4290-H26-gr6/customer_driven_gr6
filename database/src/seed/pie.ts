@@ -23,6 +23,19 @@ export type PieContent = {
   markup: string;
 };
 
+/**
+ * A question rendered by its own standalone PIE custom element (not
+ * <pie-fixed-player>) — see frontend/src/features/assessment/components/
+ * PieQuestionPlayer.tsx, which picks the element to mount by `questionType`
+ * rather than by anything in `model` itself.
+ */
+export type NativeElementContent = {
+  /** The custom element tag PieQuestionPlayer mounts, e.g. "aios-placement-ordering". */
+  element: string;
+  /** Set as the element's `.model` property, in that element's own shape. */
+  model: Record<string, unknown>;
+};
+
 /** The authored shape of a question's content, before conversion. */
 export type AuthoredContent = {
   /**
@@ -31,7 +44,7 @@ export type AuthoredContent = {
    * WP2 self-rating items do.
    */
   scale?: { min: number; max: number; minLabel?: string; maxLabel?: string; labels?: string[] };
-  /** single_choice / multi_choice / true_false / criteria_check */
+  /** single_choice / multi_choice / true_false / criteria_check / ordering (the items) */
   options?: { id: string; text: string }[];
   correctOptionIds?: string[];
   /**
@@ -40,6 +53,8 @@ export type AuthoredContent = {
    * criteria, and the correct ones are those the example meets.
    */
   exhibit?: string;
+  /** ordering: `options`' ids, in the correct sequence. */
+  correctOrder?: string[];
 };
 
 export const QUESTION_TYPES = [
@@ -48,6 +63,7 @@ export const QUESTION_TYPES = [
   "multi_choice",
   "true_false",
   "criteria_check",
+  "ordering",
 ] as const;
 export type QuestionType = (typeof QUESTION_TYPES)[number];
 
@@ -115,11 +131,48 @@ function optionChoices(content: AuthoredContent): PieChoice[] {
   }));
 }
 
+/**
+ * Arrange-into-the-correct-sequence, via the standalone
+ * @pie-element/placement-ordering custom element (not <pie-fixed-player> —
+ * see PieQuestionPlayer.tsx). `content.options` are the items to arrange;
+ * `content.correctOrder` is their ids in the correct sequence, and must list
+ * every option exactly once — this element has no concept of a "distractor"
+ * item that isn't part of the answer.
+ */
+function orderingContent(prompt: string, content: AuthoredContent): NativeElementContent {
+  const options = content.options ?? [];
+  const correctOrder = content.correctOrder ?? [];
+  if (options.length === 0) throw new Error("ordering question needs content.options");
+  if (correctOrder.length === 0) throw new Error("ordering question needs content.correctOrder");
+  const optionIds = new Set(options.map((o) => o.id));
+  for (const id of correctOrder) {
+    if (!optionIds.has(id)) {
+      throw new Error(`ordering question's correctOrder references an unknown option id: ${id}`);
+    }
+  }
+  if (correctOrder.length !== options.length) {
+    throw new Error("ordering question's correctOrder must list every option exactly once");
+  }
+
+  return {
+    element: "aios-placement-ordering",
+    model: {
+      id: "1",
+      element: "aios-placement-ordering",
+      prompt: `<p>${escapeHtml(prompt)}</p>`,
+      choices: options.map((o) => ({ id: o.id, label: escapeHtml(o.text) })),
+      correctResponse: correctOrder,
+      orientation: "vertical",
+      partialScoring: true,
+    },
+  };
+}
+
 export function buildPieContent(
   questionType: string,
   prompt: string,
   content: AuthoredContent,
-): PieContent {
+): PieContent | NativeElementContent {
   switch (questionType) {
     case "likert":
       if (!content.scale) throw new Error("likert question needs content.scale");
@@ -140,6 +193,8 @@ export function buildPieContent(
         "checkbox",
         optionChoices(content),
       );
+    case "ordering":
+      return orderingContent(prompt, content);
     default:
       throw new Error(`Unknown question type: ${questionType}`);
   }

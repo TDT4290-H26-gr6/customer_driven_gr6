@@ -11,7 +11,12 @@ vi.mock("../api", () => ({ getSectionCompetenceScores: vi.fn() }));
 vi.mock("@/features/history", () => ({ getSatHistory: vi.fn() }));
 vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
 
-function attempt(instanceNum: number, completedAt: string, journey: string | null = null) {
+function attempt(
+  instanceNum: number,
+  completedAt: string,
+  journey: string | null = null,
+  reassessedSections: string[] = [],
+) {
   return {
     instanceNum,
     completedAt,
@@ -19,7 +24,7 @@ function attempt(instanceNum: number, completedAt: string, journey: string | nul
     sumMaxScore: 0,
     sections: [],
     completedJourney: journey,
-    reassessedSections: [],
+    reassessedSections,
   } satisfies SatHistoryEntry;
 }
 
@@ -89,6 +94,19 @@ describe("SectionDetailsPage", () => {
     expect(tabs[1]).toHaveAttribute("aria-selected", "true");
     expect(tabs[0]).toHaveAttribute("aria-selected", "false");
     await waitFor(() => expect(getSectionCompetenceScores).toHaveBeenCalledWith(2));
+  });
+
+  it("marks a partial reassessment's tab and names the sections it was limited to", async () => {
+    vi.mocked(getSatHistory).mockResolvedValue([
+      attempt(1, FIRST),
+      attempt(2, SECOND, null, ["Baking"]),
+    ]);
+
+    render(<SectionDetailsPage />);
+
+    const tabs = await screen.findAllByRole("tab");
+    expect(tabs.map((t) => t.textContent)).toEqual(["Assessment 1", "Assessment 2 (partial)"]);
+    expect(await screen.findByText("Partial reassessment — limited to: Baking")).toBeInTheDocument();
   });
 
   it("heads the selected assessment with its date and, for a retake, the journey", async () => {

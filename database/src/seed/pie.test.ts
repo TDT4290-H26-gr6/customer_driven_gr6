@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildPieContent, IDK_VALUE } from "./pie";
+import { buildPieContent, IDK_VALUE, type NativeElementContent, type PieContent } from "./pie";
 
 type Choice = { value: string; correct: boolean };
 function choicesOf(content: ReturnType<typeof buildPieContent>): Choice[] {
-  return (content.models[0] as { choices: Choice[] }).choices;
+  return ((content as PieContent).models[0] as { choices: Choice[] }).choices;
 }
 
 describe("buildPieContent: every question type gets an 'I don't know' choice", () => {
@@ -48,7 +48,7 @@ describe("buildPieContent: every question type gets an 'I don't know' choice", (
       ],
       correctOptionIds: ["a", "b"],
     });
-    expect(content.models[0]).toMatchObject({ choiceMode: "checkbox" });
+    expect((content as PieContent).models[0]).toMatchObject({ choiceMode: "checkbox" });
     expect(choicesOf(content).map((c) => c.value)).toEqual(["a", "b", IDK_VALUE]);
   });
 });
@@ -94,7 +94,7 @@ describe("buildPieContent: criteria_check", () => {
   };
 
   it("shows the example in its own box under the prompt, line breaks kept and escaped", () => {
-    const model = buildPieContent("criteria_check", "Which criteria does it meet?", content)
+    const model = (buildPieContent("criteria_check", "Which criteria does it meet?", content) as PieContent)
       .models[0] as { prompt: string; choiceMode: string };
 
     expect(model.prompt).toBe(
@@ -116,5 +116,63 @@ describe("buildPieContent: criteria_check", () => {
     expect(() => buildPieContent("criteria_check", "Which?", { ...content, exhibit: " " })).toThrow(
       /needs content.exhibit/,
     );
+  });
+});
+
+describe("buildPieContent: ordering", () => {
+  const content = {
+    options: [
+      { id: "a", text: "Collect data" },
+      { id: "b", text: "Clean data" },
+      { id: "c", text: "Publish data" },
+    ],
+    correctOrder: ["a", "b", "c"],
+  };
+
+  it("builds a placement-ordering native element, not a PIE item config", () => {
+    const result = buildPieContent("ordering", "Put these in order", content) as NativeElementContent;
+    expect(result.element).toBe("aios-placement-ordering");
+    expect(result.model).toMatchObject({
+      element: "aios-placement-ordering",
+      choices: [
+        { id: "a", label: "Collect data" },
+        { id: "b", label: "Clean data" },
+        { id: "c", label: "Publish data" },
+      ],
+      correctResponse: ["a", "b", "c"],
+    });
+  });
+
+  it("escapes the prompt and choice labels", () => {
+    const result = buildPieContent("ordering", "Pick <b>carefully</b>", {
+      options: [{ id: "a", text: "<script>bad</script>" }],
+      correctOrder: ["a"],
+    }) as NativeElementContent;
+    expect(result.model.prompt).toBe("<p>Pick &lt;b&gt;carefully&lt;/b&gt;</p>");
+    expect((result.model.choices as { label: string }[])[0].label).toBe("&lt;script&gt;bad&lt;/script&gt;");
+  });
+
+  it("refuses an item without options", () => {
+    expect(() => buildPieContent("ordering", "Order these", { correctOrder: ["a"] })).toThrow(
+      /needs content.options/,
+    );
+  });
+
+  it("refuses an item without a correct order", () => {
+    expect(() => buildPieContent("ordering", "Order these", { options: content.options })).toThrow(
+      /needs content.correctOrder/,
+    );
+  });
+
+  it("refuses a correct order that references an option that doesn't exist", () => {
+    expect(() =>
+      buildPieContent("ordering", "Order these", { ...content, correctOrder: ["a", "b", "z"] }),
+    ).toThrow(/unknown option id: z/);
+  });
+
+  it("refuses a correct order that doesn't cover every option", () => {
+    expect(() =>
+      buildPieContent("ordering", "Order these", { ...content, correctOrder: ["a", "b"] }),
+    ).toThrow(/must list every option exactly once/);
   });
 });

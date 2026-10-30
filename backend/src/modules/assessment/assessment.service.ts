@@ -2,7 +2,7 @@ import { Prisma, type Question } from "@prisma/client";
 import { config } from "../../config";
 import { prisma } from "../../db/prisma";
 import { findLearnerById, getRoleGrants } from "../identity/identity.service";
-import { buildSectionProgress, isProgressComplete } from "./assessment.progress";
+import { buildSectionProgress } from "./assessment.progress";
 import { JOURNEY_KIND, MAIN_KIND, type AssessmentKind } from "./assessment.kinds";
 import { bestPerModule, sectionPercent } from "./assessment.competencies";
 import { recommendJourney, suggestJourney } from "../learningJourney/learningJourney.service";
@@ -19,18 +19,25 @@ import {
 import {
   extractDragAndDropBlanks,
   extractMultipleChoiceValues,
+  extractOrderingValues,
   IDK_VALUE,
   QUESTION_MAX_SCORE,
   scoreDragAndDrop,
   scoreLikert,
   scoreMultipleChoice,
+  scoreOrdering,
   type ScoreResult,
 } from "./assessment.scoring";
 
 // All Prisma access for assessment_* tables lives here.
 
-/** Question types whose on-screen choice order is meaningful and must never be shuffled. */
-const ORDERED_QUESTION_TYPES: readonly string[] = ["likert", "true_false"];
+/**
+ * Question types whose on-screen choice order is meaningful and must never
+ * be shuffled. "ordering" is a reordering task itself — the whole point is
+ * the learner's own arrangement — but it's also naturally exempt below since
+ * its content never has the `.models[0].choices` shape this shuffles.
+ */
+const ORDERED_QUESTION_TYPES: readonly string[] = ["likert", "true_false", "ordering"];
 
 /**
  * Randomizes the on-screen order of a question's answer choices (Fisher–
@@ -193,10 +200,23 @@ function scoreAnswer(
   question: Pick<Question, "questionType" | "content">,
   answer: unknown,
 ): ScoreResult | null {
+  const session = (answer as { session?: unknown } | null)?.session;
+
+  // Standalone custom element, not <pie-fixed-player> — its content is
+  // { element, model } (see database/src/seed/pie.ts's NativeElementContent),
+  // not the { elements, models, markup } PIE item config the rest of this
+  // function assumes below.
+  if (question.questionType === "ordering") {
+    const native = question.content as { model?: { correctResponse?: unknown } } | null;
+    const correctResponse = native?.model?.correctResponse;
+    if (!Array.isArray(correctResponse)) return null;
+    const correctOrder = correctResponse.filter((v): v is string => typeof v === "string");
+    return scoreOrdering(correctOrder, extractOrderingValues(session));
+  }
+
   const model = (question.content as { models?: PieModel[] } | null)?.models?.[0];
   if (!model) return null;
   const modelId = model.id ?? "1"; // every question this module stores has exactly one model, id "1"
-  const session = (answer as { session?: unknown } | null)?.session;
 
   if (question.questionType === "drag_and_drop" && model.correctResponse) {
     return scoreDragAndDrop(model.correctResponse, extractDragAndDropBlanks(session, modelId));
@@ -894,6 +914,13 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
   });
 
   const totals = new Map<string, { score: number; maxScore: number }>(); // "sectionId:competenceId"
+  // Competences with at least one real answer in this instance — as opposed
+  // to the "never asked, counts as 0" fill-in below. getDashboardProgress
+  // uses this to tell "this attempt actually found out about X" apart from
+  // "this attempt never got that far", so a section it barely touched
+  // doesn't shadow better, real data an earlier attempt already has for the
+  // rest of it (see assessment.progress.ts's snapshotAsOf).
+  const reached = new Set<string>(); // "sectionId:competenceId"
   const answersBySection = new Map<string, Map<string, Pick<PathAnswer, "score" | "maxScore">>>();
   for (const r of responses) {
     if (!r.question || !r.questionId) continue; // the question was deleted
@@ -903,6 +930,7 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
     answersBySection.set(sectionId, answers);
     if (!r.maxScore) continue; // nothing scorable — no radar points
     const key = `${sectionId}:${r.question.competenceId}`;
+    reached.add(key);
     const entry = totals.get(key) ?? { score: 0, maxScore: 0 };
     entry.score += r.score ?? 0;
     entry.maxScore += r.maxScore;
@@ -983,12 +1011,13 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
           competences: Array.from(competences.entries())
             .sort(byLevel)
             .map(([competenceId, name]) => ({
-              competence: { name },
+              competence: { id: competenceId, name },
               // The level of the module it's the main competence of (A1 → 1),
               // or null for one that's no module's main competence.
               level: levelOf.get(competenceId) ?? null,
               score: totals.get(`${section.id}:${competenceId}`)?.score ?? 0,
               maxScore: totals.get(`${section.id}:${competenceId}`)?.maxScore ?? 0,
+              reached: reached.has(`${section.id}:${competenceId}`),
             })),
         };
       }),
@@ -997,15 +1026,26 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
 
 /**
  * The dashboard's before/after view: every section as of the learner's latest
- * completed SAT and as of the one before it. A section a SAT didn't cover
- * (a reassessment after a learning journey) keeps its last known result,
- * marked with the SAT it comes from. Attempts are read newest first and only
- * as far back as needed. Null before any completed SAT; `previous` is null
- * after only one.
+ * full self-assessment and as of the one before it — a partial reassessment
+ * (one limited to some sections) is never "latest" or "previous" here, same
+ * rule as getCompetencies, so this and the Competencies page never disagree
+ * over whether a result counts. A section a SAT didn't cover keeps its last
+ * known result, marked with the SAT it comes from — and within a section, a
+ * competence a SAT never reached (e.g. it failed an earlier level first)
+ * keeps its last known result too, rather than that SAT's own zero-fill
+ * shadowing it (see assessment.progress.ts's snapshotAsOf). That means every
+ * full SAT can matter to "latest", not just the newest one to touch each
+ * section, so all of them are loaded — in practice a handful at most. Null
+ * before any completed full SAT; `previous` is null after only one.
  */
 export async function getDashboardProgress(learnerId: string) {
   const completed = await prisma.satInstance.findMany({
-    where: { learnerId, kind: MAIN_KIND, completedAt: { not: null } },
+    where: {
+      learnerId,
+      kind: MAIN_KIND,
+      completedAt: { not: null },
+      reassessedSectionNames: { equals: Prisma.DbNull },
+    },
     orderBy: { instanceNum: "desc" },
     select: { instanceNum: true, completedAt: true },
   });
@@ -1013,14 +1053,11 @@ export async function getDashboardProgress(learnerId: string) {
 
   const [latest, previous = null] = completed;
   const attempts: NonNullable<Awaited<ReturnType<typeof getAttemptSectionScores>>>[] = [];
-  let sections = buildSectionProgress([], latest.instanceNum, null);
   for (const { instanceNum } of completed) {
     const attempt = await getAttemptSectionScores(learnerId, instanceNum);
     if (attempt) attempts.push(attempt);
-    sections = buildSectionProgress(attempts, latest.instanceNum, previous?.instanceNum ?? null);
-    const loadedBoth = attempts.length >= (previous ? 2 : 1);
-    if (loadedBoth && isProgressComplete(sections, previous !== null)) break;
   }
+  const sections = buildSectionProgress(attempts, latest.instanceNum, previous?.instanceNum ?? null);
 
   return {
     latest: { instanceNum: latest.instanceNum, completedAt: latest.completedAt },
@@ -1063,16 +1100,19 @@ async function journeyRecommendedAfterMainAssessment(learnerId: string) {
 
 /**
  * The Competencies overview: every section the learner can be assessed in,
- * each module's best result over ALL their assessments (main and journey
- * alike — the main results themselves are never changed by this), and a
- * percentage per section. The sections of the journey recommended after the
- * main self-assessment (its M sections) are marked relevant and come first,
- * so the modules that matter most for it are at the top.
+ * with two results per module — the best ever (over their full
+ * self-assessments and journey assessments alike) and the one from their
+ * single latest full self-assessment specifically — plus a percentage per
+ * section for each, always in A–E order. A partial reassessment (limited
+ * to some sections) never counts for either (see getDashboardProgress,
+ * which applies the same rule to "latest"). The sections of the journey
+ * recommended after the main self-assessment (its M sections) are marked
+ * relevant, for the "Most relevant for you" card above it.
  */
 export async function getCompetencies(learnerId: string) {
   const assessableIds = (await listAssessableSections(learnerId)).map((s) => s.id);
 
-  const [sections, answers, recommended] = await Promise.all([
+  const [sections, answers, recommended, latestFull] = await Promise.all([
     prisma.section.findMany({
       where: { id: { in: assessableIds } },
       select: {
@@ -1087,7 +1127,18 @@ export async function getCompetencies(learnerId: string) {
     }),
     prisma.response.findMany({
       where: {
-        satInstance: { learnerId, completedAt: { not: null } },
+        // Full assessments and journey assessments both count — a partial
+        // reassessment (one limited to some sections) doesn't, so it can't
+        // show a "best" result the main radar/progress view wouldn't also
+        // credit (see getDashboardProgress).
+        satInstance: {
+          learnerId,
+          completedAt: { not: null },
+          OR: [
+            { kind: JOURNEY_KIND },
+            { kind: MAIN_KIND, reassessedSectionNames: { equals: Prisma.DbNull } },
+          ],
+        },
         questionId: { not: null },
         score: { not: null },
         maxScore: { not: null },
@@ -1102,25 +1153,42 @@ export async function getCompetencies(learnerId: string) {
       },
     }),
     journeyRecommendedAfterMainAssessment(learnerId),
+    // The single most recent full self-assessment, if any — for the
+    // "Latest full assessment" tab, as opposed to "best ever" below.
+    prisma.satInstance.findFirst({
+      where: {
+        learnerId,
+        kind: MAIN_KIND,
+        completedAt: { not: null },
+        reassessedSectionNames: { equals: Prisma.DbNull },
+      },
+      orderBy: { completedAt: "desc" },
+      select: { instanceNum: true, completedAt: true, id: true },
+    }),
   ]);
 
-  const best = bestPerModule(
-    answers.flatMap((a) =>
-      a.question && a.satInstance.completedAt
-        ? [
-            {
-              moduleId: a.question.sectionModuleId,
-              satInstanceId: a.satInstance.id,
-              kind: a.satInstance.kind,
-              completedAt: a.satInstance.completedAt,
-              journeyName: a.satInstance.assessedJourneyName,
-              score: a.score ?? 0,
-              maxScore: a.maxScore ?? 0,
-            },
-          ]
-        : [],
-    ),
+  const answerRows = answers.flatMap((a) =>
+    a.question && a.satInstance.completedAt
+      ? [
+          {
+            moduleId: a.question.sectionModuleId,
+            satInstanceId: a.satInstance.id,
+            kind: a.satInstance.kind,
+            completedAt: a.satInstance.completedAt,
+            journeyName: a.satInstance.assessedJourneyName,
+            score: a.score ?? 0,
+            maxScore: a.maxScore ?? 0,
+          },
+        ]
+      : [],
   );
+
+  const best = bestPerModule(answerRows);
+  // Scoped to one instance, so "best" here is just that instance's own
+  // result per module — i.e. the latest full assessment's, not the best ever.
+  const latest = latestFull
+    ? bestPerModule(answerRows.filter((a) => a.satInstanceId === latestFull.id))
+    : new Map();
 
   const relevantSections = new Set(recommended?.sectionIds ?? []);
   const shown = sections
@@ -1133,6 +1201,7 @@ export async function getCompetencies(learnerId: string) {
         moodleUrl: m.moodleUrl,
         relevant,
         best: best.get(m.id) ?? null,
+        latest: latest.get(m.id) ?? null,
       }));
       return {
         id: section.id,
@@ -1141,18 +1210,24 @@ export async function getCompetencies(learnerId: string) {
         relevant,
         percent: sectionPercent(modules.map((m) => m.best)),
         assessedModules: modules.filter((m) => m.best).length,
+        latestPercent: sectionPercent(modules.map((m) => m.latest)),
+        latestAssessedModules: modules.filter((m) => m.latest).length,
         moduleCount: modules.length,
         modules,
       };
     })
-    // Relevant sections first, then A–E.
-    .sort((a, b) => Number(b.relevant) - Number(a.relevant) || bySectionCode(a, b));
+    // Always A–E; `relevant` just flags which to highlight, not their order.
+    .sort(bySectionCode);
 
   return {
     recommendedJourney: recommended && {
       id: recommended.id,
       name: recommended.name,
       moodleUrl: recommended.moodleUrl,
+    },
+    latestInstance: latestFull && {
+      instanceNum: latestFull.instanceNum,
+      completedAt: latestFull.completedAt,
     },
     sections: shown,
   };

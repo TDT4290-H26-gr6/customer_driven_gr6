@@ -111,6 +111,30 @@ export function scoreDragAndDrop(
   };
 }
 
+/**
+ * Scores a reordering response (the standalone @pie-element/placement-ordering
+ * element, not <pie-fixed-player> — see PieQuestionPlayer.tsx), out of 1: the
+ * share of items the learner placed in their correct position. A slot the
+ * learner never filled (including every slot, if they never touched the
+ * question at all) just counts as wrong, the same as a filled but misplaced
+ * one — there's no credit beyond how many items actually ended up where they
+ * belong.
+ */
+export function scoreOrdering(
+  correctOrder: string[],
+  placedOrder: (string | null)[],
+): ScoreResult {
+  if (correctOrder.length === 0) return { score: 0, maxScore: QUESTION_MAX_SCORE };
+  const correctCount = correctOrder.reduce(
+    (count, id, index) => count + (placedOrder[index] === id ? 1 : 0),
+    0,
+  );
+  return {
+    score: (correctCount / correctOrder.length) * QUESTION_MAX_SCORE,
+    maxScore: QUESTION_MAX_SCORE,
+  };
+}
+
 // --- Extracting selections out of the PIE widget's own session payload ---
 //
 // `PieQuestionPlayer` persists `<pie-fixed-player>.session` as-is (see
@@ -159,6 +183,20 @@ export function extractMultipleChoiceValues(session: unknown, modelId: string): 
   if (Array.isArray(value)) return value.filter((v): v is string => typeof v === "string");
   if (typeof value === "string") return [value];
   return [];
+}
+
+/**
+ * @pie-element/placement-ordering's own session, confirmed from its published
+ * session.schema.json: `{ id, element, value: (string|null)[] }` — the
+ * learner's choice ids in the order placed, `null` for an empty slot. Unlike
+ * the fixed-player elements above, this is NOT wrapped in `{ id, data: [...] }`
+ * — it's a standalone custom element (see PieQuestionPlayer.tsx), so its
+ * `.session` is read and persisted as-is, with no modelId indirection needed.
+ */
+export function extractOrderingValues(session: unknown): (string | null)[] {
+  const value = isRecord(session) ? session.value : undefined;
+  if (!Array.isArray(value)) return [];
+  return value.map((v) => (typeof v === "string" ? v : null));
 }
 
 export function extractDragAndDropBlanks(

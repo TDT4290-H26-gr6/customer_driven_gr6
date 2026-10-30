@@ -148,6 +148,7 @@ describe("DashboardPage results", () => {
     expect(await screen.findByText("radar")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Your results by section" })).toBeInTheDocument();
     expect(screen.queryByLabelText("Chart legend")).not.toBeInTheDocument();
+    expect(screen.getByText(/based on your full self-assessments/i)).toBeInTheDocument();
   });
 
   it("after two assessments, overlays both on the radar and shows the progress", async () => {

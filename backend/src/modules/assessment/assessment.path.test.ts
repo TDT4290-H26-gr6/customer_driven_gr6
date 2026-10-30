@@ -67,12 +67,12 @@ describe("buildPath", () => {
     ).toBe("B1-1");
   });
 
-  it("counts partial credit (fractional scores) toward the 2/3", () => {
+  it("counts partial credit (fractional scores) toward the 60%", () => {
     const path = buildPath(
       [section("A")],
       answers({ "A1-1": { score: 0.5, maxScore: 1 }, "A1-2": right, "A1-3": wrong }),
     );
-    // 1.5 / 3 < 2 / 3: failed.
+    // 1.5 / 3 < 60%: failed.
     expect(path).toEqual({ answered: ["A1-1", "A1-2", "A1-3"], next: null });
   });
 
@@ -118,14 +118,14 @@ describe("buildPath", () => {
   });
 });
 
-describe("buildPath: the 2/3 threshold", () => {
-  it("passes on exactly 2 of 3 points from partial credit", () => {
+describe("buildPath: the 60% threshold", () => {
+  it("passes on exactly 60% of points (1.8 of 3) from partial credit", () => {
     const path = buildPath(
       [section("A")],
       answers({
-        "A1-1": right,
-        "A1-2": { score: 0.5, maxScore: 1 },
-        "A1-3": { score: 0.5, maxScore: 1 },
+        "A1-1": { score: 0.4, maxScore: 1 },
+        "A1-2": { score: 0.7, maxScore: 1 },
+        "A1-3": { score: 0.7, maxScore: 1 },
       }),
     );
     expect(path.next).toBe("A2-1");
@@ -133,11 +133,11 @@ describe("buildPath: the 2/3 threshold", () => {
 
   it("keeps going after one wrong answer only while both remaining could still be right", () => {
     expect(buildPath([section("A")], answers({ "A1-1": wrong })).next).toBe("A1-2");
-    // 0 + 0.8 + at most 1 = 1.8 < 2: out of reach.
+    // 0 + 0.5 + at most 1 = 1.5 < 1.8: out of reach.
     expect(
       buildPath(
         [section("A"), section("B")],
-        answers({ "A1-1": wrong, "A1-2": { score: 0.8, maxScore: 1 } }),
+        answers({ "A1-1": wrong, "A1-2": { score: 0.5, maxScore: 1 } }),
       ).next,
     ).toBe("B1-1");
   });

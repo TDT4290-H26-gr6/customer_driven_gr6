@@ -1,80 +1,82 @@
 import { describe, expect, it } from "vitest";
-import {
-  buildSectionProgress,
-  isProgressComplete,
-  snapshotAsOf,
-  type AttemptForProgress,
-} from "./assessment.progress";
+import { buildSectionProgress, snapshotAsOf, type AttemptForProgress } from "./assessment.progress";
 
 const A = { id: "sec-a", code: "A", name: "Data" };
 const B = { id: "sec-b", code: "B", name: "Publishing" };
 
+type CompetenceFixture = { id: string; score: number; maxScore: number; reached: boolean };
+
 function section(
   s: typeof A,
-  scores: [number, number][] | null,
+  competences: CompetenceFixture[] | null,
   level: number | null = null,
 ): AttemptForProgress["sections"][number] {
   return {
     section: s,
-    assessed: scores !== null,
-    level: scores === null ? null : level,
+    assessed: competences !== null,
+    level: competences === null ? null : level,
     levelCount: 4,
-    competences: (scores ?? [[0, 0]]).map(([score, maxScore]) => ({ score, maxScore })),
+    competences: (competences ?? []).map(({ id, score, maxScore, reached }) => ({
+      competence: { id },
+      score,
+      maxScore,
+      reached,
+    })),
   };
 }
+
+const a1 = (score: number, reached = true) => ({ id: "a1", score, maxScore: 5, reached });
+const a2 = (score: number, reached = true) => ({ id: "a2", score, maxScore: 5, reached });
+const b1 = (score: number, reached = true) => ({ id: "b1", score, maxScore: 10, reached });
 
 // Newest first, as the service passes them.
 const third: AttemptForProgress = {
   instanceNum: 3,
-  // A reassessment after a journey: only section A.
-  sections: [
-    section(
-      A,
-      [
-        [4, 5],
-        [3, 5],
-      ],
-      3,
-    ),
-    section(B, null),
-  ],
+  // A reassessment after a journey: only section A, and within it only a1 —
+  // a2 is never reached (e.g. a1's level failed first).
+  sections: [section(A, [a1(4), a2(0, false)], 3), section(B, null)],
 };
 const second: AttemptForProgress = {
   instanceNum: 2,
-  sections: [
-    section(
-      A,
-      [
-        [2, 5],
-        [2, 5],
-      ],
-      1,
-    ),
-    section(B, [[6, 10]], 2),
-  ],
+  sections: [section(A, [a1(2), a2(2)], 1), section(B, [b1(6)], 2)],
 };
 const first: AttemptForProgress = {
   instanceNum: 1,
-  sections: [
-    section(
-      A,
-      [
-        [1, 5],
-        [1, 5],
-      ],
-      0,
-    ),
-    section(B, [[2, 10]], 1),
-  ],
+  sections: [section(A, [a1(1), a2(1)], 0), section(B, [b1(2)], 1)],
 };
 
 describe("snapshotAsOf", () => {
-  it("sums each section's competences from that SAT", () => {
+  it("sums each section's competences from that SAT, when it reached all of them", () => {
     expect(snapshotAsOf([second, first], 2).get("sec-a")).toEqual({
       instanceNum: 2,
       score: 4,
       maxScore: 10,
       level: 1,
+    });
+  });
+
+  it("backfills a competence the newest SAT didn't reach, from the newest earlier SAT that did", () => {
+    // third reached only a1 (a2 never asked, failed before it); second reached
+    // both. The section is "as of" third (its newest-touching SAT and level),
+    // but a2's own number still comes from second.
+    expect(snapshotAsOf([third, second, first], 3).get("sec-a")).toEqual({
+      instanceNum: 3,
+      score: 6, // third's a1 (4) + second's a2 (2)
+      maxScore: 10,
+      level: 3,
+    });
+  });
+
+  it("leaves out a competence no SAT up to then has ever reached", () => {
+    const attempt: AttemptForProgress = {
+      instanceNum: 1,
+      sections: [section(A, [a1(1), a2(0, false)])],
+    };
+    expect(snapshotAsOf([attempt], 1).get("sec-a")).toEqual({
+      instanceNum: 1,
+      score: 1,
+      maxScore: 5,
+      level: null,
     });
   });
 
@@ -92,7 +94,7 @@ describe("snapshotAsOf", () => {
   it("leaves out a section no SAT up to then has covered", () => {
     const onlyA: AttemptForProgress = {
       instanceNum: 1,
-      sections: [section(A, [[1, 2]]), section(B, null)],
+      sections: [section(A, [a1(1)]), section(B, null)],
     };
     expect(snapshotAsOf([onlyA], 1).has("sec-b")).toBe(false);
   });
@@ -103,7 +105,7 @@ describe("buildSectionProgress", () => {
     const progress = buildSectionProgress([third, second, first], 3, 2);
 
     expect(progress.map((p) => p.section.code)).toEqual(["A", "B"]);
-    expect(progress[0].latest).toMatchObject({ instanceNum: 3, score: 7, level: 3 });
+    expect(progress[0].latest).toMatchObject({ instanceNum: 3, score: 6, level: 3 });
     expect(progress[0].previous).toMatchObject({ instanceNum: 2, score: 4, level: 1 });
     // B wasn't retaken: the same result on both sides, from assessment 2.
     expect(progress[1].latest).toEqual(progress[1].previous);
@@ -120,25 +122,10 @@ describe("buildSectionProgress", () => {
   it("keeps a never-assessed section, with no results", () => {
     const onlyA: AttemptForProgress = {
       instanceNum: 1,
-      sections: [section(A, [[1, 2]]), section(B, null)],
+      sections: [section(A, [a1(1)]), section(B, null)],
     };
     const [, b] = buildSectionProgress([onlyA], 1, null);
 
     expect(b).toEqual({ section: B, levelCount: 4, latest: null, previous: null });
-  });
-});
-
-describe("isProgressComplete", () => {
-  it("is complete once every section has its results", () => {
-    expect(isProgressComplete(buildSectionProgress([third, second], 3, 2), true)).toBe(true);
-  });
-
-  it("isn't while a section still lacks a previous result", () => {
-    // Without assessment 2 loaded, B has nothing as of 3 or as of 2.
-    expect(isProgressComplete(buildSectionProgress([third], 3, 2), true)).toBe(false);
-  });
-
-  it("only needs latest results when there's no previous assessment", () => {
-    expect(isProgressComplete(buildSectionProgress([first], 1, null), false)).toBe(true);
   });
 });
