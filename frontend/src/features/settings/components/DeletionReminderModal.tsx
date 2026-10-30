@@ -8,7 +8,7 @@ import styles from "./DeletionReminderModal.module.css";
 
 /**
  * Set once the learner has answered, so reloading the page doesn't ask
- * again. Holds the end of the session token (its signature — not enough to
+ * again. Holds the end of the session token (its signature, not enough to
  * use as one): a new sign-in gets a new token, and is asked again.
  */
 const ANSWERED_KEY = "aios.deletionReminderAnswered";
@@ -54,8 +54,8 @@ function write(storage: () => Storage, key: string, value: string) {
 
 /**
  * Asks a learner who comes back with a deletion pending (CD-124) whether
- * they still want it. Decided once, when AppShell mounts — i.e. when a
- * session starts (sign-in, or reopening the app) — so scheduling the
+ * they still want it. Decided once, when AppShell mounts, i.e. when a
+ * session starts (sign-in, or reopening the app), so scheduling the
  * deletion in Settings doesn't immediately ask about it.
  */
 export function DeletionReminderModal() {

@@ -240,7 +240,7 @@ describe("AssessmentRunnerPage", () => {
   });
 
   it("finishes a journey assessment on Competencies, without completing the self-assessment", async () => {
-    const lj2 = { id: "journey-2", name: "LJ2 — Research Data" };
+    const lj2 = { id: "journey-2", name: "LJ2 - Research Data" };
     vi.mocked(getAssessmentPath)
       .mockResolvedValueOnce(path([item("1")], false, 2, lj2))
       .mockResolvedValueOnce(path([item("1", { answered: true })], true, 2, lj2));
@@ -260,13 +260,13 @@ describe("AssessmentRunnerPage", () => {
     vi.mocked(getAssessmentPath).mockResolvedValue(
       path([item("1")], false, 2, {
         id: "journey-2",
-        name: "LJ2 — Research Data",
+        name: "LJ2 - Research Data",
       }),
     );
 
     render(<AssessmentRunnerPage />);
 
-    expect(await screen.findByText("LJ2 — Research Data")).toBeInTheDocument();
+    expect(await screen.findByText("LJ2 - Research Data")).toBeInTheDocument();
     expect(screen.getByText(/doesn't change your self-assessment/i)).toBeInTheDocument();
   });
 

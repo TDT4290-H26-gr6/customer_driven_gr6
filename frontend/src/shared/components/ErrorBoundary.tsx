@@ -14,7 +14,7 @@ type State = { error: Error | null };
  * Catches an error thrown while rendering its children and shows a fallback
  * instead of unmounting the whole app to a blank page. React only supports
  * this as a class component. It does not catch errors in event handlers or
- * promises — those are handled where they happen.
+ * promises, those are handled where they happen.
  */
 export class ErrorBoundary extends Component<Props, State> {
   state: State = { error: null };

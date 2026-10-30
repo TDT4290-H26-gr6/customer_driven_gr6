@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   /* Fixed dark scrim regardless of theme, like RoleGateModal's. Below the
-     role gate (1000) — that one must always win. */
+     role gate (1000), that one must always win. */
   background: var(--color-overlay);
   /* Blurs the page behind as well, so its text and colors (the dashboard's
      backdrop circles, say) don't compete with the dialog while it's open. */
@@ -26,7 +26,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  /* A phone in landscape is shorter than the dialog — scroll inside it
+  /* A phone in landscape is shorter than the dialog, scroll inside it
      rather than clipping the send button off-screen. */
   max-height: 100%;
   overflow-y: auto;
@@ -116,7 +116,7 @@
 }
 
 /* Touch devices: iOS Safari zooms the whole page when a form control under
-   16px is focused, and never zooms back out — so no smaller than 16px. */
+   16px is focused, and never zooms back out, so no smaller than 16px. */
 @media (pointer: coarse) {
   .textarea {
     font-size: var(--font-size-lg);

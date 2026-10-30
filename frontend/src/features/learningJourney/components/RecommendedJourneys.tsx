@@ -11,7 +11,7 @@ export type RankedJourney = {
 type Props = {
   /** Best fit first; the first is highlighted, the second shown smaller. */
   ranked: RankedJourney[];
-  /** "recommended": for weak areas. "suggested": nothing is weak — journeys to keep improving with. */
+  /** "recommended": for weak areas. "suggested": nothing is weak, journeys to keep improving with. */
   source: JourneySource;
 };
 

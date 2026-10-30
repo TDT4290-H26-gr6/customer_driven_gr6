@@ -5,7 +5,7 @@ import styles from "./ExitAssessmentDialog.module.css";
 export type ExitStatus = "idle" | "leaving" | "discarding";
 
 type Props = {
-  /** Answers whose save failed — Save & exit retries them before leaving. */
+  /** Answers whose save failed, Save & exit retries them before leaving. */
   unsavedCount: number;
   status: ExitStatus;
   error: string | null;

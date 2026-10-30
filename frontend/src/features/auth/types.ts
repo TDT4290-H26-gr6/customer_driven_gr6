@@ -10,7 +10,7 @@ export type Learner = {
   hasAcceptedPrivacyNotice: boolean;
   /** Every profile field is filled in. Required before taking the assessment. */
   hasCompletedProfile: boolean;
-  /** May use admin mode. Only hides the UI — the backend enforces it. */
+  /** May use admin mode. Only hides the UI, the backend enforces it. */
   isAdmin: boolean;
   /** ISO timestamp when the account's personal data will be deleted, or null if no deletion is pending. */
   deletionScheduledFor: string | null;

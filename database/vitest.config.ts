@@ -8,7 +8,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html", "json-summary"],
       include: ["src/**"],
-      // Only code a unit test can't meaningfully run — keep this list short.
+      // Only code a unit test can't meaningfully run, keep this list short.
       exclude: [
         "src/**/*.test.ts",
         // Entry points: run the seed / the content sync and exit.

@@ -3,10 +3,10 @@ import { MAIN_KIND } from "../assessment/assessment.kinds";
 
 // Question drop-off for the admin page: at which question do learners stop?
 // Read-only, computed on demand over SatInstance + Response + QuestionView, and
-// aggregate-only — no learner id, name or email ever leaves this module.
+// aggregate-only, no learner id, name or email ever leaves this module.
 //
-// An "attempt" is one SatInstance, or — for a learner who opened the first
-// question and left before answering anything — a group of views with no
+// An "attempt" is one SatInstance, or, for a learner who opened the first
+// question and left before answering anything, a group of views with no
 // instance yet (only possible for the initial assessment).
 //
 // Definitions:

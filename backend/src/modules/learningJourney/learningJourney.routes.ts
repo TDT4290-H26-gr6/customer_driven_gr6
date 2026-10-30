@@ -37,13 +37,13 @@ learningJourneyRouter.get(
 
 /**
  * Every competence the learner is at or below 60% on (CD-90), weakest
- * first, each paired with the journey that addresses it — not just the
+ * first, each paired with the journey that addresses it, not just the
  * single pick /recommendation returns. An empty array means every
  * competence is sufficient.
  */
 /**
  * A journey to keep improving with, for a learner with nothing at or below
- * the weak threshold — so the dashboard always offers one unless the score
+ * the weak threshold, so the dashboard always offers one unless the score
  * is perfect. 204 when there's none to suggest (something is weak, so
  * /recommendation applies; a perfect score; or no completed assessment).
  */

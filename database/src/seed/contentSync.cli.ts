@@ -14,7 +14,7 @@ import {
 // `npm run content:sync [-- --apply] [--file <path>]`
 //
 // Makes the database match the WP2 dataset JSON file (see contentSync.ts) without
-// restarting the app — it reads content from the database on every request.
+// restarting the app, it reads content from the database on every request.
 // A dry run by default: prints what would change. --apply writes it.
 //
 // In Docker, through the db-init service (its src/ is mounted, so this file

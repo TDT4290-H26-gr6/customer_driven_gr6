@@ -11,7 +11,7 @@ import styles from "./RoleVisibilityPage.module.css";
 type Kind = "section" | "competence";
 
 /**
- * LEGACY — not routed. Role-based visibility is switched off
+ * LEGACY, not routed. Role-based visibility is switched off
  * (config.roleSelectionEnabled), so this screen is parked here instead of
  * deleted. The backend endpoints it uses (/admin/visibility, /admin/roles/...)
  * are untouched; to bring it back, import it from "@/features/admin/legacy"
@@ -20,7 +20,7 @@ type Kind = "section" | "competence";
  *
  * Pick a role, then tick the sections and competences it may see.
  * A role sees a question if it's granted the question's competence OR the
- * section its module sits in — and nothing at all until something is granted.
+ * section its module sits in, and nothing at all until something is granted.
  * Each click is saved straight away.
  */
 export function RoleVisibilityPage() {

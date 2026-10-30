@@ -3,7 +3,7 @@ import { useLocalStorage } from "@/shared/hooks/useLocalStorage";
 
 export type AccentColor = "purple" | "blue" | "olive";
 
-/** The three accent colors of the AIOS logo. `swatch` is for the picker swatch only —
+/** The three accent colors of the AIOS logo. `swatch` is for the picker swatch only ,
  *  the app itself is themed through `data-accent` (see styles/globals.css). */
 export const ACCENTS: { value: AccentColor; label: string; swatch: string }[] = [
   { value: "purple", label: "Purple", swatch: "var(--brand-purple)" },
@@ -23,7 +23,7 @@ const DEFAULT_ACCENT: AccentColor = "purple";
 
 /**
  * The learner's accent color, applied as a `data-accent` attribute on <html>
- * — the same mechanism as ThemeProvider's `data-theme`. index.html has a
+ *, the same mechanism as ThemeProvider's `data-theme`. index.html has a
  * pre-React script with the same storage key to avoid a flash of the wrong color.
  */
 export function AccentProvider({ children }: { children: ReactNode }) {

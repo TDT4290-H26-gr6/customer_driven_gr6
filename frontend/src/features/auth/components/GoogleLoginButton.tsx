@@ -4,7 +4,7 @@ import { googleLogin } from "../api";
 import type { Learner } from "../types";
 
 // Minimal shape of the Google Identity Services client (loaded via the
-// <script> tag in index.html) — just the bits this component calls. No
+// <script> tag in index.html), just the bits this component calls. No
 // official types package is installed for it, so this stays hand-rolled
 // rather than falling back to `any`.
 type GoogleIdentityServices = {

@@ -62,12 +62,12 @@ export function Header() {
     <header className={styles.header}>
       <div className={styles.left}>
         <Logo className={styles.logo} />
+        {/* Funders' logos, just right of the AIOS logo, the same height as
+            it (shrinking on narrow phones, see the CSS). */}
+        {learner && <FundingLogos className={styles.funding} />}
       </div>
       {learner && (
         <div className={styles.right}>
-          {/* Funders' logos, just left of the avatar, the same height as
-              the AIOS logo (shrinking on narrow phones, see the CSS). */}
-          <FundingLogos className={styles.funding} />
           <div className={styles.userMenu} ref={menuRef}>
             <button
               type="button"

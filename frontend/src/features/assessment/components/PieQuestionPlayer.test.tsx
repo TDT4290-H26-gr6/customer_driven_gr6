@@ -1,12 +1,15 @@
 import { fireEvent, render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { PieContent } from "../types";
+import type { NativeElementContent, PieContent } from "../types";
 import { PieQuestionPlayer } from "./PieQuestionPlayer";
 import { IDK_VALUE } from "./idkSession";
+import { loadPlacementOrdering } from "./loadNativeElement";
 import { loadPiePlayer } from "./loadPiePlayer";
 
-// The real player is a 1.6 MB web component that jsdom can't run.
+// The real players are web components (placement-ordering's own React tree
+// included) that jsdom can't run.
 vi.mock("./loadPiePlayer", () => ({ loadPiePlayer: vi.fn() }));
+vi.mock("./loadNativeElement", () => ({ loadPlacementOrdering: vi.fn() }));
 
 const content = { id: "q1" } as unknown as PieContent;
 
@@ -20,6 +23,7 @@ function playerElement(container: HTMLElement) {
 describe("PieQuestionPlayer", () => {
   beforeEach(() => {
     vi.mocked(loadPiePlayer).mockReset();
+    vi.mocked(loadPlacementOrdering).mockReset();
   });
 
   it("hands the item and saved answer to the player only once it has loaded", async () => {
@@ -98,6 +102,68 @@ describe("PieQuestionPlayer", () => {
       expect(fireEvent.click(other)).toBe(false);
       // The I don't know box itself can still be unticked.
       expect(fireEvent.click(idk)).toBe(true);
+    });
+  });
+
+  describe("native elements (e.g. ordering)", () => {
+    const nativeContent = {
+      element: "aios-placement-ordering",
+      model: { id: "1", choices: [{ id: "a", label: "First" }] },
+    } as NativeElementContent;
+
+    function nativeElement(container: HTMLElement) {
+      return container.querySelector("aios-placement-ordering") as HTMLElement & {
+        model?: unknown;
+        session?: unknown;
+      };
+    }
+
+    it("routes to the element named in content.element instead of <pie-fixed-player>, setting .model not .config", async () => {
+      let finishLoading!: () => void;
+      vi.mocked(loadPlacementOrdering).mockReturnValue(
+        new Promise<void>((r) => (finishLoading = r)),
+      );
+
+      const { container } = render(
+        <PieQuestionPlayer
+          content={nativeContent}
+          answer={{ session: { value: ["a"] }, complete: true }}
+        />,
+      );
+      expect(container.querySelector("pie-fixed-player")).toBeNull();
+      const element = nativeElement(container);
+      expect(element.model).toBeUndefined();
+
+      finishLoading();
+      await vi.waitFor(() => expect(element.model).toBe(nativeContent.model));
+      expect(element.session).toEqual({ value: ["a"] });
+      expect(loadPiePlayer).not.toHaveBeenCalled();
+    });
+
+    it("reports the element's own session on session-changed, same as the fixed player", () => {
+      vi.mocked(loadPlacementOrdering).mockReturnValue(new Promise(() => {}));
+      const onAnswerChange = vi.fn();
+      const { container } = render(
+        <PieQuestionPlayer content={nativeContent} onAnswerChange={onAnswerChange} />,
+      );
+      const element = nativeElement(container);
+
+      element.session = { id: "s", element: "aios-placement-ordering", value: ["a", null] };
+      element.dispatchEvent(new CustomEvent("session-changed", { detail: { complete: false } }));
+
+      expect(onAnswerChange).toHaveBeenCalledWith({
+        session: { id: "s", element: "aios-placement-ordering", value: ["a", null] },
+        complete: false,
+      });
+    });
+
+    it("still renders, empty, when a native element has no registered loader", async () => {
+      const unknownContent = { element: "aios-not-registered", model: {} } as NativeElementContent;
+      const { container } = render(<PieQuestionPlayer content={unknownContent} />);
+      await Promise.resolve();
+
+      expect(loadPlacementOrdering).not.toHaveBeenCalled();
+      expect(container.querySelector("aios-not-registered")).not.toBeNull();
     });
   });
 });

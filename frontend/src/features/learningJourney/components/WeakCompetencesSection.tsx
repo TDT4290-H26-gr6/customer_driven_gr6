@@ -10,7 +10,7 @@ function percent(score: number, maxScore: number): number {
 }
 
 /**
- * Every competence at or below the 60% threshold (CD-90) — the full picture
+ * Every competence at or below the 60% threshold (CD-90), the full picture
  * of where a learner is lacking, not just the single journey "Recommended
  * for you" picks. Shows a positive message instead of an empty list when
  * nothing qualifies.

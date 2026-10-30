@@ -73,7 +73,7 @@ describe("AdviceCard", () => {
             steps: [
               {
                 kind: "moodle_module",
-                title: "A2 — Introduction to Open Data Management",
+                title: "A2, Introduction to Open Data Management",
                 url: "https://moodle.example.org/course/view.php?id=1002",
                 reason: "Your weakest area.",
               },
@@ -85,7 +85,7 @@ describe("AdviceCard", () => {
 
     expect(screen.getByText("Module in Moodle")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "A2 — Introduction to Open Data Management" }),
+      screen.getByRole("link", { name: "A2, Introduction to Open Data Management" }),
     ).toHaveAttribute("href", "https://moodle.example.org/course/view.php?id=1002");
   });
 });

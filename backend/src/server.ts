@@ -46,7 +46,7 @@ export function buildServer() {
   // the real client instead of lumping everyone under nginx's address.
   app.set("trust proxy", 1);
 
-  // Standard security headers (no sniffing, no framing, etc.) — this API
+  // Standard security headers (no sniffing, no framing, etc.), this API
   // serves JSON only, so helmet's defaults fit as-is.
   app.use(helmet());
   app.use(cors({ origin: config.corsOrigins }));

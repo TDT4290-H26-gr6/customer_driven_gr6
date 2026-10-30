@@ -1,4 +1,4 @@
-// Pure progress logic for the dashboard — no Prisma — so it's unit-testable
+// Pure progress logic for the dashboard, no Prisma, so it's unit-testable
 // directly (same pattern as assessment.scoring.ts). assessment.service.ts
 // loads the attempts and calls this.
 
@@ -10,13 +10,18 @@ export type AttemptForProgress = {
     assessed: boolean;
     level: number | null;
     levelCount: number;
-    competences: { score: number; maxScore: number }[];
+    competences: {
+      competence: { id: string };
+      score: number;
+      maxScore: number;
+      reached: boolean;
+    }[];
   }[];
 };
 
 /** A section's result as of some assessment, and which SAT it actually comes from. */
 export type SectionSnapshot = {
-  /** The SAT that last assessed this section — older than the one it's "as of" when carried over. */
+  /** The SAT that last assessed this section, older than the one it's "as of" when carried over. */
   instanceNum: number;
   score: number;
   maxScore: number;
@@ -34,26 +39,48 @@ export type SectionProgress = {
 };
 
 /**
- * Each section's last known result as of one assessment: from that SAT if it
- * assessed the section, else from the newest earlier SAT that did. A
- * reassessment after a learning journey only covers some sections, and the
- * others keep their earlier result rather than dropping to nothing.
+ * Each section's last known result as of one assessment. The level reached
+ * (and which SAT this "is" for display purposes) comes from the newest SAT
+ * that assessed the section at all, a reassessment after a learning
+ * journey only covers some sections, and the others keep their earlier
+ * level rather than dropping to nothing. But the score is built up
+ * competence by competence, each from the newest SAT that actually reached
+ * it: a SAT that barely touched a section (e.g. failed its first level)
+ * still marks the section "assessed", and zero-fills every competence it
+ * never got to in its own report, without this, that zero-fill would
+ * shadow real, better data an earlier SAT already has for the rest of the
+ * section. A competence no SAT has ever reached is left out entirely
+ * (matches the Competencies page, which only averages assessed modules).
  */
 export function snapshotAsOf(
   attemptsNewestFirst: AttemptForProgress[],
   instanceNum: number,
 ): Map<string, SectionSnapshot> {
   const snapshot = new Map<string, SectionSnapshot>();
+  const reachedCompetences = new Map<string, Set<string>>(); // sectionId -> competenceIds already counted
+
   for (const attempt of attemptsNewestFirst) {
     if (attempt.instanceNum > instanceNum) continue;
     for (const s of attempt.sections) {
-      if (!s.assessed || snapshot.has(s.section.id)) continue;
-      snapshot.set(s.section.id, {
-        instanceNum: attempt.instanceNum,
-        score: s.competences.reduce((sum, c) => sum + c.score, 0),
-        maxScore: s.competences.reduce((sum, c) => sum + c.maxScore, 0),
-        level: s.level,
-      });
+      if (!s.assessed) continue;
+      if (!snapshot.has(s.section.id)) {
+        snapshot.set(s.section.id, {
+          instanceNum: attempt.instanceNum,
+          score: 0,
+          maxScore: 0,
+          level: s.level,
+        });
+      }
+      const entry = snapshot.get(s.section.id)!;
+      const seen = reachedCompetences.get(s.section.id) ?? new Set<string>();
+      reachedCompetences.set(s.section.id, seen);
+
+      for (const c of s.competences) {
+        if (!c.reached || seen.has(c.competence.id)) continue;
+        seen.add(c.competence.id);
+        entry.score += c.score;
+        entry.maxScore += c.maxScore;
+      }
     }
   }
   return snapshot;
@@ -90,9 +117,4 @@ export function buildSectionProgress(
     latest: latest.get(section.id) ?? null,
     previous: previous.get(section.id) ?? null,
   }));
-}
-
-/** Whether every section has all the history it can get — no older attempt needs loading. */
-export function isProgressComplete(progress: SectionProgress[], hasPrevious: boolean): boolean {
-  return progress.every((s) => s.latest !== null && (!hasPrevious || s.previous !== null));
 }

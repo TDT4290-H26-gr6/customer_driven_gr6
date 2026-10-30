@@ -11,7 +11,7 @@ export function getVisibility(): Promise<VisibilityMatrix> {
 /**
  * Downloads the CD-23 analysis exports: one row per completed full
  * assessment ("tests"), and one row per answered question in one
- * ("questions") — linked by satInstanceId. No learner is identifiable from
+ * ("questions"), linked by satInstanceId. No learner is identifiable from
  * either file.
  */
 export async function downloadTestsCsv(): Promise<void> {

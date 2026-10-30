@@ -13,7 +13,7 @@ import {
 import styles from "./ProfileForm.module.css";
 
 type Props = {
-  /** Called after a successful save — ProfilePage uses it to go on to the dashboard. */
+  /** Called after a successful save, ProfilePage uses it to go on to the dashboard. */
   onSaved?: () => void;
   /** The submit button's text. */
   submitLabel?: string;

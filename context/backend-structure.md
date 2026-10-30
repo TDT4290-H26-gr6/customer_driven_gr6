@@ -1,8 +1,8 @@
-# Backend & database structure — agreed convention
+# Backend & database structure, agreed convention
 
 - **Date:** 2026-09-09
 - **Applies to:** `backend/` (Node + Express + TypeScript + Prisma + MySQL 8)
-- **Companion to:** [`frontend-structure.md`](./frontend-structure.md) — same
+- **Companion to:** [`frontend-structure.md`](./frontend-structure.md), same
   module‑per‑domain idea, applied to the API and the database.
 
 The group has agreed to organise the backend around **domain modules**
@@ -20,7 +20,7 @@ MySQL has no PostgreSQL‑style schemas. `CREATE SCHEMA` is literally an alias f
 - **InnoDB foreign keys cannot cross databases.** Splitting into real databases
   (`aios_users`, `aios_questions`, …) would break referential integrity between,
   e.g. `Response` (assessment) and `Learner` (identity).
-- **Prisma's `multiSchema` feature does not support MySQL** — it is
+- **Prisma's `multiSchema` feature does not support MySQL**, it is
   PostgreSQL / SQL Server / CockroachDB only.
 
 So we do **not** create multiple physical databases. We keep one database
@@ -41,15 +41,15 @@ possible without a rewrite.
 | Module                | Responsibility                                                                                                                                                                                                                                                                                 | Tables (target names)                                                                                                                                                                                                                                                          | Routes                                                                                                                                                                                                                                                 |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **`identity`**        | who the user is: accounts, Google sign‑in, the persona role picked at onboarding, initial-assessment completion, and which sections / competences each role may see (the allow-lists managed in admin mode)                                                                                    | `identity_learner`, `identity_role`, `identity_role_section`, `identity_role_competence`, _(later)_ `identity_session`                                                                                                                                                         | `POST /auth/google`, `GET /auth/me`, `PUT /auth/me/role`, `PUT /auth/me/initial-assessment`, `GET /roles`, `GET /admin/visibility`, `PUT/DELETE /admin/roles/:roleId/sections/:sectionId`, `PUT/DELETE /admin/roles/:roleId/competences/:competenceId` |
-| **`assessment`**      | the content hierarchy (competence, section, module), the question bank, self‑assessment runs, answers, scores                                                                                                                                                                                  | `assessment_competence`, `assessment_competence_secondary_source`, `assessment_section`, `assessment_section_module`, `assessment_section_module_secondary_competence`, `assessment_question`, `assessment_sat_instance`, `assessment_response`, `assessment_question_view`, `assessment_competence_score` | `GET /questions`, `GET /assessment/progress`, `POST /assessment/responses`, `POST /assessment/views` (CD-125: a question was shown — first view per learner/kind/attempt only, keyed to the attempt not an instance because the instance is created by the first answer; deleted again when the attempt is aborted), `POST /assessment/complete`, `GET /competence-scores`, `GET /competence-scores/by-section`, `GET /competence-scores/progress` (dashboard: latest vs previous SAT)                                                                                                                      |
+| **`assessment`**      | the content hierarchy (competence, section, module), the question bank, self‑assessment runs, answers, scores                                                                                                                                                                                  | `assessment_competence`, `assessment_competence_secondary_source`, `assessment_section`, `assessment_section_module`, `assessment_section_module_secondary_competence`, `assessment_question`, `assessment_sat_instance`, `assessment_response`, `assessment_question_view`, `assessment_competence_score` | `GET /questions`, `GET /assessment/progress`, `POST /assessment/responses`, `POST /assessment/views` (CD-125: a question was shown, first view per learner/kind/attempt only, keyed to the attempt not an instance because the instance is created by the first answer; deleted again when the attempt is aborted), `POST /assessment/complete`, `GET /competence-scores`, `GET /competence-scores/by-section`, `GET /competence-scores/progress` (dashboard: latest vs previous SAT)                                                                                                                      |
 | **`sources`**         | third‑party learning resources (courses, training programmes, institutional initiatives) that build a competence                                                                                                                                                                               | `sources_source`                                                                                                                                                                                                                                                               | `GET /sources`                                                                                                                                                                                                                                         |
 | **`learningJourney`** | curated step-by-step journeys, the sections each covers, and the score-based recommendation                                                                                                                                                                                                    | `learning_journey_journey`, `learning_journey_journey_section`, `learning_journey_learning_module`, `learning_journey_recommendation`                                                                                                                                          | `GET /learning-journeys`, `GET /learning-journeys/recommendation`                                                                                                                                                                                      |
 | **`feedback`**        | what testers say should be improved, sent from the "Feedback" button on every page                                                                                                                                                                                                             | `feedback_feedback`                                                                                                                                                                                                                                                            | `POST /feedback`, `GET /admin/feedback`                                                                                                                                                                                                                |
-| **`advisor`**         | AI advice on the dashboard: explains the learner's results, recommends 1–3 Moodle modules, and **ranks the two learning journeys that fit them best on their scores and profile** (occupation, industry, degree, experience, goals — never name or email; best fit highlighted on the dashboard, score-only top two as the fallback: `GET /learning-journeys/recommendations`), via the NTNU IDUN LLM (`lib/llm.ts`); one stored answer per completed SAT instance; off when `LLM_API_KEY` is unset | `advisor_advice`                                                                                                                                                                                                                                                               | `GET /advice`                                                                                                                                                                                                                                          |
-| **`stats`**           | admin-only CSV export for analysis (CD-23): two tidy tables over completed full kind:"main" self-assessments only (a targeted reassessment has a different question set, and a kind:"journey" assessment never counts towards the main results — both excluded) — no name/email, years of experience bucketed; owns no tables, reads `identity`/`assessment` via Prisma             | _(none — read-only)_                                                                                                                                                                                                                                                          | `GET /admin/stats/tests.csv`, `GET /admin/stats/questions.csv`, `GET /admin/sat/dropoff` (CD-125: per-question drop-off aggregates — abandoned = not completed and last activity (view or answer) older than `inactiveDays`; "stopped here" = last question shown, falling back to last answered for attempts without view rows; computed on demand, no learner fields)                                                                                                                                                                                          |
+| **`advisor`**         | AI advice on the dashboard: explains the learner's results, recommends 1–3 Moodle modules, and **ranks the two learning journeys that fit them best on their scores and profile** (occupation, industry, degree, experience, goals, never name or email; best fit highlighted on the dashboard, score-only top two as the fallback: `GET /learning-journeys/recommendations`), via the NTNU IDUN LLM (`lib/llm.ts`); one stored answer per completed SAT instance; off when `LLM_API_KEY` is unset | `advisor_advice`                                                                                                                                                                                                                                                               | `GET /advice`                                                                                                                                                                                                                                          |
+| **`stats`**           | admin-only CSV export for analysis (CD-23): two tidy tables over completed full kind:"main" self-assessments only (a targeted reassessment has a different question set, and a kind:"journey" assessment never counts towards the main results, both excluded), no name/email, years of experience bucketed; owns no tables, reads `identity`/`assessment` via Prisma             | _(none, read-only)_                                                                                                                                                                                                                                                          | `GET /admin/stats/tests.csv`, `GET /admin/stats/questions.csv`, `GET /admin/sat/dropoff` (CD-125: per-question drop-off aggregates, abandoned = not completed and last activity (view or answer) older than `inactiveDays`; "stopped here" = last question shown, falling back to last answered for attempts without view rows; computed on demand, no learner fields)                                                                                                                                                                                          |
 | **`security`**        | privileged access and traceability                                                                                                                                                                                                                                                             | _(later)_ `security_admin`, `security_audit_event`, `security_api_key`                                                                                                                                                                                                         | _(later)_ real admin access. Until then the `/admin/*` routes live in `identity` (§11) and should move here                                                                                                                                            |
-| **`platform`**        | cross‑cutting config                                                                                                                                                                                                                                                                           | _(later)_ `platform_app_setting`, `platform_feature_flag`                                                                                                                                                                                                                      | —                                                                                                                                                                                                                                                      |
-| **`health`**          | liveness / readiness for ops                                                                                                                                                                                                                                                                   | —                                                                                                                                                                                                                                                                              | `GET /health`                                                                                                                                                                                                                                          |
+| **`platform`**        | cross‑cutting config                                                                                                                                                                                                                                                                           | _(later)_ `platform_app_setting`, `platform_feature_flag`                                                                                                                                                                                                                      |,                                                                                                                                                                                                                                                      |
+| **`health`**          | liveness / readiness for ops                                                                                                                                                                                                                                                                   |,                                                                                                                                                                                                                                                                              | `GET /health`                                                                                                                                                                                                                                          |
 
 "`identity`" is what the ticket calls _users_; "`assessment`" is what it calls
 _questions_ (the bank plus everything derived from answering it).
@@ -69,7 +69,7 @@ _writes_, not the key:
 ## 3. Prisma: one schema folder, one file per module
 
 Split the single `prisma/schema.prisma` into a folder (Prisma's
-`prismaSchemaFolder` — preview in Prisma 5.15+, GA in 6.x):
+`prismaSchemaFolder`, preview in Prisma 5.15+, GA in 6.x):
 
 ```
 database/prisma/             # the database package owns the schema (§4)
@@ -80,8 +80,8 @@ database/prisma/             # the database package owns the schema (§4)
 │   ├── assessment.prisma    # Competence, Section, SectionModule, Question, SatInstance, Response, QuestionView, CompetenceScore + join tables
 │   ├── sources.prisma       # Source
 │   ├── learningJourney.prisma  # LearningJourney, JourneySection, LearningModule, JourneyRecommendation
-│   ├── security.prisma      # (Admin, AuditEvent)  — added when the module lands
-│   └── platform.prisma      # (AppSetting, FeatureFlag) — later
+│   ├── security.prisma      # (Admin, AuditEvent) , added when the module lands
+│   └── platform.prisma      # (AppSetting, FeatureFlag), later
 └── migrations/              # created when we switch to Prisma Migrate (§7)
 ```
 
@@ -111,7 +111,7 @@ database/prisma/             # the database package owns the schema (§4)
   }
   ```
   Result: browsing the DB (Adminer / Prisma Studio) shows every `assessment_*`
-  table grouped together — the visual "schema" the team wants.
+  table grouped together, the visual "schema" the team wants.
 
 ### Naming conventions
 
@@ -142,7 +142,7 @@ database/
     ├── index.ts             # db-init's last step: seedChosenDataset(); a failure stops db-init
     ├── config.ts            # SEED_DATASET, MOODLE_BASE_URL
     ├── db/prisma.ts         # this package's PrismaClient
-    └── seed/                # content datasets — see §11
+    └── seed/                # content datasets, see §11
         ├── index.ts         # seedChosenDataset(): the SEED_DATASET one, never mixed
         ├── datasetLoader.ts # createDatasetLoader(): load / bring up to date one dataset JSON
         ├── pie.ts           # authored question -> PIE item content (buildPieContent)
@@ -164,7 +164,7 @@ backend/src/
 ├── modules/
 │   ├── identity/
 │   │   ├── identity.routes.ts       # /auth/*, /roles, /auth/me/role, /auth/me/privacy-notice (sets Learner.privacyNoticeAcceptedAt)
-│   │   ├── identity.admin.routes.ts # /admin/* — role visibility grants (admin mode)
+│   │   ├── identity.admin.routes.ts # /admin/*, role visibility grants (admin mode)
 │   │   ├── identity.service.ts      # all Prisma access for identity_* tables
 │   │   └── identity.types.ts
 │   ├── assessment/
@@ -188,12 +188,12 @@ backend/src/
 
 **Responsibilities**
 
-- `*.routes.ts` — HTTP only: parse/validate input, call the service, shape the
+- `*.routes.ts`, HTTP only: parse/validate input, call the service, shape the
   response. No Prisma here.
-- `*.service.ts` — the module's logic and the **only** place its tables are
+- `*.service.ts`, the module's logic and the **only** place its tables are
   queried. Exposes plain typed functions.
-- `*.types.ts` — request/response and domain types for the module.
-- `*.bootstrap.ts` — idempotent startup data for a single module (e.g. a
+- `*.types.ts`, request/response and domain types for the module.
+- `*.bootstrap.ts`, idempotent startup data for a single module (e.g. a
   future `ensureAdmin`), invoked from `index.ts`. No module has one today: the
   content datasets span every module, so they live in `database/src/seed/`
   instead (§11).
@@ -202,7 +202,7 @@ backend/src/
   `assessment.service.ts` / `assessment.scoring.ts` read it back to score
   answers (choice `value` + `correct`, plus the "I don't know" choice,
   `IDK_VALUE`, defined on both sides). Change it on both sides together.
-- `server.ts` — imports each module's router and `app.use()`s it. Adding a
+- `server.ts`, imports each module's router and `app.use()`s it. Adding a
   module = one import + one line here.
 
 ---
@@ -214,7 +214,7 @@ backend/src/
 | `db/`, `lib/`                 | each other                                   | `modules/`                   |
 | `modules/<x>/`                | its own folder, `db/`, `lib/`, `middleware/` | another module's internals   |
 | `modules/<x>` ↔ `modules/<y>` | the other module's **service** exports only  | its routes, its Prisma calls |
-| `server.ts`, `index.ts`       | every module's routes + bootstraps           | —                            |
+| `server.ts`, `index.ts`       | every module's routes + bootstraps           |,                            |
 
 ---
 
@@ -224,12 +224,12 @@ backend/src/
 - **Role gating**: `middleware/requireRole.ts` is chained after `requireAuth`
   on any route that assumes a persona has been picked (`GET /questions`,
   `GET /courses`) and returns `403` otherwise. It's the one deliberate
-  exception to "modules import middleware, not the other way around" —
+  exception to "modules import middleware, not the other way around" ,
   it calls `identity.service.ts`'s `findLearnerById` because "has a role"
   is identity's data, and duplicating that check per-module wasn't worth
   avoiding a shared middleware importing one read-only service function.
   This is also the _real_ enforcement behind the frontend's role-gate
-  modal (`RoleGateModal` — see `context/frontend-structure.md`): that modal
+  modal (`RoleGateModal`, see `context/frontend-structure.md`): that modal
   is UX, easily defeated by anyone editing their own client-side state, so
   every endpoint it's meant to protect must carry `requireRole` itself.
   Privileged (admin) access is a separate concern and still belongs in
@@ -237,7 +237,7 @@ backend/src/
 - **Errors**: a single Express error handler in `server.ts` turns anything a
   route throws into a `500` instead of a crashed process. Express 4 does not
   catch a rejected promise from an `async` handler by itself, so **wrap every
-  async route handler in `asyncHandler` (`lib/asyncHandler.ts`)** — without it a
+  async route handler in `asyncHandler` (`lib/asyncHandler.ts`)**, without it a
   failed database call becomes an unhandled rejection that kills the backend.
   Known, expected failures (e.g. an unknown id → `404`) are still answered in
   the route itself. Mapping _typed_ service errors (`lib/errors.ts`) to status
@@ -248,7 +248,7 @@ backend/src/
 
 ---
 
-## 7. Migrations — prerequisite for the table renames
+## 7. Migrations, prerequisite for the table renames
 
 Today the stack runs `prisma db push` on every start, in the `db-init`
 container (`database/Dockerfile`). That is unversioned. It runs **without**
@@ -291,11 +291,11 @@ Steps 1–2 are safe and unblock the rest; do them first.
 
 ---
 
-## 9. Adding a module later — checklist
+## 9. Adding a module later, checklist
 
-1. `prisma/schema/<module>.prisma` — models, each with
+1. `prisma/schema/<module>.prisma`, models, each with
    `@@map("<module>_<table>")`.
-2. `src/modules/<module>/` — `<module>.routes.ts`, `<module>.service.ts`,
+2. `src/modules/<module>/`, `<module>.routes.ts`, `<module>.service.ts`,
    `<module>.types.ts` (+ `<module>.bootstrap.ts` if it needs seed data).
 3. Register the router (and bootstrap) in `src/server.ts` / `src/index.ts`.
 4. `prisma migrate dev --name add-<module>`.
@@ -310,7 +310,7 @@ If a module ever needs its own database, credentials, or deployment (e.g. the
 its own service), that module gets:
 
 - its own `datasource` + `PrismaClient`,
-- **no** cross‑database FKs — integrity enforced in the service layer,
+- **no** cross‑database FKs, integrity enforced in the service layer,
 - an explicit API or event contract instead of a shared client.
 
 Not planned now. The module structure in this document is precisely what keeps
@@ -321,7 +321,7 @@ that option cheap later.
 ## 11. Content model, role visibility, scoring and seeding (schema v3)
 
 The shape of what the assessment is _about_, and how it reaches a learner. The
-diagram this came from is the "AIOS DB Schema — Role Visibility" Lucidchart.
+diagram this came from is the "AIOS DB Schema, Role Visibility" Lucidchart.
 For what changed on the way there, and why, see
 [`schema-v3-changes.md`](./schema-v3-changes.md).
 
@@ -332,7 +332,7 @@ Section 1───* SectionModule *───1 Competence (mainCompetenceId)
                     │  *───* Competence          (secondary, via ..._secondary_competence)
                     1
                     │
-                    * Question *───1 Competence   (competenceId — the one it assesses)
+                    * Question *───1 Competence   (competenceId, the one it assesses)
 
 Competence *───1 Source (primarySourceId);  *───* Source (secondary, via ..._secondary_source)
 ```
@@ -341,7 +341,7 @@ Competence *───1 Source (primarySourceId);  *───* Source (secondary,
   competence (a plain FK) plus any number of _secondary_ ones (a join table).
 - A **Question** belongs to a module **and** names the competence it assesses
   (`competenceId`) directly. Scores roll up by that `competenceId`, **not**
-  through the section/module hierarchy — sections and modules organise content
+  through the section/module hierarchy, sections and modules organise content
   and gate visibility; they don't compute scores.
 - Many-to-many links are join tables with composite keys, never JSON id lists:
   the database can then enforce them and join across them.
@@ -356,25 +356,25 @@ Two allow-lists on the learner's **role** (`identity_role_section`,
 
 A role with no grants sees **nothing** (deny by default). The filter lives in
 `assessment.service.ts` (`visibleQuestionFilter`) and drives both
-`GET /questions` and `saveResponse`, so a learner is only asked — and only
-scored on — what their role can see. Because the rule is OR, revoking a section
+`GET /questions` and `saveResponse`, so a learner is only asked, and only
+scored on, what their role can see. Because the rule is OR, revoking a section
 does not hide its questions while their competences are still granted.
 
 **Except for a learner's initial assessment.** Everyone gets the _whole_
-question bank the first time, regardless of role — that's the point of it
+question bank the first time, regardless of role, that's the point of it
 (covering every section and competence). `isInitialAssessment(learnerId)` is
 `true` until the learner has completed at least one `SatInstance`; while true,
 `visibleQuestionFilter` returns `{}` (everything) instead of the role filter,
 and `getRoleGrants` is never even called. Once they've completed one, later
 retakes go back to the normal role allow-lists. The score views
 (`getLatestCompetenceScores`, `getAttemptSectionScores`) never
-re-apply the _current_ role filter to a past instance's results — that would
+re-apply the _current_ role filter to a past instance's results, that would
 risk hiding a competence the learner was genuinely just scored on (e.g. after
 a role change since that run); they show exactly what that instance actually
 covered.
 
 **Admin mode** role endpoints (`/admin/visibility`, `/admin/roles/...`, `identity.admin.routes.ts`) edit these allow-lists (their frontend screen is parked in `features/admin/legacy/`, unrouted, while role selection is off);
-each grant is stamped with `grantedByLearnerId`. **It is not secured yet** — any
+each grant is stamped with `grantedByLearnerId`. **It is not secured yet**, any
 signed-in learner who has picked a role can call it. That is a demo-stage
 decision; gate it on a real admin check (the planned `security` module) before
 real users exist.
@@ -407,12 +407,12 @@ Every question is out of 1 point; "I don't know" scores 0 out of 1.
 
 **"I don't know":** `database/src/seed/pie.ts` appends one extra choice
 (`IDK_VALUE`/`IDK_LABEL`, matched by the backend's `assessment.scoring.ts`) to _every_ generated
-model, of every type — not authored per-question. Picking it scores `0/0` for
+model, of every type, not authored per-question. Picking it scores `0/0` for
 the whole question, checked in `scoreAnswer` before any type-specific scoring
 runs, so it overrides everything else even a `multi_choice`'s other ticks. It
 still counts as _answered_ (the PIE widget's own `isComplete()` treats
 selecting it like any other choice) and the response is still saved, so
-`getProgress`/the Next button are unaffected — it just contributes nothing to
+`getProgress`/the Next button are unaffected, it just contributes nothing to
 either side of the competence total. `withShuffledChoices` never shuffles it
 in among the real choices; it's always placed last.
 
@@ -422,7 +422,7 @@ in among the real choices; it's always placed last.
 run, find the competence with the lowest `score / maxScore` (competences with
 `maxScore` 0 are skipped), then
 
-1. find the sections that competence is taught in — modules whose **main**
+1. find the sections that competence is taught in, modules whose **main**
    competence it is, or, if none, modules listing it as **secondary**;
 2. find journeys covering those sections through `journey_section`, whose
    `coverageLevel` is **M**ain, **R**ecommended or **S**upplementary;
@@ -439,7 +439,7 @@ loads (`database/src/seed/index.ts`):
 | `SEED_DATASET` | File | What it is |
 | --- | --- | --- |
 | `fake` (default) | `data/aios_fake_food_seed.json` | Fake food-themed test data, described below |
-| `wp2` | `data/aios_wp2_seed.json` | The real AIOS WP2 curriculum: sections A–E, 20 modules (A1–E4) with main and secondary competences, 36 competences, the 6 learning journeys, and the self-assessment items delivered so far |
+| `wp2` | `data/aios_wp2_seed.json` | The real AIOS WP2 curriculum: sections A–E, 20 modules (A1–E4) with main and secondary competences, 36 competences, the 4 learning journeys, and the self-assessment items delivered so far |
 
 - **Never mixed.** A learner's first assessment covers the whole question bank,
   so two datasets in one database would hand learners both. If the database
@@ -461,7 +461,7 @@ loads (`database/src/seed/index.ts`):
   which wins. Changing the base URL or ids updates existing rows on the next
   start, so swapping the placeholders for real links is a data change.
 
-`database/src/seed/fakeFoodSeed.ts` loads `database/src/seed/data/aios_fake_food_seed.json` — a
+`database/src/seed/fakeFoodSeed.ts` loads `database/src/seed/data/aios_fake_food_seed.json`, a
 **fake**, food-themed dataset that _is_ every learner's initial assessment:
 **5 sections (A–E) × 4 section modules (levels 1–4, one competence each) ×
 3 questions = 60 questions**, plus 26
@@ -472,7 +472,7 @@ is inserted in dependency order with `createMany({ skipDuplicates: true })`,
 so running it again never duplicates or overwrites.
 
 - **Automatically:** db-init runs `seedChosenDataset()` (`database/src/index.ts`)
-  before the backend starts — when any of the dataset's questions are missing, it loads the
+  before the backend starts, when any of the dataset's questions are missing, it loads the
   whole thing (adding only what's missing), then makes sure section codes,
   module levels, competence names and Moodle links match the JSON. A fresh
   database therefore opens with every question, and an older one picks up new
@@ -480,10 +480,10 @@ so running it again never duplicates or overwrites.
 - **By hand:** `docker compose run --rm db-init npm run seed` (or `npm run seed`
   in `database/`) runs the same loader.
 - The seed authors questions in the simple shape above; the loader converts them
-  with `buildPieContent` (which also appends the "I don't know" choice — see
+  with `buildPieContent` (which also appends the "I don't know" choice, see
   above). To add or change questions, edit the JSON (a new question needs a
   real `sectionModuleId` and the `competenceId` of that module, and every
-  module (level) has exactly 3 questions — `fakeFoodSeed.data.test.ts` checks
+  module (level) has exactly 3 questions, `fakeFoodSeed.data.test.ts` checks
   this).
 - The assessment is adaptive (`assessment.path.ts`): sections in a random order
   per attempt, levels 1 → 4 within each. Every question of a level is asked;
@@ -532,7 +532,7 @@ so running it again never duplicates or overwrites.
 `prisma db push` runs on every start (db-init, `database/Dockerfile`). A few
 MySQL changes need a step first: `database/prisma/pre-push.sql` runs before it, and is idempotent (a no-op
 when there's nothing to do, or on a fresh database). Today it creates the
-`assessment_sat_instance(learnerId)` index — MySQL won't drop the old
+`assessment_sat_instance(learnerId)` index, MySQL won't drop the old
 `(learnerId, instanceNum)` unique key while it's the only index behind the
 learner foreign key, and `db push` drops it before creating the new index.
 

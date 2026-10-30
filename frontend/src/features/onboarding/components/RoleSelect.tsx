@@ -6,7 +6,7 @@ import styles from "./RoleSelect.module.css";
 
 type Props = {
   onDone: (role: Role) => void;
-  /** Preselect an existing role instead of defaulting to the first option — used by Settings. */
+  /** Preselect an existing role instead of defaulting to the first option, used by Settings. */
   initialRoleId?: string;
   heading?: string;
   description?: string;

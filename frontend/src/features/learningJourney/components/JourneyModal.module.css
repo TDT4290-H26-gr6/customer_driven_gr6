@@ -61,9 +61,12 @@
 }
 
 .banner {
+  /* Fixed and clipped, not just a floor: stays exactly this tall regardless
+     of what ends up inside it, matching JourneyCard's banner. */
   position: relative;
   flex: none;
   height: 96px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;

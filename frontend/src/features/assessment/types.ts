@@ -6,12 +6,22 @@ export type PieContent = {
   markup: string;
 };
 
+/**
+ * A question rendered by its own standalone PIE custom element instead of
+ * <pie-fixed-player>, see PieQuestionPlayer.tsx and database/src/seed/pie.ts's
+ * NativeElementContent, which this mirrors.
+ */
+export type NativeElementContent = {
+  element: string;
+  model: Record<string, unknown>;
+};
+
 export type Question = {
   id: string;
   prompt: string;
   questionType: string;
   competence: { id: string; name: string };
-  content: PieContent;
+  content: PieContent | NativeElementContent;
 };
 
 /** One question on the learner's adaptive route through the assessment. */
@@ -28,7 +38,7 @@ export type PathItem = {
 
 /**
  * The route so far: the answered questions on it, then the next one to ask
- * (the backend decides it from the answers — see assessment.path.ts).
+ * (the backend decides it from the answers, see assessment.path.ts).
  * `done` means nothing is left; the assessment can be completed.
  */
 export type AssessmentPath = {

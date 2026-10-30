@@ -15,7 +15,7 @@ const MAX_INACTIVE_DAYS = 3650;
  * Admin mode, the admins' main page: at which question do learners abandon
  * the assessment? A run is "abandoned" when it isn't completed and its last
  * activity is older than the chosen number of days; runs still within that
- * window are "in progress" and left out of the rates. Aggregates only —
+ * window are "in progress" and left out of the rates. Aggregates only ,
  * nobody is identifiable here. The title row also links to the tester
  * feedback and holds the two CSV exports. (The old role-visibility screen is
  * parked in ./legacy.)
