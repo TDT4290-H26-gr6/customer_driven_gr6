@@ -9,14 +9,20 @@ import type { LearningJourney } from "../types";
 // this count in sync with them.
 const BANNER_GRADIENT_COUNT = 3;
 
-export function bannerGradient(index: number): string {
+// Themis gets its own fixed colour (--banner-gradient-4, a maroon drawn from
+// the same family as --section-e) instead of the cycle, so the
+// policy/public-decision journey reads as distinct from the others.
+const THEMIS_GRADIENT = "var(--banner-gradient-4)";
+
+export function bannerGradient(index: number, journeyName: string): string {
+  if (journeyName.includes("Themis")) return THEMIS_GRADIENT;
   return `var(--banner-gradient-${(index % BANNER_GRADIENT_COUNT) + 1})`;
 }
 
 export const COVERAGE_LABEL = { M: "Core", R: "Recommended", S: "Selective" } as const;
 const COVERAGE_ORDER = { M: 0, R: 1, S: 2 } as const;
 
-/** "LJ2 — Research Data …" → code "LJ2" and title "Research Data …"; otherwise just a title. */
+/** "LJ2 - Research Data …" -> code "LJ2" and title "Research Data …"; otherwise just a title. */
 export function splitName(name: string): { code: string | null; title: string } {
   const match = name.match(/^(LJ\d+)\s+[—-]\s+(.+)$/);
   return match ? { code: match[1], title: match[2] } : { code: null, title: name };

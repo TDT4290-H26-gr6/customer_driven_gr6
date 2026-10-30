@@ -14,7 +14,7 @@ import styles from "./JourneyModal.module.css";
 
 type Props = {
   journey: LearningJourney;
-  /** The card's position in the list: keeps the banner colour the card has. */
+  /** The card's position in the list: keeps the banner colour the card has (unless the journey has a fixed one, see bannerGradient). */
   index: number;
   onClose: () => void;
   /** Starts a journey assessment, on its core (M) sections. */
@@ -63,7 +63,10 @@ export function JourneyModal({
         aria-modal="true"
         aria-labelledby={titleId}
       >
-        <div className={styles.banner} style={{ backgroundImage: bannerGradient(index) }}>
+        <div
+          className={styles.banner}
+          style={{ backgroundImage: bannerGradient(index, journey.name) }}
+        >
           <RouteIcon className={styles.bannerIcon} width={32} height={32} />
           <button
             ref={closeRef}
