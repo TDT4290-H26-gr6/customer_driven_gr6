@@ -16,5 +16,5 @@ export type Feedback = {
   learner: { email: string | null; name: string | null }; // both null once the sender's account is deleted
 };
 
-/** Server-side cap on each text field — mirrored so the form can show a counter. */
+/** Server-side cap on each text field, mirrored so the form can show a counter. */
 export const MAX_FEEDBACK_LENGTH = 2000;

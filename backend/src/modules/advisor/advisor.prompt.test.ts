@@ -82,7 +82,7 @@ describe("buildAdviceMessages", () => {
       coversWeakSections: [{ section: "Research data", level: "M" }],
     });
     expect(data.candidates.map((c: { ref: string }) => c.ref)).toEqual(["c1", "c2"]);
-    // Ids and links stay on our side — the model only needs refs.
+    // Ids and links stay on our side, the model only needs refs.
     expect(user.content).not.toContain("source-1");
     expect(user.content).not.toContain("moodle.example.org");
   });
@@ -324,9 +324,9 @@ describe("journey ranking", () => {
     coverage: [{ section: "Research data", level: "M" as const }],
   });
   const journeys = [
-    option("j-officer", "LJ1 — Open Science Officer"),
-    option("j-data", "LJ2 — Research Data"),
-    option("j-teach", "LJ3 — Education"),
+    option("j-officer", "LJ1 - Open Science Officer"),
+    option("j-data", "LJ2 - Research Data"),
+    option("j-teach", "LJ3 - Education"),
   ];
 
   it("recommends two", () => {

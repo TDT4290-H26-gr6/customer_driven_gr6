@@ -42,7 +42,7 @@ export type DropoffQuestion = {
   lowSample: boolean;
 };
 
-/** Aggregates only — no learner is identifiable from this. */
+/** Aggregates only, no learner is identifiable from this. */
 export type DropoffData = {
   summary: { started: number; completed: number; abandoned: number; inProgress: number };
   questions: DropoffQuestion[];

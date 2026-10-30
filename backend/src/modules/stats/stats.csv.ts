@@ -1,4 +1,4 @@
-// Pure CSV building and the experience-bucketing rule — no Prisma, no
+// Pure CSV building and the experience-bucketing rule, no Prisma, no
 // network, so both are unit-testable directly (same pattern as
 // assessment.scoring.ts). stats.service.ts gathers the data.
 
@@ -22,7 +22,7 @@ export function toCsv<T extends Record<string, unknown>>(
 }
 
 /**
- * Years of experience, bucketed rather than exported as the raw number —
+ * Years of experience, bucketed rather than exported as the raw number ,
  * combined with role/industry/degree, an exact age-like number is a much
  * stronger re-identification risk in a small sample than a range is.
  */

@@ -2,7 +2,7 @@
    co-located with their component (see context/frontend-structure.md §8).
 
    Theming: light tokens live unguarded on :root. Dark tokens are defined
-   twice — once under `prefers-color-scheme: dark` (for the "Default"
+   twice, once under `prefers-color-scheme: dark` (for the "Default"
    visuals setting, guarded so an explicit light choice can still win) and
    once under `[data-theme="dark"]` (for an explicit "Dark" choice, so it
    wins even on a light-system browser). See ThemeProvider in
@@ -12,7 +12,7 @@
 /* Theme-agnostic tokens: the same value in light and dark, so they're defined
    once, here, and never repeated in the dark blocks below. */
 :root {
-  /* Brand palette — the three colors of the AIOS logo. Raw colors: use them
+  /* Brand palette, the three colors of the AIOS logo. Raw colors: use them
      for brand artwork (the logo, the accent picker's swatches) and to derive
      other tokens from, not directly for text or surfaces. */
   --brand-purple: #7b3d8d;
@@ -21,13 +21,19 @@
   /* The EU emblem's official colors (FundingLogos), the same in both themes. */
   --eu-blue: #003399;
   --eu-yellow: #ffcc00;
-  /* Decorative banner gradients for the journey cards (JourneyCard) — a
-     stand-in "picture" per card until real artwork exists. The banner colors
-     they blend (--banner-purple/-blue/-green) and the icon color on them
-     (--color-on-banner) differ per theme, so those live in the light/dark
-     blocks below. Each gradient stays within one logo color — a lighter tint
-     of it, the color itself, then a slightly deeper shade — so the color
-     reads cleanly as the logo's instead of blending into a new hue. */
+  /* Decorative banner gradients for the journey cards (JourneyCard), a
+     stand-in "picture" per card until real artwork exists. One per journey
+     (5, matching the 5 WP3 journeys, see bannerGradient in
+     journeyDisplay.ts): purple, blue and green (the logo colors, solid:
+     a lighter tint of the color, the color itself, then a slightly deeper
+     shade), plus a purple-to-blue and a blue-to-green sweep in between.
+     The sweeps interpolate across their whole width (light tint of the
+     first color straight through to a dark shade of the second, via their
+     mix at the midpoint) rather than holding each color flat before
+     transitioning, so the change reads as gradual, not a sharp band. The
+     banner colors they're built from (--banner-purple/-blue/-green) and
+     the icon color on them (--color-on-banner) differ per theme, so those
+     live in the light/dark blocks below. */
   --banner-gradient-1: linear-gradient(
     in oklch 135deg,
     color-mix(in oklch, var(--banner-purple) 78%, white),
@@ -36,11 +42,23 @@
   );
   --banner-gradient-2: linear-gradient(
     in oklch 135deg,
+    color-mix(in oklch, var(--banner-purple) 78%, white),
+    color-mix(in oklch, var(--banner-purple), var(--banner-blue)) 50%,
+    color-mix(in oklch, var(--banner-blue) 88%, black)
+  );
+  --banner-gradient-3: linear-gradient(
+    in oklch 135deg,
     color-mix(in oklch, var(--banner-blue) 78%, white),
     var(--banner-blue) 55%,
     color-mix(in oklch, var(--banner-blue) 88%, black)
   );
-  --banner-gradient-3: linear-gradient(
+  --banner-gradient-4: linear-gradient(
+    in oklch 135deg,
+    color-mix(in oklch, var(--banner-blue) 78%, white),
+    color-mix(in oklch, var(--banner-blue), var(--banner-green)) 50%,
+    color-mix(in oklch, var(--banner-green) 88%, black)
+  );
+  --banner-gradient-5: linear-gradient(
     in oklch 135deg,
     color-mix(in oklch, var(--banner-green) 78%, white),
     var(--banner-green) 55%,
@@ -48,7 +66,7 @@
   );
 
   /* Section hues for the competence sections A–E (CompetenciesPage: letter
-     badges and the strip along the top of each card) — the logo palette plus
+     badges and the strip along the top of each card), the logo palette plus
      two neighbours, dark enough for contrast on white. In dark mode they're
      lightened toward --color-section-tint instead of having dark variants. */
   --section-a: var(--brand-purple);
@@ -78,7 +96,7 @@
   --font-size-xs: 0.75rem; /* 12px */
   --font-size-sm: 0.8125rem; /* 13px */
   --font-size-md: 0.875rem; /* 14px */
-  --font-size-lg: 1rem; /* 16px — also the iOS no-zoom minimum for form controls */
+  --font-size-lg: 1rem; /* 16px, also the iOS no-zoom minimum for form controls */
   --font-size-xl: 1.125rem; /* 18px */
   --font-size-2xl: 1.25rem; /* 20px */
   --font-size-3xl: 1.375rem; /* 22px */
@@ -107,7 +125,7 @@
   --z-floating: 40; /* the feedback widget */
   --z-skip-link: 100;
   --z-dialog: 900;
-  --z-modal: 1000; /* RoleGateModal — blocks the whole app, dialogs included */
+  --z-modal: 1000; /* RoleGateModal, blocks the whole app, dialogs included */
 }
 
 :root {
@@ -117,7 +135,7 @@
   --color-surface: #ffffff;
   --color-border: #e2e4ea;
   --color-text: #1c1f26;
-  /* Secondary text: a slate with a hint of indigo rather than flat grey —
+  /* Secondary text: a slate with a hint of indigo rather than flat grey ,
      easier to read (7.3:1 on white, 6.8:1 on --color-bg; WCAG AA needs 4.5)
      while still a step below --color-text. */
   --color-text-muted: #4a5578;
@@ -132,7 +150,7 @@
   --color-success: #166534;
   --color-success-bg: rgba(22, 163, 74, 0.12);
   --color-overlay: rgba(15, 23, 42, 0.6);
-  /* Score bands (weak ≤ 60%, good ≤ 84%, strong) — each at least 4.5:1 on
+  /* Score bands (weak ≤ 60%, good ≤ 84%, strong), each at least 4.5:1 on
      its background. */
   --color-score-weak: #a8360a;
   --color-score-good: #24647e;
@@ -333,7 +351,7 @@ button {
   font-family: inherit;
 }
 
-/* One keyboard-focus ring for everything — buttons, links, fields, the nav —
+/* One keyboard-focus ring for everything, buttons, links, fields, the nav ,
    in the accent color instead of the browser's default blue. :focus-visible
    only shows it for keyboard focus (and always for text fields, where the
    caret's position matters), not on every mouse click. A component that
@@ -356,13 +374,13 @@ select {
 }
 
 /* <pie-fixed-player> renders via Material-UI in the regular light DOM (not
-   Shadow DOM, it turns out — global CSS can reach it), but it's built
+   Shadow DOM, it turns out, global CSS can reach it), but it's built
    assuming a light page and doesn't read our tokens itself. Override its
    text/fill/border colors to ours in dark mode. `!important` is required
    to beat MUI's own inline/JS-set styles. Duplicated across both dark
-   blocks like every other token — see the note at the top of this file.
+   blocks like every other token, see the note at the top of this file.
    Brittle by nature (depends on class names inside a package we don't
-   control) — if a future @pie-framework upgrade stops matching these
+   control), if a future @pie-framework upgrade stops matching these
    selectors, re-inspect the rendered markup and update them. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) pie-fixed-player,
@@ -395,7 +413,7 @@ select {
 }
 
 /* The example a "judge an example against criteria" question (criteria_check,
-   see the backend's assessment.pie.ts) asks the learner to assess — a README,
+   see the backend's assessment.pie.ts) asks the learner to assess, a README,
    a change log, a sharing plan. Set apart from the question like a quoted
    document: monospace, line breaks kept, an accent rule on the left. In dark
    mode the player overrides above make every background transparent and

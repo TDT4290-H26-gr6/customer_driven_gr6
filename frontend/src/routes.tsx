@@ -39,7 +39,7 @@ export function AppRoutes() {
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route path="/settings" element={<SettingsPage />} />
-          {/* Not in the sidebar — RequireProfile sends learners here. */}
+          {/* Not in the sidebar, RequireProfile sends learners here. */}
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/history" element={<HistoryPage />} />
@@ -51,7 +51,7 @@ export function AppRoutes() {
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/feedback" element={<FeedbackAdminPage />} />
           </Route>
-          {/* Not in the sidebar — only reachable via the dashboard's
+          {/* Not in the sidebar, only reachable via the dashboard's
               "Retake assessment" button. The profile must be filled in first. */}
           <Route element={<RequireProfile />}>
             <Route path="/assessment" element={<AssessmentRunnerPage />} />

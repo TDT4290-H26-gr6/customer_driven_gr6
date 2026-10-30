@@ -5,7 +5,7 @@
   overflow: visible;
 }
 
-/* The viewBox is sized to fit the wrapped names, so it's wider than tall —
+/* The viewBox is sized to fit the wrapped names, so it's wider than tall:
    let it fill the card rather than the square chart's cap. */
 .chartWithLabels {
   max-width: 100%;

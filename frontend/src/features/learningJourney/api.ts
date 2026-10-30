@@ -17,7 +17,7 @@ export type JourneySource = "recommended" | "suggested";
 export type RecommendedJourneys = { source: JourneySource; journeys: LearningJourney[] };
 
 /**
- * The dashboard's two journeys by score alone, best first — shown until the
+ * The dashboard's two journeys by score alone, best first, shown until the
  * AI advisor's ranking (which also weighs the learner's profile) has loaded,
  * and instead of it when the advisor is off or fails. Null when there's
  * nothing to recommend (no completed assessment, or a perfect score).
@@ -30,7 +30,7 @@ export function getRecommendedJourneys(): Promise<RecommendedJourneys | null> {
 
 /**
  * Every competence at or below the 60% threshold (CD-90), weakest first,
- * each paired with the journey that addresses it — not just the two the
+ * each paired with the journey that addresses it, not just the two the
  * dashboard recommends. Empty when every competence is sufficient.
  */
 export function getWeakCompetences(): Promise<WeakCompetence[]> {

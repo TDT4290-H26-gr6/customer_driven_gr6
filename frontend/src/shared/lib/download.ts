@@ -1,5 +1,5 @@
 /**
- * Saves a Blob as a file download — for a response fetched with
+ * Saves a Blob as a file download, for a response fetched with
  * apiFetch({ responseType: "blob" }), which carries the auth header a plain
  * `<a href>` to the API couldn't. Revokes the object URL once the browser
  * has started the download.

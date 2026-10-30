@@ -61,7 +61,7 @@
 }
 
 /* Pushed to the bottom of the sidebar's own box by margin-top:auto (the
-   sidebar is a flex column filling .body's full height — see AppShell), and
+   sidebar is a flex column filling .body's full height, see AppShell), and
    to its right edge by align-self, regardless of how many nav items sit
    above it or whether the panel is expanded or collapsed. */
 .labelToggle {
@@ -135,7 +135,7 @@
 
 .bottomBar .item {
   /* Each tab starts from its own label's width and the spare width is shared
-     out evenly — not equal slices, where the longest label,
+     out evenly, not equal slices, where the longest label,
      "Competencies", gets cut off on a narrow phone (64–72px a tab at
      320–360px) while "History" has room to spare. */
   flex: 1 1 auto;

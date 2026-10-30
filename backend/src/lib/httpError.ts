@@ -17,7 +17,7 @@ export class HttpError extends Error {
 
 /**
  * Maps whatever a route threw to the response it should produce. Only
- * errors known to be safe to show (4xx) keep their message — anything else
+ * errors known to be safe to show (4xx) keep their message, anything else
  * is an unexpected failure and becomes an opaque 500.
  */
 export function toHttpError(err: unknown): HttpError {
@@ -38,7 +38,7 @@ export function toHttpError(err: unknown): HttpError {
     return new HttpError(bodyError.status, bodyError.message ?? "Bad request");
   }
 
-  // Prisma's "record to update/delete does not exist" — e.g. the learner a
+  // Prisma's "record to update/delete does not exist", e.g. the learner a
   // still-valid token points at was deleted.
   if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
     return new HttpError(404, "Not found");

@@ -17,8 +17,8 @@ const ranked = (
   reason,
 });
 
-const best = ranked("LJ2 — Research Data", "Built for data stewards.", "https://moodle.test/lj2");
-const second = ranked("LJ1 — Officer", "Broader, institution-wide.", "https://moodle.test/lj1");
+const best = ranked("LJ2 - Research Data", "Built for data stewards.", "https://moodle.test/lj2");
+const second = ranked("LJ1 - Officer", "Broader, institution-wide.", "https://moodle.test/lj1");
 
 describe("RecommendedJourneys", () => {
   it("highlights the best fit, and shows the runner-up second, smaller", () => {
@@ -26,14 +26,14 @@ describe("RecommendedJourneys", () => {
 
     const first = screen.getByText("★ Best fit for you").closest("li")!;
     expect(first).toHaveTextContent("★ Best fit for you");
-    expect(within(first).getByRole("heading", { name: "LJ2 — Research Data" })).toBeInTheDocument();
+    expect(within(first).getByRole("heading", { name: "LJ2 - Research Data" })).toBeInTheDocument();
     expect(first).toHaveTextContent("Why it fits you best: Built for data stewards.");
     expect(within(first).getByText("First step")).toBeInTheDocument();
 
     const runnerUpCard = screen.getByText("Also a good fit").closest("li")!;
     expect(runnerUpCard).not.toBe(first);
     expect(
-      within(runnerUpCard).getByRole("heading", { name: "LJ1 — Officer" }),
+      within(runnerUpCard).getByRole("heading", { name: "LJ1 - Officer" }),
     ).toBeInTheDocument();
     expect(runnerUpCard).toHaveTextContent("Broader, institution-wide.");
     // The runner-up stays compact: no step list.
@@ -60,7 +60,7 @@ describe("RecommendedJourneys", () => {
   });
 
   it("shows just the best fit when there's only one, and no reason line without a reason", () => {
-    render(<RecommendedJourneys ranked={[ranked("LJ5 — Business", null)]} source="recommended" />);
+    render(<RecommendedJourneys ranked={[ranked("LJ5 - Business", null)]} source="recommended" />);
 
     expect(screen.getByText("★ Best fit for you")).toBeInTheDocument();
     expect(screen.queryByText("Also a good fit")).not.toBeInTheDocument();

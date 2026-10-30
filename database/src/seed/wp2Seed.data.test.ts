@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import seedData from "./data/aios_wp2_seed.json";
 import { buildPieContent, QUESTION_TYPES, type AuthoredContent } from "./pie";
 
-// Structural checks on the WP2 curriculum dataset itself — no DB, no loader.
+// Structural checks on the WP2 curriculum dataset itself, no DB, no loader.
 // Catches a broken id reference or a malformed item before it reaches a
 // database. Unlike the fake dataset it isn't complete yet (modules without
 // items, pending item types), so the counts below describe what's delivered.
@@ -28,11 +28,11 @@ const competenceIds = ids(competences);
 const moduleIds = ids(modules);
 
 describe("WP2 seed data: shape", () => {
-  it("has sections A–E, 36 competences, 20 modules (A1–E4) and 6 learning journeys", () => {
+  it("has sections A–E, 36 competences, 20 modules (A1–E4) and 5 learning journeys", () => {
     expect(sections.map((s) => s.code)).toEqual(["A", "B", "C", "D", "E"]);
     expect(competences).toHaveLength(36);
     expect(modules).toHaveLength(20);
-    expect(journeys).toHaveLength(6);
+    expect(journeys).toHaveLength(5);
   });
 
   it("gives each section's modules the levels 1–4, once each, named by their code", () => {

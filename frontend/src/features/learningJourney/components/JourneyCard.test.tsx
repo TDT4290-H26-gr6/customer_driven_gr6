@@ -12,7 +12,7 @@ const section = (code: string, coverageLevel: "M" | "R" | "S") => ({
 
 const journey: LearningJourney = {
   id: "journey-wp2-lj2",
-  name: "LJ2 — Research Data, Reproducibility and AI Practices",
+  name: "LJ2 - Research Data, Reproducibility and AI Practices",
   description:
     "Final applied output: Documented research-data and responsible-AI workflow package.",
   moodleUrl: "https://moodle.example.org/course/view.php?id=2002",

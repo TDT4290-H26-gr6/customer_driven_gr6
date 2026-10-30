@@ -88,7 +88,7 @@ describe("recommendJourney", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default: the weakest competence's own module has one section, no journey
-    // recommendation logged before — overridden per test as needed.
+    // recommendation logged before, overridden per test as needed.
     mockPrisma.sectionModule.findMany.mockResolvedValue([{ sectionId: "section-1" }] as never);
     mockPrisma.sectionModuleSecondaryCompetence.findMany.mockResolvedValue([]);
     mockPrisma.journeyRecommendation.findFirst.mockResolvedValue(null);
@@ -338,7 +338,7 @@ describe("weakCompetences", () => {
     mockPrisma.competenceScore.findMany.mockResolvedValue([
       { competenceId: "legal", score: 3, maxScore: 10 }, // 30%
       { competenceId: "open-science", score: 5, maxScore: 10 }, // 50%
-      { competenceId: "ai-tools", score: 9, maxScore: 10 }, // 90% — excluded
+      { competenceId: "ai-tools", score: 9, maxScore: 10 }, // 90%, excluded
     ] as never);
     mockPrisma.competence.findMany.mockResolvedValue([
       { id: "legal", name: "Legal" },

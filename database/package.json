@@ -2,6 +2,7 @@
   "name": "aios-database",
   "version": "0.1.0",
   "private": true,
+  "license": "LGPL-3.0-only",
   "scripts": {
     "schema:prepare": "prisma db execute --schema=./prisma/schema --file ./prisma/pre-push.sql",
     "schema:push": "prisma db push --skip-generate",

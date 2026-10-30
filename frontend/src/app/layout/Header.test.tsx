@@ -40,7 +40,7 @@ describe("Header", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows the funding logos next to the account menu while signed in", () => {
+  it("shows the funding logos next to the AIOS logo while signed in", () => {
     renderHeader(ada);
     expect(
       screen.getByRole("img", { name: /Co-funded by the European Union/ }),
