@@ -28,11 +28,11 @@ const competenceIds = ids(competences);
 const moduleIds = ids(modules);
 
 describe("WP2 seed data: shape", () => {
-  it("has sections A–E, 36 competences, 20 modules (A1–E4) and 4 learning journeys", () => {
+  it("has sections A–E, 36 competences, 20 modules (A1–E4) and 5 learning journeys", () => {
     expect(sections.map((s) => s.code)).toEqual(["A", "B", "C", "D", "E"]);
     expect(competences).toHaveLength(36);
     expect(modules).toHaveLength(20);
-    expect(journeys).toHaveLength(4);
+    expect(journeys).toHaveLength(5);
   });
 
   it("gives each section's modules the levels 1–4, once each, named by their code", () => {
