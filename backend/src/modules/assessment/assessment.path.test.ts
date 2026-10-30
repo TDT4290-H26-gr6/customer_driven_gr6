@@ -51,7 +51,7 @@ describe("buildPath", () => {
   });
 
   it("fails a level as soon as 2 of 3 is out of reach and moves to the next section", () => {
-    // 2 wrong of 3: at most 1/3 left — A1-3 and A2–A4 are skipped.
+    // 2 wrong of 3: at most 1/3 left, A1-3 and A2–A4 are skipped.
     const path = buildPath([section("A"), section("B")], answers({ "A1-1": wrong, "A1-2": wrong }));
     expect(path).toEqual({ answered: ["A1-1", "A1-2"], next: "B1-1" });
   });
@@ -145,7 +145,7 @@ describe("buildPath: the 60% threshold", () => {
 
 describe("buildPath: answered questions are history", () => {
   it("keeps every answered question after an earlier answer changes", () => {
-    // A1 was passed and A2-1 answered — then A1's answers were changed
+    // A1 was passed and A2-1 answered, then A1's answers were changed
     // to wrong. A1 would now have failed, but A2-1 stays on the path.
     const path = buildPath(
       [section("A"), section("B")],

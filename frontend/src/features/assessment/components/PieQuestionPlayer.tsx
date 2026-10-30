@@ -6,9 +6,9 @@ import { loadPiePlayer } from "./loadPiePlayer";
 import styles from "./PieQuestionPlayer.module.css";
 
 export type PieAnswer = {
-  /** The widget's own response payload (opaque) — fed back in via `answer` to restore. */
+  /** The widget's own response payload (opaque), fed back in via `answer` to restore. */
   session: unknown;
-  /** Whether the item counts as answered — from the widget's own isComplete(). */
+  /** Whether the item counts as answered, from the widget's own isComplete(). */
   complete: boolean;
 };
 
@@ -21,7 +21,7 @@ type Props = {
 
 /**
  * The widget's own imperative properties, set directly on the element
- * rather than passed as JSX props — untyped upstream (pie-fixed-player-static
+ * rather than passed as JSX props, untyped upstream (pie-fixed-player-static
  * ships no .d.ts), so `session`/`config` stay `unknown` rather than `any`.
  */
 type PieFixedPlayerElement = HTMLElement & {
@@ -33,7 +33,7 @@ type PieFixedPlayerElement = HTMLElement & {
 /**
  * A standalone PIE element's own imperative properties (no published
  * pie-fixed-player-static bundle includes placement-ordering, match or
- * match-list, so these are loaded and registered on their own — see
+ * match-list, so these are loaded and registered on their own, see
  * loadNativeElement.ts). `.model` takes that element's own content directly,
  * not a <pie-fixed-player>-style item config.
  */
@@ -42,7 +42,7 @@ type NativeQuestionElement = HTMLElement & {
   session: unknown;
 };
 
-/** One entry per native element this player can mount — see loadNativeElement.ts. */
+/** One entry per native element this player can mount, see loadNativeElement.ts. */
 const NATIVE_LOADERS: Record<string, () => Promise<void>> = {
   "aios-placement-ordering": loadPlacementOrdering,
 };
@@ -87,7 +87,7 @@ export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
     return () => {
       cancelled = true;
     };
-    // Only re-applied when the item itself changes — this component is
+    // Only re-applied when the item itself changes, this component is
     // remounted per question (see QuestionCard's key), so this effectively
     // runs once per question.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -96,7 +96,7 @@ export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
   useEffect(() => {
     if (!ref.current) return;
     // session-changed's own e.detail is just {component: tagName, complete},
-    // not the response itself — the actual answer lives on the element's
+    // not the response itself, the actual answer lives on the element's
     // `.session` getter, read fresh at the moment the event fires.
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<{ complete?: boolean }>).detail;

@@ -1,5 +1,5 @@
 // Standalone PIE elements, used directly as custom elements instead of going
-// through <pie-fixed-player> — no published pie-fixed-player-static bundle
+// through <pie-fixed-player>, no published pie-fixed-player-static bundle
 // includes placement-ordering, match or match-list (see PieQuestionPlayer.tsx
 // for how a question picks between the two). Each is registered under an
 // "aios-" tag of its own so it can't collide with a tag name PIE itself (or

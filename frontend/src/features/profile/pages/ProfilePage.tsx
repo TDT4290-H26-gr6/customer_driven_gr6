@@ -4,7 +4,7 @@ import styles from "./ProfilePage.module.css";
 
 /**
  * Where RequireProfile sends a learner whose profile isn't complete. Not in
- * the sidebar — later edits happen in Settings. "Done" saves and goes to
+ * the sidebar, later edits happen in Settings. "Done" saves and goes to
  * the dashboard, where the assessment button now lets them through.
  */
 export function ProfilePage() {

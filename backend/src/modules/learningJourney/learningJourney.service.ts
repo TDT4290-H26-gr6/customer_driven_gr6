@@ -9,7 +9,7 @@ import {
 
 // All Prisma access for learning_journey_* tables lives here. Reads of
 // assessment_* tables (SatInstance, CompetenceScore, Competence, SectionModule)
-// below are read-only cross-module queries — allowed per
+// below are read-only cross-module queries, allowed per
 // context/backend-structure.md §5 ("reads, never writes, via Prisma").
 
 const recommendationLock = createKeyedLock();
@@ -22,7 +22,7 @@ const COVERAGE_RANK: Record<CoverageLevel, number> = { M: 0, R: 1, S: 2 };
 
 /**
  * Every journey with its steps and the sections it covers, with how strongly
- * — for picking one before a reassessment, and for showing which sections
+ *, for picking one before a reassessment, and for showing which sections
  * assessing a journey covers (its M sections).
  */
 export function listJourneys() {
@@ -57,7 +57,7 @@ export const WEAK_THRESHOLD = 0.6;
 /**
  * Competences scoring at or below the 60% threshold, weakest (lowest
  * score/maxScore) first. Competences differ in question count (and so in
- * maxScore), so "weakest" has to compare score/maxScore, not raw score — a
+ * maxScore), so "weakest" has to compare score/maxScore, not raw score, a
  * 6/31 competence isn't actually stronger than a 2/14 one just because
  * 6 > 2. Competences with nothing scorable (maxScore 0) can't be weak and
  * are excluded. `Array.prototype.sort` is stable, so a tie keeps the
@@ -71,9 +71,9 @@ function weakestFirst(scores: CompetenceScoreInput[]): CompetenceScoreInput[] {
 
 /**
  * Picks the single competence a learner is weakest in, out of their scores
- * for one SAT instance — but only if they're actually struggling: a learner
+ * for one SAT instance, but only if they're actually struggling: a learner
  * who scored above 60% everywhere shouldn't get pushed into remedial
- * content. Pure (no Prisma) so it's unit-testable directly — see
+ * content. Pure (no Prisma) so it's unit-testable directly, see
  * assessment.scoring.ts for the same pattern. Returns null when nothing
  * scores at or below the threshold.
  */
@@ -83,7 +83,7 @@ export function pickWeakestCompetence(scores: CompetenceScoreInput[]): string | 
 
 /**
  * The lowest-scoring competence that isn't already at 100%, with no
- * threshold — what a learner who's above it everywhere could still work on.
+ * threshold, what a learner who's above it everywhere could still work on.
  * Null after a perfect score (or with nothing scorable). Pure, like
  * pickWeakestCompetence.
  */
@@ -96,7 +96,7 @@ export function pickLowestImprovable(scores: CompetenceScoreInput[]): string | n
 
 /**
  * The sections a competence is taught in: those holding a module whose main
- * competence it is, or — if none does — a module that lists it as secondary.
+ * competence it is, or, if none does, a module that lists it as secondary.
  */
 async function sectionIdsForCompetence(competenceId: string): Promise<string[]> {
   const asMain = await prisma.sectionModule.findMany({
@@ -150,7 +150,7 @@ async function bestJourneyForSections(sectionIds: string[]) {
 
 /**
  * Recommends the journey that best covers the learner's weakest competence,
- * from their most recently completed SAT instance — but only among
+ * from their most recently completed SAT instance, but only among
  * competences scoring 60% or below (see pickWeakestCompetence); a learner
  * who did fine everywhere gets no recommendation at all, rather than one
  * manufactured from their relatively-weakest-but-still-fine competence. The
@@ -160,7 +160,7 @@ async function bestJourneyForSections(sectionIds: string[]) {
  *
  * Returns null when there's nothing to recommend (no completed instance, no
  * competence at or below the threshold, or no journey covers that
- * competence's sections) — a real, expected state, not an error.
+ * competence's sections), a real, expected state, not an error.
  */
 export async function recommendJourney(learnerId: string) {
   const latestInstance = await prisma.satInstance.findFirst({
@@ -169,7 +169,7 @@ export async function recommendJourney(learnerId: string) {
   });
   if (!latestInstance) return null;
 
-  // Newest score per competence across completed instances — a
+  // Newest score per competence across completed instances, a
   // reassessment may only have covered some sections.
   const scores = newestPerCompetence(
     await prisma.competenceScore.findMany(completedCompetenceScoresQuery(learnerId)),
@@ -180,7 +180,7 @@ export async function recommendJourney(learnerId: string) {
   const journey = await bestJourneyForSections(await sectionIdsForCompetence(weakestCompetenceId));
   if (!journey) return null;
 
-  // Log a new recommendation event only when it actually changed — otherwise
+  // Log a new recommendation event only when it actually changed, otherwise
   // every dashboard visit would insert a duplicate row and inflate the
   // Sprint 5 "recommendations given per user" stat this table feeds.
   // Serialized per learner: two requests at once (React StrictMode mounts
@@ -218,10 +218,10 @@ export type WeakCompetence = {
 
 /**
  * Every competence at or below the 60% threshold (CD-90), from the learner's
- * most recently completed SAT instance — not just the single weakest one
+ * most recently completed SAT instance, not just the single weakest one
  * recommendJourney() picks. Lets the dashboard show the full picture of
  * where a learner is lacking, not only the one journey recommended right
- * now. Weakest first. Empty when nothing qualifies — everything's
+ * now. Weakest first. Empty when nothing qualifies, everything's
  * sufficient, not an error.
  */
 export async function weakCompetences(learnerId: string): Promise<WeakCompetence[]> {
@@ -261,7 +261,7 @@ export async function weakCompetences(learnerId: string): Promise<WeakCompetence
 
 /**
  * A journey to keep improving with, for a learner who has nothing at or
- * below the weak threshold — so the dashboard always offers at least one
+ * below the weak threshold, so the dashboard always offers at least one
  * journey unless the score is perfect. It's the journey that best covers
  * their lowest-scoring competence. Deliberately separate from
  * recommendJourney(): it isn't a "you're lacking" recommendation, and isn't
@@ -289,7 +289,7 @@ export type JourneyCandidate = {
 
 /**
  * Every journey covering any of the given sections, with how strongly it
- * covers each — for the AI advice to choose the one that fits the learner's
+ * covers each, for the AI advice to choose the one that fits the learner's
  * role. Ordered like bestJourneyForSections (best coverage level, then the
  * most sections covered, then name), so the first is the score-based pick.
  */
@@ -339,14 +339,14 @@ export function findJourney(id: string) {
 }
 
 /**
- * The dashboard's two journeys by score alone — the fallback when the AI
+ * The dashboard's two journeys by score alone, the fallback when the AI
  * advisor (which also weighs the learner's profile) is off or fails, and the
  * order it starts from. Learner data never leaves the app here.
  * - Something at or below the weak threshold: "recommended". The first is
  *   recommendJourney()'s pick (so the recommendation log is unchanged), the
  *   second the next-best coverage of all the learner's weak sections.
  * - Nothing that weak (but not perfect): "suggested", the best coverage of
- *   the lowest-scoring area's sections — journeys to keep improving with.
+ *   the lowest-scoring area's sections, journeys to keep improving with.
  * Null when there's nothing to recommend (no completed assessment, or a
  * perfect score).
  */

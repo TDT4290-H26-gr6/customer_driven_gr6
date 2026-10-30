@@ -1,11 +1,11 @@
-# AIOS SAT/LJ — dev scaffold
+# AIOS SAT/LJ, dev scaffold
 
 Minimal starting point for the Self-Assessment and Learning Journey tools:
 MySQL + a Node/TypeScript backend (Express + Prisma) + a React/TypeScript
 frontend (Vite), wired together with Docker Compose, plus a basic CI check.
 
 This is deliberately small. It does not include the PIE player, Google
-OAuth, or the full schema yet — it's the "does everything talk to
+OAuth, or the full schema yet, it's the "does everything talk to
 everything" slice from sprint 1. Build on top of it.
 
 ## Getting started
@@ -21,7 +21,7 @@ everything" slice from sprint 1. Build on top of it.
    connect with a GUI client (TablePlus, DBeaver, etc).
 
 The frontend calls the backend's `/health` endpoint on load and displays
-the result — that's the whole "vertical slice" for now: proof that
+the result, that's the whole "vertical slice" for now: proof that
 frontend → backend → (eventually) database are connected end to end.
 
 ## Project layout
@@ -47,9 +47,9 @@ and Prettier set up, with a shared style at the repo root (`.prettierrc.json`).
 Run from either package directory:
 
 ```bash
-npm run lint           # ESLint — errors fail the build; warnings don't
-npm run format:check   # Prettier — verifies formatting, changes nothing
-npm run format         # Prettier — rewrites files to match the style
+npm run lint           # ESLint, errors fail the build; warnings don't
+npm run format:check   # Prettier, verifies formatting, changes nothing
+npm run format         # Prettier, rewrites files to match the style
 ```
 
 The frontend config also enables `eslint-plugin-jsx-a11y`, which statically

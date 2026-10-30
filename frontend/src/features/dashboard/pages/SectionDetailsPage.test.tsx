@@ -106,7 +106,7 @@ describe("SectionDetailsPage", () => {
 
     const tabs = await screen.findAllByRole("tab");
     expect(tabs.map((t) => t.textContent)).toEqual(["Assessment 1", "Assessment 2 (partial)"]);
-    expect(await screen.findByText("Partial reassessment — limited to: Baking")).toBeInTheDocument();
+    expect(await screen.findByText("Partial reassessment, limited to: Baking")).toBeInTheDocument();
   });
 
   it("heads the selected assessment with its date and, for a retake, the journey", async () => {

@@ -36,7 +36,7 @@ type Bounds = { left: number; right: number; top: number; bottom: number };
 const LABEL_FONT_SIZE = 11;
 const LABEL_CHAR_WIDTH = LABEL_FONT_SIZE * 0.6;
 const LABEL_LINE_HEIGHT = 1.2; // em
-/** No label line is longer than this — longer names wrap onto more lines. */
+/** No label line is longer than this; longer names wrap onto more lines. */
 const MAX_LINE_CHARS = 14;
 const VIEWBOX_PADDING = 6;
 
@@ -72,7 +72,7 @@ function splitLongWord(word: string): string[] {
 
 /**
  * The one rule for every axis label: break the name at MAX_LINE_CHARS, word
- * by word — the same fixed width for every name, no per-name balancing — so
+ * by word, the same fixed width for every name, no per-name balancing, so
  * names are split consistently across all charts. Names that fit stay on one
  * line; a word longer than a line splits at its own hyphens first.
  */
@@ -153,7 +153,7 @@ export function CompetenceRadar({ data, compare, size = 340, compact = false, ti
   }, [data, size, compact]);
 
   const center = size / 2;
-  // Leave room for axis labels — a lot for full names, a little for the
+  // Leave room for axis labels: a lot for full names, a little for the
   // short tips used in compact mode.
   const radius = size / 2 - (compact ? 28 : 56);
   const count = data.length;
@@ -180,12 +180,12 @@ export function CompetenceRadar({ data, compare, size = 340, compact = false, ti
     return toPolygon(data.map((_, i) => pointAt(i, fraction)));
   });
 
-  // An area with nothing scored yet has maxScore 0 — plot it at the centre.
+  // An area with nothing scored yet has maxScore 0; plot it at the centre.
   const fractionOf = (d: CompetenceScore) =>
     d.maxScore > 0 ? Math.max(0, Math.min(1, d.score / d.maxScore)) : 0;
 
   const dataPoints = data.map((d, i) => pointAt(i, fractionOf(d)));
-  // No dot for a 0 score — it would just sit in the centre.
+  // No dot for a 0 score; it would just sit in the centre.
   const dotted = (scores: CompetenceScore[], points: Point[]) =>
     points.filter((_, i) => fractionOf(scores[i]) > 0);
   const comparePoints =
@@ -370,7 +370,7 @@ export function CompetenceRadar({ data, compare, size = 340, compact = false, ti
                       key={lineIndex}
                       x={pos.x}
                       // Place the whole block (above, below or centred on the
-                      // tip — see `labels`), not just its first line.
+                      // tip, see `labels`), not just its first line.
                       dy={`${lineIndex === 0 ? firstLineEm : LABEL_LINE_HEIGHT}em`}
                     >
                       {line}

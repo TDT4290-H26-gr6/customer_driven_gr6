@@ -85,7 +85,7 @@ describe("ProfileForm", () => {
     expect(await screen.findByText("Saved.")).toBeInTheDocument();
   });
 
-  it("saves without goals, as null — they're optional", async () => {
+  it("saves without goals, as null, they're optional", async () => {
     vi.mocked(getProfile).mockResolvedValue(null);
     vi.mocked(saveProfile).mockResolvedValue(savedLearner as never);
     const user = userEvent.setup();

@@ -12,7 +12,7 @@ import styles from "./LearningJourneysPage.module.css";
 /**
  * Every learning journey, listed like the Sources page (the customer's
  * request): a grid of cards; clicking one opens its details in a modal. Each can be assessed on
- * its own — only the questions in the sections it's centred on (M) — which
+ * its own, only the questions in the sections it's centred on (M), which
  * never overrides or compares with the main self-assessment; the result
  * shows under Competencies.
  */

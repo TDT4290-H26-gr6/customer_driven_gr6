@@ -195,15 +195,15 @@ describe("DashboardPage recommended journeys", () => {
     vi.mocked(getProgress).mockResolvedValue(null);
     vi.mocked(getRecommendedJourneys).mockResolvedValue({
       source: "recommended",
-      journeys: [journeyOf("LJ3 — Education"), journeyOf("LJ1 — Officer")],
+      journeys: [journeyOf("LJ3 - Education"), journeyOf("LJ1 - Officer")],
     });
   });
 
   it("shows the AI's ranking of two, on scores and profile, with reasons", async () => {
     vi.mocked(getAdvice).mockResolvedValue(
       adviceRanking(
-        ["LJ2 — Research Data", "Built for data stewards."],
-        ["LJ1 — Officer", "Broader."],
+        ["LJ2 - Research Data", "Built for data stewards."],
+        ["LJ1 - Officer", "Broader."],
       ),
     );
 
@@ -211,18 +211,18 @@ describe("DashboardPage recommended journeys", () => {
 
     expect(
       await screen.findByText(
-        "journeys [recommended]: LJ2 — Research Data (Built for data stewards.) > LJ1 — Officer (Broader.)",
+        "journeys [recommended]: LJ2 - Research Data (Built for data stewards.) > LJ1 - Officer (Broader.)",
       ),
     ).toBeInTheDocument();
   });
 
   it("tops up an older one-journey AI pick with the score-based next best", async () => {
-    vi.mocked(getAdvice).mockResolvedValue(adviceRanking(["LJ1 — Officer", "Fits."]));
+    vi.mocked(getAdvice).mockResolvedValue(adviceRanking(["LJ1 - Officer", "Fits."]));
 
     render(<DashboardPage />);
 
     expect(
-      await screen.findByText("journeys [recommended]: LJ1 — Officer (Fits.) > LJ3 — Education"),
+      await screen.findByText("journeys [recommended]: LJ1 - Officer (Fits.) > LJ3 - Education"),
     ).toBeInTheDocument();
   });
 
@@ -232,21 +232,21 @@ describe("DashboardPage recommended journeys", () => {
     render(<DashboardPage />);
 
     expect(
-      await screen.findByText("journeys [recommended]: LJ3 — Education > LJ1 — Officer"),
+      await screen.findByText("journeys [recommended]: LJ3 - Education > LJ1 - Officer"),
     ).toBeInTheDocument();
   });
 
   it("keeps the 'to keep improving' label when nothing was weak", async () => {
     vi.mocked(getRecommendedJourneys).mockResolvedValue({
       source: "suggested",
-      journeys: [journeyOf("LJ1 — Officer")],
+      journeys: [journeyOf("LJ1 - Officer")],
     });
-    vi.mocked(getAdvice).mockResolvedValue(adviceRanking(["LJ6 — Policy", null]));
+    vi.mocked(getAdvice).mockResolvedValue(adviceRanking(["LJ6 - Policy", null]));
 
     render(<DashboardPage />);
 
     expect(
-      await screen.findByText("journeys [suggested]: LJ6 — Policy > LJ1 — Officer"),
+      await screen.findByText("journeys [suggested]: LJ6 - Policy > LJ1 - Officer"),
     ).toBeInTheDocument();
   });
 

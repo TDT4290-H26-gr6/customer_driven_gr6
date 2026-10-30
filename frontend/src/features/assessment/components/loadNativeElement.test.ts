@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 // Each test imports a fresh loadPlacementOrdering (it remembers its first
 // load) with its own stand-in package, the same pattern as loadPiePlayer's
-// tests — except here the loader itself calls customElements.define, since
+// tests, except here the loader itself calls customElements.define, since
 // (unlike pie-fixed-player-static) these packages don't self-register.
 async function freshLoader(packageFactory: () => object) {
   vi.resetModules();

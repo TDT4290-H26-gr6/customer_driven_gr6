@@ -1,4 +1,4 @@
-// Pure progress logic for the dashboard — no Prisma — so it's unit-testable
+// Pure progress logic for the dashboard, no Prisma, so it's unit-testable
 // directly (same pattern as assessment.scoring.ts). assessment.service.ts
 // loads the attempts and calls this.
 
@@ -16,7 +16,7 @@ export type AttemptForProgress = {
 
 /** A section's result as of some assessment, and which SAT it actually comes from. */
 export type SectionSnapshot = {
-  /** The SAT that last assessed this section — older than the one it's "as of" when carried over. */
+  /** The SAT that last assessed this section, older than the one it's "as of" when carried over. */
   instanceNum: number;
   score: number;
   maxScore: number;
@@ -36,13 +36,13 @@ export type SectionProgress = {
 /**
  * Each section's last known result as of one assessment. The level reached
  * (and which SAT this "is" for display purposes) comes from the newest SAT
- * that assessed the section at all — a reassessment after a learning
+ * that assessed the section at all, a reassessment after a learning
  * journey only covers some sections, and the others keep their earlier
  * level rather than dropping to nothing. But the score is built up
  * competence by competence, each from the newest SAT that actually reached
  * it: a SAT that barely touched a section (e.g. failed its first level)
  * still marks the section "assessed", and zero-fills every competence it
- * never got to in its own report — without this, that zero-fill would
+ * never got to in its own report, without this, that zero-fill would
  * shadow real, better data an earlier SAT already has for the rest of the
  * section. A competence no SAT has ever reached is left out entirely
  * (matches the Competencies page, which only averages assessed modules).

@@ -32,7 +32,7 @@
 }
 
 /* Touch devices: iOS Safari zooms the whole page when a form control under
-   16px is focused, and never zooms back out — so no smaller than 16px. */
+   16px is focused, and never zooms back out, so no smaller than 16px. */
 @media (pointer: coarse) {
   .select {
     font-size: var(--font-size-lg);

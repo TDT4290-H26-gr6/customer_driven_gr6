@@ -137,7 +137,7 @@ export function SectionDetailsView() {
               )}
               {attempt.reassessedSections.length > 0 && (
                 <p className={styles.attemptNote}>
-                  Partial reassessment — limited to: {attempt.reassessedSections.join(", ")}
+                  Partial reassessment, limited to: {attempt.reassessedSections.join(", ")}
                 </p>
               )}
             </div>

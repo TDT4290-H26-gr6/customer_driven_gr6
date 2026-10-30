@@ -25,7 +25,7 @@ export type PieContent = {
 
 /**
  * A question rendered by its own standalone PIE custom element (not
- * <pie-fixed-player>) — see frontend/src/features/assessment/components/
+ * <pie-fixed-player>), see frontend/src/features/assessment/components/
  * PieQuestionPlayer.tsx, which picks the element to mount by `questionType`
  * rather than by anything in `model` itself.
  */
@@ -40,7 +40,7 @@ export type NativeElementContent = {
 export type AuthoredContent = {
   /**
    * likert. Either just the ends are labelled (minLabel/maxLabel), or every
-   * step has its own text (`labels`, one per step from min to max) — as the
+   * step has its own text (`labels`, one per step from min to max), as the
    * WP2 self-rating items do.
    */
   scale?: { min: number; max: number; minLabel?: string; maxLabel?: string; labels?: string[] };
@@ -49,7 +49,7 @@ export type AuthoredContent = {
   correctOptionIds?: string[];
   /**
    * criteria_check: the example the learner judges (a README, a change log,
-   * a sharing plan …) — plain text, line breaks kept. The options are the
+   * a sharing plan …), plain text, line breaks kept. The options are the
    * criteria, and the correct ones are those the example meets.
    */
   exhibit?: string;
@@ -74,7 +74,7 @@ function escapeHtml(text: string): string {
 type PieChoice = { value: string; label: string; correct: boolean };
 
 /**
- * Every question — of any type — gets an extra "I don't know" choice appended
+ * Every question, of any type, gets an extra "I don't know" choice appended
  * last, so a learner never has to guess (see IDK_VALUE in assessment.scoring.ts).
  * It's a real PIE choice, so the player's own isComplete() already treats
  * picking it as answering the question; no frontend change needed.
@@ -103,7 +103,7 @@ function likertChoices(scale: NonNullable<AuthoredContent["scale"]>): PieChoice[
   for (let n = scale.min; n <= scale.max; n++) {
     // Either every step has its own text, or only the ends are labelled and
     // the numbers in between carry the meaning. Either way the value is the
-    // number itself — that is the score.
+    // number itself, that is the score.
     const own = scale.labels?.[n - scale.min];
     const end = n === scale.min ? scale.minLabel : n === scale.max ? scale.maxLabel : undefined;
     const text = own ?? (end ? `${n} - ${end}` : String(n));
@@ -133,10 +133,10 @@ function optionChoices(content: AuthoredContent): PieChoice[] {
 
 /**
  * Arrange-into-the-correct-sequence, via the standalone
- * @pie-element/placement-ordering custom element (not <pie-fixed-player> —
+ * @pie-element/placement-ordering custom element (not <pie-fixed-player> ,
  * see PieQuestionPlayer.tsx). `content.options` are the items to arrange;
  * `content.correctOrder` is their ids in the correct sequence, and must list
- * every option exactly once — this element has no concept of a "distractor"
+ * every option exactly once, this element has no concept of a "distractor"
  * item that isn't part of the answer.
  */
 function orderingContent(prompt: string, content: AuthoredContent): NativeElementContent {
@@ -183,7 +183,7 @@ export function buildPieContent(
     case "multi_choice":
       return multipleChoiceContent(prompt, "checkbox", optionChoices(content));
     // "Judge an example against criteria": tick every criterion the example
-    // meets. Scored exactly like multi_choice — each criterion found counts,
+    // meets. Scored exactly like multi_choice, each criterion found counts,
     // each one ticked that the example doesn't meet counts against.
     case "criteria_check":
       if (!content.exhibit?.trim())

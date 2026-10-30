@@ -9,15 +9,15 @@ import {
 } from "@/shared/components/icons";
 import styles from "./Sidebar.module.css";
 
-// Assessment is deliberately not a nav item — it's only reachable via the
+// Assessment is deliberately not a nav item, it's only reachable via the
 // dashboard's "Retake assessment" button, not as a page someone browses to.
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", Icon: HomeIcon },
   { to: "/competencies", label: "Competencies", Icon: TargetIcon },
   { to: "/journeys", label: "Journeys", Icon: RouteIcon },
   { to: "/history", label: "History", Icon: ClipboardIcon },
-  // Not in the mobile bottom bar — kept to four tabs so each has room on a
-  // small phone — so there FAQ lives in the header's account menu instead.
+  // Not in the mobile bottom bar, kept to four tabs so each has room on a
+  // small phone, so there FAQ lives in the header's account menu instead.
   { to: "/faq", label: "FAQ", Icon: HelpIcon, desktopOnly: true },
 ];
 
@@ -26,7 +26,7 @@ type Props = {
   onToggleCollapsed: () => void;
   /**
    * "side": the collapsible left rail (desktop). "bottom": a fixed tab bar
-   * with icon + label stacked, no collapse control (mobile — see AppShell).
+   * with icon + label stacked, no collapse control (mobile, see AppShell).
    */
   layout?: "side" | "bottom";
 };
@@ -34,7 +34,7 @@ type Props = {
 /** Main nav: a collapsible left rail on desktop, a bottom tab bar on mobile. */
 export function Sidebar({ collapsed, onToggleCollapsed, layout = "side" }: Props) {
   const isBottom = layout === "bottom";
-  // The bottom bar always shows labels — the persisted "collapsed" preference
+  // The bottom bar always shows labels, the persisted "collapsed" preference
   // is a desktop-only concept and must not leak into it.
   const showLabels = isBottom || !collapsed;
   const sidebarClass = isBottom
@@ -62,9 +62,9 @@ export function Sidebar({ collapsed, onToggleCollapsed, layout = "side" }: Props
       </nav>
 
       {/* Pinned to the sidebar's own bottom-right corner, whatever the nav's
-          length — same collapse toggle as the header's icon button, as a
+          length, same collapse toggle as the header's icon button, as a
           chevron instead of an icon-swap: it points right (there's more to
-          reveal in that direction — the labels sit to the right of the
+          reveal in that direction, the labels sit to the right of the
           icons) while collapsed, and flips to point left (tuck it back
           away) once labels are showing, so the glyph itself says what a
           click does, in the same direction the rail actually resizes. The
@@ -80,7 +80,7 @@ export function Sidebar({ collapsed, onToggleCollapsed, layout = "side" }: Props
           aria-expanded={!collapsed}
         >
           {/* Right-pointing by default (per its own doc comment, meant to be
-              rotated via CSS) — that's exactly "expand rightward", so it
+              rotated via CSS), that's exactly "expand rightward", so it
               needs no rotation while collapsed; flipped (.flipped) to point
               left once expanded. */}
           <ChevronIcon className={collapsed ? undefined : styles.flipped} />

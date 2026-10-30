@@ -132,7 +132,7 @@ describe("CompetenciesPage", () => {
     const { container } = render(<CompetenciesPage />);
     await screen.findByRole("region", { name: "Repositories" });
 
-    expect(container.textContent).not.toContain("—"); // em dash
+    expect(container.textContent).not.toContain(String.fromCharCode(0x2014)); // em dash
   });
 
   it("puts the recommended journey's modules at the top", async () => {

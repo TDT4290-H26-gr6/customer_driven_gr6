@@ -70,7 +70,7 @@ assessmentRouter.post(
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
     const questionId = requireString(req.body?.questionId, "questionId");
-    // The frontend's PieAnswer wrapper ({ session, complete }) — always an object.
+    // The frontend's PieAnswer wrapper ({ session, complete }), always an object.
     const answer = requireObject(req.body?.answer, "answer") as Prisma.InputJsonObject;
     const timeSpentMs = plausibleDurationMs(req.body?.timeSpentMs, MAX_PLAUSIBLE_TIME_SPENT_MS);
 
@@ -119,7 +119,7 @@ assessmentRouter.get(
 );
 
 // Starts a reassessment limited to the chosen sections. (Reassessing
-// everything needs no start — the first saved answer creates a normal
+// everything needs no start, the first saved answer creates a normal
 // instance.)
 assessmentRouter.post(
   "/assessment/start",

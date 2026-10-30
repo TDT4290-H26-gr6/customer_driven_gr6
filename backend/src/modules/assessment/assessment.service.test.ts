@@ -87,7 +87,7 @@ const radioQuestion = {
 
 describe("saveResponse", () => {
   // A learner whose role can see section-1, which holds the question, and who
-  // has already completed a prior instance — so this is a retake, not their
+  // has already completed a prior instance, so this is a retake, not their
   // initial assessment, and the role filter is the one in effect.
   beforeEach(() => {
     vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);
@@ -227,7 +227,7 @@ describe("saveResponse", () => {
     expect(mockPrisma.response.upsert).not.toHaveBeenCalled();
   });
 
-  it("during the initial assessment, sees every question regardless of role grants — no completed instance yet", async () => {
+  it("during the initial assessment, sees every question regardless of role grants, no completed instance yet", async () => {
     mockPrisma.satInstance.count.mockResolvedValue(0); // never completed a run
     vi.mocked(getRoleGrants).mockResolvedValue({ sectionIds: [], competenceIds: [] }); // a role with no grants at all
     mockPrisma.satInstance.findFirst.mockResolvedValueOnce({ id: "instance-1" } as never);
@@ -335,7 +335,7 @@ describe("saveResponse", () => {
       id: "q4",
       questionType: "ordering",
       // Stored content as database/src/seed/pie.ts's orderingContent writes
-      // it: a NativeElementContent, not a PIE item config — see
+      // it: a NativeElementContent, not a PIE item config, see
       // PieQuestionPlayer.tsx for why this element isn't <pie-fixed-player>.
       content: {
         element: "aios-placement-ordering",
@@ -355,7 +355,7 @@ describe("saveResponse", () => {
     mockPrisma.satInstance.findFirst.mockResolvedValueOnce({ id: "instance-1" } as never);
     mockPrisma.question.findFirst.mockResolvedValue(orderingQuestion as never);
 
-    // Only "a" stayed in its correct position; "b" and "c" are swapped —
+    // Only "a" stayed in its correct position; "b" and "c" are swapped ,
     // this element's own session isn't wrapped in { id, data: [...] } like
     // <pie-fixed-player>'s.
     const answer = {
@@ -548,7 +548,7 @@ function mockPathInputs({
     })) as never,
   );
   mockPrisma.response.findMany.mockReset();
-  // Only read when there's an active instance — don't leave an unused value queued.
+  // Only read when there's an active instance, don't leave an unused value queued.
   if (active) {
     mockPrisma.response.findMany.mockResolvedValueOnce(
       responses.map((r, i) => ({
@@ -649,7 +649,7 @@ describe("completeActiveInstance", () => {
     });
   });
 
-  it("counts questions never asked as 0 — the rest of a failed level and the levels above it", async () => {
+  it("counts questions never asked as 0, the rest of a failed level and the levels above it", async () => {
     mockPathInputs({
       questions: [
         { id: "q1", competenceId: "comp-a" },
@@ -789,7 +789,7 @@ describe("getLatestCompetenceScores", () => {
     mockPrisma.competenceScore.findMany.mockResolvedValue([
       { competenceId: "b", score: 1, maxScore: 2, competence: { name: "Zebra" } },
       { competenceId: "a", score: 3, maxScore: 3, competence: { name: "Apple" } },
-      // An older instance's score for "a" — rows come newest instance first.
+      // An older instance's score for "a", rows come newest instance first.
       { competenceId: "a", score: 0, maxScore: 3, competence: { name: "Apple" } },
     ] as never);
 
@@ -841,12 +841,12 @@ describe("getAttemptSectionScores", () => {
       instanceNum: 2,
       completedAt: new Date("2026-02-01"),
     } as never);
-    // Default: no role, so no extra untouched sections — overridden where needed.
+    // Default: no role, so no extra untouched sections, overridden where needed.
     vi.mocked(findLearnerById).mockResolvedValue({ roleId: null } as never);
   });
 
   it("gives one SAT's sections, with scores in level order and the skill level reached", async () => {
-    // A1 passed, A2 failed after two wrong — so level 1; A2-3 and A3 never
+    // A1 passed, A2 failed after two wrong, so level 1; A2-3 and A3 never
     // asked, but they count as 0.
     mockPrisma.response.findMany.mockResolvedValue([
       answer("A1-1", 1, "Onion", "A"),
@@ -883,7 +883,7 @@ describe("getAttemptSectionScores", () => {
     });
   });
 
-  it("reads only that SAT's answers — the latest by default, or the given one", async () => {
+  it("reads only that SAT's answers, the latest by default, or the given one", async () => {
     mockPrisma.response.findMany.mockResolvedValue([]);
     mockPrisma.sectionModule.findMany.mockResolvedValue([]);
 
@@ -1271,7 +1271,7 @@ describe("journey assessments", () => {
 
   describe("startJourneyAssessment", () => {
     const journey = {
-      name: "LJ2 — Research Data",
+      name: "LJ2 - Research Data",
       sections: [{ sectionId: "sec-a" }, { sectionId: "sec-b" }, { sectionId: "sec-x" }],
     };
 
@@ -1322,7 +1322,7 @@ describe("journey assessments", () => {
           instanceNum: 3,
           kind: "journey",
           assessedJourneyId: "journey-2",
-          assessedJourneyName: "LJ2 — Research Data",
+          assessedJourneyName: "LJ2 - Research Data",
           sections: { create: [{ sectionId: "sec-a" }, { sectionId: "sec-b" }] },
         },
       });
@@ -1355,15 +1355,15 @@ describe("journey assessments", () => {
       code: "A",
       name: "Fundamentals",
       modules: [
-        { id: "mod-a1", name: "A1 — Intro", level: 1, moodleUrl: "https://moodle.test/a1" },
-        { id: "mod-a2", name: "A2 — Data", level: 2, moodleUrl: null },
+        { id: "mod-a1", name: "A1, Intro", level: 1, moodleUrl: "https://moodle.test/a1" },
+        { id: "mod-a2", name: "A2, Data", level: 2, moodleUrl: null },
       ],
     };
     const sectionB = {
       id: "sec-b",
       code: "B",
       name: "Repositories",
-      modules: [{ id: "mod-b1", name: "B1 — Repos", level: 1, moodleUrl: null }],
+      modules: [{ id: "mod-b1", name: "B1, Repos", level: 1, moodleUrl: null }],
     };
     const answerIn = (moduleId: string, score: number, instance: object) => ({
       score,
@@ -1390,7 +1390,7 @@ describe("journey assessments", () => {
         id: "j-1",
         kind: "journey",
         completedAt: new Date("2026-10-05"),
-        assessedJourneyName: "LJ2 — Research Data",
+        assessedJourneyName: "LJ2 - Research Data",
       };
       mockPrisma.response.findMany.mockResolvedValue([
         answerIn("mod-a1", 0, main),
@@ -1427,7 +1427,7 @@ describe("journey assessments", () => {
       };
       mockPrisma.satInstance.findFirst
         .mockResolvedValueOnce(null) // journeyRecommendedAfterMainAssessment: no advice/recommendation needed here
-        .mockResolvedValueOnce({ id: "main-2", instanceNum: 2, completedAt: newer.completedAt });
+        .mockResolvedValueOnce({ id: "main-2", instanceNum: 2, completedAt: newer.completedAt } as never);
       mockPrisma.response.findMany.mockResolvedValue([
         answerIn("mod-a1", 1, older), // scored well on an older full attempt
         answerIn("mod-a1", 0.5, newer), // but worse on the single latest one

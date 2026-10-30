@@ -74,7 +74,7 @@ const EMPTY_TAB_MESSAGE: Record<Tab, string> = {
 };
 
 /**
- * Every completed self-assessment, most recent first — a timeline of how
+ * Every completed self-assessment, most recent first: a timeline of how
  * a learner's score has evolved, with each attempt's own area breakdown so
  * it's clear what that specific SAT actually covered (relevant if a role
  * change ever changes which questions someone gets). Split into "Full" and

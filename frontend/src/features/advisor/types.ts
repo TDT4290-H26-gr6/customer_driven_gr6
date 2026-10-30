@@ -26,8 +26,8 @@ export type Advice = {
   summary: string;
   steps: AdviceStep[];
   /**
-   * The journeys that fit the learner best — ranked by the AI on their
-   * scores and profile, best first, up to two — among those covering their
+   * The journeys that fit the learner best, ranked by the AI on their
+   * scores and profile, best first, up to two, among those covering their
    * weak areas. Each reason is null when the app filled it in from the
    * score-based order. Empty when there was none to choose from.
    */

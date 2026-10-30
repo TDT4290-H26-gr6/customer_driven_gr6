@@ -2,7 +2,7 @@
  * DEV-ONLY. Plants a completed SatInstance + CompetenceScore rows for one
  * learner, so the Learning Journey recommendation (and the dashboard) have
  * something real to read before the actual quiz-submission + grading
- * pipeline exists. Not wired into the container boot or `prisma db seed` —
+ * pipeline exists. Not wired into the container boot or `prisma db seed` ,
  * run by hand against your local DB:
  *
  *   npx tsx scripts/seed-dev-scores.ts <learner-email>
@@ -23,13 +23,13 @@ async function main() {
 
   const learner = await prisma.learner.findUnique({ where: { email } });
   if (!learner) {
-    console.error(`No learner with email ${email} — log in once via the app first.`);
+    console.error(`No learner with email ${email}, log in once via the app first.`);
     process.exit(1);
   }
 
   const areas = await prisma.competenceArea.findMany();
   if (areas.length === 0) {
-    console.error("No competence areas found — run `npx prisma db seed` first.");
+    console.error("No competence areas found, run `npx prisma db seed` first.");
     process.exit(1);
   }
 

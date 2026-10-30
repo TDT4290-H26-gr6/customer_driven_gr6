@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   /* Fixed dark scrim regardless of theme, like FeedbackDialog's. Below the
-     role gate (1000) — that one must always win. */
+     role gate (1000), that one must always win. */
   background: var(--color-overlay);
   z-index: var(--z-dialog);
   display: flex;

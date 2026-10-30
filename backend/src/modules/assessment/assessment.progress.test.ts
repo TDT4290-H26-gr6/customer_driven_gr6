@@ -32,7 +32,7 @@ const b1 = (score: number, reached = true) => ({ id: "b1", score, maxScore: 10, 
 // Newest first, as the service passes them.
 const third: AttemptForProgress = {
   instanceNum: 3,
-  // A reassessment after a journey: only section A, and within it only a1 —
+  // A reassessment after a journey: only section A, and within it only a1 ,
   // a2 is never reached (e.g. a1's level failed first).
   sections: [section(A, [a1(4), a2(0, false)], 3), section(B, null)],
 };

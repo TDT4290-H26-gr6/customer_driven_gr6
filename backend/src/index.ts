@@ -14,7 +14,7 @@ process.on("unhandledRejection", (reason) => {
   console.error("Unhandled promise rejection:", reason);
 });
 process.on("uncaughtException", (err) => {
-  console.error("Uncaught exception — exiting:", err);
+  console.error("Uncaught exception, exiting:", err);
   process.exit(1);
 });
 
@@ -26,7 +26,7 @@ async function main() {
     console.log(`AIOS backend listening on http://localhost:${config.port}`);
   });
 
-  // e.g. EADDRINUSE — without this the error is thrown asynchronously.
+  // e.g. EADDRINUSE, without this the error is thrown asynchronously.
   server.on("error", (err) => {
     console.error("HTTP server failed:", err);
     process.exit(1);
@@ -36,16 +36,16 @@ async function main() {
   const stopDeletionJob = startDeletionJob();
 
   // Stop taking new requests, let in-flight ones finish, then release the
-  // database connections — so a restart (docker stop, tsx watch reload)
+  // database connections, so a restart (docker stop, tsx watch reload)
   // never cuts a response or a transaction off halfway.
   let shuttingDown = false;
   const shutdown = (signal: NodeJS.Signals) => {
     if (shuttingDown) return;
     shuttingDown = true;
-    console.log(`${signal} received — shutting down.`);
+    console.log(`${signal} received, shutting down.`);
 
     setTimeout(() => {
-      console.error("Shutdown timed out — forcing exit.");
+      console.error("Shutdown timed out, forcing exit.");
       process.exit(1);
     }, SHUTDOWN_TIMEOUT_MS).unref();
 

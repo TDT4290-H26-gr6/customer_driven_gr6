@@ -7,7 +7,7 @@ import { createDatasetLoader } from "./datasetLoader";
 // Themis), and the self-assessment items delivered so far. Moodle links are
 // placeholders (moodleCourseId + MOODLE_BASE_URL). Items of types the app
 // can't render yet are kept in the file's `_pendingItems` and not loaded.
-// Loaded when SEED_DATASET=wp2 — see seed/index.ts.
+// Loaded when SEED_DATASET=wp2, see seed/index.ts.
 //
 // Per AIOS_Competence_Mapping_5_Learning_Journeys_BETA.docx, the curriculum
 // now has a fifth journey, Apollo (Open Academic Research and Scholarly

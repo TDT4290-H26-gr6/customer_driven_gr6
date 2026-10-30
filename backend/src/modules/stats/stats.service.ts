@@ -2,14 +2,14 @@ import { prisma } from "../../db/prisma";
 import { experienceBucket } from "./stats.csv";
 
 // All Prisma access for the stats export lives here. Read-only cross-module
-// reads of identity_*/assessment_* tables — allowed per
+// reads of identity_*/assessment_* tables, allowed per
 // context/backend-structure.md §5 ("reads, never writes, via Prisma").
 //
-// Scope (CD-23): only completed, FULL kind:"main" self-assessments — a
+// Scope (CD-23): only completed, FULL kind:"main" self-assessments, a
 // targeted reassessment of one or two weak sections has a different
 // (smaller) question set, and a kind:"journey" instance (assessing one
 // learning journey on its own) never counts towards the main results
-// either (see SatInstance.kind) — mixing either into "how does role X
+// either (see SatInstance.kind), mixing either into "how does role X
 // perform" stats would just add noise, not signal.
 
 async function completedFullInstances() {
@@ -48,7 +48,7 @@ export type TestRow = {
   scorePercent: number;
 };
 
-/** One row per completed full assessment — never an identified learner, see stats.csv.ts. */
+/** One row per completed full assessment, never an identified learner, see stats.csv.ts. */
 export async function listTestRows(): Promise<TestRow[]> {
   const instances = await completedFullInstances();
 
@@ -87,7 +87,7 @@ export type QuestionRow = {
 
 /**
  * One row per answered question in a completed full assessment, joined back
- * to its test via satInstanceId (a random id, not identifying on its own —
+ * to its test via satInstanceId (a random id, not identifying on its own ,
  * safe as a join key with listTestRows' export). "Unknown" section/competence
  * means the question (or its content) has since been deleted.
  */

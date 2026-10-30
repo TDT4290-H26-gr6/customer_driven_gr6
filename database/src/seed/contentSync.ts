@@ -15,7 +15,7 @@ import { withMoodleLink } from "./datasetLoader";
 //   deleted: answers, scores and History point at them.
 // - Link rows (a journey's sections, a module's secondary competences, a
 //   competence's secondary sources) hold no learner data, so they follow the
-//   file exactly — one left out of the file is removed.
+//   file exactly, one left out of the file is removed.
 // - Changes that would alter old results on the dashboard and "See results
 //   by section" (which recompute from today's questions; History doesn't)
 //   come with a warning.
@@ -43,7 +43,7 @@ type TableSpec = {
   /** How the report names it. */
   label: string;
   model: ModelName;
-  /** Primary key fields — one `id`, or the pair a link table is keyed on. */
+  /** Primary key fields, one `id`, or the pair a link table is keyed on. */
   key: string[];
   /** The authored row as the database stores it. */
   map?: (row: Row) => Row;
@@ -89,7 +89,7 @@ const TABLES: TableSpec[] = [
     model: "question",
     key: ["id"],
     // The file authors questions in a simple shape; the app stores (and
-    // renders) them as PIE items — the same build the seed uses.
+    // renders) them as PIE items, the same build the seed uses.
     map: (row) => ({
       ...row,
       content: buildPieContent(
@@ -137,7 +137,7 @@ export type SyncPlan = {
     changes: FieldChange[];
   }[];
   linkRemovals: { model: ModelName; label: string; key: string; where: Row }[];
-  /** Rows in the database that the file no longer has — reported, not deleted. */
+  /** Rows in the database that the file no longer has, reported, not deleted. */
   notInFile: { label: string; key: string }[];
   /** Changes that alter results already given on the dashboard and "See results by section". */
   warnings: string[];
@@ -186,7 +186,7 @@ function normalize(value: unknown): unknown {
   return value;
 }
 
-/** JSON with object keys sorted — MySQL reorders the keys of a JSON column, so plain stringify would see a change in every question. */
+/** JSON with object keys sorted, MySQL reorders the keys of a JSON column, so plain stringify would see a change in every question. */
 function stableJson(value: unknown): string {
   return JSON.stringify(value, (_key, v: unknown) =>
     v !== null && typeof v === "object" && !Array.isArray(v)
@@ -219,7 +219,7 @@ export function planContentSync(
     warnings: [],
   };
 
-  // Each module's section, as it will be once synced — what the warnings
+  // Each module's section, as it will be once synced, what the warnings
   // need to tell which section a question lands in.
   const sectionOfModule = new Map<string, string>();
   for (const row of current["aios.assessment.section_module"] ?? []) {
@@ -363,7 +363,7 @@ export async function loadCurrentContent(): Promise<CurrentContent> {
   return Object.fromEntries(entries);
 }
 
-/** Sections at least one completed assessment has answers in — where structural changes alter old results. */
+/** Sections at least one completed assessment has answers in, where structural changes alter old results. */
 export async function loadAssessedSectionIds(): Promise<Set<string>> {
   const sections = await prisma.section.findMany({
     where: {
@@ -385,7 +385,7 @@ export async function loadAssessedSectionIds(): Promise<Set<string>> {
 /** Generous: a full dataset is a few hundred writes. */
 const SYNC_TIMEOUT_MS = 60_000;
 
-/** Writes a plan in one transaction — if any write fails, nothing is kept. */
+/** Writes a plan in one transaction, if any write fails, nothing is kept. */
 export async function applyContentSync(plan: SyncPlan): Promise<void> {
   await prisma.$transaction(
     async (tx) => {
@@ -450,7 +450,7 @@ export function formatPlan(plan: SyncPlan): string {
     for (const n of plan.notInFile) lines.push(`  ${n.label} ${n.key}`);
   }
   if (plan.warnings.length > 0) {
-    lines.push("", "Warnings — these change results already given on the dashboard:");
+    lines.push("", "Warnings, these change results already given on the dashboard:");
     for (const w of plan.warnings) lines.push(`  ! ${w}`);
     lines.push("  (History is unaffected: it keeps its own copies.)");
   }

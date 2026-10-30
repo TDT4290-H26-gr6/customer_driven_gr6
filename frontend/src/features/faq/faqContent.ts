@@ -1,4 +1,4 @@
-// The FAQ's questions and answers — content only, so it can be edited without
+// The FAQ's questions and answers, content only, so it can be edited without
 // touching the page. Each answer is one or more paragraphs of plain text.
 // Keep answers in line with how the app actually behaves; they were written
 // against it (thresholds, button names, what's stored).

@@ -102,7 +102,7 @@ describe("getOrCreateAdvice", () => {
           mainForModules: [
             {
               id: "mod-a2",
-              name: "A2 — Introduction to Open Data Management",
+              name: "A2, Introduction to Open Data Management",
               description: null,
               moodleUrl: "https://moodle.example.org/course/view.php?id=1002",
               level: 2,
@@ -129,7 +129,7 @@ describe("getOrCreateAdvice", () => {
     const sent = JSON.parse(userMessage.content);
     expect(sent.competenceScoresWeakestFirst[0].competence).toBe("Data management");
     expect(sent.candidates.map((c: { title: string; type: string }) => [c.title, c.type])).toEqual([
-      ["A2 — Introduction to Open Data Management", "module in Moodle"],
+      ["A2, Introduction to Open Data Management", "module in Moodle"],
       ["Course weak (NTNU)", "learning resource"],
     ]);
 
@@ -141,7 +141,7 @@ describe("getOrCreateAdvice", () => {
           {
             kind: "moodle_module",
             id: "mod-a2",
-            title: "A2 — Introduction to Open Data Management",
+            title: "A2, Introduction to Open Data Management",
             url: "https://moodle.example.org/course/view.php?id=1002",
             reason: "Your weakest area.",
           },
@@ -309,7 +309,7 @@ describe("getOrCreateAdvice", () => {
           mainForModules: [
             {
               id: "mod-a4",
-              name: "A4 — Introduction to Artificial Intelligence",
+              name: "A4, Introduction to Artificial Intelligence",
               description: null,
               moodleUrl: "https://moodle.example.org/course/view.php?id=1004",
               level: 4,
@@ -351,7 +351,7 @@ describe("getOrCreateAdvice", () => {
         mainForModules: [
           {
             id: "mod-a2",
-            name: "A2 — Introduction to Open Data Management",
+            name: "A2, Introduction to Open Data Management",
             description: null,
             moodleUrl: null,
             level: 2,
@@ -362,11 +362,11 @@ describe("getOrCreateAdvice", () => {
     };
     const officer = {
       id: "j-lj1",
-      name: "LJ1 — Officer",
+      name: "LJ1 - Officer",
       description: null,
       coverage: [{ sectionId: "sec-a", section: "Open Science Fundamentals", level: "M" as const }],
     };
-    const dataJourney = { ...officer, id: "j-lj2", name: "LJ2 — Research Data" };
+    const dataJourney = { ...officer, id: "j-lj2", name: "LJ2 - Research Data" };
 
     beforeEach(() => {
       mockPrisma.advice.findUnique.mockResolvedValue(null as never);
@@ -384,8 +384,8 @@ describe("getOrCreateAdvice", () => {
       const [, userMessage] = vi.mocked(chatJson).mock.calls[0][1];
       const sent = JSON.parse(userMessage.content).journeyCandidates;
       expect(sent.map((j: { name: string }) => j.name)).toEqual([
-        "LJ2 — Research Data",
-        "LJ1 — Officer",
+        "LJ2 - Research Data",
+        "LJ1 - Officer",
       ]);
       expect(sent[0].isDefault).toBe(true);
     });

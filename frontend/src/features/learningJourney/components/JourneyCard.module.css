@@ -11,7 +11,7 @@
     box-shadow var(--duration-fast) ease;
 }
 
-/* Lifts the card slightly on hover. Only on devices that actually hover — on
+/* Lifts the card slightly on hover. Only on devices that actually hover, on
    touch screens a tap would otherwise leave the card stuck in its lifted state. */
 @media (hover: hover) {
   .card:hover {

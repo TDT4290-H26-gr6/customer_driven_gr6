@@ -15,7 +15,7 @@ const SEEN_KEY = "aios.welcomeSeen";
 /**
  * Shown instead of the results dashboard when the learner hasn't completed
  * an assessment yet. Plays a one-time entrance animation the first time it's
- * shown in a session (sessionStorage, not localStorage — it should replay
+ * shown in a session (sessionStorage, not localStorage: it should replay
  * next time the learner signs in), then stays static on later visits.
  */
 export function WelcomeScreen({ name, hasOngoing = false, onStart }: Props) {

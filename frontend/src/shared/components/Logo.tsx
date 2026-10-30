@@ -9,7 +9,7 @@ type Props = {
  * text can be styled with `currentColor` and flip with the theme
  * automatically (see Logo.module.css, which sets that color from the same
  * `--color-text` token everything else uses). The colourful dot spiral
- * keeps the fixed `--brand-*` colors — it reads fine on both a light and a
+ * keeps the fixed `--brand-*` colors, it reads fine on both a light and a
  * dark background, so only the wordmark itself needs to be theme-aware.
  */
 export function Logo({ className }: Props) {

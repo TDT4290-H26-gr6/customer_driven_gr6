@@ -40,7 +40,7 @@ export function startReassessment(sectionIds: string[]): Promise<void> {
 /**
  * Saves (or updates) one answer against the learner's active instance.
  * `timeSpentMs` (CD-97) is how long the question was on screen before this
- * save, from the frontend's own clock — best-effort analytics, never used
+ * save, from the frontend's own clock, best-effort analytics, never used
  * for scoring; the backend drops it silently if it looks implausible.
  */
 export function saveResponse(

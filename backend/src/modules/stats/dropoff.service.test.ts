@@ -42,7 +42,7 @@ const questions = new Map([
 
 const at = (base: Date, step: number) => new Date(base.getTime() + step * 1000);
 
-/** An attempt that answered `answered` (and, if given, was also shown `viewed` — a superset). */
+/** An attempt that answered `answered` (and, if given, was also shown `viewed`, a superset). */
 function attempt(
   answered: (string | null)[],
   base: Date,

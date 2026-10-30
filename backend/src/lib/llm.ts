@@ -1,5 +1,5 @@
 // The only place that calls the LLM. NTNU's IDUN service speaks the OpenAI
-// chat-completions API (https://llm.hpc.ntnu.no/v1), so this is plain fetch —
+// chat-completions API (https://llm.hpc.ntnu.no/v1), so this is plain fetch ,
 // no SDK. Requests stay inside NTNU and aren't stored by the service.
 
 export type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
@@ -17,7 +17,7 @@ export function stripCodeFence(text: string): string {
 
 /**
  * Sends a chat and returns the reply parsed as JSON. Throws on a network
- * error, a timeout, a non-2xx status, or a reply that isn't JSON — the
+ * error, a timeout, a non-2xx status, or a reply that isn't JSON, the
  * caller decides what a failure means for the user.
  */
 export async function chatJson(
@@ -37,7 +37,7 @@ export async function chatJson(
       // Low temperature: advice should be steady, not creative.
       temperature: 0.2,
       // Room for the advice JSON (summary, ranked journeys, steps) plus the
-      // reasoning tokens models like gpt-oss spend before answering — at
+      // reasoning tokens models like gpt-oss spend before answering, at
       // 1500 the reply could be cut off mid-JSON.
       max_tokens: 4000,
       response_format: { type: "json_object" },

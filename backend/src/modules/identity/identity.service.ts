@@ -116,7 +116,7 @@ export function cancelDeletion(learnerId: string) {
 }
 
 /**
- * Deletes one learner's personal data, if their deletion is (still) due —
+ * Deletes one learner's personal data, if their deletion is (still) due ,
  * a cancel that lands first wins. Deleted: email, name and Google id (so
  * signing in again starts a new account), role, the whole profile
  * (industry, degree, years of experience, background, goals), and the AI
@@ -184,7 +184,7 @@ export async function getRoleGrants(roleId: string) {
 /**
  * Everything the admin screen needs in one read: every role, every section
  * and competence, and every grant. Sections and competences belong to the
- * assessment module — reading them here is the read-only cross-module access
+ * assessment module, reading them here is the read-only cross-module access
  * context/backend-structure.md allows.
  */
 export async function getVisibilityMatrix() {

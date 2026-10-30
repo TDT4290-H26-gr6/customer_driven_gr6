@@ -33,8 +33,8 @@ import {
 
 /**
  * Question types whose on-screen choice order is meaningful and must never
- * be shuffled. "ordering" is a reordering task itself — the whole point is
- * the learner's own arrangement — but it's also naturally exempt below since
+ * be shuffled. "ordering" is a reordering task itself, the whole point is
+ * the learner's own arrangement, but it's also naturally exempt below since
  * its content never has the `.models[0].choices` shape this shuffles.
  */
 const ORDERED_QUESTION_TYPES: readonly string[] = ["likert", "true_false", "ordering"];
@@ -44,10 +44,10 @@ const ORDERED_QUESTION_TYPES: readonly string[] = ["likert", "true_false", "orde
  * Yates) so "it's always the 2nd option" never becomes a shortcut. Each
  * choice keeps its own value/id and correct flag, so this has no effect on
  * scoring (assessment.scoring.ts looks choices up by value/id, never by
- * position) — but ordered scales (likert) and true/false are left alone,
+ * position), but ordered scales (likert) and true/false are left alone,
  * since their order is the point, not noise to shuffle. The "I don't know"
  * choice every question carries (IDK_VALUE) is never shuffled in among the
- * others either — it's held back and always placed last. `random` lets the
+ * others either, it's held back and always placed last. `random` lets the
  * assessment path keep a question's order stable across fetches.
  */
 function withShuffledChoices<T extends Pick<Question, "questionType" | "content">>(
@@ -71,7 +71,7 @@ function withShuffledChoices<T extends Pick<Question, "questionType" | "content"
 }
 
 /**
- * Whether this learner has never finished a main SAT instance — their
+ * Whether this learner has never finished a main SAT instance, their
  * initial assessment is still ahead of them. Journey assessments don't count.
  */
 async function isInitialAssessment(learnerId: string): Promise<boolean> {
@@ -88,13 +88,13 @@ export async function hasCompletedMainAssessment(learnerId: string): Promise<boo
 
 /**
  * Which questions this learner may currently see. Everyone gets the whole
- * bank for their initial assessment (every section, every competence) —
- * that's the point of it — regardless of role. Once they've completed at
+ * bank for their initial assessment (every section, every competence) ,
+ * that's the point of it, regardless of role. Once they've completed at
  * least one instance, later runs go back to the normal role allow-lists:
  * those whose competence has been granted to the role, OR whose module sits
  * in a section granted to the role (identity_role_competence /
  * identity_role_section). A role with no grants then sees nothing. Returns
- * null for a learner with no role at all — they can't take anything yet.
+ * null for a learner with no role at all, they can't take anything yet.
  *
  * While role selection is turned off (config.roleSelectionEnabled), roles
  * are ignored: every learner gets the whole bank in every SAT.
@@ -118,7 +118,7 @@ async function roleQuestionFilter(learnerId: string): Promise<Prisma.QuestionWhe
 
 /**
  * roleQuestionFilter, narrowed to the sections the learner's in-progress
- * reassessment is limited to (see startReassessment) — when it's limited at
+ * reassessment is limited to (see startReassessment), when it's limited at
  * all. Used both to list questions and to check a saved answer belongs.
  */
 async function visibleQuestionFilter(learnerId: string): Promise<Prisma.QuestionWhereInput | null> {
@@ -180,7 +180,7 @@ export async function listQuestions(learnerId: string) {
 }
 
 /**
- * Shape of the PIE `content` this module stores — narrowed just enough to
+ * Shape of the PIE `content` this module stores, narrowed just enough to
  * score it. See assessment.scoring.ts for the caveat on the actual session
  * (`answer`) shapes assumed here.
  */
@@ -193,7 +193,7 @@ type PieModel = {
 
 /**
  * Scores one answer against its question. `answer` is the frontend's
- * PieAnswer wrapper (`{ session, complete }` — see PieQuestionPlayer), not
+ * PieAnswer wrapper (`{ session, complete }`, see PieQuestionPlayer), not
  * the raw PIE session itself; the session lives at `answer.session`.
  */
 function scoreAnswer(
@@ -202,7 +202,7 @@ function scoreAnswer(
 ): ScoreResult | null {
   const session = (answer as { session?: unknown } | null)?.session;
 
-  // Standalone custom element, not <pie-fixed-player> — its content is
+  // Standalone custom element, not <pie-fixed-player>, its content is
   // { element, model } (see database/src/seed/pie.ts's NativeElementContent),
   // not the { elements, models, markup } PIE item config the rest of this
   // function assumes below.
@@ -226,8 +226,8 @@ function scoreAnswer(
 
   const selected = extractMultipleChoiceValues(session, modelId);
 
-  // "I don't know" always scores 0 out of the full question — even on a
-  // multi_choice where other boxes were also ticked — rather than scoring it
+  // "I don't know" always scores 0 out of the full question, even on a
+  // multi_choice where other boxes were also ticked, rather than scoring it
   // as a wrong guess (which could cost points on other alternatives).
   if (selected.includes(IDK_VALUE)) return { score: 0, maxScore: QUESTION_MAX_SCORE };
 
@@ -247,7 +247,7 @@ function scoreAnswer(
   return null;
 }
 
-/** The learner's current unfinished SAT instance, if any — not created here. */
+/** The learner's current unfinished SAT instance, if any, not created here. */
 function findActiveInstance(learnerId: string) {
   return prisma.satInstance.findFirst({
     where: { learnerId, completedAt: null },
@@ -289,7 +289,7 @@ async function getOrCreateActiveInstance(learnerId: string) {
     return await createInstance(learnerId);
   } catch (err) {
     // Two first answers arrived at once and the other request created the
-    // instance first (unique on learnerId + instanceNum) — use theirs.
+    // instance first (unique on learnerId + instanceNum), use theirs.
     if (isUniqueViolation(err)) {
       const created = await findActiveInstance(learnerId);
       if (created) return created;
@@ -304,7 +304,7 @@ export type StartReassessmentResult =
 /**
  * Starts a reassessment of only some sections: a new instance limited to
  * the chosen sections, so listQuestions only returns those. (A reassessment
- * of everything needs no start — the first saved answer creates a normal
+ * of everything needs no start, the first saved answer creates a normal
  * instance.) Refused while another instance is in progress, before the first
  * assessment is done (that one covers everything), and for sections with no
  * question the learner's role can see.
@@ -431,7 +431,7 @@ async function loadPathInputs(learnerId: string) {
  * The learner's route through their current (or upcoming) attempt, from
  * their answers so far (see assessment.path.ts): every question they've
  * answered, in the order first answered, with their answer, then the next
- * one to ask — or
+ * one to ask, or
  * `done` when nothing is left. Each item says which section (and section
  * number, in this attempt's random order) and level it belongs to. Choice
  * order is shuffled per attempt but stable, so Back and resuming show the
@@ -491,7 +491,7 @@ function journeyBeingAssessed(
  * Save/resume (CD-7 / SAT2): the learner's in-progress instance plus every
  * answer saved so far, so the frontend can restore exactly where they left
  * off. Returns null if they haven't started (or have only completed
- * instances) — a fresh start, not an error.
+ * instances), a fresh start, not an error.
  */
 export async function getProgress(learnerId: string) {
   const active = await findActiveInstance(learnerId);
@@ -517,7 +517,7 @@ export async function getProgress(learnerId: string) {
  * upsert on (satInstanceId, questionId), so two saves arriving together
  * can't collide on the unique constraint.
  *
- * Returns null — and saves nothing — when the question doesn't exist or
+ * Returns null, and saves nothing, when the question doesn't exist or
  * isn't one the learner's role may see: a learner can only answer the
  * questions listQuestions would have given them. Checked before the
  * instance is created, so a bad id never leaves an empty instance behind.
@@ -555,8 +555,8 @@ export async function saveResponse(
 /**
  * Records that the question was shown to the learner in their current attempt
  * (CD-125), for the admin drop-off page. Only the first view per question and
- * attempt is stored. The attempt is the active instance, or — before the first
- * answer creates one — the upcoming main instance, so a learner who opens the
+ * attempt is stored. The attempt is the active instance, or, before the first
+ * answer creates one, the upcoming main instance, so a learner who opens the
  * first question and leaves is still seen. Nothing is created besides the view.
  *
  * Returns false, and records nothing, when the question doesn't exist or the
@@ -592,7 +592,7 @@ export type StartJourneyAssessmentResult =
  * Starts a journey assessment: the learner assesses one learning journey on
  * its own, with only the questions in the sections the journey is centred
  * on (coverage M). A separate kind of instance (JOURNEY_KIND), numbered on
- * its own, that never counts towards the main results — only the
+ * its own, that never counts towards the main results, only the
  * Competencies overview reads it. Allowed any time, even before the first
  * main assessment, but like every assessment only one at a time.
  */
@@ -640,8 +640,8 @@ export async function startJourneyAssessment(
 }
 
 /**
- * Marks the learner's active instance complete — only once its path is
- * finished (assessment.path.ts) — and rolls its questions up into one
+ * Marks the learner's active instance complete, only once its path is
+ * finished (assessment.path.ts), and rolls its questions up into one
  * CompetenceScore row per competence in the learner's bank, grouped by each
  * question's own competenceId. Every question counts, so SATs compare like
  * for like: one never asked (its level, or one below it, wasn't passed)
@@ -662,7 +662,7 @@ export async function completeActiveInstance(learnerId: string): Promise<Complet
   if (next) return "unfinished";
 
   // Answers to questions no longer in the learner's bank (deleted, or
-  // hidden from their role since) — buildPath already left them out.
+  // hidden from their role since), buildPath already left them out.
   const inBank = new Set(answered);
   const outsideBankIds = inputs.responses
     .filter((r) => !r.questionId || !inBank.has(r.questionId))
@@ -713,11 +713,11 @@ export async function completeActiveInstance(learnerId: string): Promise<Complet
 
 /**
  * Aborts the learner's in-progress SAT: deletes the unfinished instance, and
- * with it (onDelete: Cascade) every answer saved to it — as if it was never
+ * with it (onDelete: Cascade) every answer saved to it, as if it was never
  * started. Only ever touches unfinished instances, so completed ones and
  * their scores can't be deleted through here. No-ops if there isn't one.
  * Returns how many instances were deleted. The attempt's recorded question
- * views go too — its number is reused by the next attempt, which must start
+ * views go too, its number is reused by the next attempt, which must start
  * with none.
  */
 export async function discardActiveInstance(learnerId: string) {
@@ -740,12 +740,12 @@ export async function discardActiveInstance(learnerId: string) {
 }
 
 /**
- * The learner's most recently completed SAT instance's competence scores —
+ * The learner's most recently completed SAT instance's competence scores ,
  * one entry per competence actually scored in that instance, sorted by name
  * for a stable axis order. Deliberately not filtered by the learner's
  * *current* role: an initial assessment covers every competence regardless
  * of role, and a later retake's own CompetenceScore rows already reflect
- * whatever was visible when it was taken — re-applying today's role filter
+ * whatever was visible when it was taken, re-applying today's role filter
  * here could hide a competence the learner was genuinely just scored on
  * (e.g. after a role change since that run).
  */
@@ -773,16 +773,16 @@ function isStringArray(value: unknown): value is string[] {
 /**
  * Every completed SAT instance for a learner, oldest first, with a summed
  * score and the per-module breakdown grouped by section (A–E, modules in
- * level order) — so a History page can show how they've progressed over
+ * level order), so a History page can show how they've progressed over
  * retakes (CD-21). A reassessment after a learning journey
  * also carries that journey's name and the sections the learner ticked
- * (exactly those — not every section the journey covers); a normal run
+ * (exactly those, not every section the journey covers); a normal run
  * has null and an empty list. Built from the copies taken when the
  * instance started/finished, so it survives later removal of journeys,
  * sections, competences or questions; rows recorded before those copies
  * existed fall back to the live content while it's still there. Unlike getLatestCompetenceScores, this
  * only lists the areas actually covered by that specific instance (no
- * padding to every area in the bank) — if a role change ever narrows which
+ * padding to every area in the bank), if a role change ever narrows which
  * questions a learner sees, this naturally shows exactly what that
  * instance tested, without needing to know why.
  */
@@ -876,19 +876,19 @@ function bySectionCode(
 }
 
 /**
- * One completed SAT's results, section by section — the latest one, or the
+ * One completed SAT's results, section by section, the latest one, or the
  * one with the given instanceNum. Null when there's no such completed SAT.
  *
  * Every section the SAT assessed, plus every section the learner could be
  * assessed in but this SAT didn't touch (`assessed: false`, all 0/0, no
- * level) — e.g. sections a journey retake left out. Each section lists one
+ * level), e.g. sections a journey retake left out. Each section lists one
  * entry per competence its modules cover (main or secondary) or its
- * questions name — scored over every question of an assessed section, the
- * ones never asked as 0 — in level order (A1 … A4) so its radar always starts at
+ * questions name, scored over every question of an assessed section, the
+ * ones never asked as 0, in level order (A1 … A4) so its radar always starts at
  * level 1, and the learner's skill level in it: how many levels they passed
  * from the bottom up (skillLevel in assessment.path.ts). Sections already
  * assessed are shown even if the learner's current role no longer sees
- * them — it's this SAT's record. Sections come in A–E order (their code).
+ * them, it's this SAT's record. Sections come in A–E order (their code).
  */
 export async function getAttemptSectionScores(learnerId: string, instanceNum?: number) {
   const instance = await prisma.satInstance.findFirst({
@@ -914,7 +914,7 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
   });
 
   const totals = new Map<string, { score: number; maxScore: number }>(); // "sectionId:competenceId"
-  // Competences with at least one real answer in this instance — as opposed
+  // Competences with at least one real answer in this instance, as opposed
   // to the "never asked, counts as 0" fill-in below. getDashboardProgress
   // uses this to tell "this attempt actually found out about X" apart from
   // "this attempt never got that far", so a section it barely touched
@@ -928,7 +928,7 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
     const answers = answersBySection.get(sectionId) ?? new Map();
     answers.set(r.questionId, { score: r.score, maxScore: r.maxScore });
     answersBySection.set(sectionId, answers);
-    if (!r.maxScore) continue; // nothing scorable — no radar points
+    if (!r.maxScore) continue; // nothing scorable, no radar points
     const key = `${sectionId}:${r.question.competenceId}`;
     reached.add(key);
     const entry = totals.get(key) ?? { score: 0, maxScore: 0 };
@@ -980,7 +980,7 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
     for (const c of covered) entry.competences.set(c.id, c.name);
     if (m.level !== null) levelOf.set(m.mainCompetence.id, m.level);
     entry.levels.push({ id: m.id, level: m.level, questionIds: m.questions.map((q) => q.id) });
-    // In a section this SAT assessed, a question never asked still counts — as 0.
+    // In a section this SAT assessed, a question never asked still counts, as 0.
     const answers = answersBySection.get(m.section.id);
     for (const q of answers ? m.questions : []) {
       if (answers?.has(q.id)) continue;
@@ -1026,16 +1026,16 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
 
 /**
  * The dashboard's before/after view: every section as of the learner's latest
- * full self-assessment and as of the one before it — a partial reassessment
+ * full self-assessment and as of the one before it, a partial reassessment
  * (one limited to some sections) is never "latest" or "previous" here, same
  * rule as getCompetencies, so this and the Competencies page never disagree
  * over whether a result counts. A section a SAT didn't cover keeps its last
- * known result, marked with the SAT it comes from — and within a section, a
+ * known result, marked with the SAT it comes from, and within a section, a
  * competence a SAT never reached (e.g. it failed an earlier level first)
  * keeps its last known result too, rather than that SAT's own zero-fill
  * shadowing it (see assessment.progress.ts's snapshotAsOf). That means every
  * full SAT can matter to "latest", not just the newest one to touch each
- * section, so all of them are loaded — in practice a handful at most. Null
+ * section, so all of them are loaded, in practice a handful at most. Null
  * before any completed full SAT; `previous` is null after only one.
  */
 export async function getDashboardProgress(learnerId: string) {
@@ -1100,9 +1100,9 @@ async function journeyRecommendedAfterMainAssessment(learnerId: string) {
 
 /**
  * The Competencies overview: every section the learner can be assessed in,
- * with two results per module — the best ever (over their full
+ * with two results per module, the best ever (over their full
  * self-assessments and journey assessments alike) and the one from their
- * single latest full self-assessment specifically — plus a percentage per
+ * single latest full self-assessment specifically, plus a percentage per
  * section for each, always in A–E order. A partial reassessment (limited
  * to some sections) never counts for either (see getDashboardProgress,
  * which applies the same rule to "latest"). The sections of the journey
@@ -1127,7 +1127,7 @@ export async function getCompetencies(learnerId: string) {
     }),
     prisma.response.findMany({
       where: {
-        // Full assessments and journey assessments both count — a partial
+        // Full assessments and journey assessments both count, a partial
         // reassessment (one limited to some sections) doesn't, so it can't
         // show a "best" result the main radar/progress view wouldn't also
         // credit (see getDashboardProgress).
@@ -1153,7 +1153,7 @@ export async function getCompetencies(learnerId: string) {
       },
     }),
     journeyRecommendedAfterMainAssessment(learnerId),
-    // The single most recent full self-assessment, if any — for the
+    // The single most recent full self-assessment, if any, for the
     // "Latest full assessment" tab, as opposed to "best ever" below.
     prisma.satInstance.findFirst({
       where: {
@@ -1185,7 +1185,7 @@ export async function getCompetencies(learnerId: string) {
 
   const best = bestPerModule(answerRows);
   // Scoped to one instance, so "best" here is just that instance's own
-  // result per module — i.e. the latest full assessment's, not the best ever.
+  // result per module, i.e. the latest full assessment's, not the best ever.
   const latest = latestFull
     ? bestPerModule(answerRows.filter((a) => a.satInstanceId === latestFull.id))
     : new Map();

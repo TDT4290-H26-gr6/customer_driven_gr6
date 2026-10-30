@@ -8,7 +8,7 @@ export type PieContent = {
 
 /**
  * A question rendered by its own standalone PIE custom element instead of
- * <pie-fixed-player> — see PieQuestionPlayer.tsx and database/src/seed/pie.ts's
+ * <pie-fixed-player>, see PieQuestionPlayer.tsx and database/src/seed/pie.ts's
  * NativeElementContent, which this mirrors.
  */
 export type NativeElementContent = {
@@ -38,7 +38,7 @@ export type PathItem = {
 
 /**
  * The route so far: the answered questions on it, then the next one to ask
- * (the backend decides it from the answers — see assessment.path.ts).
+ * (the backend decides it from the answers, see assessment.path.ts).
  * `done` means nothing is left; the assessment can be completed.
  */
 export type AssessmentPath = {

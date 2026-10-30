@@ -1,8 +1,8 @@
-# Frontend file structure — agreed convention
+# Frontend file structure, agreed convention
 
 - **Date:** 2026-09-09
 - **Applies to:** `frontend/` (React 18 + TypeScript + Vite)
-- **Related ticket:** CD-47 — _Create a better code structure for the React project_
+- **Related ticket:** CD-47, _Create a better code structure for the React project_
 
 This document records the structure the group has agreed to use for the
 React frontend of the AIOS self‑assessment questionnaire app (users self‑assess
@@ -24,7 +24,7 @@ current flat `src/` files are migrated over incrementally (see _Migration_ below
    `api.ts`, which uses the single `shared/api/client.ts`.
 4. **Co‑locate.** Types, hooks, tests and styles live next to the code they
    belong to. Only genuinely generic things move to `shared/`.
-5. **`App.tsx` is a shell.** Routing + provider composition only — no data
+5. **`App.tsx` is a shell.** Routing + provider composition only, no data
    fetching, no business logic.
 6. **Keep it boring.** We add a dependency (router, query cache, styling lib)
    only when a concrete need is agreed in a ticket.
@@ -41,7 +41,7 @@ frontend/
 ├── package.json
 ├── .env.example                 # documents every VITE_* variable the app reads
 ├── public/                      # static assets copied as-is: favicon.png (tab icon).
-│                                 # The header/login wordmark is NOT here — it's inlined SVG,
+│                                 # The header/login wordmark is NOT here, it's inlined SVG,
 │                                 # see shared/components/Logo.tsx below.
 └── src/
     ├── main.tsx                 # React entry: mounts <App/> inside providers
@@ -56,7 +56,7 @@ frontend/
     │   │   ├── AppShell.tsx         # header + sidebar + <Outlet/>, blocks with RoleGateModal if no role
     │   │   ├── Header.tsx           # sidebar toggle (centred above the rail's icon column) + <Logo/> left, account menu right
     │   │   ├── Sidebar.tsx          # collapsible left rail (desktop) / fixed bottom tab bar (mobile)
-    │   │   ├── RoleGateModal.tsx    # forced role-pick modal — see "Role gating" below
+    │   │   ├── RoleGateModal.tsx    # forced role-pick modal, see "Role gating" below
     │   └── guards/
     │       └── RequireAuth.tsx      # no session -> redirect /login
     │
@@ -132,7 +132,7 @@ frontend/
     │   │   ├── pages/
     │   │   │   └── AdminPage.tsx        # /admin: drop-off filters, cards, chart, table + feedback / CSV / exit buttons
     │   │   ├── legacy/              # parked, NOT routed: role-visibility screen (role selection is off)
-    │   │   │   ├── components/GrantChecklist.tsx   # one card of checkboxes — the selected role's grants
+    │   │   │   ├── components/GrantChecklist.tsx   # one card of checkboxes, the selected role's grants
     │   │   │   ├── pages/RoleVisibilityPage.tsx    # role picker + Sections / Competences checklists
     │   │   │   ├── api.ts           # PUT/DELETE role grants
     │   │   │   └── index.ts
@@ -148,7 +148,7 @@ frontend/
     │   │   ├── informationLetterContent.ts     # the letter text (Sikt template)
     │   │   └── index.ts
     │   │
-    │   └── settings/                # account settings — role change for now, more later
+    │   └── settings/                # account settings, role change for now, more later
     │       ├── pages/
     │       │   └── SettingsPage.tsx     # reuses onboarding's RoleSelect via its barrel
     │       └── index.ts
@@ -164,18 +164,18 @@ frontend/
     │   │   ├── Spinner.tsx
     │   │   ├── ErrorBanner.tsx
     │   │   ├── icons.tsx           # small inline SVG icon set (incl. SidebarToggleIcon)
-    │   │   ├── Logo.tsx            # the AIOS wordmark as inline SVG — see "Logo" below
-    │   │   └── FundingLogos.tsx    # EU (inline SVG) + IKY funding logos — see "Funding logos" below
+    │   │   ├── Logo.tsx            # the AIOS wordmark as inline SVG, see "Logo" below
+    │   │   └── FundingLogos.tsx    # EU (inline SVG) + IKY funding logos, see "Funding logos" below
     │   ├── assets/                 # raster images imported by components (Vite fingerprints them)
     │   │   └── iky.jpg
     │   ├── hooks/
     │   │   ├── useAsync.ts
     │   │   ├── useDialogKeys.ts       # Escape closes, Tab wraps inside a modal (JourneyModal, InformationLetterModal)
     │   │   ├── useLocalStorage.ts
-    │   │   ├── useMediaQuery.ts       # live window.matchMedia — only for when the DOM/props differ on mobile
+    │   │   ├── useMediaQuery.ts       # live window.matchMedia, only for when the DOM/props differ on mobile
     │   │   └── useSessionStorage.ts   # like useLocalStorage, but cleared when the tab/session ends
     │   ├── lib/
-    │   │   ├── breakpoints.ts         # MOBILE_QUERY — the single mobile/desktop split (see "Responsive")
+    │   │   ├── breakpoints.ts         # MOBILE_QUERY, the single mobile/desktop split (see "Responsive")
     │   │   └── format.ts
     │   └── types/
     │       └── common.ts           # ApiError, Nullable, etc.
@@ -201,7 +201,7 @@ frontend/
 | `features/<x>/` | its own folder, `shared/`, `config/`        | other `features/`, `app/`           |
 | `app/`          | `features/*/index.ts`, `shared/`, `config/` | feature internals (only the barrel) |
 
-**Exception:** a page may import a hook directly from `app/providers/` (`useAuth`, `useTheme`) even though that's technically "`app/`". These providers hold genuinely app-wide state — the current session, the visuals setting — not feature-specific logic, so treat them like `shared/`: any feature may depend on the hook, but never reach into a provider's other internals.
+**Exception:** a page may import a hook directly from `app/providers/` (`useAuth`, `useTheme`) even though that's technically "`app/`". These providers hold genuinely app-wide state, the current session, the visuals setting, not feature-specific logic, so treat them like `shared/`: any feature may depend on the hook, but never reach into a provider's other internals.
 | `App.tsx` / `routes.tsx` | `app/`, `features/*/index.ts` | anything deep |
 
 A **page** owns data loading and composition for one screen. A **component**
@@ -220,7 +220,7 @@ is given everything it needs via props and stays reusable. A feature's
 - **Types:** co‑located in the feature's `types.ts`. Only truly shared shapes
   go in `shared/types/`. Prefer `type` aliases; avoid `any` (the current
   `Question.content: any` becomes `PieContent`).
-- **Barrels:** every feature has `index.ts`. No barrel files anywhere else —
+- **Barrels:** every feature has `index.ts`. No barrel files anywhere else ,
   they hurt tree‑shaking and cause import cycles.
 - **Path alias:** `@/` → `src/`. Configured in both `tsconfig.json`
   (`compilerOptions.paths`) and `vite.config.ts` (`resolve.alias`). Import as
@@ -250,8 +250,8 @@ is given everything it needs via props and stays reusable. A feature's
 
 - **Server state:** feature hooks built on `shared/hooks/useAsync.ts` for now.
   If cache invalidation / refetch coordination gets painful we adopt TanStack
-  Query — that is a separate ticket, not a silent addition.
-- **Session/auth:** `AuthProvider` (React context) — current learner, token,
+  Query, that is a separate ticket, not a silent addition.
+- **Session/auth:** `AuthProvider` (React context), current learner, token,
   `login`, `logout`, `setRole`. Consumed via `useAuth()`.
 - **Everything else:** local `useState` in the owning page. No global store.
 
@@ -263,27 +263,27 @@ is given everything it needs via props and stays reusable. A feature's
 
 ```
 /login        -> LoginPage        (public)
-/settings     -> SettingsPage     (RequireAuth) — reached from the header's account dropdown
+/settings     -> SettingsPage     (RequireAuth), reached from the header's account dropdown
 /dashboard    -> DashboardPage    (RequireAuth)
-/admin        -> AdminPage        (RequireAuth, admin) — admin mode: question drop-off (CD-125), reached from the header's account dropdown
-/assessment   -> AssessmentRunnerPage (RequireAuth) — not in the sidebar; only reached via
+/admin        -> AdminPage        (RequireAuth, admin), admin mode: question drop-off (CD-125), reached from the header's account dropdown
+/assessment   -> AssessmentRunnerPage (RequireAuth), not in the sidebar; only reached via
                                         the dashboard's "Assess yourself" button
 /             -> redirect to /login or /dashboard based on session
 ```
 
 `RequireAuth` (in `app/guards/`) is the only route guard. There is no
-`/onboarding` route and no `RequireRole` guard — see "Role gating" below for
+`/onboarding` route and no `RequireRole` guard, see "Role gating" below for
 why picking a role is a modal, not a page or a redirect target.
 
 ### Role gating
 
 A learner with no role yet must pick one before touching anything else,
-but as a **modal**, not a separate page — the same page (e.g. `/dashboard`)
+but as a **modal**, not a separate page, the same page (e.g. `/dashboard`)
 stays mounted underneath, blocked:
 
 - `AppShell` computes `needsRole = learner && !learner.role`. While true, it
   renders `RoleGateModal` on top and skips rendering `<Outlet/>` entirely
-  (so the routed page doesn't mount — and doesn't fetch — until a role
+  (so the routed page doesn't mount, and doesn't fetch, until a role
   exists; once it does, the page mounts fresh with no stale pre-role state
   to clean up).
 - `AppShell` also sets the DOM `inert` property on everything else (header,
@@ -293,7 +293,7 @@ stays mounted underneath, blocked:
   no close button, no backdrop-click-to-dismiss, and no Escape handling.
 - **This client-side blocking is UX, not the security boundary.** A learner
   with dev tools can always edit their own client-side state (call
-  `setRole` from the console, delete the overlay from the DOM, etc.) — no
+  `setRole` from the console, delete the overlay from the DOM, etc.), no
   amount of frontend hardening changes that for a browser they control. The
   actual enforcement is server-side: `requireRole` middleware (see
   `context/backend-structure.md`) sits on every endpoint that assumes a
@@ -330,7 +330,7 @@ request deletion.
 ### Admin mode
 
 Reached from the account menu ("Admin mode", next to Settings) and left with the
-"Exit admin mode" button — it is a route (`/admin`), not a hidden app state. The
+"Exit admin mode" button, it is a route (`/admin`), not a hidden app state. The
 page (`features/admin`) is the **question drop-off** view (CD-125): filters,
 summary cards, a bar chart and a ranked table of where learners stop (the last
 question they were shown before abandoning). Its title row also links to the
@@ -344,7 +344,7 @@ bringing the screen back is one `<Route>` in `routes.tsx`. The drop-off section
 filter still reads its section list from `GET /admin/visibility`.
 
 **Not secured yet.** Any signed-in learner with a role sees the menu item and
-can use the page — a demo-stage decision. Hiding the button later would only be
+can use the page, a demo-stage decision. Hiding the button later would only be
 UX; the real gate has to be server-side, like `requireRole`. See
 [`schema-v3-changes.md`](./schema-v3-changes.md) for the wider change.
 
@@ -357,12 +357,12 @@ UX; the real gate has to be server-side, like `requireRole`. See
 - No inline `style={{…}}` for anything beyond a one‑off nudge. The current
   inline‑styled screens are refactored to modules during migration.
 - **Every color a component uses must be one of the `--color-*` tokens
-  below** (never a hardcoded hex/rgb) — that's the only thing that makes
+  below** (never a hardcoded hex/rgb), that's the only thing that makes
   dark mode automatic instead of a per‑component chore. `npx grep` for
   `#[0-9a-f]{3,8}|rgba?\(` under `src/` before merging a new screen; any hit
   outside `styles/globals.css` itself (and the logo's SVG path data) means a
   token got skipped. Deliberately theme‑agnostic colors (the logo's brand
-  colors, the card banner gradients) are tokens too — they just live
+  colors, the card banner gradients) are tokens too, they just live
   in the theme‑agnostic `:root` block instead of the light/dark ones.
 - **The same goes for the other design values:** font sizes
   (`--font-size-*`), font weights (`--font-weight-*`), font families
@@ -372,7 +372,7 @@ UX; the real gate has to be server-side, like `requireRole`. See
   writing a one‑off number in the component. Spacing (padding/margin/gap)
   is not tokenized yet.
 - Inline `style={{…}}` is only for values computed at runtime (a progress
-  width, a rotation) — and even then it should reference a token
+  width, a rotation), and even then it should reference a token
   (`var(--banner-gradient-2)`), not carry its own color.
 - **Font sizes are in `rem`** (the `--font-size-*` tokens), so text follows
   the learner's browser font-size setting. Spacing stays in `px`.
@@ -382,15 +382,15 @@ UX; the real gate has to be server-side, like `requireRole`. See
   would cut the ring off.
 - **Motion:** every `transition`/`animation` gets a
   `@media (prefers-reduced-motion: reduce)` block in the same file that turns
-  it off — except the loading spinner, which has to move to mean anything.
+  it off, except the loading spinner, which has to move to mean anything.
 
 ### Theming: Default / Light / Dark
 
-Modeled on Claude's own visuals picker — Settings has three options, not
+Modeled on Claude's own visuals picker, Settings has three options, not
 a single toggle:
 
-- **Default** — follows the OS/browser's `prefers-color-scheme`.
-- **Light** / **Dark** — pinned regardless of the system setting.
+- **Default**, follows the OS/browser's `prefers-color-scheme`.
+- **Light** / **Dark**, pinned regardless of the system setting.
 
 **How it works:**
 
@@ -400,7 +400,7 @@ a single toggle:
    (serves "Default" when the OS is dark, but backs off if the learner picked
    "Light" explicitly) and once inside `:root[data-theme="dark"] { … }` (an
    explicit "Dark" choice, wins even on a light‑system browser). Never define
-   a color only inside one of those two blocks — both must agree, or the
+   a color only inside one of those two blocks, both must agree, or the
    toggle and the OS setting can disagree with each other.
 2. `app/providers/ThemeProvider.tsx` holds the `preference`
    (`"default" | "light" | "dark"`, persisted via `useLocalStorage`) and sets
@@ -412,7 +412,7 @@ a single toggle:
 3. `index.html` has a small inline script that applies a stored `data-theme`
    _before_ React mounts, so there's no flash of the wrong theme on first
    paint. It reads the same `localStorage` key `ThemeProvider` writes
-   (`aios.themePreference`) — keep them in sync if either changes.
+   (`aios.themePreference`), keep them in sync if either changes.
 4. The picker itself lives in `features/settings/pages/SettingsPage.tsx`
    ("Choose your visuals"), via `useTheme()`.
 
@@ -422,10 +422,10 @@ AIOS logo colors (purple default, blue, olive). `app/providers/AccentProvider.ts
 `data-accent` on `<html>`; `index.html`'s inline script applies it before
 mount too. `globals.css` has `:root[data-accent]` rules (after the theme
 blocks) that override `--color-primary`, `-hover`, `-contrast` and `-soft`
-via `color-mix()` — darkened in light mode, lightened in dark (twice, like
+via `color-mix()`, darkened in light mode, lightened in dark (twice, like
 the theme blocks). Components just keep using the `--color-primary*` tokens.
 
-**Token list** (defined for both light and dark — add new ones to _both_
+**Token list** (defined for both light and dark, add new ones to _both_
 places in `globals.css`, right next to each other, so they can't drift):
 `--color-bg`, `--color-surface`, `--color-border`, `--color-text`,
 `--color-text-muted`, `--color-primary`, `--color-primary-hover`,
@@ -435,7 +435,7 @@ places in `globals.css`, right next to each other, so they can't drift):
 backdrops), `--color-score-weak`, `--color-score-good`,
 `--color-score-strong` (CompetenciesPage's score bands),
 `--color-section-tint` (dark only), the card banner colors
-(`--banner-purple`, `--banner-blue`, `--banner-green` — the logo's hues,
+(`--banner-purple`, `--banner-blue`, `--banner-green`, the logo's hues,
 lifted to light shades in dark mode) and the icon color on them
 (`--color-on-banner`), `--decor-strength` (how strong decorative washes
 like the dashboard's logo backdrop are; higher in dark mode),
@@ -443,14 +443,14 @@ like the dashboard's logo backdrop are; higher in dark mode),
 
 Theme‑agnostic tokens live once, in the first `:root` block of `globals.css`,
 and have no dark variant: the brand palette (`--brand-purple`, `--brand-blue`,
-`--brand-olive` — the logo colors, which the accent colors, the logo and the
+`--brand-olive`, the logo colors, which the accent colors, the logo and the
 accent picker's swatches all read from), the card banner gradients
 (`--banner-gradient-1…3`, one tonal gradient per themed `--banner-*` color), the competence section hues
 (`--section-a…e`), `--color-compare` (an earlier assessment on the
 results radar; an alias for `--color-text-muted`), layout sizes (`--header-height`,
 `--sidebar-width*`, `--bottom-nav-height`), `--radius-*`, `--font-size-*`,
 `--font-weight-*`, `--font-family-*`, `--duration-*`, the card style (`--radius-card`,
-`--shadow-card` — every content card uses these, dialogs and menus don't)
+`--shadow-card`, every content card uses these, dialogs and menus don't)
 and the `--z-*` stacking
 scale.
 
@@ -459,17 +459,17 @@ scale.
 `<pie-fixed-player>` (`@pie-framework/pie-fixed-player-static`, wrapped by
 `features/assessment/components/PieQuestionPlayer.tsx`) renders its
 question/answer content via Material‑UI (MUI) in the regular **light
-DOM — not Shadow DOM**, so global CSS _can_ reach its internals. It's just
+DOM, not Shadow DOM**, so global CSS _can_ reach its internals. It's just
 built assuming a light page and doesn't read our tokens on its own, so in
 dark mode it was rendering dark widget text on our now-dark card
-background — unreadable.
+background, unreadable.
 
 **Fix:** `styles/globals.css` overrides its colors directly, targeting the
 classes it actually renders (`.MuiTypography-root`, `.MuiFormLabel-root`,
 `.choice-label`, `.option-label`, plus raw `svg text`/`svg tspan` for
 elements that render via SVG) to our `--color-text` / `--color-border`
 tokens, with `!important` (needed to beat MUI's own inline/JS-set styles).
-Duplicated across both dark blocks exactly like every other token — never
+Duplicated across both dark blocks exactly like every other token, never
 add this only under `[data-theme="dark"]` or only under
 `prefers-color-scheme`, same rule as everywhere else in this file.
 `PieQuestionPlayer`'s `.canvas` wrapper is then just a normal themed
@@ -482,14 +482,14 @@ rendered markup for its current classes and update the selectors.
 
 This is the pattern for any future embedded/third-party widget that ships
 its own styling: isolate it in a small fixed-color container rather than
-hoping it inherits our tokens — don't leave it to blend into whatever
+hoping it inherits our tokens, don't leave it to blend into whatever
 `--color-surface` happens to resolve to.
 
 ### Responsive / mobile layout
 
-- **Related ticket:** CD-40 — _Should have a web-based and mobile-friendly interface_
+- **Related ticket:** CD-40, _Should have a web-based and mobile-friendly interface_
 
-One codebase, one set of components — no separate mobile app, no `/m` routes.
+One codebase, one set of components, no separate mobile app, no `/m` routes.
 Below **768px** the layout switches to a phone layout; from 768px up the
 desktop design is unchanged.
 
@@ -500,15 +500,15 @@ desktop design is unchanged.
 | ≤ 767px (mobile) | fixed bottom tab bar, sticky header, 16px page padding, single column, full-width actions |
 
 **The breakpoint.** `shared/lib/breakpoints.ts` is the single source
-(`MOBILE_MAX_WIDTH = 767`, `MOBILE_QUERY`). CSS can't import it — media
-queries can't use custom properties — so each `.module.css` writes
+(`MOBILE_MAX_WIDTH = 767`, `MOBILE_QUERY`). CSS can't import it, media
+queries can't use custom properties, so each `.module.css` writes
 `@media (max-width: 767px)` by hand. Grep for `767px` if it ever changes.
 
-**Two kinds of media query — pick by what you mean:**
+**Two kinds of media query, pick by what you mean:**
 
-- `@media (max-width: 767px)` — _layout_ (screen size): spacing, columns,
+- `@media (max-width: 767px)`, _layout_ (screen size): spacing, columns,
   heading sizes, full-width buttons.
-- `@media (pointer: coarse)` — _input_ (touch; also covers tablets and phones
+- `@media (pointer: coarse)`, _input_ (touch; also covers tablets and phones
   in landscape, which the width query misses): 44px minimum hit areas
   (`Button`, the header avatar, dropdown items, the course "View source"
   link) and 16px form controls (iOS Safari zooms the whole page when a
@@ -516,7 +516,7 @@ queries can't use custom properties — so each `.module.css` writes
   as a stand-in for touch, or the reverse.
 
 **Prefer CSS. Use `useMediaQuery(MOBILE_QUERY)` only when the DOM or props
-genuinely differ** — currently exactly two places:
+genuinely differ**, currently exactly two places:
 
 1. `AppShell` renders `<Sidebar layout="side">` _before_ `<main>` on desktop
    and `<Sidebar layout="bottom">` _after_ it on mobile. It's one or the
@@ -524,49 +524,49 @@ genuinely differ** — currently exactly two places:
    on screen.
 2. `DashboardPage` passes `compact={isMobile}` to `CompetenceRadar`.
 3. `AppShell` passes `Header` its `sidebarHidden`/`onToggleSidebar` props only
-   on desktop (`undefined` on mobile) — the bottom tab bar can't be hidden,
+   on desktop (`undefined` on mobile), the bottom tab bar can't be hidden,
    so the header's toggle button hides itself entirely rather than
    controlling something meaningless.
 
 The hook reads synchronously (`useSyncExternalStore`), so there's no flash of
-the wrong layout on first paint. Never use it for spacing or sizing — that's
+the wrong layout on first paint. Never use it for spacing or sizing, that's
 what the CSS media queries are for.
 
 **Fixed app shell (every viewport)**
 
-`AppShell.module.css`'s `.shell` is `height: 100%` — deliberately not
+`AppShell.module.css`'s `.shell` is `height: 100%`, deliberately not
 `min-height: 100%`, which would let the shell grow taller than the screen on
 a long page and hand scrolling to the whole document, carrying the header and
 sidebar away with it. Capped like this, `.main`'s own `overflow-y: auto` is
 the only thing that scrolls: the header and the side rail (or the mobile tab
 bar) never move, and a routed page always renders inside that fixed frame.
-`.body { min-height: 0 }` is the other half of this — without it a flex child
+`.body { min-height: 0 }` is the other half of this, without it a flex child
 can't shrink below its content size, and the cap on `.shell` would do nothing.
 
 The desktop rail has **two separate controls, on purpose two different
-states** — easy to conflate, so worth being explicit about:
+states**, easy to conflate, so worth being explicit about:
 
 - **`Header`'s `SidebarToggleIcon` button** (top-left, only rendered when
   `onToggleSidebar` is passed, i.e. not on mobile) toggles `hidden`
-  (`useLocalStorage "aios.sidebarHidden"`). This hides the **entire rail** —
-  `AppShell` simply doesn't render `<Sidebar>` at all while `hidden` — and
+  (`useLocalStorage "aios.sidebarHidden"`). This hides the **entire rail** ,
+  `AppShell` simply doesn't render `<Sidebar>` at all while `hidden`, and
   `<main>` takes the full row width. The button sits in its own `.railSlot`,
   fixed to `--sidebar-width-collapsed` and centred within it, so it lines up
   directly above the sidebar's icon column below (that column's position
-  doesn't shift between collapsed/expanded — only the labels do) instead of
+  doesn't shift between collapsed/expanded, only the labels do) instead of
   just floating next to the logo. `SidebarToggleIcon` also takes an `open`
   prop (`open={!hidden}`) and draws its left panel filled solid when the
-  rail is showing, hollow when it isn't — the icon depicts the _current_
+  rail is showing, hollow when it isn't, the icon depicts the _current_
   state, not just a generic toggle glyph, so a click's effect is visible
   before it happens, not just spelled out in the `aria-label`.
 - **`Sidebar`'s own bottom-right button** (`.labelToggle`) toggles the
   unrelated `collapsed` state (`useLocalStorage "aios.sidebarCollapsed"`),
-  which only hides the nav items' _labels_, icon-only — the rail itself
+  which only hides the nav items' _labels_, icon-only, the rail itself
   stays put, just narrower. It used to be a "Hide"/"Show" text label; it's
   now `icons.tsx`'s shared `ChevronIcon`, sideways rather than up/down since
   that's the direction the rail itself actually resizes in: right-pointing
-  (›, its default, no rotation needed) while collapsed — there are labels to
-  reveal in that direction — and rotated 180° to point left (‹) once
+  (›, its default, no rotation needed) while collapsed, there are labels to
+  reveal in that direction, and rotated 180° to point left (‹) once
   expanded, to tuck them back away. `title` carries the same explanation as
   a hover tooltip since there's no text left on the button to read, and
   `aria-label` still names the action for screen readers. Pinned to that
@@ -577,7 +577,7 @@ flex-end` (pins it to the right instead of stretching full-width like the
   nav links above it).
 
 Both replaced an earlier single floating chevron button (absolutely
-positioned on the sidebar's right edge) that conflated the two — collapsing
+positioned on the sidebar's right edge) that conflated the two, collapsing
 labels and hiding the whole rail were, confusingly, the same click. Don't
 reunify them; a learner might want the rail icon-only _and_ still visible.
 
@@ -587,10 +587,10 @@ reunify them; a learner might want the rail icon-only _and_ still visible.
 raster image) and is used by both `Header` and `LoginPage`. The wordmark
 path's fill is `currentColor`, and `Logo.module.css` sets `color:
 var(--color-text)`, so it flips between the light/dark palettes the same way
-any other text does — no separate dark-mode asset. The colourful dot spiral
+any other text does, no separate dark-mode asset. The colourful dot spiral
 next to it keeps the fixed `--brand-*` colors, set as fills in
 `Logo.module.css` (it reads fine on both backgrounds). Callers pass their own `className` (composed alongside the
-component's own) purely to size it — `Header.module.css`'s `.logo` sets a
+component's own) purely to size it, `Header.module.css`'s `.logo` sets a
 fixed height for the header, `LoginPage.module.css`'s centers a larger one
 on the card. This replaced a PNG in `public/aios-logo.png` that was seated on
 a hardcoded white chip to stay visible on a dark header; that file and hack
@@ -630,23 +630,23 @@ height and with no plate behind them in either theme.
 
 - **Header** is sticky (the account menu stays reachable on long pages) and
   grows by the notch inset.
-- **Nav** — `Sidebar layout="bottom"`: a fixed tab bar, icon over label,
+- **Nav**, `Sidebar layout="bottom"`: a fixed tab bar, icon over label,
   `--bottom-nav-height` (60px) plus the home-indicator inset. It always shows
   labels; the persisted `aios.sidebarCollapsed` preference is desktop-only
   and never leaks into it. There's no collapse toggle. Adding a nav item =
   one entry in `NAV_ITEMS`, and it appears in both layouts. Two to five
   items fit comfortably; beyond that, redesign (e.g. a "More" sheet) rather
   than squeezing labels.
-- **Clearance** — `<main>`'s bottom padding reserves the bar's height plus
+- **Clearance**, `<main>`'s bottom padding reserves the bar's height plus
   the inset (`AppShell.module.css`), so pages need nothing extra. Anything
   else you pin to the bottom of the screen must account for the bar itself.
-- **Stacking** — the `--z-*` tokens in `globals.css`: bottom bar
+- **Stacking**, the `--z-*` tokens in `globals.css`: bottom bar
   (`--z-bottom-nav`, 20), header (`--z-header`, 30), feedback widget
   (`--z-floating`, 40), dialogs (`--z-dialog`, 900), `RoleGateModal`
   (`--z-modal`, 1000). Slot new fixed UI into that scale.
-- **Safe areas** — `index.html` sets `viewport-fit=cover`; the header, tab
+- **Safe areas**, `index.html` sets `viewport-fit=cover`; the header, tab
   bar and `<main>` add `env(safe-area-inset-*)`. Zoom is **not** disabled (no
-  `maximum-scale` / `user-scalable=no`) — keep it that way (WCAG 1.4.4).
+  `maximum-scale` / `user-scalable=no`), keep it that way (WCAG 1.4.4).
 - **`RoleGateModal`** scrolls internally on a short viewport (phone in
   landscape) rather than clipping the confirm button. It's still `inert`
   over the rest of the app, tab bar included.
@@ -657,7 +657,7 @@ height and with no plate behind them in either theme.
   the axes on a 320px screen, so axes get numbered tips and the names +
   scores move into a legend list under the chart (which also gives assistive
   tech the actual numbers). Desktop keeps inline labels.
-- `CompetenceRadar` itself only knows how to chart a `CompetenceScore[]` — it
+- `CompetenceRadar` itself only knows how to chart a `CompetenceScore[]`, it
   has no idea whether each axis is a competence or something bigger.
   `DashboardPage`'s overview feeds it 5 _section_ axes (`sectionAxes.ts` sums
   each section's own competences into one score); `SectionDetailsPage`'s
@@ -667,9 +667,9 @@ height and with no plate behind them in either theme.
 - `PieQuestionPlayer`'s `.canvas` has `overflow-x: auto`: a wide third-party
   widget scrolls inside its card instead of pushing the whole page sideways.
 - `AppShell`'s `.main` has `min-width: 0`. Without it a flex item grows to
-  fit its widest child and drags the page out to horizontal scroll — reach
+  fit its widest child and drags the page out to horizontal scroll, reach
   for `min-width: 0` on any flex/grid child that holds long text.
-- Card grids use `minmax(min(100%, 280px), 1fr)` — a bare `minmax(280px, …)`
+- Card grids use `minmax(min(100%, 280px), 1fr)`, a bare `minmax(280px, …)`
   overflows a screen narrower than the column.
 
 **Checklist for a new screen**
@@ -679,9 +679,9 @@ height and with no plate behind them in either theme.
 2. Add a `@media (max-width: 767px)` block: smaller padding and headings,
    stack rows, primary action full width.
 3. Interactive elements ≥ 44px and inputs ≥ 16px under `pointer: coarse`
-   (`Button` already handles it — if you build a bespoke control, you own it).
+   (`Button` already handles it, if you build a bespoke control, you own it).
 4. `min-width: 0` on flex/grid children with long text.
-5. Tokens only — `--color-*` (so dark mode still works), `--font-size-*`,
+5. Tokens only, `--color-*` (so dark mode still works), `--font-size-*`,
    `--radius-*` etc. No hex/rgb or one‑off sizes in the module.
 6. Check it at 320, 390, ~768 and desktop, in light and dark, using the
    browser's device toolbar; confirm no horizontal scroll
@@ -689,7 +689,7 @@ height and with no plate behind them in either theme.
 
 **What was verified, and what wasn't** (CD-40)
 
-Checked in headless Chrome with mobile emulation — 390×844, 320×568,
+Checked in headless Chrome with mobile emulation, 390×844, 320×568,
 landscape 844×390, desktop 1280×800, light and dark: no horizontal overflow
 on any screen; the last piece of content clears the tab bar when scrolled to
 the bottom; every touch target is ≥ 44px; the account dropdown stays inside
@@ -698,7 +698,7 @@ order following) with no reload; desktop renders as before.
 
 Not covered, so worth a pass before relying on it:
 
-- **Real devices.** Emulation isn't iOS Safari / Android Chrome — the
+- **Real devices.** Emulation isn't iOS Safari / Android Chrome, the
   on-screen keyboard, `dvh` and safe-area behavior in particular.
 - **Other question types.** Only multiple-choice items are seeded, so PIE
   drag-and-drop / matrix-style widgets haven't been seen at phone width. The
