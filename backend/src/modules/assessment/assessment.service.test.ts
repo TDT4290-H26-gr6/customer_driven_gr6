@@ -874,9 +874,27 @@ describe("getAttemptSectionScores", () => {
           level: 1,
           levelCount: 3,
           competences: [
-            { competence: { id: "comp-Onion", name: "Onion" }, level: 1, score: 3, maxScore: 3, reached: true },
-            { competence: { id: "comp-Fingers", name: "Fingers" }, level: 2, score: 0, maxScore: 3, reached: true },
-            { competence: { id: "comp-Herbs", name: "Herbs" }, level: 3, score: 0, maxScore: 3, reached: false },
+            {
+              competence: { id: "comp-Onion", name: "Onion" },
+              level: 1,
+              score: 3,
+              maxScore: 3,
+              reached: true,
+            },
+            {
+              competence: { id: "comp-Fingers", name: "Fingers" },
+              level: 2,
+              score: 0,
+              maxScore: 3,
+              reached: true,
+            },
+            {
+              competence: { id: "comp-Herbs", name: "Herbs" },
+              level: 3,
+              score: 0,
+              maxScore: 3,
+              reached: false,
+            },
           ],
         },
       ],
@@ -931,7 +949,13 @@ describe("getAttemptSectionScores", () => {
       ["B", true, 0],
     ]);
     expect(result?.sections[0].competences).toEqual([
-      { competence: { id: "comp-Onion", name: "Onion" }, level: 1, score: 0, maxScore: 0, reached: false },
+      {
+        competence: { id: "comp-Onion", name: "Onion" },
+        level: 1,
+        score: 0,
+        maxScore: 0,
+        reached: false,
+      },
     ]);
   });
 
@@ -1427,7 +1451,11 @@ describe("journey assessments", () => {
       };
       mockPrisma.satInstance.findFirst
         .mockResolvedValueOnce(null) // journeyRecommendedAfterMainAssessment: no advice/recommendation needed here
-        .mockResolvedValueOnce({ id: "main-2", instanceNum: 2, completedAt: newer.completedAt } as never);
+        .mockResolvedValueOnce({
+          id: "main-2",
+          instanceNum: 2,
+          completedAt: newer.completedAt,
+        } as never);
       mockPrisma.response.findMany.mockResolvedValue([
         answerIn("mod-a1", 1, older), // scored well on an older full attempt
         answerIn("mod-a1", 0.5, newer), // but worse on the single latest one

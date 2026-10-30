@@ -137,7 +137,9 @@ describe("HistoryPage", () => {
     expect(await screen.findByText("Assessment 1")).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Partial assessments" }));
-    expect(await screen.findByText(/haven't completed a partial reassessment/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/haven't completed a partial reassessment/i),
+    ).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Full assessments" }));
     expect(await screen.findByText("Assessment 1")).toBeInTheDocument();

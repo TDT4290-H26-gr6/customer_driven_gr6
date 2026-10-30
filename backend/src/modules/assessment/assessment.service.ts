@@ -1057,7 +1057,11 @@ export async function getDashboardProgress(learnerId: string) {
     const attempt = await getAttemptSectionScores(learnerId, instanceNum);
     if (attempt) attempts.push(attempt);
   }
-  const sections = buildSectionProgress(attempts, latest.instanceNum, previous?.instanceNum ?? null);
+  const sections = buildSectionProgress(
+    attempts,
+    latest.instanceNum,
+    previous?.instanceNum ?? null,
+  );
 
   return {
     latest: { instanceNum: latest.instanceNum, completedAt: latest.completedAt },

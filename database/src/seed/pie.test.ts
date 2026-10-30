@@ -94,8 +94,9 @@ describe("buildPieContent: criteria_check", () => {
   };
 
   it("shows the example in its own box under the prompt, line breaks kept and escaped", () => {
-    const model = (buildPieContent("criteria_check", "Which criteria does it meet?", content) as PieContent)
-      .models[0] as { prompt: string; choiceMode: string };
+    const model = (
+      buildPieContent("criteria_check", "Which criteria does it meet?", content) as PieContent
+    ).models[0] as { prompt: string; choiceMode: string };
 
     expect(model.prompt).toBe(
       '<p>Which criteria does it meet?</p><div class="aios-exhibit">README.md<br>Licence: CC BY 4.0 &lt;open&gt;</div>',
@@ -130,7 +131,11 @@ describe("buildPieContent: ordering", () => {
   };
 
   it("builds a placement-ordering native element, not a PIE item config", () => {
-    const result = buildPieContent("ordering", "Put these in order", content) as NativeElementContent;
+    const result = buildPieContent(
+      "ordering",
+      "Put these in order",
+      content,
+    ) as NativeElementContent;
     expect(result.element).toBe("aios-placement-ordering");
     expect(result.model).toMatchObject({
       element: "aios-placement-ordering",
@@ -149,7 +154,9 @@ describe("buildPieContent: ordering", () => {
       correctOrder: ["a"],
     }) as NativeElementContent;
     expect(result.model.prompt).toBe("<p>Pick &lt;b&gt;carefully&lt;/b&gt;</p>");
-    expect((result.model.choices as { label: string }[])[0].label).toBe("&lt;script&gt;bad&lt;/script&gt;");
+    expect((result.model.choices as { label: string }[])[0].label).toBe(
+      "&lt;script&gt;bad&lt;/script&gt;",
+    );
   });
 
   it("refuses an item without options", () => {

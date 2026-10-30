@@ -261,11 +261,13 @@ describe("scoreOrdering", () => {
 
 describe("extractOrderingValues", () => {
   it("reads the choice ids straight off session.value, in order", () => {
-    expect(extractOrderingValues({ id: "s1", element: "aios-placement-ordering", value: ["a", "c", "b"] })).toEqual([
-      "a",
-      "c",
-      "b",
-    ]);
+    expect(
+      extractOrderingValues({
+        id: "s1",
+        element: "aios-placement-ordering",
+        value: ["a", "c", "b"],
+      }),
+    ).toEqual(["a", "c", "b"]);
   });
 
   it("keeps a null for an empty slot", () => {

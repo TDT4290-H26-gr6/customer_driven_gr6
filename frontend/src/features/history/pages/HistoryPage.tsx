@@ -109,7 +109,9 @@ export function HistoryPage() {
     );
   }
 
-  const shown = entries.filter((entry) => (tab === "partial" ? isPartial(entry) : !isPartial(entry)));
+  const shown = entries.filter((entry) =>
+    tab === "partial" ? isPartial(entry) : !isPartial(entry),
+  );
 
   return (
     <div className={styles.page}>
@@ -118,7 +120,9 @@ export function HistoryPage() {
         Every self-assessment you&apos;ve completed, most recent first.
       </p>
 
-      {loadFailed && <p className={styles.note}>Couldn&apos;t load your history right now. Please try again.</p>}
+      {loadFailed && (
+        <p className={styles.note}>Couldn&apos;t load your history right now. Please try again.</p>
+      )}
 
       {!loadFailed && entries.length === 0 && (
         <p className={styles.note}>

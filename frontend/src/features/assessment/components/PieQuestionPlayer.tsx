@@ -127,13 +127,15 @@ export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
 
   return (
     <div className={styles.canvas} onClickCapture={blockOthersWhileIdk}>
-      {native
-        ? // Dynamic, not JSX's <aios-placement-ordering> literal, so an
-          // element with no entry in NATIVE_LOADERS still renders under its
-          // own (empty) tag rather than silently masquerading as a
-          // different one.
-          createElement(content.element, { ref: ref as React.RefObject<NativeQuestionElement> })
-        : <pie-fixed-player ref={ref as React.RefObject<PieFixedPlayerElement>}></pie-fixed-player>}
+      {native ? (
+        // Dynamic, not JSX's <aios-placement-ordering> literal, so an
+        // element with no entry in NATIVE_LOADERS still renders under its
+        // own (empty) tag rather than silently masquerading as a
+        // different one.
+        createElement(content.element, { ref: ref as React.RefObject<NativeQuestionElement> })
+      ) : (
+        <pie-fixed-player ref={ref as React.RefObject<PieFixedPlayerElement>}></pie-fixed-player>
+      )}
     </div>
   );
 }

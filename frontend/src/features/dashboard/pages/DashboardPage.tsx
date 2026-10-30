@@ -165,8 +165,8 @@ export function DashboardPage() {
           className={styles.tabPanel}
         >
           <p className={styles.note}>
-            Based on your full self-assessments. A partial reassessment (limited to some
-            sections) isn&apos;t reflected here. See Detailed view for those.
+            Based on your full self-assessments. A partial reassessment (limited to some sections)
+            isn&apos;t reflected here. See Detailed view for those.
           </p>
           <div className={styles.topRow}>
             <div className={styles.chartCard}>

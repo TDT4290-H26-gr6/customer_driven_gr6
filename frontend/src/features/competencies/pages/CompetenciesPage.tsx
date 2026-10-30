@@ -99,7 +99,8 @@ function ModuleRow({ module, view }: { module: CompetencyModule; view: View }) {
 
 function SectionCard({ section, view }: { section: CompetencySection; view: View }) {
   const percent = view === "latest" ? section.latestPercent : section.percent;
-  const assessedModules = view === "latest" ? section.latestAssessedModules : section.assessedModules;
+  const assessedModules =
+    view === "latest" ? section.latestAssessedModules : section.assessedModules;
   return (
     <section
       className={`${styles.card} ${styles.sectionCard} ${hueClass(section.code)}`}
@@ -218,9 +219,9 @@ export function CompetenciesPage() {
     <div className={styles.page}>
       <h1 className={styles.heading}>Competencies</h1>
       <p className={styles.subheading}>
-        Your result in each module, across your full self-assessments and any journeys
-        you&apos;ve assessed. A partial reassessment (limited to some sections) doesn&apos;t count
-        here, see your <Link to="/history">History</Link> for those.
+        Your result in each module, across your full self-assessments and any journeys you&apos;ve
+        assessed. A partial reassessment (limited to some sections) doesn&apos;t count here, see
+        your <Link to="/history">History</Link> for those.
       </p>
 
       {!anyResult && (

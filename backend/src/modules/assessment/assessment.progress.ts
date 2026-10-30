@@ -10,7 +10,12 @@ export type AttemptForProgress = {
     assessed: boolean;
     level: number | null;
     levelCount: number;
-    competences: { competence: { id: string }; score: number; maxScore: number; reached: boolean }[];
+    competences: {
+      competence: { id: string };
+      score: number;
+      maxScore: number;
+      reached: boolean;
+    }[];
   }[];
 };
 

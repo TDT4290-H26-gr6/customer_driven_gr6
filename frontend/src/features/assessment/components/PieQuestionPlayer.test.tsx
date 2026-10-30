@@ -120,7 +120,9 @@ describe("PieQuestionPlayer", () => {
 
     it("routes to the element named in content.element instead of <pie-fixed-player>, setting .model not .config", async () => {
       let finishLoading!: () => void;
-      vi.mocked(loadPlacementOrdering).mockReturnValue(new Promise<void>((r) => (finishLoading = r)));
+      vi.mocked(loadPlacementOrdering).mockReturnValue(
+        new Promise<void>((r) => (finishLoading = r)),
+      );
 
       const { container } = render(
         <PieQuestionPlayer

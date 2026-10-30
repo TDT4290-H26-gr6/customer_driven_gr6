@@ -11,7 +11,10 @@ const loading = new Map<string, Promise<void>>();
  * Loads and registers one native element's custom element on first use. Each
  * is loaded once; a failed load is retried on the next call for that tag.
  */
-function loadNativeElement(tag: string, load: () => Promise<{ default: CustomElementConstructor }>) {
+function loadNativeElement(
+  tag: string,
+  load: () => Promise<{ default: CustomElementConstructor }>,
+) {
   return function (): Promise<void> {
     let promise = loading.get(tag);
     if (!promise) {

@@ -2324,7 +2324,10 @@
       "content": {
         "options": [
           { "id": "a", "text": "Ask for the AI provider's fairness testing results" },
-          { "id": "b", "text": "Ensure diverse stakeholders are involved in decisions about how the AI system is used" },
+          {
+            "id": "b",
+            "text": "Ensure diverse stakeholders are involved in decisions about how the AI system is used"
+          },
           {
             "id": "c",
             "text": "Pilot the AI system first, and measure bias or fairness outcomes before deciding whether to proceed"
@@ -2410,7 +2413,10 @@
             "text": "A professor sends her students’ course reviews through a large language model to identify trends"
           },
           { "id": "c", "text": "All AI use that involves students within a university" },
-          { "id": "d", "text": "A professor creates grading rubrics for her courses using a large language model" }
+          {
+            "id": "d",
+            "text": "A professor creates grading rubrics for her courses using a large language model"
+          }
         ],
         "correctOptionIds": ["a"]
       },

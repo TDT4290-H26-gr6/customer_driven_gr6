@@ -120,10 +120,7 @@ export function scoreDragAndDrop(
  * one, there's no credit beyond how many items actually ended up where they
  * belong.
  */
-export function scoreOrdering(
-  correctOrder: string[],
-  placedOrder: (string | null)[],
-): ScoreResult {
+export function scoreOrdering(correctOrder: string[], placedOrder: (string | null)[]): ScoreResult {
   if (correctOrder.length === 0) return { score: 0, maxScore: QUESTION_MAX_SCORE };
   const correctCount = correctOrder.reduce(
     (count, id, index) => count + (placedOrder[index] === id ? 1 : 0),

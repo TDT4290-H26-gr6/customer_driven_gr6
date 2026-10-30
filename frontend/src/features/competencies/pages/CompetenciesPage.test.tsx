@@ -50,7 +50,8 @@ const sectionWith = (overrides: Partial<CompetencySection>): CompetencySection =
     ...overrides,
   };
   if (overrides.latestPercent === undefined) merged.latestPercent = merged.percent;
-  if (overrides.latestAssessedModules === undefined) merged.latestAssessedModules = merged.assessedModules;
+  if (overrides.latestAssessedModules === undefined)
+    merged.latestAssessedModules = merged.assessedModules;
   return merged;
 };
 
@@ -196,7 +197,9 @@ describe("CompetenciesPage", () => {
 
       render(<CompetenciesPage />);
 
-      expect(await screen.findByText(/latest full self-assessment, 5 Oct 2026/i)).toBeInTheDocument();
+      expect(
+        await screen.findByText(/latest full self-assessment, 5 Oct 2026/i),
+      ).toBeInTheDocument();
     });
 
     it("says so when there's no completed full assessment yet", async () => {
@@ -274,7 +277,9 @@ describe("CompetenciesPage", () => {
 
       render(<CompetenciesPage />);
       const sectionA = await screen.findByRole("region", { name: "Fundamentals" });
-      expect(within(sectionA).getByText("Latest: Self-assessment, 10 Oct 2026")).toBeInTheDocument();
+      expect(
+        within(sectionA).getByText("Latest: Self-assessment, 10 Oct 2026"),
+      ).toBeInTheDocument();
       expect(within(sectionA).getAllByText("40%").length).toBeGreaterThan(0);
 
       await user.click(screen.getByRole("tab", { name: "Best ever" }));
