@@ -24,14 +24,16 @@
   /* Decorative banner gradients for the journey cards (JourneyCard), a
      stand-in "picture" per card until real artwork exists. One per journey
      (5, matching the 5 WP3 journeys, see bannerGradient in
-     journeyDisplay.ts): purple, blue and green (the logo colors), plus a
-     purple-blue and a blue-green in between, each an even color-mix of its
-     two neighbours rather than a visible sweep from one to the other, so
-     every card reads as one flat color like the other three. The banner
-     colors they're built from (--banner-purple/-blue/-green) and the icon
-     color on them (--color-on-banner) differ per theme, so those live in
-     the light/dark blocks below. Each stays within its own color, a
-     lighter tint of it, the color itself, then a slightly deeper shade. */
+     journeyDisplay.ts): purple, blue and green (the logo colors, solid:
+     a lighter tint of the color, the color itself, then a slightly deeper
+     shade), plus a purple-to-blue and a blue-to-green sweep in between.
+     The sweeps interpolate across their whole width (light tint of the
+     first color straight through to a dark shade of the second, via their
+     mix at the midpoint) rather than holding each color flat before
+     transitioning, so the change reads as gradual, not a sharp band. The
+     banner colors they're built from (--banner-purple/-blue/-green) and
+     the icon color on them (--color-on-banner) differ per theme, so those
+     live in the light/dark blocks below. */
   --banner-gradient-1: linear-gradient(
     in oklch 135deg,
     color-mix(in oklch, var(--banner-purple) 78%, white),
@@ -40,9 +42,9 @@
   );
   --banner-gradient-2: linear-gradient(
     in oklch 135deg,
-    color-mix(in oklch, var(--banner-purple-blue) 78%, white),
-    var(--banner-purple-blue) 55%,
-    color-mix(in oklch, var(--banner-purple-blue) 88%, black)
+    color-mix(in oklch, var(--banner-purple) 78%, white),
+    color-mix(in oklch, var(--banner-purple), var(--banner-blue)) 50%,
+    color-mix(in oklch, var(--banner-blue) 88%, black)
   );
   --banner-gradient-3: linear-gradient(
     in oklch 135deg,
@@ -52,9 +54,9 @@
   );
   --banner-gradient-4: linear-gradient(
     in oklch 135deg,
-    color-mix(in oklch, var(--banner-blue-green) 78%, white),
-    var(--banner-blue-green) 55%,
-    color-mix(in oklch, var(--banner-blue-green) 88%, black)
+    color-mix(in oklch, var(--banner-blue) 78%, white),
+    color-mix(in oklch, var(--banner-blue), var(--banner-green)) 50%,
+    color-mix(in oklch, var(--banner-green) 88%, black)
   );
   --banner-gradient-5: linear-gradient(
     in oklch 135deg,
@@ -162,8 +164,6 @@
   --banner-purple: #8a5aab;
   --banner-blue: #2f7fa3;
   --banner-green: #5f8226;
-  --banner-purple-blue: color-mix(in oklch, var(--banner-purple), var(--banner-blue));
-  --banner-blue-green: color-mix(in oklch, var(--banner-blue), var(--banner-green));
   --color-on-banner: #ffffff;
   /* How strong decorative color washes are (the logo backdrop in
      AppShell.module.css): turned up in dark mode, where faint color fades out. */
@@ -207,8 +207,6 @@
     --banner-purple: #b87eca;
     --banner-blue: #5da3c1;
     --banner-green: #97a126;
-    --banner-purple-blue: color-mix(in oklch, var(--banner-purple), var(--banner-blue));
-    --banner-blue-green: color-mix(in oklch, var(--banner-blue), var(--banner-green));
     --color-on-banner: #181b21;
     --decor-strength: 1.35;
     /* White on dark, as in the EU's own version for dark backgrounds. */
@@ -245,8 +243,6 @@
   --banner-purple: #b87eca;
   --banner-blue: #5da3c1;
   --banner-green: #97a126;
-  --banner-purple-blue: color-mix(in oklch, var(--banner-purple), var(--banner-blue));
-  --banner-blue-green: color-mix(in oklch, var(--banner-blue), var(--banner-green));
   --color-on-banner: #181b21;
   --decor-strength: 1.35;
   --color-eu-text: #ffffff;
