@@ -125,3 +125,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 The `VITE_*` values in `.env` are built into the frontend, so after changing
 them, rebuild it (the same command, or `... up -d --build frontend`).
+
+## License
+
+Licensed under the GNU Lesser General Public License v3.0, see [LICENSE](LICENSE).
