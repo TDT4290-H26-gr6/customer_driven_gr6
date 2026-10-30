@@ -31,11 +31,16 @@
 }
 
 .toggle {
-  /* Grows to fill whatever extra height the grid row's tallest card forces
-     (the cards in a row are stretched to match it), so .footer always sits
-     flush at the bottom instead of leaving blank space below it. */
+  /* A flex column, like JourneyModal's .dialog: .banner stays fixed and
+     .body (flex: 1, below) absorbs whatever extra height the grid row's
+     tallest card forces (the cards in a row are stretched to match it).
+     Plain block layout would leave that extra space trailing after .body
+     instead, which doesn't move .footer at all and can misalign .banner
+     under some browsers' box-sizing; a real flex column doesn't have that
+     ambiguity. */
   flex: 1;
-  display: block;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   padding: 0;
   border: none;
@@ -55,7 +60,9 @@
 .banner {
   /* Fixed and clipped, not just a floor: every banner is exactly this tall
      regardless of what ends up inside it, so they stay the same size
-     across cards instead of growing to fit. */
+     across cards instead of growing to fit. flex: none so .toggle's flex
+     column never stretches it either. */
+  flex: none;
   height: 96px;
   overflow: hidden;
   display: flex;
@@ -71,7 +78,9 @@
 .body {
   /* Fixed floor so every collapsed card is the same size regardless of how
      many facts a journey has. An expanded card's content simply grows past
-     this. */
+     this. flex: 1 also absorbs the grid row's stretch (see .toggle), so the
+     extra space lands here, below the content, rather than before .banner. */
+  flex: 1;
   min-height: 220px;
   padding: 16px;
   display: flex;
