@@ -9,7 +9,7 @@ import styles from "./JourneyCard.module.css";
 
 type Props = {
   journey: LearningJourney;
-  /** The card's position in the list: picks its banner colour (unless the journey has a fixed one, see bannerGradient). */
+  /** The card's position in the list: picks its banner colour. */
   index: number;
   /** Opens the details modal. */
   onOpen: () => void;
@@ -30,10 +30,7 @@ export function JourneyCard({ journey, index, onOpen, onAssess, starting, assess
   return (
     <article className={styles.card}>
       <button type="button" className={styles.toggle} onClick={onOpen} aria-haspopup="dialog">
-        <div
-          className={styles.banner}
-          style={{ backgroundImage: bannerGradient(index, journey.name) }}
-        >
+        <div className={styles.banner} style={{ backgroundImage: bannerGradient(index) }}>
           <RouteIcon className={styles.bannerIcon} width={32} height={32} />
         </div>
 

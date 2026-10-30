@@ -22,17 +22,16 @@
   --eu-blue: #003399;
   --eu-yellow: #ffcc00;
   /* Decorative banner gradients for the journey cards (JourneyCard), a
-     stand-in "picture" per card until real artwork exists. The banner colors
-     they blend (--banner-purple/-blue/-green/-maroon) and the icon color on
-     them (--color-on-banner) differ per theme, so those live in the
-     light/dark blocks below. Each gradient stays within one color, a
-     lighter tint of it, the color itself, then a slightly deeper shade, so
-     the color reads cleanly instead of blending into a new hue.
-     Gradients 1-3 blend one of the three raw AIOS logo colors each and
-     cycle by card position (see bannerGradient in journeyDisplay.ts).
-     Gradient 4 blends --banner-maroon, from the same family as --section-e,
-     and is reserved for the Themis journey specifically, so it reads as
-     distinct from the cycling set rather than rotating into it. */
+     stand-in "picture" per card until real artwork exists. One per journey
+     (5, matching the 5 WP3 journeys, see bannerGradient in
+     journeyDisplay.ts): purple, blue and green (the logo colors), plus a
+     purple-blue and a blue-green in between, each an even color-mix of its
+     two neighbours rather than a visible sweep from one to the other, so
+     every card reads as one flat color like the other three. The banner
+     colors they're built from (--banner-purple/-blue/-green) and the icon
+     color on them (--color-on-banner) differ per theme, so those live in
+     the light/dark blocks below. Each stays within its own color, a
+     lighter tint of it, the color itself, then a slightly deeper shade. */
   --banner-gradient-1: linear-gradient(
     in oklch 135deg,
     color-mix(in oklch, var(--banner-purple) 78%, white),
@@ -41,21 +40,27 @@
   );
   --banner-gradient-2: linear-gradient(
     in oklch 135deg,
+    color-mix(in oklch, var(--banner-purple-blue) 78%, white),
+    var(--banner-purple-blue) 55%,
+    color-mix(in oklch, var(--banner-purple-blue) 88%, black)
+  );
+  --banner-gradient-3: linear-gradient(
+    in oklch 135deg,
     color-mix(in oklch, var(--banner-blue) 78%, white),
     var(--banner-blue) 55%,
     color-mix(in oklch, var(--banner-blue) 88%, black)
   );
-  --banner-gradient-3: linear-gradient(
+  --banner-gradient-4: linear-gradient(
+    in oklch 135deg,
+    color-mix(in oklch, var(--banner-blue-green) 78%, white),
+    var(--banner-blue-green) 55%,
+    color-mix(in oklch, var(--banner-blue-green) 88%, black)
+  );
+  --banner-gradient-5: linear-gradient(
     in oklch 135deg,
     color-mix(in oklch, var(--banner-green) 78%, white),
     var(--banner-green) 55%,
     color-mix(in oklch, var(--banner-green) 88%, black)
-  );
-  --banner-gradient-4: linear-gradient(
-    in oklch 135deg,
-    color-mix(in oklch, var(--banner-maroon) 78%, white),
-    var(--banner-maroon) 55%,
-    color-mix(in oklch, var(--banner-maroon) 88%, black)
   );
 
   /* Section hues for the competence sections A–E (CompetenciesPage: letter
@@ -157,7 +162,8 @@
   --banner-purple: #8a5aab;
   --banner-blue: #2f7fa3;
   --banner-green: #5f8226;
-  --banner-maroon: #9c3f63;
+  --banner-purple-blue: color-mix(in oklch, var(--banner-purple), var(--banner-blue));
+  --banner-blue-green: color-mix(in oklch, var(--banner-blue), var(--banner-green));
   --color-on-banner: #ffffff;
   /* How strong decorative color washes are (the logo backdrop in
      AppShell.module.css): turned up in dark mode, where faint color fades out. */
@@ -201,7 +207,8 @@
     --banner-purple: #b87eca;
     --banner-blue: #5da3c1;
     --banner-green: #97a126;
-    --banner-maroon: #cd6177;
+    --banner-purple-blue: color-mix(in oklch, var(--banner-purple), var(--banner-blue));
+    --banner-blue-green: color-mix(in oklch, var(--banner-blue), var(--banner-green));
     --color-on-banner: #181b21;
     --decor-strength: 1.35;
     /* White on dark, as in the EU's own version for dark backgrounds. */
@@ -238,7 +245,8 @@
   --banner-purple: #b87eca;
   --banner-blue: #5da3c1;
   --banner-green: #97a126;
-  --banner-maroon: #cd6177;
+  --banner-purple-blue: color-mix(in oklch, var(--banner-purple), var(--banner-blue));
+  --banner-blue-green: color-mix(in oklch, var(--banner-blue), var(--banner-green));
   --color-on-banner: #181b21;
   --decor-strength: 1.35;
   --color-eu-text: #ffffff;

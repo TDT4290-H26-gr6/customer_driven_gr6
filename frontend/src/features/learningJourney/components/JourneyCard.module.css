@@ -31,6 +31,10 @@
 }
 
 .toggle {
+  /* Grows to fill whatever extra height the grid row's tallest card forces
+     (the cards in a row are stretched to match it), so .footer always sits
+     flush at the bottom instead of leaving blank space below it. */
+  flex: 1;
   display: block;
   width: 100%;
   padding: 0;
@@ -49,7 +53,11 @@
 }
 
 .banner {
+  /* Fixed and clipped, not just a floor: every banner is exactly this tall
+     regardless of what ends up inside it, so they stay the same size
+     across cards instead of growing to fit. */
   height: 96px;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -4,18 +4,14 @@ import type { LearningJourney } from "../types";
 
 // Banner colour per card: a stand-in "picture" until real artwork exists.
 // Cycled by the card's position in the list rather than derived from the
-// journey, so cards side by side never share a colour. The gradients
-// themselves are the --banner-gradient-* tokens in styles/globals.css; keep
-// this count in sync with them.
-const BANNER_GRADIENT_COUNT = 3;
+// journey. One gradient per journey (5, matching the 5 WP3 journeys), a
+// spectrum from purple through blue to green, so every card gets a distinct
+// colour rather than repeating. The gradients themselves are the
+// --banner-gradient-* tokens in styles/globals.css; keep this count in sync
+// with them.
+const BANNER_GRADIENT_COUNT = 5;
 
-// Themis gets its own fixed colour (--banner-gradient-4, a maroon drawn from
-// the same family as --section-e) instead of the cycle, so the
-// policy/public-decision journey reads as distinct from the others.
-const THEMIS_GRADIENT = "var(--banner-gradient-4)";
-
-export function bannerGradient(index: number, journeyName: string): string {
-  if (journeyName.includes("Themis")) return THEMIS_GRADIENT;
+export function bannerGradient(index: number): string {
   return `var(--banner-gradient-${(index % BANNER_GRADIENT_COUNT) + 1})`;
 }
 
