@@ -1117,6 +1117,68 @@
   ],
   "aios.assessment.question": [
     {
+      "id": "q-wp2-a1-1",
+      "prompt": "What is the main purpose of Open Science?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "To make scientific knowledge more accessible, transparent, inclusive and reusable, while promoting collaboration and increasing the impact of research on society"
+          },
+          {
+            "id": "b",
+            "text": "To make all research outputs publicly available without considering ethical, legal or privacy restrictions"
+          },
+          {
+            "id": "c",
+            "text": "To limit access to research outputs to researchers affiliated with academic institutions"
+          },
+          {
+            "id": "d",
+            "text": "To replace peer review and established research quality assurance processes with unrestricted public participation"
+          }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "mod-wp2-a1",
+      "competenceId": "comp-wp2-open-science-literacy"
+    },
+    {
+      "id": "q-wp2-a1-2",
+      "prompt": "When using generative AI to support research, researchers should disclose its use when appropriate and remain responsible for verifying the accuracy and integrity of the resulting work.",
+      "questionType": "true_false",
+      "content": {
+        "options": [
+          { "id": "true", "text": "True" },
+          { "id": "false", "text": "False" }
+        ],
+        "correctOptionIds": ["true"]
+      },
+      "sectionModuleId": "mod-wp2-a1",
+      "competenceId": "comp-wp2-open-science-literacy"
+    },
+    {
+      "id": "q-wp2-a1-3",
+      "prompt": "How confident are you in deciding which research outputs can be made openly available and identifying situations where legal, ethical, confidentiality or personal data protection requirements may limit openness?",
+      "questionType": "likert",
+      "content": {
+        "scale": {
+          "min": 1,
+          "max": 5,
+          "labels": [
+            "I do not know how to determine whether research outputs can be made openly available.",
+            "I need to ask someone else to assess whether research outputs can be shared openly.",
+            "I can make these decisions with assistance from someone familiar with Open Science principles and relevant EU requirements.",
+            "I can independently determine which research outputs can be shared openly and identify relevant restrictions.",
+            "I can independently make these decisions and guide other researchers in applying the principle \"as open as possible, as closed as necessary.\""
+          ]
+        }
+      },
+      "sectionModuleId": "mod-wp2-a1",
+      "competenceId": "comp-wp2-open-science-literacy"
+    },
+    {
       "id": "q-wp2-a2-1",
       "prompt": "What is the primary purpose of a Data Management Plan (DMP) in an Open Science context?",
       "questionType": "single_choice",
@@ -1253,6 +1315,94 @@
       "competenceId": "comp-wp2-research-execution-and-communication"
     },
     {
+      "id": "q-wp2-a4-1",
+      "prompt": "Which of the following is an international AI law?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "The EU AI Act" },
+          { "id": "b", "text": "The UN's Declaration on Responsible AI" },
+          { "id": "c", "text": "The EU harmonized standard on AI risk management" }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-ai-literacy"
+    },
+    {
+      "id": "q-wp2-a4-2",
+      "prompt": "What is the difference between a large language model and a chatbot?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "A chatbot can utilize a large language model, but does not have to - some chatbots are rule-based"
+          },
+          {
+            "id": "b",
+            "text": "Large language models are the user interface, and developers select which chatbots will power them"
+          },
+          {
+            "id": "c",
+            "text": "Large language models continuously learn from the data entering a chatbot"
+          }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-ai-literacy"
+    },
+    {
+      "id": "q-wp2-a4-3",
+      "prompt": "Which correctly describes the relationship between an AI standard and an AI law?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "An AI law must be followed, while an AI standard is voluntary" },
+          {
+            "id": "b",
+            "text": "Some AI standards presume conformity with an AI law or a portion of an AI law"
+          },
+          {
+            "id": "c",
+            "text": "AI standards are more common on a national basis, and can be followed instead of an international AI law"
+          },
+          {
+            "id": "d",
+            "text": "Third-party certification against an AI standard carries the same legal weight as declaring you have followed an AI law"
+          }
+        ],
+        "correctOptionIds": ["a", "b"]
+      },
+      "sectionModuleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-ai-literacy"
+    },
+    {
+      "id": "q-wp2-a4-4",
+      "prompt": "Does the EU AI Act regulate AI used by universities and research institutions? Select all that are true.",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "AI systems developed or deployed by universities and research institutions are regulated"
+          },
+          {
+            "id": "b",
+            "text": "AI systems solely for the purposes of scientific research are not regulated"
+          },
+          {
+            "id": "c",
+            "text": "AI systems used by universities and research institutions are not regulated"
+          }
+        ],
+        "correctOptionIds": ["a", "b"]
+      },
+      "sectionModuleId": "mod-wp2-a4",
+      "competenceId": "comp-wp2-ai-literacy"
+    },
+    {
       "id": "q-wp2-b1-1",
       "prompt": "A researcher wants to publish the dataset underlying an article so that it can be cited independently and remain accessible. Which option is generally the most appropriate?",
       "questionType": "single_choice",
@@ -1332,6 +1482,24 @@
           }
         ],
         "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "id": "q-wp2-b2-1",
+      "prompt": "Put these stages into a sensible data-preservation workflow.",
+      "questionType": "ordering",
+      "content": {
+        "options": [
+          { "id": "a", "text": "Assess files" },
+          { "id": "b", "text": "Organise/document" },
+          { "id": "c", "text": "Select preservation format" },
+          { "id": "d", "text": "Store with appropriate access controls" },
+          { "id": "e", "text": "Preserve/version" },
+          { "id": "f", "text": "Periodically review" }
+        ],
+        "correctOrder": ["a", "b", "c", "d", "e", "f"]
       },
       "sectionModuleId": "mod-wp2-b2",
       "competenceId": "comp-wp2-manage-research-data"
@@ -1640,6 +1808,25 @@
           }
         ],
         "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "mod-wp2-c3",
+      "competenceId": "comp-wp2-manage-projects"
+    },
+    {
+      "id": "q-wp2-c3-4",
+      "prompt": "Put these planning elements into a logical sequence.",
+      "questionType": "ordering",
+      "content": {
+        "options": [
+          { "id": "a", "text": "Identify problem" },
+          { "id": "b", "text": "Define objective" },
+          { "id": "c", "text": "Identify target group" },
+          { "id": "d", "text": "Define activities" },
+          { "id": "e", "text": "Specify deliverables and timeline" },
+          { "id": "f", "text": "Identify resources/risks" },
+          { "id": "g", "text": "Define scope limits" }
+        ],
+        "correctOrder": ["a", "b", "c", "d", "e", "f", "g"]
       },
       "sectionModuleId": "mod-wp2-c3",
       "competenceId": "comp-wp2-manage-projects"
@@ -2115,6 +2302,44 @@
       "competenceId": "comp-wp2-teach-in-academic-or-vocational-contexts"
     },
     {
+      "id": "q-wp2-e3-1",
+      "prompt": "Your institute is about to deploy an AI system intended to reduce the workload of communications staff. Of the following, which are the most important stakeholders to consult before deployment, in order to identify and mitigate risks related to labor displacement and unintended use?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "The communications staff whose jobs will be affected" },
+          { "id": "b", "text": "Labor unions or workers' representatives" },
+          { "id": "c", "text": "Managers of the communications staff" },
+          { "id": "d", "text": "Your existing communications tool provider" }
+        ],
+        "correctOptionIds": ["a", "b", "c"]
+      },
+      "sectionModuleId": "mod-wp2-e3",
+      "competenceId": "comp-wp2-critical-thinking"
+    },
+    {
+      "id": "q-wp2-e3-2",
+      "prompt": "What are some best practices to reduce the replication of bias when using an AI system?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          { "id": "a", "text": "Ask for the AI provider's fairness testing results" },
+          { "id": "b", "text": "Ensure diverse stakeholders are involved in decisions about how the AI system is used" },
+          {
+            "id": "c",
+            "text": "Pilot the AI system first, and measure bias or fairness outcomes before deciding whether to proceed"
+          },
+          {
+            "id": "d",
+            "text": "Conduct a historical review of existing biases, and use this to prioritize certain bias examinations"
+          }
+        ],
+        "correctOptionIds": ["a", "b", "c", "d"]
+      },
+      "sectionModuleId": "mod-wp2-e3",
+      "competenceId": "comp-wp2-critical-thinking"
+    },
+    {
       "id": "q-wp2-e3-3",
       "prompt": "A new technology is being promoted as a way to make research \"more open\" by automatically generating accessible summaries of research outputs. When evaluating whether an institution should adopt it, which approach demonstrates the strongest critical reasoning?",
       "questionType": "single_choice",
@@ -2166,6 +2391,50 @@
           }
         ],
         "correctOptionIds": ["d"]
+      },
+      "sectionModuleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-leverage-ai"
+    },
+    {
+      "id": "q-wp2-e4-2",
+      "prompt": "Which of the following uses of AI is high risk under the EU AI Act?",
+      "questionType": "single_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "A university uses a machine learning algorithm to identify students who are likely to have cheated"
+          },
+          {
+            "id": "b",
+            "text": "A professor sends her students’ course reviews through a large language model to identify trends"
+          },
+          { "id": "c", "text": "All AI use that involves students within a university" },
+          { "id": "d", "text": "A professor creates grading rubrics for her courses using a large language model" }
+        ],
+        "correctOptionIds": ["a"]
+      },
+      "sectionModuleId": "mod-wp2-e4",
+      "competenceId": "comp-wp2-leverage-ai"
+    },
+    {
+      "id": "q-wp2-e4-3",
+      "prompt": "If a university creates a plain-language summary of recent publications using an AI tool, is it required to disclose it has used AI?",
+      "questionType": "multi_choice",
+      "content": {
+        "options": [
+          {
+            "id": "a",
+            "text": "Yes, if these summaries are intended to inform the public on important matters, and if no employee has checked the generated content"
+          },
+          { "id": "b", "text": "Yes, as long as no employee has checked the content" },
+          { "id": "c", "text": "Yes, always" },
+          {
+            "id": "d",
+            "text": "If the university has developed the AI tool itself, it must disclose that text is AI-generated in the user interface"
+          }
+        ],
+        "correctOptionIds": ["a", "d"]
       },
       "sectionModuleId": "mod-wp2-e4",
       "competenceId": "comp-wp2-leverage-ai"
@@ -2273,25 +2542,25 @@
   "aios.learningJourney.journey": [
     {
       "id": "journey-wp2-lj1",
-      "name": "LJ1 - Athena: Institutional AI-Driven Open Science Expert",
+      "name": "Athena: Institutional AI-Driven Open Science Expert",
       "description": "Institutional AIOS Implementation Plan: readiness, stakeholders and services, governance, risk management, sustainability and monitoring.",
       "moodleCourseId": 2001
     },
     {
       "id": "journey-wp2-lj2",
-      "name": "LJ3 - Hephaestus: Research Data, Reproducibility, Education and AI Practices",
+      "name": "Hephaestus: Research Data, Reproducibility, Education and AI Practices",
       "description": "Applied Open Science Practice Portfolio: resource/repository workflow, metadata, licensing, quality and AI-use record, education/communication component; optional data analysis and/or trainer evidence.",
       "moodleCourseId": 2002
     },
     {
       "id": "journey-wp2-lj5",
-      "name": "LJ4 - Prometheus: Open Science for Business and Innovation",
+      "name": "Prometheus: Open Science for Business and Innovation",
       "description": "Open Innovation and Responsible AI Case: readiness, data reuse, stakeholders, IP/confidentiality, reproducible R&D and safeguards.",
       "moodleCourseId": 2005
     },
     {
       "id": "journey-wp2-lj6",
-      "name": "LJ5 - Themis: Open Science for Policy and Public Decision-Making",
+      "name": "Themis: Open Science for Policy and Public Decision-Making",
       "description": "Policy-oriented Open Science roadmap or brief: public value, stakeholder consultation, resource allocation, regulatory and AI-risk assessment.",
       "moodleCourseId": 2006
     }
@@ -2516,20 +2785,6 @@
     },
     {
       "module": "B2",
-      "ref": "B2.1",
-      "type": "ordering",
-      "prompt": "Put these stages into a sensible data-preservation workflow.",
-      "correctOrder": [
-        "Assess files",
-        "Organise/document",
-        "Select preservation format",
-        "Store with appropriate access controls",
-        "Preserve/version",
-        "Periodically review"
-      ]
-    },
-    {
-      "module": "B2",
       "ref": "B2.3",
       "type": "classification_matrix",
       "prompt": "Classify each practice as good practice or poor practice.",
@@ -2591,21 +2846,6 @@
         ["Ethics committee", "ethical review"],
         ["Data steward", "research-data guidance"],
         ["Communications/training staff", "awareness/training"]
-      ]
-    },
-    {
-      "module": "C3",
-      "ref": "C3.4",
-      "type": "ordering",
-      "prompt": "Put these planning elements into a logical sequence.",
-      "correctOrder": [
-        "Identify problem",
-        "Define objective",
-        "Identify target group",
-        "Define activities",
-        "Specify deliverables and timeline",
-        "Identify resources/risks",
-        "Define scope limits"
       ]
     },
     {
