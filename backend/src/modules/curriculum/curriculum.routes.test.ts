@@ -3,9 +3,16 @@ import { learner } from "../../test/fixtures";
 import { tokenFor, useTestServer } from "../../test/httpTestServer";
 import { isAdminEmail } from "../identity/identity.admin";
 import { findLearnerById } from "../identity/identity.service";
+import { listChangeLog } from "./curriculum.audit";
+import { buildCurriculumExport } from "./curriculum.export";
 import * as curriculum from "./curriculum.service";
 
 vi.mock("../identity/identity.service");
+vi.mock("./curriculum.export");
+vi.mock("./curriculum.audit", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./curriculum.audit")>()),
+  listChangeLog: vi.fn(),
+}));
 vi.mock("../identity/identity.admin");
 vi.mock("./curriculum.service", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./curriculum.service")>();
@@ -36,6 +43,8 @@ vi.mock("./curriculum.service", async (importOriginal) => {
 
 const api = useTestServer();
 const token = tokenFor("admin-1");
+/** Who the log records for the signed-in admin (learner() with id admin-1). */
+const actor = { id: "admin-1", name: "Ada", email: "learner@example.com" };
 
 const question = {
   questionType: "true_false",
@@ -80,6 +89,59 @@ it("GET /admin/curriculum returns the overview", async () => {
   expect(res.body).toEqual({ sections: [] });
 });
 
+describe("downloads", () => {
+  it("GET /export.json downloads the curriculum as a dataset file", async () => {
+    vi.mocked(buildCurriculumExport).mockResolvedValue({
+      _meta: { exportedAt: "2026-10-31T12:00:00.000Z" },
+      "aios.assessment.section": [{ id: "sec-a" }],
+    });
+    const res = await api.request("GET", "/admin/curriculum/export.json", { token });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("application/json");
+    expect(res.headers.get("content-disposition")).toMatch(
+      /attachment; filename="aios-curriculum-\d{4}-\d{2}-\d{2}\.json"/,
+    );
+    expect(res.body).toMatchObject({ "aios.assessment.section": [{ id: "sec-a" }] });
+  });
+
+  it("GET /changelog.csv downloads every change, with who and the values before and after", async () => {
+    vi.mocked(listChangeLog).mockResolvedValue([
+      {
+        at: "2026-10-31T12:00:00.000Z",
+        actorName: "Ada",
+        actorEmail: "ada@ntnu.no",
+        action: "edited",
+        entityType: "section",
+        entityId: "sec-a",
+        entityLabel: "Open science",
+        before: '{"name":"Open sci"}',
+        after: '{"name":"Open science"}',
+      },
+    ]);
+    const res = await api.request("GET", "/admin/curriculum/changelog.csv", { token });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/csv");
+    expect(res.headers.get("content-disposition")).toContain("aios-curriculum-changelog.csv");
+    const [header, row] = (res.body as string).trim().split(/\r?\n/);
+    expect(header).toBe(
+      "at,actorName,actorEmail,action,entityType,entityId,entityLabel,before,after",
+    );
+    expect(row).toBe(
+      "2026-10-31T12:00:00.000Z,Ada,ada@ntnu.no,edited,section,sec-a,Open science," +
+        '"{""name"":""Open sci""}","{""name"":""Open science""}"',
+    );
+  });
+
+  it.each(["/admin/curriculum/export.json", "/admin/curriculum/changelog.csv"])(
+    "%s is admin only",
+    async (path) => {
+      vi.mocked(isAdminEmail).mockReturnValue(false);
+      expect((await api.request("GET", path, { token })).status).toBe(403);
+      expect((await api.request("GET", path)).status).toBe(401);
+    },
+  );
+});
+
 describe("questions", () => {
   it("POST /preview builds the question without saving it", async () => {
     const res = await api.request("POST", "/admin/curriculum/questions/preview", {
@@ -115,6 +177,7 @@ describe("questions", () => {
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ id: "q-new" });
     expect(curriculum.createQuestion).toHaveBeenCalledWith(
+      actor,
       expect.objectContaining({
         questionType: "true_false",
         prompt: "Open data is free to reuse.",
@@ -298,12 +361,14 @@ describe.each([
     const res = await api.request("POST", path, { token, body });
     expect(res.status).toBe(201);
     expect(res.body).toEqual({ id: "new" });
+    expect(curriculum[create]).toHaveBeenCalledWith(actor, expect.anything());
     expect((await api.request("POST", path, { token, body: invalid })).status).toBe(400);
   });
 
   it("edits one, passing on a 404 and turning a taken name into a 409", async () => {
     vi.mocked(curriculum[update]).mockResolvedValueOnce({ ok: true, id: "x" });
     expect((await api.request("PUT", `${path}/x`, { token, body })).status).toBe(200);
+    expect(curriculum[update]).toHaveBeenCalledWith(actor, "x", expect.anything());
 
     vi.mocked(curriculum[update]).mockResolvedValueOnce({
       ok: false,
@@ -331,6 +396,7 @@ describe.each([
     const res = await api.request("DELETE", `${path}/x`, { token });
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ result });
+    expect(curriculum[remove]).toHaveBeenCalledWith(actor, "x");
   });
 
   it("DELETE and restore are 404 when unknown; restore is 204", async () => {
@@ -340,6 +406,7 @@ describe.each([
     expect((await api.request("POST", `${path}/x/restore`, { token })).status).toBe(404);
     vi.mocked(curriculum[restore]).mockResolvedValueOnce(true);
     expect((await api.request("POST", `${path}/x/restore`, { token })).status).toBe(204);
+    expect(curriculum[restore]).toHaveBeenCalledWith(actor, "x");
   });
 
   it("is admin only", async () => {

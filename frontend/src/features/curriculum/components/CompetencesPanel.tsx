@@ -4,6 +4,7 @@ import { Button } from "@/shared/components/Button";
 import { createCompetence, updateCompetence } from "../api";
 import { plural } from "../questionTypes";
 import type { CurriculumCompetence } from "../types";
+import { ChangeHistory } from "./ChangeHistory";
 import styles from "../pages/CurriculumPage.module.css";
 
 type Props = {
@@ -131,6 +132,7 @@ export function CompetencesPanel({ competences, onChanged }: Props) {
                     {plural(competence.questionCount, "question")} · main competence of{" "}
                     {plural(competence.moduleCount, "module")}
                   </p>
+                  <ChangeHistory history={competence.history} />
                 </div>
                 <Button
                   variant="secondary"

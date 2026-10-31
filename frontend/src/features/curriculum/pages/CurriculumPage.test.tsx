@@ -2,7 +2,14 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getCurriculum, removeQuestion, restoreQuestion, sectionsApi } from "../api";
+import {
+  downloadChangeLog,
+  downloadCurriculum,
+  getCurriculum,
+  removeQuestion,
+  restoreQuestion,
+  sectionsApi,
+} from "../api";
 import { curriculum, curriculumModule, curriculumSection } from "../testData";
 import { CurriculumPage } from "./CurriculumPage";
 
@@ -15,6 +22,8 @@ vi.mock("../api", () => ({
   restoreQuestion: vi.fn(),
   createCompetence: vi.fn(),
   updateCompetence: vi.fn(),
+  downloadCurriculum: vi.fn(),
+  downloadChangeLog: vi.fn(),
 }));
 
 function renderPage(state?: object) {
@@ -236,5 +245,42 @@ describe("CurriculumPage: learning journeys", () => {
     );
     expect(screen.getByRole("region", { name: "Data steward" })).toBeInTheDocument();
     expect(screen.getByText("Journey saved.")).toBeInTheDocument();
+  });
+});
+
+describe("CurriculumPage: traceability", () => {
+  it("shows who added and last changed a question, and when", async () => {
+    renderPage();
+    const sectionA = await screen.findByRole("region", { name: "Open data" });
+    const history = within(sectionA)
+      .getByText(/Added by Ada Admin/)
+      .closest("p");
+    expect(history).toHaveTextContent(
+      /^Added by Ada Admin, 30 Oct 2026, .+ · Edited by bo@ntnu.no, 31 Oct 2026, .+$/,
+    );
+    // Items loaded from the dataset and never changed show nothing: these two
+    // times are that one question's.
+    expect(sectionA.querySelectorAll("time")).toHaveLength(2);
+  });
+
+  it.each([
+    ["Download curriculum (JSON)", downloadCurriculum],
+    ["Download change log (CSV)", downloadChangeLog],
+  ])("%s, saying 'Downloading…' meanwhile", async (name, download) => {
+    let finish!: () => void;
+    vi.mocked(download).mockReturnValue(new Promise<void>((resolve) => (finish = resolve)));
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name }));
+    expect(download).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Downloading…" })).toBeDisabled();
+    finish();
+    expect(await screen.findByRole("button", { name })).toBeEnabled();
+  });
+
+  it("reports a failed download", async () => {
+    vi.mocked(downloadChangeLog).mockRejectedValue(new Error("offline"));
+    renderPage();
+    await userEvent.click(await screen.findByRole("button", { name: "Download change log (CSV)" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not download that file.");
   });
 });

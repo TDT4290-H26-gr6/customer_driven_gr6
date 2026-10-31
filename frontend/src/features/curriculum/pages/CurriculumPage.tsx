@@ -2,7 +2,14 @@ import { useEffect, useId, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
-import { getCurriculum, removeQuestion, restoreQuestion } from "../api";
+import {
+  downloadChangeLog,
+  downloadCurriculum,
+  getCurriculum,
+  removeQuestion,
+  restoreQuestion,
+} from "../api";
+import { ChangeHistory } from "../components/ChangeHistory";
 import { CompetencesPanel } from "../components/CompetencesPanel";
 import { JourneysPanel } from "../components/JourneysPanel";
 import { StructurePanel } from "../components/StructurePanel";
@@ -45,6 +52,7 @@ export function CurriculumPage() {
     (location.state as { notice?: string } | null)?.notice ?? null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState<"curriculum" | "changelog" | null>(null);
 
   function load() {
     getCurriculum()
@@ -136,13 +144,41 @@ export function CurriculumPage() {
     }
   }
 
+  async function download(kind: "curriculum" | "changelog") {
+    setDownloading(kind);
+    setError(null);
+    try {
+      await (kind === "curriculum" ? downloadCurriculum() : downloadChangeLog());
+    } catch {
+      setError("Could not download that file. Try again.");
+    } finally {
+      setDownloading(null);
+    }
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.titleRow}>
         <h1 className={styles.heading}>Curriculum editor</h1>
-        <Button variant="secondary" onClick={() => navigate("/admin")}>
-          Back to admin mode
-        </Button>
+        <div className={styles.toolbarActions}>
+          <Button
+            variant="secondary"
+            onClick={() => void download("curriculum")}
+            disabled={downloading !== null}
+          >
+            {downloading === "curriculum" ? "Downloading…" : "Download curriculum (JSON)"}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => void download("changelog")}
+            disabled={downloading !== null}
+          >
+            {downloading === "changelog" ? "Downloading…" : "Download change log (CSV)"}
+          </Button>
+          <Button variant="secondary" onClick={() => navigate("/admin")}>
+            Back to admin mode
+          </Button>
+        </div>
       </div>
       <p className={styles.subheading}>
         Add, change and remove what learners are assessed on and recommended: questions, sections
@@ -337,6 +373,7 @@ export function CurriculumPage() {
                                 </span>
                               )}
                             </p>
+                            <ChangeHistory history={question.history} />
                           </div>
                           <div className={styles.rowActions}>
                             {question.retiredAt ? (

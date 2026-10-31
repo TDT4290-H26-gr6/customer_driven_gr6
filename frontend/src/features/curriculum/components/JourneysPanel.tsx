@@ -4,6 +4,7 @@ import { Button } from "@/shared/components/Button";
 import { journeysApi } from "../api";
 import { COVERAGE_INFO, plural } from "../questionTypes";
 import type { CurriculumJourney, CurriculumSection } from "../types";
+import { ChangeHistory } from "./ChangeHistory";
 import styles from "../pages/CurriculumPage.module.css";
 
 type Props = {
@@ -85,6 +86,7 @@ export function JourneysPanel({ journeys, sections, onChanged }: Props) {
                   {retired && <span className={styles.badge}>Removed</span>}
                 </h2>
                 {journey.description && <p className={styles.meta}>{journey.description}</p>}
+                <ChangeHistory history={journey.history} />
               </div>
               <div className={styles.rowActions}>
                 {retired ? (

@@ -17,6 +17,20 @@ export type AuthoredContent = {
   correctOrder?: string[];
 };
 
+export type ChangeAction = "created" | "edited" | "deleted" | "retired" | "restored";
+
+/** Who did something in the curriculum editor and when (an ISO date), by name or else email. */
+export type ChangeMark = { at: string; by: string };
+
+/**
+ * An item's traceability, from the change log. `created` is null for an item
+ * loaded from the dataset; both are null for one nobody has changed since.
+ */
+export type History = {
+  created: ChangeMark | null;
+  lastChange: (ChangeMark & { action: ChangeAction }) | null;
+};
+
 export type CurriculumModule = {
   id: string;
   name: string;
@@ -28,6 +42,7 @@ export type CurriculumModule = {
   /** ISO date when retired; null while in use. */
   retiredAt: string | null;
   questionCount: number;
+  history: History;
 };
 
 export type CurriculumSection = {
@@ -41,6 +56,7 @@ export type CurriculumSection = {
   /** Whether a reassessment has been limited to it. */
   usedInAssessments: boolean;
   modules: CurriculumModule[];
+  history: History;
 };
 
 export type CurriculumCompetence = {
@@ -49,6 +65,7 @@ export type CurriculumCompetence = {
   description: string | null;
   questionCount: number;
   moduleCount: number;
+  history: History;
 };
 
 export type QuestionSummary = {
@@ -62,6 +79,7 @@ export type QuestionSummary = {
   answerCount: number;
   /** False for a question loaded before the editor existed, until db-init fills in its authored form. */
   editable: boolean;
+  history: History;
 };
 
 export type QuestionDetail = QuestionSummary & { authoredContent: AuthoredContent | null };
@@ -85,6 +103,7 @@ export type CurriculumJourney = {
   steps: JourneyStep[];
   /** Recommended, picked by the AI, assessed or completed: removing it retires it. */
   used: boolean;
+  history: History;
 };
 
 export type CurriculumSource = { id: string; courseName: string; institution: string };

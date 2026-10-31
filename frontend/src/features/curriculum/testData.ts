@@ -1,6 +1,15 @@
-import type { Curriculum, CurriculumModule, CurriculumSection, QuestionSummary } from "./types";
+import type {
+  Curriculum,
+  CurriculumModule,
+  CurriculumSection,
+  History,
+  QuestionSummary,
+} from "./types";
 
 // Shared by the curriculum page tests.
+
+/** Loaded from the dataset and never changed in the editor. */
+export const noHistory: History = { created: null, lastChange: null };
 
 export function questionSummary(overrides: Partial<QuestionSummary> = {}): QuestionSummary {
   return {
@@ -12,6 +21,7 @@ export function questionSummary(overrides: Partial<QuestionSummary> = {}): Quest
     retiredAt: null,
     answerCount: 0,
     editable: true,
+    history: noHistory,
     ...overrides,
   };
 }
@@ -27,6 +37,7 @@ export function curriculumModule(overrides: Partial<CurriculumModule> = {}): Cur
     moodleUrl: null,
     retiredAt: null,
     questionCount: 0,
+    history: noHistory,
     ...overrides,
   };
 }
@@ -41,6 +52,7 @@ export function curriculumSection(overrides: Partial<CurriculumSection> = {}): C
     journeyCount: 0,
     usedInAssessments: false,
     modules: [],
+    history: noHistory,
     ...overrides,
   };
 }
@@ -86,9 +98,24 @@ export function curriculum(overrides: Partial<Curriculum> = {}): Curriculum {
         description: "Open licences",
         questionCount: 2,
         moduleCount: 1,
+        history: noHistory,
       },
-      { id: "c-rep", name: "Repositories", description: null, questionCount: 0, moduleCount: 1 },
-      { id: "c-git", name: "Version control", description: null, questionCount: 1, moduleCount: 1 },
+      {
+        id: "c-rep",
+        name: "Repositories",
+        description: null,
+        questionCount: 0,
+        moduleCount: 1,
+        history: noHistory,
+      },
+      {
+        id: "c-git",
+        name: "Version control",
+        description: null,
+        questionCount: 1,
+        moduleCount: 1,
+        history: noHistory,
+      },
     ],
     questions: [
       questionSummary(),
@@ -97,6 +124,10 @@ export function curriculum(overrides: Partial<Curriculum> = {}): Curriculum {
         prompt: "How confident are you choosing a licence?",
         questionType: "likert",
         answerCount: 7,
+        history: {
+          created: { at: "2026-10-30T09:15:00.000Z", by: "Ada Admin" },
+          lastChange: { at: "2026-10-31T13:05:00.000Z", by: "bo@ntnu.no", action: "edited" },
+        },
       }),
       questionSummary({
         id: "q-3",
@@ -124,6 +155,10 @@ export function curriculum(overrides: Partial<Curriculum> = {}): Curriculum {
           { id: "step-2", title: "Share it", description: "In a repository", sourceId: null },
         ],
         used: true,
+        history: {
+          created: null,
+          lastChange: { at: "2026-10-31T13:05:00.000Z", by: "Ada Admin", action: "restored" },
+        },
       },
       {
         id: "lj-2",
@@ -134,6 +169,7 @@ export function curriculum(overrides: Partial<Curriculum> = {}): Curriculum {
         sections: [{ sectionId: "sec-b", coverageLevel: "M" }],
         steps: [],
         used: false,
+        history: noHistory,
       },
     ],
     sources: [{ id: "src-1", courseName: "FAIR basics", institution: "NTNU" }],

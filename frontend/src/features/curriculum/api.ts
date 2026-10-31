@@ -1,5 +1,6 @@
 import { apiFetch } from "@/shared/api/client";
 import { endpoints } from "@/shared/api/endpoints";
+import { downloadBlob } from "@/shared/lib/download";
 import type {
   CompetenceInput,
   Curriculum,
@@ -87,3 +88,19 @@ function structureApi<Input>(base: string) {
 export const sectionsApi = structureApi<SectionInput>(endpoints.admin.curriculumSections);
 export const modulesApi = structureApi<ModuleInput>(endpoints.admin.curriculumModules);
 export const journeysApi = structureApi<JourneyInput>(endpoints.admin.curriculumJourneys);
+
+/**
+ * Downloads the whole curriculum as a dataset file in the WP2 format, which
+ * db-init can load into an empty database: how the curriculum moves with the
+ * application.
+ */
+export async function downloadCurriculum(): Promise<void> {
+  const blob = await apiFetch<Blob>(endpoints.admin.curriculumExport, { responseType: "blob" });
+  downloadBlob(blob, `aios-curriculum-${new Date().toISOString().slice(0, 10)}.json`);
+}
+
+/** Downloads every change made in the editor: who, when, and the values before and after. */
+export async function downloadChangeLog(): Promise<void> {
+  const blob = await apiFetch<Blob>(endpoints.admin.curriculumChangeLog, { responseType: "blob" });
+  downloadBlob(blob, "aios-curriculum-changelog.csv");
+}

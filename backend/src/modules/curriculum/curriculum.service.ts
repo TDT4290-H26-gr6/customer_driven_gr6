@@ -1,6 +1,14 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../../db/prisma";
 import { buildPieContent } from "../assessment/assessment.pie";
+import {
+  historiesFrom,
+  NO_HISTORY,
+  recordChange,
+  snapshot,
+  type Actor,
+  type EntityType,
+} from "./curriculum.audit";
 import type {
   CompetenceInput,
   JourneyInput,
@@ -13,7 +21,8 @@ import type {
 // on. Writes the assessment module's tables (questions, competences) on behalf
 // of an admin, the one other module allowed to (context/backend-structure.md).
 // Content lives in the database: db-init only loads a dataset into an empty
-// one, so what's changed here stays changed.
+// one, so what's changed here stays changed. Every change is logged with who
+// made it (curriculum.audit.ts), in the same transaction as the change.
 
 /** Prisma's "unique constraint failed" (e.g. a competence name already taken). */
 export function isUniqueViolation(err: unknown): boolean {
@@ -49,7 +58,7 @@ function toQuestionSummary({ _count, authoredContent, ...question }: QuestionRow
  * it, and every question, retired ones included.
  */
 export async function getCurriculum() {
-  const [sections, competences, questions, journeys, sources] = await Promise.all([
+  const [sections, competences, questions, journeys, sources, log] = await Promise.all([
     prisma.section.findMany({
       orderBy: [{ code: "asc" }, { name: "asc" }],
       select: {
@@ -116,29 +125,51 @@ export async function getCurriculum() {
       orderBy: [{ institution: "asc" }, { courseName: "asc" }],
       select: { id: true, courseName: true, institution: true },
     }),
+    // Only what each item's history needs (who and when), oldest first.
+    prisma.auditEvent.findMany({
+      orderBy: { createdAt: "asc" },
+      select: {
+        entityType: true,
+        entityId: true,
+        action: true,
+        createdAt: true,
+        actorName: true,
+        actorEmail: true,
+      },
+    }),
   ]);
+
+  const histories = historiesFrom(log);
+  const historyOf = (type: EntityType, id: string) => histories.get(`${type}:${id}`) ?? NO_HISTORY;
 
   return {
     sections: sections.map(({ _count, modules, ...section }) => ({
       ...section,
+      history: historyOf("section", section.id),
       /** Journeys covering it: a section anything points at is retired, not deleted. */
       journeyCount: _count.journeySections,
       /** Whether learners have been assessed with it in scope (a reassessment limited to it). */
       usedInAssessments: _count.satInstances > 0,
       modules: modules.map(({ _count: moduleCount, secondaryCompetences, ...module }) => ({
         ...module,
+        history: historyOf("module", module.id),
         secondaryCompetenceIds: secondaryCompetences.map((c) => c.competenceId),
         questionCount: moduleCount.questions,
       })),
     })),
     competences: competences.map(({ _count, ...competence }) => ({
       ...competence,
+      history: historyOf("competence", competence.id),
       questionCount: _count.questions,
       moduleCount: _count.mainForModules,
     })),
-    questions: questions.map(toQuestionSummary),
+    questions: questions.map((q) => ({
+      ...toQuestionSummary(q),
+      history: historyOf("question", q.id),
+    })),
     journeys: journeys.map(({ _count, modules, ...journey }) => ({
       ...journey,
+      history: historyOf("journey", journey.id),
       steps: modules,
       /** Recommended, picked by the AI, assessed or completed: removing it then retires it. */
       used: Object.values(_count).some((n) => n > 0),
@@ -157,11 +188,45 @@ export async function getQuestion(id: string) {
   return { ...toQuestionSummary(question), authoredContent: question.authoredContent };
 }
 
+type Tx = Prisma.TransactionClient;
+
+/**
+ * Runs one admin change and its log entry in a single transaction: the item's
+ * values before, the change, its values after, then the entry. If anything
+ * fails, nothing is kept, so there's never a change without its entry.
+ */
+async function logged<T>(
+  actor: Actor,
+  type: EntityType,
+  run: (
+    tx: Tx,
+  ) => Promise<
+    | { id: string; action: "created" | "edited" | "deleted" | "retired" | "restored"; result: T }
+    | { skip: T }
+  >,
+  existingId?: string,
+): Promise<T> {
+  return prisma.$transaction(async (tx) => {
+    const before = existingId ? await snapshot(tx, type, existingId) : null;
+    const outcome = await run(tx);
+    if ("skip" in outcome) return outcome.skip;
+    const after = outcome.action === "deleted" ? null : await snapshot(tx, type, outcome.id);
+    await recordChange(tx, actor, {
+      entityType: type,
+      entityId: outcome.id,
+      action: outcome.action,
+      before,
+      after,
+    });
+    return outcome.result;
+  });
+}
+
 /** Whether the module and competence a question points at exist. */
-async function placementExists(input: QuestionInput) {
+async function placementExists(tx: Tx, input: QuestionInput) {
   const [module, competence] = await Promise.all([
-    prisma.sectionModule.findUnique({ where: { id: input.sectionModuleId }, select: { id: true } }),
-    prisma.competence.findUnique({ where: { id: input.competenceId }, select: { id: true } }),
+    tx.sectionModule.findUnique({ where: { id: input.sectionModuleId }, select: { id: true } }),
+    tx.competence.findUnique({ where: { id: input.competenceId }, select: { id: true } }),
   ]);
   return module !== null && competence !== null;
 }
@@ -185,15 +250,18 @@ function questionData(input: QuestionInput) {
 export type SaveResult =
   { ok: true; id: string } | { ok: false; status: 400 | 404 | 409; error: string };
 
-export async function createQuestion(input: QuestionInput): Promise<SaveResult> {
-  if (!(await placementExists(input))) {
-    return { ok: false, status: 400, error: "The module or competence no longer exists" };
-  }
-  const question = await prisma.question.create({
-    data: questionData(input),
-    select: { id: true },
+type Removal = "deleted" | "retired" | null;
+
+export function createQuestion(actor: Actor, input: QuestionInput): Promise<SaveResult> {
+  return logged<SaveResult>(actor, "question", async (tx) => {
+    if (!(await placementExists(tx, input))) {
+      return {
+        skip: { ok: false, status: 400, error: "The module or competence no longer exists" },
+      };
+    }
+    const { id } = await tx.question.create({ data: questionData(input), select: { id: true } });
+    return { id, action: "created", result: { ok: true, id } };
   });
-  return { ok: true, id: question.id };
 }
 
 /**
@@ -201,25 +269,40 @@ export async function createQuestion(input: QuestionInput): Promise<SaveResult> 
  * answers are in that type's shape, so a different type means retiring it and
  * adding a new question. Answers already saved keep the score they got.
  */
-export async function updateQuestion(id: string, input: QuestionInput): Promise<SaveResult> {
-  const existing = await prisma.question.findUnique({
-    where: { id },
-    select: { questionType: true, _count: { select: { responses: true } } },
-  });
-  if (!existing) return { ok: false, status: 404, error: "Unknown question" };
-  if (existing._count.responses > 0 && existing.questionType !== input.questionType) {
-    return {
-      ok: false,
-      status: 409,
-      error:
-        "Learners have answered this question, so its type can't change. Remove it and add a new question instead.",
-    };
-  }
-  if (!(await placementExists(input))) {
-    return { ok: false, status: 400, error: "The module or competence no longer exists" };
-  }
-  await prisma.question.update({ where: { id }, data: questionData(input) });
-  return { ok: true, id };
+export function updateQuestion(
+  actor: Actor,
+  id: string,
+  input: QuestionInput,
+): Promise<SaveResult> {
+  return logged<SaveResult>(
+    actor,
+    "question",
+    async (tx) => {
+      const existing = await tx.question.findUnique({
+        where: { id },
+        select: { questionType: true, _count: { select: { responses: true } } },
+      });
+      if (!existing) return { skip: { ok: false, status: 404, error: "Unknown question" } };
+      if (existing._count.responses > 0 && existing.questionType !== input.questionType) {
+        return {
+          skip: {
+            ok: false,
+            status: 409,
+            error:
+              "Learners have answered this question, so its type can't change. Remove it and add a new question instead.",
+          },
+        };
+      }
+      if (!(await placementExists(tx, input))) {
+        return {
+          skip: { ok: false, status: 400, error: "The module or competence no longer exists" },
+        };
+      }
+      await tx.question.update({ where: { id }, data: questionData(input) });
+      return { id, action: "edited", result: { ok: true, id } };
+    },
+    id,
+  );
 }
 
 /**
@@ -227,41 +310,70 @@ export async function updateQuestion(id: string, input: QuestionInput): Promise<
  * retired instead, so past answers and results still have it to point at, and
  * it can be restored. Null when the question doesn't exist.
  */
-export async function removeQuestion(id: string): Promise<"deleted" | "retired" | null> {
-  const question = await prisma.question.findUnique({
-    where: { id },
-    select: { _count: { select: { responses: true } } },
-  });
-  if (!question) return null;
-  if (question._count.responses === 0) {
-    await prisma.question.delete({ where: { id } });
-    return "deleted";
-  }
-  await prisma.question.update({ where: { id }, data: { retiredAt: new Date() } });
-  return "retired";
+export function removeQuestion(actor: Actor, id: string): Promise<Removal> {
+  return logged<Removal>(
+    actor,
+    "question",
+    async (tx) => {
+      const question = await tx.question.findUnique({
+        where: { id },
+        select: { _count: { select: { responses: true } } },
+      });
+      if (!question) return { skip: null };
+      if (question._count.responses === 0) {
+        await tx.question.delete({ where: { id } });
+        return { id, action: "deleted", result: "deleted" };
+      }
+      await tx.question.update({ where: { id }, data: { retiredAt: new Date() } });
+      return { id, action: "retired", result: "retired" };
+    },
+    id,
+  );
 }
 
 /** Brings a retired question back into the assessment. False when it doesn't exist. */
-export async function restoreQuestion(id: string): Promise<boolean> {
-  const { count } = await prisma.question.updateMany({ where: { id }, data: { retiredAt: null } });
-  return count > 0;
+export function restoreQuestion(actor: Actor, id: string): Promise<boolean> {
+  return logged<boolean>(
+    actor,
+    "question",
+    async (tx) => {
+      const { count } = await tx.question.updateMany({ where: { id }, data: { retiredAt: null } });
+      return count > 0 ? { id, action: "restored", result: true } : { skip: false };
+    },
+    id,
+  );
 }
 
-export async function createCompetence(input: CompetenceInput) {
-  return prisma.competence.create({
-    data: input,
-    select: { id: true, name: true, description: true },
+const competenceSelect = { id: true, name: true, description: true } as const;
+type CompetenceRow = { id: string; name: string; description: string | null };
+
+export function createCompetence(actor: Actor, input: CompetenceInput): Promise<CompetenceRow> {
+  return logged<CompetenceRow>(actor, "competence", async (tx) => {
+    const competence = await tx.competence.create({ data: input, select: competenceSelect });
+    return { id: competence.id, action: "created", result: competence };
   });
 }
 
 /** Renames / re-describes a competence. Null when it doesn't exist. */
-export async function updateCompetence(id: string, input: CompetenceInput) {
-  const { count } = await prisma.competence.updateMany({ where: { id }, data: input });
-  if (count === 0) return null;
-  return prisma.competence.findUnique({
-    where: { id },
-    select: { id: true, name: true, description: true },
-  });
+export function updateCompetence(
+  actor: Actor,
+  id: string,
+  input: CompetenceInput,
+): Promise<CompetenceRow | null> {
+  return logged<CompetenceRow | null>(
+    actor,
+    "competence",
+    async (tx) => {
+      const { count } = await tx.competence.updateMany({ where: { id }, data: input });
+      if (count === 0) return { skip: null };
+      const competence = await tx.competence.findUnique({
+        where: { id },
+        select: competenceSelect,
+      });
+      return { id, action: "edited", result: competence };
+    },
+    id,
+  );
 }
 
 // --- Sections and section modules (phase 2) ---
@@ -269,15 +381,24 @@ export async function updateCompetence(id: string, input: CompetenceInput) {
 export type WriteResult =
   { ok: true; id: string } | { ok: false; status: 400 | 404; error: string };
 
-export async function createSection(input: SectionInput): Promise<WriteResult> {
-  const section = await prisma.section.create({ data: input, select: { id: true } });
-  return { ok: true, id: section.id };
+export function createSection(actor: Actor, input: SectionInput): Promise<WriteResult> {
+  return logged<WriteResult>(actor, "section", async (tx) => {
+    const { id } = await tx.section.create({ data: input, select: { id: true } });
+    return { id, action: "created", result: { ok: true, id } };
+  });
 }
 
-export async function updateSection(id: string, input: SectionInput): Promise<WriteResult> {
-  const { count } = await prisma.section.updateMany({ where: { id }, data: input });
-  if (count === 0) return { ok: false, status: 404, error: "Unknown section" };
-  return { ok: true, id };
+export function updateSection(actor: Actor, id: string, input: SectionInput): Promise<WriteResult> {
+  return logged<WriteResult>(
+    actor,
+    "section",
+    async (tx) => {
+      const { count } = await tx.section.updateMany({ where: { id }, data: input });
+      if (count === 0) return { skip: { ok: false, status: 404, error: "Unknown section" } };
+      return { id, action: "edited", result: { ok: true, id } };
+    },
+    id,
+  );
 }
 
 /**
@@ -286,32 +407,48 @@ export async function updateSection(id: string, input: SectionInput): Promise<Wr
  * part of is lost and it can be restored. Retiring hides it, and everything
  * in it, from the assessment, recommendations and the Competencies tab.
  */
-export async function removeSection(id: string): Promise<"deleted" | "retired" | null> {
-  const section = await prisma.section.findUnique({
-    where: { id },
-    select: { _count: { select: { modules: true, journeySections: true, satInstances: true } } },
-  });
-  if (!section) return null;
-  const { modules, journeySections, satInstances } = section._count;
-  if (modules + journeySections + satInstances === 0) {
-    await prisma.section.delete({ where: { id } });
-    return "deleted";
-  }
-  await prisma.section.update({ where: { id }, data: { retiredAt: new Date() } });
-  return "retired";
+export function removeSection(actor: Actor, id: string): Promise<Removal> {
+  return logged<Removal>(
+    actor,
+    "section",
+    async (tx) => {
+      const section = await tx.section.findUnique({
+        where: { id },
+        select: {
+          _count: { select: { modules: true, journeySections: true, satInstances: true } },
+        },
+      });
+      if (!section) return { skip: null };
+      const { modules, journeySections, satInstances } = section._count;
+      if (modules + journeySections + satInstances === 0) {
+        await tx.section.delete({ where: { id } });
+        return { id, action: "deleted", result: "deleted" };
+      }
+      await tx.section.update({ where: { id }, data: { retiredAt: new Date() } });
+      return { id, action: "retired", result: "retired" };
+    },
+    id,
+  );
 }
 
-export async function restoreSection(id: string): Promise<boolean> {
-  const { count } = await prisma.section.updateMany({ where: { id }, data: { retiredAt: null } });
-  return count > 0;
+export function restoreSection(actor: Actor, id: string): Promise<boolean> {
+  return logged<boolean>(
+    actor,
+    "section",
+    async (tx) => {
+      const { count } = await tx.section.updateMany({ where: { id }, data: { retiredAt: null } });
+      return count > 0 ? { id, action: "restored", result: true } : { skip: false };
+    },
+    id,
+  );
 }
 
 /** Whether the section and every competence a module points at exist. */
-async function moduleRefsExist(input: ModuleInput) {
+async function moduleRefsExist(tx: Tx, input: ModuleInput) {
   const competenceIds = [input.mainCompetenceId, ...input.secondaryCompetenceIds];
   const [section, competences] = await Promise.all([
-    prisma.section.findUnique({ where: { id: input.sectionId }, select: { id: true } }),
-    prisma.competence.count({ where: { id: { in: competenceIds } } }),
+    tx.section.findUnique({ where: { id: input.sectionId }, select: { id: true } }),
+    tx.competence.count({ where: { id: { in: competenceIds } } }),
   ]);
   return section !== null && competences === competenceIds.length;
 }
@@ -320,20 +457,24 @@ function moduleData({ secondaryCompetenceIds: _secondary, ...input }: ModuleInpu
   return input;
 }
 
-export async function createModule(input: ModuleInput): Promise<WriteResult> {
-  if (!(await moduleRefsExist(input))) {
-    return { ok: false, status: 400, error: "The section or a competence no longer exists" };
-  }
-  const module = await prisma.sectionModule.create({
-    data: {
-      ...moduleData(input),
-      secondaryCompetences: {
-        create: input.secondaryCompetenceIds.map((competenceId) => ({ competenceId })),
+export function createModule(actor: Actor, input: ModuleInput): Promise<WriteResult> {
+  return logged<WriteResult>(actor, "module", async (tx) => {
+    if (!(await moduleRefsExist(tx, input))) {
+      return {
+        skip: { ok: false, status: 400, error: "The section or a competence no longer exists" },
+      };
+    }
+    const { id } = await tx.sectionModule.create({
+      data: {
+        ...moduleData(input),
+        secondaryCompetences: {
+          create: input.secondaryCompetenceIds.map((competenceId) => ({ competenceId })),
+        },
       },
-    },
-    select: { id: true },
+      select: { id: true },
+    });
+    return { id, action: "created", result: { ok: true, id } };
   });
-  return { ok: true, id: module.id };
 }
 
 /**
@@ -342,20 +483,27 @@ export async function createModule(input: ModuleInput): Promise<WriteResult> {
  * attempts read under "See results by section", which is recalculated from
  * the current structure; the editor says so.
  */
-export async function updateModule(id: string, input: ModuleInput): Promise<WriteResult> {
-  const existing = await prisma.sectionModule.findUnique({ where: { id }, select: { id: true } });
-  if (!existing) return { ok: false, status: 404, error: "Unknown module" };
-  if (!(await moduleRefsExist(input))) {
-    return { ok: false, status: 400, error: "The section or a competence no longer exists" };
-  }
-  await prisma.$transaction([
-    prisma.sectionModule.update({ where: { id }, data: moduleData(input) }),
-    prisma.sectionModuleSecondaryCompetence.deleteMany({ where: { moduleId: id } }),
-    prisma.sectionModuleSecondaryCompetence.createMany({
-      data: input.secondaryCompetenceIds.map((competenceId) => ({ moduleId: id, competenceId })),
-    }),
-  ]);
-  return { ok: true, id };
+export function updateModule(actor: Actor, id: string, input: ModuleInput): Promise<WriteResult> {
+  return logged<WriteResult>(
+    actor,
+    "module",
+    async (tx) => {
+      const existing = await tx.sectionModule.findUnique({ where: { id }, select: { id: true } });
+      if (!existing) return { skip: { ok: false, status: 404, error: "Unknown module" } };
+      if (!(await moduleRefsExist(tx, input))) {
+        return {
+          skip: { ok: false, status: 400, error: "The section or a competence no longer exists" },
+        };
+      }
+      await tx.sectionModule.update({ where: { id }, data: moduleData(input) });
+      await tx.sectionModuleSecondaryCompetence.deleteMany({ where: { moduleId: id } });
+      await tx.sectionModuleSecondaryCompetence.createMany({
+        data: input.secondaryCompetenceIds.map((competenceId) => ({ moduleId: id, competenceId })),
+      });
+      return { id, action: "edited", result: { ok: true, id } };
+    },
+    id,
+  );
 }
 
 /**
@@ -363,36 +511,50 @@ export async function updateModule(id: string, input: ModuleInput): Promise<Writ
  * retired, so they're no longer asked but past results keep them, and it can
  * be restored with them.
  */
-export async function removeModule(id: string): Promise<"deleted" | "retired" | null> {
-  const module = await prisma.sectionModule.findUnique({
-    where: { id },
-    select: { _count: { select: { questions: true } } },
-  });
-  if (!module) return null;
-  if (module._count.questions === 0) {
-    await prisma.sectionModule.delete({ where: { id } });
-    return "deleted";
-  }
-  await prisma.sectionModule.update({ where: { id }, data: { retiredAt: new Date() } });
-  return "retired";
+export function removeModule(actor: Actor, id: string): Promise<Removal> {
+  return logged<Removal>(
+    actor,
+    "module",
+    async (tx) => {
+      const module = await tx.sectionModule.findUnique({
+        where: { id },
+        select: { _count: { select: { questions: true } } },
+      });
+      if (!module) return { skip: null };
+      if (module._count.questions === 0) {
+        await tx.sectionModule.delete({ where: { id } });
+        return { id, action: "deleted", result: "deleted" };
+      }
+      await tx.sectionModule.update({ where: { id }, data: { retiredAt: new Date() } });
+      return { id, action: "retired", result: "retired" };
+    },
+    id,
+  );
 }
 
-export async function restoreModule(id: string): Promise<boolean> {
-  const { count } = await prisma.sectionModule.updateMany({
-    where: { id },
-    data: { retiredAt: null },
-  });
-  return count > 0;
+export function restoreModule(actor: Actor, id: string): Promise<boolean> {
+  return logged<boolean>(
+    actor,
+    "module",
+    async (tx) => {
+      const { count } = await tx.sectionModule.updateMany({
+        where: { id },
+        data: { retiredAt: null },
+      });
+      return count > 0 ? { id, action: "restored", result: true } : { skip: false };
+    },
+    id,
+  );
 }
 
 // --- Learning journeys (phase 3) ---
 
 /** Whether every section and source a journey points at exists. */
-async function journeyRefsExist(input: JourneyInput) {
+async function journeyRefsExist(tx: Tx, input: JourneyInput) {
   const sourceIds = [...new Set(input.steps.flatMap((s) => (s.sourceId ? [s.sourceId] : [])))];
   const [sections, sources] = await Promise.all([
-    prisma.section.count({ where: { id: { in: input.sections.map((s) => s.sectionId) } } }),
-    prisma.source.count({ where: { id: { in: sourceIds } } }),
+    tx.section.count({ where: { id: { in: input.sections.map((s) => s.sectionId) } } }),
+    tx.source.count({ where: { id: { in: sourceIds } } }),
   ]);
   return sections === input.sections.length && sources === sourceIds.length;
 }
@@ -410,56 +572,65 @@ const stepData = (step: JourneyInput["steps"][number], order: number) => ({
   sourceId: step.sourceId,
 });
 
-export async function createJourney(input: JourneyInput): Promise<WriteResult> {
-  if (!(await journeyRefsExist(input))) {
-    return { ok: false, status: 400, error: "A section or source no longer exists" };
-  }
-  const journey = await prisma.learningJourney.create({
-    data: {
-      ...journeyDetails(input),
-      sections: { create: input.sections },
-      modules: { create: input.steps.map((step, i) => stepData(step, i + 1)) },
-    },
-    select: { id: true },
+export function createJourney(actor: Actor, input: JourneyInput): Promise<WriteResult> {
+  return logged<WriteResult>(actor, "journey", async (tx) => {
+    if (!(await journeyRefsExist(tx, input))) {
+      return { skip: { ok: false, status: 400, error: "A section or source no longer exists" } };
+    }
+    const { id } = await tx.learningJourney.create({
+      data: {
+        ...journeyDetails(input),
+        sections: { create: input.sections },
+        modules: { create: input.steps.map((step, i) => stepData(step, i + 1)) },
+      },
+      select: { id: true },
+    });
+    return { id, action: "created", result: { ok: true, id } };
   });
-  return { ok: true, id: journey.id };
 }
 
 /**
- * Saves an edit in one transaction: the details, the section coverage
- * (replaced as a whole) and the steps. Existing steps keep their ids and are
- * updated in place; new ones are added and ones left out are deleted.
- * Coverage decides what the journey is recommended for and which sections
- * assessing it asks about, from the next recommendation on.
+ * Saves an edit: the details, the section coverage (replaced as a whole) and
+ * the steps. Existing steps keep their ids and are updated in place; new ones
+ * are added and ones left out are deleted. Coverage decides what the journey
+ * is recommended for and which sections assessing it asks about, from the
+ * next recommendation on.
  */
-export async function updateJourney(id: string, input: JourneyInput): Promise<WriteResult> {
-  const existing = await prisma.learningJourney.findUnique({
-    where: { id },
-    select: { modules: { select: { id: true } } },
-  });
-  if (!existing) return { ok: false, status: 404, error: "Unknown journey" };
-  if (!(await journeyRefsExist(input))) {
-    return { ok: false, status: 400, error: "A section or source no longer exists" };
-  }
+export function updateJourney(actor: Actor, id: string, input: JourneyInput): Promise<WriteResult> {
+  return logged<WriteResult>(
+    actor,
+    "journey",
+    async (tx) => {
+      const existing = await tx.learningJourney.findUnique({
+        where: { id },
+        select: { modules: { select: { id: true } } },
+      });
+      if (!existing) return { skip: { ok: false, status: 404, error: "Unknown journey" } };
+      if (!(await journeyRefsExist(tx, input))) {
+        return { skip: { ok: false, status: 400, error: "A section or source no longer exists" } };
+      }
 
-  const existingIds = new Set(existing.modules.map((m) => m.id));
-  const keptIds = new Set(
-    input.steps.flatMap((s) => (s.id && existingIds.has(s.id) ? [s.id] : [])),
+      const existingIds = new Set(existing.modules.map((m) => m.id));
+      const keptIds = new Set(
+        input.steps.flatMap((s) => (s.id && existingIds.has(s.id) ? [s.id] : [])),
+      );
+      await tx.learningJourney.update({ where: { id }, data: journeyDetails(input) });
+      await tx.journeySection.deleteMany({ where: { journeyId: id } });
+      await tx.journeySection.createMany({
+        data: input.sections.map((s) => ({ journeyId: id, ...s })),
+      });
+      await tx.learningModule.deleteMany({ where: { journeyId: id, id: { notIn: [...keptIds] } } });
+      for (const [i, step] of input.steps.entries()) {
+        if (step.id && keptIds.has(step.id)) {
+          await tx.learningModule.update({ where: { id: step.id }, data: stepData(step, i + 1) });
+        } else {
+          await tx.learningModule.create({ data: { journeyId: id, ...stepData(step, i + 1) } });
+        }
+      }
+      return { id, action: "edited", result: { ok: true, id } };
+    },
+    id,
   );
-  await prisma.$transaction([
-    prisma.learningJourney.update({ where: { id }, data: journeyDetails(input) }),
-    prisma.journeySection.deleteMany({ where: { journeyId: id } }),
-    prisma.journeySection.createMany({
-      data: input.sections.map((s) => ({ journeyId: id, ...s })),
-    }),
-    prisma.learningModule.deleteMany({ where: { journeyId: id, id: { notIn: [...keptIds] } } }),
-    ...input.steps.map((step, i) =>
-      step.id && keptIds.has(step.id)
-        ? prisma.learningModule.update({ where: { id: step.id }, data: stepData(step, i + 1) })
-        : prisma.learningModule.create({ data: { journeyId: id, ...stepData(step, i + 1) } }),
-    ),
-  ]);
-  return { ok: true, id };
 }
 
 /**
@@ -468,34 +639,48 @@ export async function updateJourney(id: string, input: JourneyInput): Promise<Wr
  * completed is retired, so past advice, history and the recommendation log
  * keep it, and it can be restored.
  */
-export async function removeJourney(id: string): Promise<"deleted" | "retired" | null> {
-  const journey = await prisma.learningJourney.findUnique({
-    where: { id },
-    select: {
-      _count: {
+export function removeJourney(actor: Actor, id: string): Promise<Removal> {
+  return logged<Removal>(
+    actor,
+    "journey",
+    async (tx) => {
+      const journey = await tx.learningJourney.findUnique({
+        where: { id },
         select: {
-          recommendations: true,
-          chosenInAdvice: true,
-          runnerUpInAdvice: true,
-          satInstances: true,
-          assessedIn: true,
+          _count: {
+            select: {
+              recommendations: true,
+              chosenInAdvice: true,
+              runnerUpInAdvice: true,
+              satInstances: true,
+              assessedIn: true,
+            },
+          },
         },
-      },
+      });
+      if (!journey) return { skip: null };
+      if (Object.values(journey._count).every((n) => n === 0)) {
+        await tx.learningJourney.delete({ where: { id } });
+        return { id, action: "deleted", result: "deleted" };
+      }
+      await tx.learningJourney.update({ where: { id }, data: { retiredAt: new Date() } });
+      return { id, action: "retired", result: "retired" };
     },
-  });
-  if (!journey) return null;
-  if (Object.values(journey._count).every((n) => n === 0)) {
-    await prisma.learningJourney.delete({ where: { id } });
-    return "deleted";
-  }
-  await prisma.learningJourney.update({ where: { id }, data: { retiredAt: new Date() } });
-  return "retired";
+    id,
+  );
 }
 
-export async function restoreJourney(id: string): Promise<boolean> {
-  const { count } = await prisma.learningJourney.updateMany({
-    where: { id },
-    data: { retiredAt: null },
-  });
-  return count > 0;
+export function restoreJourney(actor: Actor, id: string): Promise<boolean> {
+  return logged<boolean>(
+    actor,
+    "journey",
+    async (tx) => {
+      const { count } = await tx.learningJourney.updateMany({
+        where: { id },
+        data: { retiredAt: null },
+      });
+      return count > 0 ? { id, action: "restored", result: true } : { skip: false };
+    },
+    id,
+  );
 }

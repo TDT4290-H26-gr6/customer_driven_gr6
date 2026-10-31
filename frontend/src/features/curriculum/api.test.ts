@@ -1,8 +1,10 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { apiFetch } from "@/shared/api/client";
+import { downloadBlob } from "@/shared/lib/download";
 import * as api from "./api";
 
 vi.mock("@/shared/api/client", () => ({ apiFetch: vi.fn() }));
+vi.mock("@/shared/lib/download", () => ({ downloadBlob: vi.fn() }));
 
 const input = {
   questionType: "likert" as const,
@@ -14,6 +16,7 @@ const input = {
 
 beforeEach(() => {
   vi.mocked(apiFetch).mockReset().mockResolvedValue(undefined);
+  vi.mocked(downloadBlob).mockReset();
 });
 
 it.each([
@@ -62,4 +65,23 @@ it.each([
   expect(apiFetch).toHaveBeenLastCalledWith(`${base}/x`, { method: "DELETE" });
   await resource.restore("x");
   expect(apiFetch).toHaveBeenLastCalledWith(`${base}/x/restore`, { method: "POST" });
+});
+
+it.each([
+  [
+    () => api.downloadCurriculum(),
+    "/admin/curriculum/export.json",
+    /^aios-curriculum-\d{4}-\d{2}-\d{2}\.json$/,
+  ],
+  [
+    () => api.downloadChangeLog(),
+    "/admin/curriculum/changelog.csv",
+    /^aios-curriculum-changelog\.csv$/,
+  ],
+])("downloads %#: the curriculum file, then the change log", async (download, path, fileName) => {
+  const blob = new Blob(["{}"]);
+  vi.mocked(apiFetch).mockResolvedValueOnce(blob);
+  await download();
+  expect(apiFetch).toHaveBeenCalledWith(path, { responseType: "blob" });
+  expect(downloadBlob).toHaveBeenCalledWith(blob, expect.stringMatching(fileName));
 });

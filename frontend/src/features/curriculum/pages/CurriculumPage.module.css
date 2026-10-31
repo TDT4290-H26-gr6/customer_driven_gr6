@@ -452,3 +452,10 @@
     flex: 1;
   }
 }
+
+/* Who added an item and who changed it last (ChangeHistory). */
+.history {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}

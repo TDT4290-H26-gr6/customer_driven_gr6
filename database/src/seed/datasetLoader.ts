@@ -22,10 +22,10 @@ type Row = Record<string, unknown>;
 /** Generous: the default 5 s interactive-transaction timeout is too short for a full dataset. */
 const SEED_TIMEOUT_MS = 60_000;
 
-/** The JSON stores timestamps as ISO strings; Prisma wants Dates. */
+/** The JSON stores timestamps (including an exported file's retiredAt) as ISO strings; Prisma wants Dates. */
 function withDates(row: Row): Row {
   const out = { ...row };
-  for (const key of ["createdAt", "updatedAt"]) {
+  for (const key of ["createdAt", "updatedAt", "retiredAt"]) {
     if (typeof out[key] === "string") out[key] = new Date(out[key] as string);
   }
   return out;

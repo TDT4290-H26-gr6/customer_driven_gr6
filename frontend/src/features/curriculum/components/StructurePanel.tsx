@@ -12,6 +12,7 @@ import type {
 } from "../types";
 import { ModuleForm } from "./ModuleForm";
 import { SectionForm } from "./SectionForm";
+import { ChangeHistory } from "./ChangeHistory";
 import styles from "../pages/CurriculumPage.module.css";
 
 type Props = {
@@ -174,6 +175,7 @@ export function StructurePanel({ sections, competences, onChanged }: Props) {
                     {retired && <span className={styles.badge}>Removed</span>}
                   </h2>
                   {section.description && <p className={styles.meta}>{section.description}</p>}
+                  <ChangeHistory history={section.history} />
                 </div>
                 <div className={styles.rowActions}>
                   {retired ? (
@@ -276,6 +278,7 @@ export function StructurePanel({ sections, competences, onChanged }: Props) {
                           )}
                           {moduleRetired && <span className={styles.badge}>Removed</span>}
                         </p>
+                        <ChangeHistory history={module.history} />
                       </div>
                       <div className={styles.rowActions}>
                         {moduleRetired ? (

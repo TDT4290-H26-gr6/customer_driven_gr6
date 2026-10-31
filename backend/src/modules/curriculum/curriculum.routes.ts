@@ -3,6 +3,10 @@ import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
 import { requireAdmin } from "../../middleware/requireAdmin";
 import { asyncHandler } from "../../lib/asyncHandler";
 import { buildPieContent } from "../assessment/assessment.pie";
+import { findLearnerById } from "../identity/identity.service";
+import { toCsv } from "../stats/stats.csv";
+import { CHANGE_LOG_COLUMNS, listChangeLog, type Actor } from "./curriculum.audit";
+import { buildCurriculumExport } from "./curriculum.export";
 import {
   createCompetence,
   createJourney,
@@ -39,11 +43,44 @@ import {
  * The curriculum editor: admins change the questions, competences, sections,
  * section modules and learning journeys learners are assessed on and
  * recommended (CD-25). Admin only, like the
- * rest of /admin/*.
+ * rest of /admin/*. Every change is logged with the admin who made it (see
+ * curriculum.audit.ts).
  */
 export const curriculumRouter = Router();
 
 const admin = [requireAuth, requireAdmin] as const;
+
+/** The admin making a change, as the change log records them. */
+async function actorOf(req: AuthedRequest): Promise<Actor> {
+  const learner = await findLearnerById(req.learnerId!);
+  // requireAdmin has just found this account by its email; it's only gone if deleted since.
+  if (!learner?.email) throw new Error("The admin's account no longer exists");
+  return { id: learner.id, name: learner.name, email: learner.email };
+}
+
+// The whole curriculum as a dataset file db-init can load (see curriculum.export.ts).
+curriculumRouter.get(
+  "/admin/curriculum/export.json",
+  ...admin,
+  asyncHandler<AuthedRequest>(async (_req, res) => {
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    res.header("Content-Disposition", `attachment; filename="aios-curriculum-${date}.json"`);
+    res.type("application/json").send(JSON.stringify(await buildCurriculumExport(now), null, 2));
+  }),
+);
+
+// Every change made in the curriculum editor: who, when, what, before and after.
+curriculumRouter.get(
+  "/admin/curriculum/changelog.csv",
+  ...admin,
+  asyncHandler<AuthedRequest>(async (_req, res) => {
+    const csv = toCsv([...CHANGE_LOG_COLUMNS], await listChangeLog());
+    res.header("Content-Type", "text/csv; charset=utf-8");
+    res.header("Content-Disposition", 'attachment; filename="aios-curriculum-changelog.csv"');
+    res.send(csv);
+  }),
+);
 
 curriculumRouter.get(
   "/admin/curriculum",
@@ -82,7 +119,7 @@ curriculumRouter.post(
   asyncHandler<AuthedRequest>(async (req, res) => {
     const input = validateQuestionInput(req.body);
     if ("error" in input) return res.status(400).json({ error: input.error });
-    const result = await createQuestion(input.data);
+    const result = await createQuestion(await actorOf(req), input.data);
     if (!result.ok) return res.status(result.status).json({ error: result.error });
     res.status(201).json({ id: result.id });
   }),
@@ -94,7 +131,7 @@ curriculumRouter.put(
   asyncHandler<AuthedRequest>(async (req, res) => {
     const input = validateQuestionInput(req.body);
     if ("error" in input) return res.status(400).json({ error: input.error });
-    const result = await updateQuestion(req.params.id, input.data);
+    const result = await updateQuestion(await actorOf(req), req.params.id, input.data);
     if (!result.ok) return res.status(result.status).json({ error: result.error });
     res.json({ id: result.id });
   }),
@@ -106,7 +143,7 @@ curriculumRouter.delete(
   "/admin/curriculum/questions/:id",
   ...admin,
   asyncHandler<AuthedRequest>(async (req, res) => {
-    const result = await removeQuestion(req.params.id);
+    const result = await removeQuestion(await actorOf(req), req.params.id);
     if (!result) return res.status(404).json({ error: "Unknown question" });
     res.json({ result });
   }),
@@ -116,7 +153,7 @@ curriculumRouter.post(
   "/admin/curriculum/questions/:id/restore",
   ...admin,
   asyncHandler<AuthedRequest>(async (req, res) => {
-    if (!(await restoreQuestion(req.params.id))) {
+    if (!(await restoreQuestion(await actorOf(req), req.params.id))) {
       return res.status(404).json({ error: "Unknown question" });
     }
     res.status(204).end();
@@ -130,7 +167,7 @@ curriculumRouter.post(
     const input = validateCompetenceInput(req.body);
     if ("error" in input) return res.status(400).json({ error: input.error });
     try {
-      res.status(201).json(await createCompetence(input.data));
+      res.status(201).json(await createCompetence(await actorOf(req), input.data));
     } catch (err) {
       if (isUniqueViolation(err)) {
         return res.status(409).json({ error: "A competence with that name already exists" });
@@ -147,7 +184,7 @@ curriculumRouter.put(
     const input = validateCompetenceInput(req.body);
     if ("error" in input) return res.status(400).json({ error: input.error });
     try {
-      const competence = await updateCompetence(req.params.id, input.data);
+      const competence = await updateCompetence(await actorOf(req), req.params.id, input.data);
       if (!competence) return res.status(404).json({ error: "Unknown competence" });
       res.json(competence);
     } catch (err) {
@@ -169,10 +206,10 @@ function structureRoutes<Input>(
   label: string,
   validate: (body: unknown) => { data: Input } | { error: string },
   service: {
-    create: (input: Input) => Promise<WriteResult>;
-    update: (id: string, input: Input) => Promise<WriteResult>;
-    remove: (id: string) => Promise<"deleted" | "retired" | null>;
-    restore: (id: string) => Promise<boolean>;
+    create: (actor: Actor, input: Input) => Promise<WriteResult>;
+    update: (actor: Actor, id: string, input: Input) => Promise<WriteResult>;
+    remove: (actor: Actor, id: string) => Promise<"deleted" | "retired" | null>;
+    restore: (actor: Actor, id: string) => Promise<boolean>;
   },
 ) {
   const taken = `A ${label} with that name${label === "section" ? " or code" : ""} already exists`;
@@ -194,7 +231,8 @@ function structureRoutes<Input>(
     asyncHandler<AuthedRequest>(async (req, res) => {
       const input = validate(req.body);
       if ("error" in input) return res.status(400).json({ error: input.error });
-      await save(() => service.create(input.data), res, true);
+      const actor = await actorOf(req);
+      await save(() => service.create(actor, input.data), res, true);
     }),
   );
 
@@ -204,7 +242,8 @@ function structureRoutes<Input>(
     asyncHandler<AuthedRequest>(async (req, res) => {
       const input = validate(req.body);
       if ("error" in input) return res.status(400).json({ error: input.error });
-      await save(() => service.update(req.params.id, input.data), res);
+      const actor = await actorOf(req);
+      await save(() => service.update(actor, req.params.id, input.data), res);
     }),
   );
 
@@ -212,7 +251,7 @@ function structureRoutes<Input>(
     `${path}/:id`,
     ...admin,
     asyncHandler<AuthedRequest>(async (req, res) => {
-      const result = await service.remove(req.params.id);
+      const result = await service.remove(await actorOf(req), req.params.id);
       if (!result) return res.status(404).json({ error: `Unknown ${label}` });
       res.json({ result });
     }),
@@ -222,7 +261,7 @@ function structureRoutes<Input>(
     `${path}/:id/restore`,
     ...admin,
     asyncHandler<AuthedRequest>(async (req, res) => {
-      if (!(await service.restore(req.params.id))) {
+      if (!(await service.restore(await actorOf(req), req.params.id))) {
         return res.status(404).json({ error: `Unknown ${label}` });
       }
       res.status(204).end();

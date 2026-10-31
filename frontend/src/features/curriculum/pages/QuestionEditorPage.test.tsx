@@ -220,6 +220,7 @@ describe("QuestionEditorPage: a new question", () => {
       name: "Data citation",
       description: null,
       questionCount: 0,
+      history: { created: null, lastChange: null },
       moduleCount: 0,
     });
     renderEditor();
