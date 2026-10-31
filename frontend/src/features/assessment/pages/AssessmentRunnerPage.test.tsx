@@ -85,8 +85,9 @@ function path(
   isDone = false,
   sectionCount = 2,
   journey: AssessmentPath["journey"] = null,
+  partial = false,
 ): AssessmentPath {
-  return { items, sectionCount, done: isDone, journey };
+  return { items, sectionCount, done: isDone, journey, partial };
 }
 
 const networkError = { status: 0, message: "offline" };
@@ -287,9 +288,34 @@ describe("AssessmentRunnerPage", () => {
     expect(await screen.findByRole("button", { name: "Finish" })).toBeEnabled();
   });
 
-  it("Back shows the previous question with its saved answer", async () => {
+  it("hides Back during the full self-assessment", async () => {
     vi.mocked(getAssessmentPath).mockResolvedValue(
       path([item("1", { answered: true }), item("2")]),
+    );
+
+    render(<AssessmentRunnerPage />);
+    await screen.findByText("Question 2");
+
+    expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
+  });
+
+  it("shows Back during a journey assessment", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path([item("1", { answered: true }), item("2")], false, 2, {
+        id: "journey-2",
+        name: "LJ2 - Research Data",
+      }),
+    );
+
+    render(<AssessmentRunnerPage />);
+    await screen.findByText("Question 2");
+
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+  });
+
+  it("Back shows the previous question with its saved answer, during a partial reassessment", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path([item("1", { answered: true }), item("2")], false, 2, null, true),
     );
     const user = userEvent.setup();
 
@@ -301,7 +327,13 @@ describe("AssessmentRunnerPage", () => {
   });
 
   it("after changing an earlier answer, Next goes on to the question already shown after it", async () => {
-    const shown = path([item("1", { answered: true }), item("2", { answered: true }), item("3")]);
+    const shown = path(
+      [item("1", { answered: true }), item("2", { answered: true }), item("3")],
+      false,
+      2,
+      null,
+      true,
+    );
     // Answered questions stay put whatever the change, so the path keeps them.
     vi.mocked(getAssessmentPath).mockResolvedValue(shown);
     const user = userEvent.setup();

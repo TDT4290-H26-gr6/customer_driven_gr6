@@ -442,7 +442,7 @@ export async function getAssessmentPath(learnerId: string) {
   if (!inputs) return null;
   const { questions, sections, instanceNum, answers, active } = inputs;
 
-  const { answered, next } = buildPath(sections, answers);
+  const { answered, next } = buildPath(sections, answers, isPartialReassessment(active));
   const sectionNumberOf = new Map(sections.map((s, i) => [s.id, i + 1]));
 
   const items = [...answered, ...(next ? [next] : [])].map((id) => {
@@ -472,6 +472,9 @@ export async function getAssessmentPath(learnerId: string) {
     done: next === null,
     // Set while the learner is assessing one learning journey on its own.
     journey: journeyBeingAssessed(active),
+    // A reassessment of chosen sections only (not the full self-assessment,
+    // and not a journey assessment either), see isPartialReassessment.
+    partial: isPartialReassessment(active),
   };
 }
 
@@ -485,6 +488,17 @@ function journeyBeingAssessed(
 ) {
   if (instance?.kind !== JOURNEY_KIND) return null;
   return { id: instance.assessedJourneyId, name: instance.assessedJourneyName };
+}
+
+/**
+ * Whether the instance is a reassessment limited to chosen sections
+ * (startReassessment), rather than the full self-assessment or a journey
+ * assessment. Drives buildPath's `exhaustive` mode (every question of the
+ * chosen sections is asked, see assessment.path.ts) and the frontend's
+ * Back button (kept for a partial reassessment, hidden for a full one).
+ */
+function isPartialReassessment(instance: { reassessedSectionNames: unknown } | null): boolean {
+  return isStringArray(instance?.reassessedSectionNames);
 }
 
 /**
@@ -658,7 +672,11 @@ export async function completeActiveInstance(learnerId: string): Promise<Complet
   const active = inputs?.active;
   if (!inputs || !active) return "none";
 
-  const { answered, next } = buildPath(inputs.sections, inputs.answers);
+  const { answered, next } = buildPath(
+    inputs.sections,
+    inputs.answers,
+    isPartialReassessment(active),
+  );
   if (next) return "unfinished";
 
   // Answers to questions no longer in the learner's bank (deleted, or

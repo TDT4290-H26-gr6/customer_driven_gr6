@@ -520,7 +520,12 @@ function mockPathInputs({
   responses,
 }: {
   questions: { id: string; competenceId: string; level?: number }[];
-  active: { id: string; instanceNum: number } | null;
+  active: {
+    id: string;
+    instanceNum: number;
+    reassessedSectionNames?: string[] | null;
+    kind?: string;
+  } | null;
   responses: {
     id: string;
     questionId: string | null;
@@ -602,6 +607,45 @@ describe("getAssessmentPath", () => {
   it("returns null for a learner without a role", async () => {
     vi.mocked(findLearnerById).mockResolvedValue({ roleId: null } as never);
     expect(await getAssessmentPath("learner-1")).toBeNull();
+  });
+
+  it("is not partial for the full self-assessment", async () => {
+    mockPathInputs({
+      questions: [{ id: "q1", competenceId: "comp-a" }],
+      active: { id: "instance-1", instanceNum: 1 },
+      responses: [],
+    });
+    expect((await getAssessmentPath("learner-1"))?.partial).toBe(false);
+  });
+
+  it("is partial for a reassessment limited to chosen sections", async () => {
+    mockPathInputs({
+      questions: [{ id: "q1", competenceId: "comp-a" }],
+      active: { id: "instance-1", instanceNum: 1, reassessedSectionNames: ["Section A"] },
+      responses: [],
+    });
+    expect((await getAssessmentPath("learner-1"))?.partial).toBe(true);
+  });
+
+  it("asks every question of a level regardless of score during a partial reassessment", async () => {
+    mockPathInputs({
+      questions: [
+        { id: "q1", competenceId: "comp-a" },
+        { id: "q2", competenceId: "comp-a" },
+        { id: "q3", competenceId: "comp-a" },
+      ],
+      active: { id: "instance-1", instanceNum: 1, reassessedSectionNames: ["Section A"] },
+      // 2 wrong of 3: a non-exhaustive route would fail the level here and
+      // finish the (single) section instead of asking q3.
+      responses: [
+        { id: "r1", questionId: "q1", score: 0, maxScore: 1 },
+        { id: "r2", questionId: "q2", score: 0, maxScore: 1 },
+      ],
+    });
+
+    const path = await getAssessmentPath("learner-1");
+    expect(path?.done).toBe(false);
+    expect(path?.items.map((i) => i.question.id)).toEqual(["q1", "q2", "q3"]);
   });
 });
 
