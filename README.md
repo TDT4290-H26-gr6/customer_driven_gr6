@@ -95,6 +95,7 @@ docker compose logs db-init     # what the last schema push and seed did
 docker compose run --rm -p 5555:5555 db-init npx prisma studio --browser none  # browse the DB: http://localhost:5555
 docker compose run --rm db-init npm run content:sync              # preview WP2 dataset changes
 docker compose run --rm db-init npm run content:sync -- --apply   # apply them (overwrites editor changes to those rows)
+docker compose run --rm db-init npm run content:sync -- --only-new --apply  # only add new rows (e.g. new WP2 items), keep editor changes
 ```
 
 After changing the schema (`database/prisma/schema`), rebuild both:

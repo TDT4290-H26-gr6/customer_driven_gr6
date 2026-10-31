@@ -7,6 +7,7 @@ import { JOURNEY_KIND, MAIN_KIND, type AssessmentKind } from "./assessment.kinds
 import { bestPerModule, sectionPercent } from "./assessment.competencies";
 import { recommendJourney, suggestJourney } from "../learningJourney/learningJourney.service";
 import { completedCompetenceScoresQuery, newestPerCompetence } from "./assessment.newestScores";
+import { withoutAnswers } from "./assessment.redact";
 import {
   buildPath,
   seededRandom,
@@ -19,12 +20,14 @@ import {
 import {
   extractDragAndDropBlanks,
   extractMultipleChoiceValues,
+  extractMatrixAnswers,
   extractOrderingValues,
   IDK_VALUE,
   QUESTION_MAX_SCORE,
   scoreDragAndDrop,
   scoreLikert,
   scoreMultipleChoice,
+  scoreMatrix,
   scoreOrdering,
   type ScoreResult,
 } from "./assessment.scoring";
@@ -33,11 +36,17 @@ import {
 
 /**
  * Question types whose on-screen choice order is meaningful and must never
- * be shuffled. "ordering" is a reordering task itself, the whole point is
- * the learner's own arrangement, but it's also naturally exempt below since
- * its content never has the `.models[0].choices` shape this shuffles.
+ * be shuffled. ("ordering" is shuffled its own way, see
+ * withShuffledOrderingItems.)
  */
-const ORDERED_QUESTION_TYPES: readonly string[] = ["likert", "true_false", "ordering"];
+const ORDERED_QUESTION_TYPES: readonly string[] = ["likert", "true_false"];
+
+/** The question types shown as a matrix (@pie-element/match), scored per row. */
+const MATRIX_QUESTION_TYPES: readonly string[] = [
+  "true_false_matrix",
+  "classification_matrix",
+  "matching",
+];
 
 /**
  * Randomizes the on-screen order of a question's answer choices (Fisher–
@@ -55,6 +64,7 @@ function withShuffledChoices<T extends Pick<Question, "questionType" | "content"
   random: () => number = Math.random,
 ): T {
   if (ORDERED_QUESTION_TYPES.includes(question.questionType)) return question;
+  if (question.questionType === "ordering") return withShuffledOrderingItems(question, random);
 
   const content = question.content as { models?: { choices?: { value?: unknown }[] }[] } | null;
   const models = content?.models;
@@ -68,6 +78,44 @@ function withShuffledChoices<T extends Pick<Question, "questionType" | "content"
     ...models.slice(1),
   ];
   return { ...question, content: { ...content, models: shuffledModels } as Prisma.JsonValue };
+}
+
+/**
+ * An ordering question's items, in a random starting order that is never
+ * the correct one. The element takes the order on screen as the learner's
+ * answer from the start, and items are authored in their correct sequence,
+ * so unshuffled they would score full marks without being touched.
+ */
+function withShuffledOrderingItems<T extends Pick<Question, "content">>(
+  question: T,
+  random: () => number,
+): T {
+  const content = question.content as {
+    model?: { choices?: { id?: unknown }[]; correctResponse?: unknown };
+  } | null;
+  const model = content?.model;
+  if (!content || !model || !Array.isArray(model.choices) || model.choices.length < 2) {
+    return question;
+  }
+  let choices = shuffle(model.choices, random);
+  // Moving the first item to the end can't land on the correct order again.
+  if (JSON.stringify(choices.map((c) => c.id)) === JSON.stringify(model.correctResponse)) {
+    choices = [...choices.slice(1), choices[0]];
+  }
+  return { ...question, content: { ...content, model: { ...model, choices } } as Prisma.JsonValue };
+}
+
+/**
+ * A question as a learner gets it: choices shuffled (withShuffledChoices),
+ * and without its answers (withoutAnswers), which are scored from the
+ * stored copy.
+ */
+function forLearner<T extends Pick<Question, "questionType" | "content">>(
+  question: T,
+  random?: () => number,
+): T {
+  const shuffled = withShuffledChoices(question, random);
+  return { ...shuffled, content: withoutAnswers(shuffled.content) };
 }
 
 /**
@@ -178,7 +226,7 @@ export async function listQuestions(learnerId: string) {
   });
 
   return questions.map((q) =>
-    withShuffledChoices({
+    forLearner({
       id: q.id,
       prompt: q.prompt,
       questionType: q.questionType,
@@ -221,6 +269,19 @@ function scoreAnswer(
     if (!Array.isArray(correctResponse)) return null;
     const correctOrder = correctResponse.filter((v): v is string => typeof v === "string");
     return scoreOrdering(correctOrder, extractOrderingValues(session));
+  }
+
+  if (MATRIX_QUESTION_TYPES.includes(question.questionType)) {
+    const native = question.content as { model?: { rows?: unknown } } | null;
+    const rows = native?.model?.rows;
+    if (!Array.isArray(rows)) return null;
+    // Each row's `values` marks its correct column (see assessment.pie.ts).
+    const scorable = rows.flatMap((row: { id?: unknown; values?: unknown }) =>
+      typeof row?.id === "string" && Array.isArray(row.values)
+        ? [{ id: row.id, correctColumn: row.values.indexOf(true) }]
+        : [],
+    );
+    return scoreMatrix(scorable, extractMatrixAnswers(session));
   }
 
   const model = (question.content as { models?: PieModel[] } | null)?.models?.[0];
@@ -458,7 +519,7 @@ export async function getAssessmentPath(learnerId: string) {
     const q = questions.get(id)!;
     const { section, level } = q.sectionModule;
     return {
-      question: withShuffledChoices(
+      question: forLearner(
         {
           id: q.id,
           prompt: q.prompt,

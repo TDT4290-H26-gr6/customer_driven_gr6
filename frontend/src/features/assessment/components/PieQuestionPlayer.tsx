@@ -1,7 +1,7 @@
 import { createElement, useEffect, useRef } from "react";
 import type { NativeElementContent, PieContent } from "../types";
 import { clearOthersIfIdk, IDK_VALUE } from "./idkSession";
-import { loadPlacementOrdering } from "./loadNativeElement";
+import { buildPlacementOrderingModel, loadMatch, loadPlacementOrdering } from "./loadNativeElement";
 import { loadPiePlayer } from "./loadPiePlayer";
 import styles from "./PieQuestionPlayer.module.css";
 
@@ -38,14 +38,48 @@ type PieFixedPlayerElement = HTMLElement & {
  * not a <pie-fixed-player>-style item config.
  */
 type NativeQuestionElement = HTMLElement & {
-  model: Record<string, unknown>;
+  model: object;
   session: unknown;
 };
 
 /** One entry per native element this player can mount, see loadNativeElement.ts. */
 const NATIVE_LOADERS: Record<string, () => Promise<void>> = {
   "aios-placement-ordering": loadPlacementOrdering,
+  "aios-match": loadMatch,
 };
+
+/**
+ * Native elements that take the model their controller builds out of the
+ * stored one, see buildPlacementOrderingModel. The others take it as stored.
+ */
+const MODEL_BUILDERS: Record<string, (model: Record<string, unknown>) => Promise<object>> = {
+  "aios-placement-ordering": buildPlacementOrderingModel,
+};
+
+/**
+ * A native element draws nothing until it has a session (unlike
+ * <pie-fixed-player>, which makes its own), so an unanswered question starts
+ * it from an empty one. match then fills in an empty answer grid, reported as
+ * not complete; placement-ordering takes the order on screen as the answer
+ * (see isStartingOrder).
+ */
+const EMPTY_SESSION_ID = "1";
+
+const ORDERING_TAG = "aios-placement-ordering";
+
+/**
+ * Whether an ordering answer is still the order the items started in. The
+ * element reports that as complete from the start, before the learner has
+ * moved anything, so it doesn't count as an answer until they have (the
+ * backend never starts them in the correct order, so this never holds back
+ * a right answer).
+ */
+function isStartingOrder(content: NativeElementContent, session: unknown): boolean {
+  if (content.element !== ORDERING_TAG || !Array.isArray(content.model.choices)) return false;
+  const start = (content.model.choices as { id?: unknown }[]).map((c) => c.id);
+  const value = (session as { value?: unknown } | null | undefined)?.value;
+  return Array.isArray(value) && JSON.stringify(value) === JSON.stringify(start);
+}
 
 function isNativeElementContent(
   content: PieContent | NativeElementContent,
@@ -68,17 +102,19 @@ export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
       console.error(`PieQuestionPlayer: no loader registered for element "${nativeTag}"`);
       return;
     }
-    load()
-      .then(() => {
+    const buildModel = nativeTag ? MODEL_BUILDERS[nativeTag] : undefined;
+    Promise.all([load(), native && buildModel ? buildModel(content.model) : undefined])
+      .then(([, builtModel]) => {
         if (cancelled || !ref.current) return;
         if (native) {
-          (ref.current as NativeQuestionElement).model = content.model;
+          (ref.current as NativeQuestionElement).model = builtModel ?? content.model;
         } else {
           const element = ref.current as PieFixedPlayerElement;
           element.env = { mode: "gather", role: "student" };
           element.config = content;
         }
         if (answer?.session) ref.current.session = answer.session;
+        else if (nativeTag) ref.current.session = { id: EMPTY_SESSION_ID, element: nativeTag };
       })
       .catch(() => {
         // Left empty: the question can't be shown, and the learner can still
@@ -106,11 +142,12 @@ export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
       // which then finds nothing to clear.
       const session = clearOthersIfIdk(current);
       if (session !== current && ref.current) ref.current.session = session;
-      onAnswerChange?.({ session, complete: Boolean(detail?.complete) });
+      const untouched = native && isStartingOrder(content, session);
+      onAnswerChange?.({ session, complete: Boolean(detail?.complete) && !untouched });
     };
     ref.current.addEventListener("session-changed", handler);
     return () => ref.current?.removeEventListener("session-changed", handler);
-  }, [onAnswerChange]);
+  }, [onAnswerChange, native, content]);
 
   // While "I don't know" is ticked, other checkboxes can't be ticked (the CSS
   // greys them out; this stops the click itself).
@@ -132,7 +169,12 @@ export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
         // element with no entry in NATIVE_LOADERS still renders under its
         // own (empty) tag rather than silently masquerading as a
         // different one.
-        createElement(content.element, { ref: ref as React.RefObject<NativeQuestionElement> })
+        <>
+          {createElement(content.element, { ref: ref as React.RefObject<NativeQuestionElement> })}
+          {content.element === ORDERING_TAG && (
+            <p className={styles.hint}>Drag the items into the right order.</p>
+          )}
+        </>
       ) : (
         <pie-fixed-player ref={ref as React.RefObject<PieFixedPlayerElement>}></pie-fixed-player>
       )}

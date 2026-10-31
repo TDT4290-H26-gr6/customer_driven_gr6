@@ -36,3 +36,30 @@ export const loadPlacementOrdering = loadNativeElement(
   "aios-placement-ordering",
   () => import("@pie-element/placement-ordering/delivery"),
 );
+
+/**
+ * placement-ordering draws from the model its own controller builds out of
+ * the stored one (the layout config, ...), not from the stored one itself,
+ * which it can't render. The controller is what a PIE player would run
+ * first; here that's this. It counts an answer as complete once it has as
+ * many items as the correct order, which a learner isn't sent (the backend
+ * strips it, see assessment.redact.ts); every item is part of that order
+ * (see pie.ts's orderingContent), so that's every item.
+ */
+export async function buildPlacementOrderingModel(
+  model: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const controller = await import("@pie-element/placement-ordering/controller");
+  const built = await controller.model(model as never, undefined, {
+    mode: "gather",
+    role: "student",
+  });
+  const choices = Array.isArray(model.choices) ? model.choices : [];
+  return { ...built, completeLength: choices.length };
+}
+
+/** The matrix question types: true/false statements, classification, matching. */
+export const loadMatch = loadNativeElement(
+  "aios-match",
+  () => import("@pie-element/match/delivery"),
+);

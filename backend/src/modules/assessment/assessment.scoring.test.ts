@@ -1,14 +1,82 @@
 import { describe, expect, it } from "vitest";
 import {
   extractDragAndDropBlanks,
+  extractMatrixAnswers,
   extractMultipleChoiceValues,
   extractOrderingValues,
   IDK_VALUE,
   scoreDragAndDrop,
   scoreLikert,
+  scoreMatrix,
   scoreMultipleChoice,
   scoreOrdering,
 } from "./assessment.scoring";
+
+describe("scoreMatrix", () => {
+  // Columns: True, False, I don't know.
+  const rows = [
+    { id: "s1", correctColumn: 0 },
+    { id: "s2", correctColumn: 1 },
+    { id: "s3", correctColumn: 0 },
+    { id: "s4", correctColumn: 1 },
+  ];
+
+  it("is the share of rows answered with their correct column", () => {
+    expect(
+      scoreMatrix(rows, {
+        s1: [true, false, false],
+        s2: [false, true, false],
+        s3: [true, false, false],
+        s4: [false, true, false],
+      }),
+    ).toEqual({ score: 1, maxScore: 1 });
+    expect(
+      scoreMatrix(rows, {
+        s1: [true, false, false],
+        s2: [true, false, false],
+        s3: [true, false, false],
+        s4: [true, false, false],
+      }).score,
+    ).toBe(0.5);
+  });
+
+  it('counts a row marked "I don\'t know", left empty or missing as wrong', () => {
+    expect(
+      scoreMatrix(rows, {
+        s1: [true, false, false],
+        s2: [false, false, true],
+        s3: [false, false, false],
+      }).score,
+    ).toBe(0.25);
+  });
+
+  it("doesn't credit a row with more than one column selected", () => {
+    expect(scoreMatrix([rows[0]], { s1: [true, true, false] }).score).toBe(0);
+  });
+
+  it("scores 0 for a matrix without rows", () => {
+    expect(scoreMatrix([], {})).toEqual({ score: 0, maxScore: 1 });
+  });
+});
+
+describe("extractMatrixAnswers", () => {
+  it("reads each row's selected columns from the element's own session", () => {
+    expect(
+      extractMatrixAnswers({ id: "1", answers: { s1: [true, false], s2: [false, "yes"] } }),
+    ).toEqual({ s1: [true, false], s2: [false, false] });
+  });
+
+  it.each([null, "x", { answers: null }, { answers: [true] }, { data: [] }])(
+    "treats a malformed session (%j) as no answer",
+    (session) => {
+      expect(extractMatrixAnswers(session)).toEqual({});
+    },
+  );
+
+  it("skips a row whose value isn't a list", () => {
+    expect(extractMatrixAnswers({ answers: { s1: true, s2: [true] } })).toEqual({ s2: [true] });
+  });
+});
 
 describe("scoreMultipleChoice", () => {
   const choices = [

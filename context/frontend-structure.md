@@ -700,9 +700,11 @@ Not covered, so worth a pass before relying on it:
 
 - **Real devices.** Emulation isn't iOS Safari / Android Chrome, the
   on-screen keyboard, `dvh` and safe-area behavior in particular.
-- **Other question types.** Only multiple-choice items are seeded, so PIE
-  drag-and-drop / matrix-style widgets haven't been seen at phone width. The
-  `.canvas` scroll is the safety net, not a guarantee they're usable.
+- **Other question types.** The matrix questions (`aios-match`) have been
+  checked at phone width: the table scrolls sideways on its own with the row
+  texts pinned (globals.css). Ordering (`aios-placement-ordering`) has too,
+  including dragging by mouse and touch in dark mode. Other PIE widgets would
+  need the same check.
 - **Desktop radar with long names.** Inline labels aren't wrapped, and the
   real competence names ("Reproducibility and Research Workflows", …) are
   much longer than the placeholder ones. Compact mode sidesteps this; the

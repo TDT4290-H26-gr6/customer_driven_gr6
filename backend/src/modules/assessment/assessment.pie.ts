@@ -1,8 +1,9 @@
 // Turns a question's own simple definition (as authored in the seed data) into
-// the PIE item content that <pie-fixed-player> renders. Every question type
-// uses PIE's `multiple-choice` element, which this app already renders and
-// scores; they differ only in radio-vs-checkbox, in how choices are built,
-// and (criteria_check) in an example shown above the question.
+// the PIE item content that <pie-fixed-player> renders. Most question types
+// use PIE's `multiple-choice` element; they differ only in radio-vs-checkbox,
+// in how choices are built, and (criteria_check) in an example shown above
+// the question. ordering and the three matrix types use a standalone PIE
+// element of their own (NativeElementContent).
 //
 // The stored `content` is what the frontend feeds the player, and what the
 // backend's assessment.service.ts reads back to score answers (choice `value`
@@ -55,6 +56,16 @@ export type AuthoredContent = {
   exhibit?: string;
   /** ordering: `options`' ids, in the correct sequence. */
   correctOrder?: string[];
+  /**
+   * true_false_matrix / classification_matrix / matching: a table with one
+   * row per statement or item and one column per answer; the learner picks
+   * one column in each row. A column no row needs is a distractor. A
+   * true_false_matrix's columns are always True and False (TRUE_FALSE_COLUMNS),
+   * whatever is given here.
+   */
+  columns?: { id: string; text: string }[];
+  /** The matrix types: each row, and the id of the column that's right for it. */
+  rows?: { id: string; text: string; correctColumnId: string }[];
 };
 
 export const QUESTION_TYPES = [
@@ -64,6 +75,9 @@ export const QUESTION_TYPES = [
   "true_false",
   "criteria_check",
   "ordering",
+  "true_false_matrix",
+  "classification_matrix",
+  "matching",
 ] as const;
 export type QuestionType = (typeof QUESTION_TYPES)[number];
 
@@ -168,6 +182,60 @@ function orderingContent(prompt: string, content: AuthoredContent): NativeElemen
   };
 }
 
+/** A true_false_matrix's columns. */
+export const TRUE_FALSE_COLUMNS = [
+  { id: "true", text: "True" },
+  { id: "false", text: "False" },
+];
+
+/**
+ * The matrix types (true/false statements, classifying items into
+ * categories, matching items to answers), via the standalone @pie-element/match
+ * custom element: a table with a radio button in every cell. Each row's
+ * `values` marks its correct column, which the backend scores against (the
+ * element itself only reads ids, titles and headers). Every row also gets an
+ * "I don't know" column, last, which scores that row 0, so a learner never
+ * has to guess on a row.
+ */
+function matrixContent(
+  questionType: string,
+  prompt: string,
+  content: AuthoredContent,
+): NativeElementContent {
+  const columns =
+    questionType === "true_false_matrix" ? TRUE_FALSE_COLUMNS : (content.columns ?? []);
+  const rows = content.rows ?? [];
+  if (columns.length < 2) throw new Error(`${questionType} question needs at least 2 columns`);
+  if (rows.length === 0) throw new Error(`${questionType} question needs content.rows`);
+  const columnIds = new Set(columns.map((c) => c.id));
+  for (const row of rows) {
+    if (!columnIds.has(row.correctColumnId)) {
+      throw new Error(`${questionType} row "${row.id}" has an unknown correctColumnId`);
+    }
+  }
+
+  return {
+    element: "aios-match",
+    model: {
+      id: "1",
+      element: "aios-match",
+      prompt: `<p>${escapeHtml(prompt)}</p>`,
+      choiceMode: "radio",
+      // The first header heads the row texts.
+      headers: ["", ...columns.map((c) => escapeHtml(c.text)), escapeHtml(IDK_LABEL)],
+      // Columns shown, the row texts' column included.
+      layout: columns.length + 2,
+      rows: rows.map((row) => ({
+        id: row.id,
+        title: escapeHtml(row.text),
+        values: [...columns.map((c) => c.id === row.correctColumnId), false],
+      })),
+      partialScoring: true,
+      lockChoiceOrder: true,
+    },
+  };
+}
+
 export function buildPieContent(
   questionType: string,
   prompt: string,
@@ -195,6 +263,10 @@ export function buildPieContent(
       );
     case "ordering":
       return orderingContent(prompt, content);
+    case "true_false_matrix":
+    case "classification_matrix":
+    case "matching":
+      return matrixContent(questionType, prompt, content);
     default:
       throw new Error(`Unknown question type: ${questionType}`);
   }

@@ -139,3 +139,43 @@
     height: 44px;
   }
 }
+
+/* The matrix editor: what each list is, each row's text (items can be a
+   sentence or two) and its answer picker. On a phone the picker goes under
+   the text. */
+.subLabel {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+}
+
+.answerSelect {
+  flex: none;
+  max-width: 40%;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+
+.rowText {
+  resize: vertical;
+}
+
+@media (max-width: 767px) {
+  .matrixRow {
+    flex-wrap: wrap;
+  }
+
+  .matrixRow .rowText {
+    flex-basis: calc(100% - 32px);
+  }
+
+  .matrixRow .answerSelect {
+    max-width: none;
+    min-width: 0;
+    flex: 1;
+    margin-left: 32px;
+  }
+}

@@ -16,6 +16,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@pie-element/match": "^13.0.7",
     "@pie-element/placement-ordering": "^15.0.7",
     "@pie-framework/pie-fixed-player-static": "1.0.0-963a099.1",
     "google-auth-library": "^9.14.1",

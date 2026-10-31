@@ -18,7 +18,6 @@ const secondary = table("aios.assessment.section_module_secondary_competence");
 const questions = table("aios.assessment.question");
 const journeys = table("aios.learningJourney.journey");
 const journeySections = table("aios.learningJourney.journey_section");
-const pending = table("_pendingItems");
 const sources = table("aios.sources.source");
 const secondarySources = table("aios.assessment.competence_secondary_source");
 
@@ -118,6 +117,19 @@ describe("WP2 seed data: questions", () => {
     }
   });
 
+  it("gives every matrix row a real column, and every column a distinct id", () => {
+    const matrixTypes = ["true_false_matrix", "classification_matrix", "matching"];
+    const matrices = questions.filter((q) => matrixTypes.includes(String(q.questionType)));
+    expect(matrices).toHaveLength(8);
+    for (const q of matrices) {
+      const { columns = [], rows = [] } = q.content as AuthoredContent;
+      const columnIds = new Set(columns.map((c) => c.id));
+      expect(columnIds.size).toBe(columns.length);
+      expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length);
+      for (const row of rows) expect(columnIds.has(row.correctColumnId)).toBe(true);
+    }
+  });
+
   it("labels every step of a self-rating", () => {
     for (const q of questions.filter((q) => q.questionType === "likert")) {
       const { scale } = q.content as AuthoredContent;
@@ -125,16 +137,10 @@ describe("WP2 seed data: questions", () => {
     }
   });
 
-  it("keeps items of unsupported types out of the question bank", () => {
-    expect(pending.length).toBeGreaterThan(0);
-    for (const item of pending) {
-      expect(QUESTION_TYPES).not.toContain(item.type);
-      expect(
-        questions.some((q) =>
-          String(q.id).endsWith(String(item.ref).toLowerCase().replace(".", "-")),
-        ),
-      ).toBe(false);
-    }
+  it("loads every delivered item: none is left pending", () => {
+    expect(tables).not.toHaveProperty("_pendingItems");
+    // The 61 WP2 items, plus the 3 the dev team wrote (see _meta.devAuthoredItems).
+    expect(questions).toHaveLength(64);
   });
 });
 

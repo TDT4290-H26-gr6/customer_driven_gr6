@@ -13,8 +13,15 @@ import {
   updateQuestion,
 } from "../api";
 import { LikertEditor } from "../components/LikertEditor";
+import { MatrixEditor } from "../components/MatrixEditor";
 import { OptionsEditor } from "../components/OptionsEditor";
-import { convertContent, emptyContent, moduleLabel, QUESTION_TYPE_INFO } from "../questionTypes";
+import {
+  convertContent,
+  emptyContent,
+  isMatrixType,
+  moduleLabel,
+  QUESTION_TYPE_INFO,
+} from "../questionTypes";
 import type {
   AuthoredContent,
   Curriculum,
@@ -372,7 +379,17 @@ export function QuestionEditorPage() {
           </label>
         )}
 
-        {form.questionType === "likert" ? (
+        {isMatrixType(form.questionType) ? (
+          <div className={styles.field}>
+            <span className={styles.label}>The table</span>
+            <MatrixEditor
+              questionType={form.questionType}
+              columns={content.columns ?? []}
+              rows={content.rows ?? []}
+              onChange={(columns, rows) => setContent({ columns, rows })}
+            />
+          </div>
+        ) : form.questionType === "likert" ? (
           <LikertEditor
             scale={content.scale ?? { min: 1, max: 5 }}
             onChange={(scale) => setContent({ scale })}
@@ -416,7 +433,9 @@ export function QuestionEditorPage() {
         )}
         {form.questionType !== "ordering" && (
           <p className={styles.hint}>
-            Every question also gets an &quot;I don&apos;t know&quot; option automatically.
+            {isMatrixType(form.questionType)
+              ? 'Every row also gets an "I don\'t know" answer automatically.'
+              : 'Every question also gets an "I don\'t know" option automatically.'}
           </p>
         )}
 

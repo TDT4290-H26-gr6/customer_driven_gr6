@@ -4,7 +4,7 @@
     "moodle": "Every module and journey names a PLACEHOLDER Moodle course (moodleCourseId); links are built from MOODLE_BASE_URL. Replace with the real ids, or give a full moodleUrl, once the Moodle pages exist.",
     "levels": "Each section's four modules are stored as levels 1-4 (A1 = level 1), as the current adaptive assessment expects. In the curriculum they are parallel topics, not difficulty levels. Open question for the team.",
     "coverage": "Mixed coverage values in the source are stored as their first letter until confirmed with the customer: LJ5 B 'M/S' -> M, LJ5 D 'R/M' -> R, LJ6 A 'M/S' -> M.",
-    "gaps": "No items yet for A1 and A4; E3 and E4 have one item each. Items of unsupported types are listed in _pendingItems and not loaded. D3.2 is identical to D1.1 in the source.",
+    "gaps": "No items yet for A1 and A4; E3 and E4 have one item each. D3.2 is identical to D1.1 in the source.",
     "sources": "The four partner-institution sources come from the earlier curated course list and link to their own web pages, not Moodle. Which competences they build (primarySourceId / competence_secondary_source) is a PROPOSED mapping from their topics and descriptions. Confirm with the customer.",
     "devAuthoredItems": {
       "note": "Written by the development team as the first examples of the 'judge an example against criteria' type (criteria_check), not by the content team. Pending the content team's approval.",
@@ -1431,6 +1431,47 @@
       "competenceId": "comp-wp2-promote-open-access-publications"
     },
     {
+      "id": "q-wp2-b1-2",
+      "prompt": "Indicate whether each statement about repositories is true or false.",
+      "questionType": "true_false_matrix",
+      "content": {
+        "columns": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "rows": [
+          {
+            "id": "s1",
+            "text": "A DOI can provide a persistent identifier for a deposited research object.",
+            "correctColumnId": "true"
+          },
+          {
+            "id": "s2",
+            "text": "Every repository accepts every type of research object.",
+            "correctColumnId": "false"
+          },
+          {
+            "id": "s3",
+            "text": "Repository selection should consider preservation and access conditions.",
+            "correctColumnId": "true"
+          },
+          {
+            "id": "s4",
+            "text": "Depositing a resource automatically means that anyone may reuse it without restrictions.",
+            "correctColumnId": "false"
+          }
+        ]
+      },
+      "sectionModuleId": "mod-wp2-b1",
+      "competenceId": "comp-wp2-promote-open-access-publications"
+    },
+    {
       "id": "q-wp2-b1-3",
       "prompt": "You are depositing an openly reusable teaching dataset. Which package provides the strongest basis for reuse?",
       "questionType": "single_choice",
@@ -1482,6 +1523,57 @@
           }
         ],
         "correctOptionIds": ["b"]
+      },
+      "sectionModuleId": "mod-wp2-b2",
+      "competenceId": "comp-wp2-manage-research-data"
+    },
+    {
+      "id": "q-wp2-b2-3",
+      "prompt": "Classify each practice as good practice or poor practice.",
+      "questionType": "classification_matrix",
+      "content": {
+        "columns": [
+          {
+            "id": "c1",
+            "text": "Good practice"
+          },
+          {
+            "id": "c2",
+            "text": "Poor practice"
+          }
+        ],
+        "rows": [
+          {
+            "id": "r1",
+            "text": "Document changes",
+            "correctColumnId": "c1"
+          },
+          {
+            "id": "r2",
+            "text": "Keep only the latest undocumented file",
+            "correctColumnId": "c2"
+          },
+          {
+            "id": "r3",
+            "text": "Use consistent folders",
+            "correctColumnId": "c1"
+          },
+          {
+            "id": "r4",
+            "text": "Record provenance",
+            "correctColumnId": "c1"
+          },
+          {
+            "id": "r5",
+            "text": "Store sensitive data in unrestricted public folders",
+            "correctColumnId": "c2"
+          },
+          {
+            "id": "r6",
+            "text": "Maintain a README",
+            "correctColumnId": "c1"
+          }
+        ]
       },
       "sectionModuleId": "mod-wp2-b2",
       "competenceId": "comp-wp2-manage-research-data"
@@ -1559,6 +1651,146 @@
       },
       "sectionModuleId": "mod-wp2-b3",
       "competenceId": "comp-wp2-research-data-handling"
+    },
+    {
+      "id": "q-wp2-b3-3",
+      "prompt": "Indicate whether each statement is true or false.",
+      "questionType": "true_false_matrix",
+      "content": {
+        "columns": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "rows": [
+          {
+            "id": "s1",
+            "text": "A descriptive chart can establish causality.",
+            "correctColumnId": "false"
+          },
+          {
+            "id": "s2",
+            "text": "Cleaning transformations should be documented.",
+            "correctColumnId": "true"
+          },
+          {
+            "id": "s3",
+            "text": "Missing values should always be replaced with zero.",
+            "correctColumnId": "false"
+          },
+          {
+            "id": "s4",
+            "text": "AI-generated calculations should be verified.",
+            "correctColumnId": "true"
+          }
+        ]
+      },
+      "sectionModuleId": "mod-wp2-b3",
+      "competenceId": "comp-wp2-research-data-handling"
+    },
+    {
+      "id": "q-wp2-b4-1",
+      "prompt": "Match each quality problem to the dimension most directly affected.",
+      "questionType": "matching",
+      "content": {
+        "columns": [
+          {
+            "id": "m1",
+            "text": "Metadata"
+          },
+          {
+            "id": "m2",
+            "text": "Consistency"
+          },
+          {
+            "id": "m3",
+            "text": "Timeliness"
+          },
+          {
+            "id": "m4",
+            "text": "Provenance"
+          },
+          {
+            "id": "m5",
+            "text": "Accessibility/usability"
+          }
+        ],
+        "rows": [
+          {
+            "id": "r1",
+            "text": "Missing creator information",
+            "correctColumnId": "m1"
+          },
+          {
+            "id": "r2",
+            "text": "Inconsistent category labels",
+            "correctColumnId": "m2"
+          },
+          {
+            "id": "r3",
+            "text": "Obsolete dataset",
+            "correctColumnId": "m3"
+          },
+          {
+            "id": "r4",
+            "text": "Undocumented origin",
+            "correctColumnId": "m4"
+          },
+          {
+            "id": "r5",
+            "text": "Inaccessible file format",
+            "correctColumnId": "m5"
+          }
+        ]
+      },
+      "sectionModuleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-evaluate-research"
+    },
+    {
+      "id": "q-wp2-b4-2",
+      "prompt": "Indicate whether each statement is true or false.",
+      "questionType": "true_false_matrix",
+      "content": {
+        "columns": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "rows": [
+          {
+            "id": "s1",
+            "text": "FAIR automatically means that data must be completely open.",
+            "correctColumnId": "false"
+          },
+          {
+            "id": "s2",
+            "text": "Good metadata can improve discoverability and reuse.",
+            "correctColumnId": "true"
+          },
+          {
+            "id": "s3",
+            "text": "A technically correct chart can still be misleading.",
+            "correctColumnId": "true"
+          },
+          {
+            "id": "s4",
+            "text": "Quality assessment should consider intended reuse.",
+            "correctColumnId": "true"
+          }
+        ]
+      },
+      "sectionModuleId": "mod-wp2-b4",
+      "competenceId": "comp-wp2-evaluate-research"
     },
     {
       "id": "q-wp2-b4-5",
@@ -1729,6 +1961,64 @@
       "competenceId": "comp-wp2-develop-networks"
     },
     {
+      "id": "q-wp2-c2-3",
+      "prompt": "Match each actor with the most plausible primary support function.",
+      "questionType": "matching",
+      "content": {
+        "columns": [
+          {
+            "id": "m1",
+            "text": "information/resource support"
+          },
+          {
+            "id": "m2",
+            "text": "technical infrastructure"
+          },
+          {
+            "id": "m3",
+            "text": "ethical review"
+          },
+          {
+            "id": "m4",
+            "text": "research-data guidance"
+          },
+          {
+            "id": "m5",
+            "text": "awareness/training"
+          }
+        ],
+        "rows": [
+          {
+            "id": "r1",
+            "text": "Library",
+            "correctColumnId": "m1"
+          },
+          {
+            "id": "r2",
+            "text": "IT service",
+            "correctColumnId": "m2"
+          },
+          {
+            "id": "r3",
+            "text": "Ethics committee",
+            "correctColumnId": "m3"
+          },
+          {
+            "id": "r4",
+            "text": "Data steward",
+            "correctColumnId": "m4"
+          },
+          {
+            "id": "r5",
+            "text": "Communications/training staff",
+            "correctColumnId": "m5"
+          }
+        ]
+      },
+      "sectionModuleId": "mod-wp2-c2",
+      "competenceId": "comp-wp2-develop-networks"
+    },
+    {
       "id": "q-wp2-c3-1",
       "prompt": "Which objective is most appropriate for a small Open Science initiative?",
       "questionType": "single_choice",
@@ -1883,6 +2173,52 @@
           }
         ],
         "correctOptionIds": ["c"]
+      },
+      "sectionModuleId": "mod-wp2-c4",
+      "competenceId": "comp-wp2-mobilise-resources"
+    },
+    {
+      "id": "q-wp2-c4-5",
+      "prompt": "Indicate whether each statement is true or false.",
+      "questionType": "true_false_matrix",
+      "content": {
+        "columns": [
+          {
+            "id": "true",
+            "text": "True"
+          },
+          {
+            "id": "false",
+            "text": "False"
+          }
+        ],
+        "rows": [
+          {
+            "id": "s1",
+            "text": "Sustainability depends only on continued funding.",
+            "correctColumnId": "false"
+          },
+          {
+            "id": "s2",
+            "text": "Workload and perceived usefulness can influence adoption.",
+            "correctColumnId": "true"
+          },
+          {
+            "id": "s3",
+            "text": "Communities of practice can support engagement.",
+            "correctColumnId": "true"
+          },
+          {
+            "id": "s4",
+            "text": "Monitoring should ideally use a small number of relevant indicators.",
+            "correctColumnId": "true"
+          },
+          {
+            "id": "s5",
+            "text": "Confidential data may be entered into non-approved AI systems if the output is checked afterwards.",
+            "correctColumnId": "false"
+          }
+        ]
       },
       "sectionModuleId": "mod-wp2-c4",
       "competenceId": "comp-wp2-mobilise-resources"
@@ -2130,6 +2466,55 @@
       },
       "sectionModuleId": "mod-wp2-d3",
       "competenceId": "comp-wp2-ethical-reasoning"
+    },
+    {
+      "id": "q-wp2-d4-1",
+      "prompt": "Match the AI use case to the organizational role under the EU AI Act.",
+      "questionType": "matching",
+      "content": {
+        "columns": [
+          {
+            "id": "m1",
+            "text": "Her university is a deployer"
+          },
+          {
+            "id": "m2",
+            "text": "The business is a provider"
+          },
+          {
+            "id": "m3",
+            "text": "The business is a provider AND Her university is a deployer"
+          },
+          {
+            "id": "m4",
+            "text": "Her university is a provider"
+          }
+        ],
+        "rows": [
+          {
+            "id": "r1",
+            "text": "An administrative employee uses a personal chatbot account to help her with work",
+            "correctColumnId": "m1"
+          },
+          {
+            "id": "r2",
+            "text": "An administrative employee uses a chatbot that her university has an enterprise agreement with, to do a work task",
+            "correctColumnId": "m1"
+          },
+          {
+            "id": "r3",
+            "text": "A researcher uses a chatbot that her colleagues developed at another business, to play a game",
+            "correctColumnId": "m2"
+          },
+          {
+            "id": "r4",
+            "text": "A researcher uses a chatbot that her colleagues developed at another business, to do a work task",
+            "correctColumnId": "m3"
+          }
+        ]
+      },
+      "sectionModuleId": "mod-wp2-d4",
+      "competenceId": "comp-wp2-ai-governance-and-regulatory-compliance"
     },
     {
       "id": "q-wp2-d4-2",
@@ -2802,129 +3187,6 @@
     {
       "competenceId": "comp-wp2-write-research-documents",
       "sourceId": "src-wp2-unibo-data-steward"
-    }
-  ],
-  "_pendingItems": [
-    {
-      "module": "B1",
-      "ref": "B1.2",
-      "type": "true_false_matrix",
-      "prompt": "Indicate whether each statement about repositories is true or false.",
-      "statements": [
-        ["A DOI can provide a persistent identifier for a deposited research object.", true],
-        ["Every repository accepts every type of research object.", false],
-        ["Repository selection should consider preservation and access conditions.", true],
-        [
-          "Depositing a resource automatically means that anyone may reuse it without restrictions.",
-          false
-        ]
-      ]
-    },
-    {
-      "module": "B2",
-      "ref": "B2.3",
-      "type": "classification_matrix",
-      "prompt": "Classify each practice as good practice or poor practice.",
-      "categories": ["Good practice", "Poor practice"],
-      "items": [
-        ["Document changes", "Good practice"],
-        ["Keep only the latest undocumented file", "Poor practice"],
-        ["Use consistent folders", "Good practice"],
-        ["Record provenance", "Good practice"],
-        ["Store sensitive data in unrestricted public folders", "Poor practice"],
-        ["Maintain a README", "Good practice"]
-      ]
-    },
-    {
-      "module": "B3",
-      "ref": "B3.3",
-      "type": "true_false_matrix",
-      "prompt": "Indicate whether each statement is true or false.",
-      "statements": [
-        ["A descriptive chart can establish causality.", false],
-        ["Cleaning transformations should be documented.", true],
-        ["Missing values should always be replaced with zero.", false],
-        ["AI-generated calculations should be verified.", true]
-      ]
-    },
-    {
-      "module": "B4",
-      "ref": "B4.1",
-      "type": "matching",
-      "prompt": "Match each quality problem to the dimension most directly affected.",
-      "pairs": [
-        ["Missing creator information", "Metadata"],
-        ["Inconsistent category labels", "Consistency"],
-        ["Obsolete dataset", "Timeliness"],
-        ["Undocumented origin", "Provenance"],
-        ["Inaccessible file format", "Accessibility/usability"]
-      ]
-    },
-    {
-      "module": "B4",
-      "ref": "B4.2",
-      "type": "true_false_matrix",
-      "prompt": "Indicate whether each statement is true or false.",
-      "statements": [
-        ["FAIR automatically means that data must be completely open.", false],
-        ["Good metadata can improve discoverability and reuse.", true],
-        ["A technically correct chart can still be misleading.", true],
-        ["Quality assessment should consider intended reuse.", true]
-      ]
-    },
-    {
-      "module": "C2",
-      "ref": "C2.3",
-      "type": "matching",
-      "prompt": "Match each actor with the most plausible primary support function.",
-      "pairs": [
-        ["Library", "information/resource support"],
-        ["IT service", "technical infrastructure"],
-        ["Ethics committee", "ethical review"],
-        ["Data steward", "research-data guidance"],
-        ["Communications/training staff", "awareness/training"]
-      ]
-    },
-    {
-      "module": "C4",
-      "ref": "C4.5",
-      "type": "true_false_matrix",
-      "prompt": "Indicate whether each statement is true or false.",
-      "statements": [
-        ["Sustainability depends only on continued funding.", false],
-        ["Workload and perceived usefulness can influence adoption.", true],
-        ["Communities of practice can support engagement.", true],
-        ["Monitoring should ideally use a small number of relevant indicators.", true],
-        [
-          "Confidential data may be entered into non-approved AI systems if the output is checked afterwards.",
-          false
-        ]
-      ]
-    },
-    {
-      "module": "D4",
-      "ref": "D4.1",
-      "type": "matching",
-      "prompt": "Match the AI use case to the organizational role under the EU AI Act.",
-      "pairs": [
-        [
-          "An administrative employee uses a personal chatbot account to help her with work",
-          "Her university is a deployer"
-        ],
-        [
-          "An administrative employee uses a chatbot that her university has an enterprise agreement with, to do a work task",
-          "Her university is a deployer"
-        ],
-        [
-          "A researcher uses a chatbot that her colleagues developed at another business, to play a game",
-          "The business is a provider"
-        ],
-        [
-          "A researcher uses a chatbot that her colleagues developed at another business, to do a work task",
-          "The business is a provider AND Her university is a deployer"
-        ]
-      ],
-      "distractors": ["Her university is a provider"]
     }
   ]
 }

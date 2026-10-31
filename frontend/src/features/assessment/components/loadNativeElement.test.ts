@@ -57,3 +57,62 @@ describe("loadPlacementOrdering", () => {
     await expect(loadPlacementOrdering()).resolves.toBeUndefined();
   });
 });
+
+describe("loadMatch", () => {
+  afterEach(() => {
+    vi.doUnmock("@pie-element/match/delivery");
+  });
+
+  it("registers @pie-element/match under its own aios- tag", async () => {
+    class StubMatchElement extends HTMLElement {}
+    vi.resetModules();
+    vi.doMock("@pie-element/match/delivery", () => ({ default: StubMatchElement }));
+    const { loadMatch } = await import("./loadNativeElement");
+    await expect(loadMatch()).resolves.toBeUndefined();
+    expect(customElements.get("aios-match")).toBe(StubMatchElement);
+  });
+});
+
+describe("buildPlacementOrderingModel", () => {
+  afterEach(() => {
+    vi.doUnmock("@pie-element/placement-ordering/controller");
+  });
+
+  it("builds the element's model with the package's own controller, for a learner answering", async () => {
+    const built = { choices: [], config: { orientation: "vertical" } };
+    const model = vi.fn().mockResolvedValue(built);
+    vi.resetModules();
+    vi.doMock("@pie-element/placement-ordering/controller", () => ({ model }));
+    const { buildPlacementOrderingModel } = await import("./loadNativeElement");
+    const stored = { id: "1", choices: [{ id: "a" }, { id: "b" }] };
+
+    await expect(buildPlacementOrderingModel(stored)).resolves.toEqual({
+      ...built,
+      completeLength: 2,
+    });
+    expect(model).toHaveBeenCalledWith(stored, undefined, { mode: "gather", role: "student" });
+  });
+
+  it("builds the real model the element needs to draw, from what a learner is sent: no correct order", async () => {
+    vi.resetModules();
+    const { buildPlacementOrderingModel } = await import("./loadNativeElement");
+    const built = await buildPlacementOrderingModel({
+      id: "1",
+      element: "aios-placement-ordering",
+      prompt: "<p>Order them</p>",
+      choices: [
+        { id: "b", label: "Second" },
+        { id: "a", label: "First" },
+      ],
+      orientation: "vertical",
+      partialScoring: true,
+    });
+    expect(built).toMatchObject({
+      completeLength: 2,
+      choices: [{ id: "b" }, { id: "a" }],
+      config: { orientation: "vertical" },
+      disabled: false,
+    });
+    expect(built).not.toHaveProperty("correctResponse");
+  });
+});
