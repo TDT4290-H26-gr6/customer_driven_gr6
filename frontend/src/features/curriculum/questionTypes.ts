@@ -104,3 +104,14 @@ export function moduleLabel(sectionCode: string | null, module: CurriculumModule
 export function plural(count: number, word: string): string {
   return `${count} ${word}${count === 1 ? "" : "s"}`;
 }
+
+/** How strongly a journey covers a section, as the editor names it. */
+export const COVERAGE_INFO: { level: "M" | "R" | "S"; label: string; hint: string }[] = [
+  {
+    level: "M",
+    label: "Main",
+    hint: "The journey is centred on it; assessing the journey asks about it.",
+  },
+  { level: "R", label: "Recommended", hint: "The journey covers it well." },
+  { level: "S", label: "Supplementary", hint: "The journey touches on it." },
+];

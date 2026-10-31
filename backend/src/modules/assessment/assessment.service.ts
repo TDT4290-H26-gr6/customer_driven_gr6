@@ -631,8 +631,9 @@ export async function startJourneyAssessment(
     };
   }
 
-  const journey = await prisma.learningJourney.findUnique({
-    where: { id: journeyId },
+  // A retired journey can't be started (it isn't listed any more either).
+  const journey = await prisma.learningJourney.findFirst({
+    where: { id: journeyId, retiredAt: null },
     select: {
       name: true,
       sections: { where: { coverageLevel: "M" }, select: { sectionId: true } },
@@ -1125,9 +1126,12 @@ async function journeyRecommendedAfterMainAssessment(learnerId: string) {
   if (!latestMain) return null;
 
   const aiPickId = latestMain.advice?.journeyId;
-  const journey = aiPickId
-    ? await prisma.learningJourney.findUnique({ where: { id: aiPickId } })
-    : ((await recommendJourney(learnerId)) ?? (await suggestJourney(learnerId)));
+  // The AI's pick, unless it has been retired since; else the score-based one.
+  const aiPick = aiPickId
+    ? await prisma.learningJourney.findFirst({ where: { id: aiPickId, retiredAt: null } })
+    : null;
+  const journey =
+    aiPick ?? (await recommendJourney(learnerId)) ?? (await suggestJourney(learnerId));
   if (!journey) return null;
 
   const core = await prisma.journeySection.findMany({

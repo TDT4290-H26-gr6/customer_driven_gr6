@@ -5,19 +5,23 @@ import { asyncHandler } from "../../lib/asyncHandler";
 import { buildPieContent } from "../assessment/assessment.pie";
 import {
   createCompetence,
+  createJourney,
   createModule,
   createQuestion,
   createSection,
   getCurriculum,
   getQuestion,
   isUniqueViolation,
+  removeJourney,
   removeModule,
   removeQuestion,
   removeSection,
+  restoreJourney,
   restoreModule,
   restoreQuestion,
   restoreSection,
   updateCompetence,
+  updateJourney,
   updateModule,
   updateQuestion,
   updateSection,
@@ -25,14 +29,16 @@ import {
 } from "./curriculum.service";
 import {
   validateCompetenceInput,
+  validateJourneyInput,
   validateModuleInput,
   validateQuestionInput,
   validateSectionInput,
 } from "./curriculum.validation";
 
 /**
- * The curriculum editor: admins change the questions, competences, sections
- * and section modules learners are assessed on (CD-25). Admin only, like the
+ * The curriculum editor: admins change the questions, competences, sections,
+ * section modules and learning journeys learners are assessed on and
+ * recommended (CD-25). Admin only, like the
  * rest of /admin/*.
  */
 export const curriculumRouter = Router();
@@ -236,4 +242,11 @@ structureRoutes("/admin/curriculum/modules", "module", validateModuleInput, {
   update: updateModule,
   remove: removeModule,
   restore: restoreModule,
+});
+
+structureRoutes("/admin/curriculum/journeys", "journey", validateJourneyInput, {
+  create: createJourney,
+  update: updateJourney,
+  remove: removeJourney,
+  restore: restoreJourney,
 });

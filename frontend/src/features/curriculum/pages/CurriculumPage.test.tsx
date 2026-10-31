@@ -9,6 +9,7 @@ import { CurriculumPage } from "./CurriculumPage";
 vi.mock("../api", () => ({
   sectionsApi: { create: vi.fn(), update: vi.fn(), remove: vi.fn(), restore: vi.fn() },
   modulesApi: { create: vi.fn(), update: vi.fn(), remove: vi.fn(), restore: vi.fn() },
+  journeysApi: { create: vi.fn(), update: vi.fn(), remove: vi.fn(), restore: vi.fn() },
   getCurriculum: vi.fn(),
   removeQuestion: vi.fn(),
   restoreQuestion: vi.fn(),
@@ -223,5 +224,17 @@ describe("CurriculumPage: retired sections and modules", () => {
 
     expect(await screen.findByText("Section restored.")).toBeInTheDocument();
     expect(getCurriculum).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("CurriculumPage: learning journeys", () => {
+  it("opens on the journeys tab when the journey editor sends the admin back", async () => {
+    renderPage({ notice: "Journey saved.", tab: "journeys" });
+    expect(await screen.findByRole("tab", { name: "Learning journeys (2)" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    expect(screen.getByRole("region", { name: "Data steward" })).toBeInTheDocument();
+    expect(screen.getByText("Journey saved.")).toBeInTheDocument();
   });
 });

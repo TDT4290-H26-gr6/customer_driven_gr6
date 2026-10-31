@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   validateCompetenceInput,
+  validateJourneyInput,
   validateModuleInput,
   validateQuestionInput,
   validateSectionInput,
@@ -259,6 +260,100 @@ describe("validateModuleInput", () => {
     [{ ...module, moodleUrl: `https://x.no/${"a".repeat(512)}` }, "Moodle link"],
   ])("rejects %j", (body, message) => {
     const result = validateModuleInput(body);
+    expect("error" in result && result.error).toContain(message);
+  });
+});
+
+describe("validateJourneyInput", () => {
+  const journey = {
+    name: " Data steward ",
+    description: " For research data work ",
+    moodleUrl: "https://moodle.ntnu.no/course/view.php?id=3",
+    sections: [
+      { sectionId: "sec-a", coverageLevel: "M" },
+      { sectionId: "sec-b", coverageLevel: "R" },
+    ],
+    steps: [
+      { id: "step-1", title: " Plan your data ", description: "", sourceId: "src-1" },
+      { title: "Share it", sourceId: "" },
+    ],
+  };
+
+  it("accepts a journey, trimming text and marking which steps are new", () => {
+    expect(validateJourneyInput(journey)).toEqual({
+      data: {
+        name: "Data steward",
+        description: "For research data work",
+        moodleUrl: "https://moodle.ntnu.no/course/view.php?id=3",
+        sections: journey.sections,
+        steps: [
+          { id: "step-1", title: "Plan your data", description: null, sourceId: "src-1" },
+          { id: null, title: "Share it", description: null, sourceId: null },
+        ],
+      },
+    });
+  });
+
+  it("allows no steps, no description and no Moodle link", () => {
+    expect(
+      validateJourneyInput({ name: "X", sections: [{ sectionId: "s", coverageLevel: "M" }] }),
+    ).toEqual({
+      data: {
+        name: "X",
+        description: null,
+        moodleUrl: null,
+        sections: [{ sectionId: "s", coverageLevel: "M" }],
+        steps: [],
+      },
+    });
+  });
+
+  it.each([
+    [null, "Invalid"],
+    [{ ...journey, name: "" }, "name"],
+    [{ ...journey, name: "x".repeat(192) }, "too long"],
+    [{ ...journey, description: "x".repeat(5001) }, "too long"],
+    [{ ...journey, moodleUrl: "javascript:alert(1)" }, "Moodle link"],
+    [{ ...journey, sections: "sec-a" }, "Invalid sections"],
+    [
+      {
+        ...journey,
+        sections: Array.from({ length: 51 }, (_, i) => ({
+          sectionId: `s${i}`,
+          coverageLevel: "M",
+        })),
+      },
+      "Invalid sections",
+    ],
+    [{ ...journey, sections: [{ sectionId: "sec-a", coverageLevel: "X" }] }, "M, R or S"],
+    [{ ...journey, sections: [{ sectionId: "", coverageLevel: "M" }] }, "M, R or S"],
+    [{ ...journey, sections: ["sec-a"] }, "M, R or S"],
+    [
+      {
+        ...journey,
+        sections: [
+          { sectionId: "a", coverageLevel: "M" },
+          { sectionId: "a", coverageLevel: "R" },
+        ],
+      },
+      "listed twice",
+    ],
+    [
+      { ...journey, sections: [{ sectionId: "a", coverageLevel: "R" }] },
+      "at least one section as M",
+    ],
+    [{ ...journey, sections: [] }, "at least one section as M"],
+    [{ ...journey, steps: "step" }, "Invalid steps"],
+    [{ ...journey, steps: ["step"] }, "Invalid steps"],
+    [
+      { ...journey, steps: Array.from({ length: 31 }, (_, i) => ({ title: `Step ${i}` })) },
+      "at most 30",
+    ],
+    [{ ...journey, steps: [{ title: " " }] }, "needs a title"],
+    [{ ...journey, steps: [{ title: "x".repeat(192) }] }, "too long"],
+    [{ ...journey, steps: [{ title: "OK", description: "x".repeat(5001) }] }, "too long"],
+  ])("rejects %j", (body, message) => {
+    const result = validateJourneyInput(body);
     expect("error" in result && result.error).toContain(message);
   });
 });

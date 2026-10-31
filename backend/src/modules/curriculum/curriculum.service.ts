@@ -3,6 +3,7 @@ import { prisma } from "../../db/prisma";
 import { buildPieContent } from "../assessment/assessment.pie";
 import type {
   CompetenceInput,
+  JourneyInput,
   ModuleInput,
   QuestionInput,
   SectionInput,
@@ -48,7 +49,7 @@ function toQuestionSummary({ _count, authoredContent, ...question }: QuestionRow
  * it, and every question, retired ones included.
  */
 export async function getCurriculum() {
-  const [sections, competences, questions] = await Promise.all([
+  const [sections, competences, questions, journeys, sources] = await Promise.all([
     prisma.section.findMany({
       orderBy: [{ code: "asc" }, { name: "asc" }],
       select: {
@@ -87,6 +88,34 @@ export async function getCurriculum() {
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: questionSummarySelect,
     }),
+    prisma.learningJourney.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        moodleUrl: true,
+        retiredAt: true,
+        sections: { select: { sectionId: true, coverageLevel: true } },
+        modules: {
+          orderBy: { order: "asc" },
+          select: { id: true, title: true, description: true, sourceId: true },
+        },
+        _count: {
+          select: {
+            recommendations: true,
+            chosenInAdvice: true,
+            runnerUpInAdvice: true,
+            satInstances: true,
+            assessedIn: true,
+          },
+        },
+      },
+    }),
+    prisma.source.findMany({
+      orderBy: [{ institution: "asc" }, { courseName: "asc" }],
+      select: { id: true, courseName: true, institution: true },
+    }),
   ]);
 
   return {
@@ -108,6 +137,13 @@ export async function getCurriculum() {
       moduleCount: _count.mainForModules,
     })),
     questions: questions.map(toQuestionSummary),
+    journeys: journeys.map(({ _count, modules, ...journey }) => ({
+      ...journey,
+      steps: modules,
+      /** Recommended, picked by the AI, assessed or completed: removing it then retires it. */
+      used: Object.values(_count).some((n) => n > 0),
+    })),
+    sources,
   };
 }
 
@@ -343,6 +379,121 @@ export async function removeModule(id: string): Promise<"deleted" | "retired" | 
 
 export async function restoreModule(id: string): Promise<boolean> {
   const { count } = await prisma.sectionModule.updateMany({
+    where: { id },
+    data: { retiredAt: null },
+  });
+  return count > 0;
+}
+
+// --- Learning journeys (phase 3) ---
+
+/** Whether every section and source a journey points at exists. */
+async function journeyRefsExist(input: JourneyInput) {
+  const sourceIds = [...new Set(input.steps.flatMap((s) => (s.sourceId ? [s.sourceId] : [])))];
+  const [sections, sources] = await Promise.all([
+    prisma.section.count({ where: { id: { in: input.sections.map((s) => s.sectionId) } } }),
+    prisma.source.count({ where: { id: { in: sourceIds } } }),
+  ]);
+  return sections === input.sections.length && sources === sourceIds.length;
+}
+
+const journeyDetails = (input: JourneyInput) => ({
+  name: input.name,
+  description: input.description,
+  moodleUrl: input.moodleUrl,
+});
+
+const stepData = (step: JourneyInput["steps"][number], order: number) => ({
+  order,
+  title: step.title,
+  description: step.description,
+  sourceId: step.sourceId,
+});
+
+export async function createJourney(input: JourneyInput): Promise<WriteResult> {
+  if (!(await journeyRefsExist(input))) {
+    return { ok: false, status: 400, error: "A section or source no longer exists" };
+  }
+  const journey = await prisma.learningJourney.create({
+    data: {
+      ...journeyDetails(input),
+      sections: { create: input.sections },
+      modules: { create: input.steps.map((step, i) => stepData(step, i + 1)) },
+    },
+    select: { id: true },
+  });
+  return { ok: true, id: journey.id };
+}
+
+/**
+ * Saves an edit in one transaction: the details, the section coverage
+ * (replaced as a whole) and the steps. Existing steps keep their ids and are
+ * updated in place; new ones are added and ones left out are deleted.
+ * Coverage decides what the journey is recommended for and which sections
+ * assessing it asks about, from the next recommendation on.
+ */
+export async function updateJourney(id: string, input: JourneyInput): Promise<WriteResult> {
+  const existing = await prisma.learningJourney.findUnique({
+    where: { id },
+    select: { modules: { select: { id: true } } },
+  });
+  if (!existing) return { ok: false, status: 404, error: "Unknown journey" };
+  if (!(await journeyRefsExist(input))) {
+    return { ok: false, status: 400, error: "A section or source no longer exists" };
+  }
+
+  const existingIds = new Set(existing.modules.map((m) => m.id));
+  const keptIds = new Set(
+    input.steps.flatMap((s) => (s.id && existingIds.has(s.id) ? [s.id] : [])),
+  );
+  await prisma.$transaction([
+    prisma.learningJourney.update({ where: { id }, data: journeyDetails(input) }),
+    prisma.journeySection.deleteMany({ where: { journeyId: id } }),
+    prisma.journeySection.createMany({
+      data: input.sections.map((s) => ({ journeyId: id, ...s })),
+    }),
+    prisma.learningModule.deleteMany({ where: { journeyId: id, id: { notIn: [...keptIds] } } }),
+    ...input.steps.map((step, i) =>
+      step.id && keptIds.has(step.id)
+        ? prisma.learningModule.update({ where: { id: step.id }, data: stepData(step, i + 1) })
+        : prisma.learningModule.create({ data: { journeyId: id, ...stepData(step, i + 1) } }),
+    ),
+  ]);
+  return { ok: true, id };
+}
+
+/**
+ * Removes a journey. One nothing refers to is deleted, with its coverage and
+ * steps; one that's been recommended, picked by the AI advisor, assessed or
+ * completed is retired, so past advice, history and the recommendation log
+ * keep it, and it can be restored.
+ */
+export async function removeJourney(id: string): Promise<"deleted" | "retired" | null> {
+  const journey = await prisma.learningJourney.findUnique({
+    where: { id },
+    select: {
+      _count: {
+        select: {
+          recommendations: true,
+          chosenInAdvice: true,
+          runnerUpInAdvice: true,
+          satInstances: true,
+          assessedIn: true,
+        },
+      },
+    },
+  });
+  if (!journey) return null;
+  if (Object.values(journey._count).every((n) => n === 0)) {
+    await prisma.learningJourney.delete({ where: { id } });
+    return "deleted";
+  }
+  await prisma.learningJourney.update({ where: { id }, data: { retiredAt: new Date() } });
+  return "retired";
+}
+
+export async function restoreJourney(id: string): Promise<boolean> {
+  const { count } = await prisma.learningJourney.updateMany({
     where: { id },
     data: { retiredAt: null },
   });

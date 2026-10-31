@@ -27,6 +27,10 @@ vi.mock("./curriculum.service", async (importOriginal) => {
     updateModule: vi.fn(),
     removeModule: vi.fn(),
     restoreModule: vi.fn(),
+    createJourney: vi.fn(),
+    updateJourney: vi.fn(),
+    removeJourney: vi.fn(),
+    restoreJourney: vi.fn(),
   };
 });
 
@@ -280,6 +284,13 @@ describe.each([
     body: { name: "Licences", sectionId: "sec-a", mainCompetenceId: "c-1", level: 1 },
     invalid: { name: "Licences" },
     fns: ["createModule", "updateModule", "removeModule", "restoreModule"] as const,
+  },
+  {
+    path: "/admin/curriculum/journeys",
+    label: "journey",
+    body: { name: "Data steward", sections: [{ sectionId: "sec-a", coverageLevel: "M" }] },
+    invalid: { name: "Data steward", sections: [{ sectionId: "sec-a", coverageLevel: "R" }] },
+    fns: ["createJourney", "updateJourney", "removeJourney", "restoreJourney"] as const,
   },
 ])("$path", ({ path, label, body, invalid, fns: [create, update, remove, restore] }) => {
   it("creates one (201), and rejects invalid input (400)", async () => {

@@ -4,12 +4,13 @@ import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
 import { getCurriculum, removeQuestion, restoreQuestion } from "../api";
 import { CompetencesPanel } from "../components/CompetencesPanel";
+import { JourneysPanel } from "../components/JourneysPanel";
 import { StructurePanel } from "../components/StructurePanel";
 import { moduleLabel, QUESTION_TYPE_INFO, questionTypeLabel } from "../questionTypes";
 import type { Curriculum, QuestionSummary, QuestionType } from "../types";
 import styles from "./CurriculumPage.module.css";
 
-type Tab = "questions" | "structure" | "competences";
+type Tab = "questions" | "structure" | "journeys" | "competences";
 
 /** The confirmation for removing a question: what will actually happen to it. */
 function removeMessage(question: QuestionSummary): string {
@@ -21,7 +22,8 @@ function removeMessage(question: QuestionSummary): string {
 
 /**
  * The curriculum editor (admin): every question, grouped by section and
- * module, with filters, and the competences they assess. Kept apart from the
+ * module, with filters; the sections and modules themselves; the learning
+ * journeys; and the competences questions assess. Kept apart from the
  * assessment itself: adding and editing happen on their own page
  * (QuestionEditorPage). Removing a question someone answered retires it
  * instead of deleting it, so past results stay intact.
@@ -32,7 +34,8 @@ export function CurriculumPage() {
   const tabsId = useId();
   const [curriculum, setCurriculum] = useState<Curriculum | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [tab, setTab] = useState<Tab>("questions");
+  // A save on another page (e.g. the journey editor) can send the admin back to its tab.
+  const [tab, setTab] = useState<Tab>((location.state as { tab?: Tab } | null)?.tab ?? "questions");
   const [sectionId, setSectionId] = useState("");
   const [type, setType] = useState<QuestionType | "">("");
   const [search, setSearch] = useState("");
@@ -142,8 +145,9 @@ export function CurriculumPage() {
         </Button>
       </div>
       <p className={styles.subheading}>
-        Add, change and remove the questions learners are assessed on, and the competences they
-        assess. Changes take effect for learners straight away.
+        Add, change and remove what learners are assessed on and recommended: questions, sections
+        and modules, learning journeys and competences. Changes take effect for learners straight
+        away.
       </p>
 
       {notice && (
@@ -164,6 +168,10 @@ export function CurriculumPage() {
             [
               "structure",
               `Sections & modules (${curriculum.sections.filter((s) => s.retiredAt === null).length})`,
+            ],
+            [
+              "journeys",
+              `Learning journeys (${curriculum.journeys.filter((j) => j.retiredAt === null).length})`,
             ],
             ["competences", `Competences (${curriculum.competences.length})`],
           ] as const
@@ -192,6 +200,17 @@ export function CurriculumPage() {
           <StructurePanel
             sections={curriculum.sections}
             competences={curriculum.competences}
+            onChanged={(message) => {
+              setNotice(message);
+              load();
+            }}
+          />
+        </div>
+      ) : tab === "journeys" ? (
+        <div role="tabpanel" id={`${tabsId}-journeys-panel`} aria-labelledby={`${tabsId}-journeys`}>
+          <JourneysPanel
+            journeys={curriculum.journeys}
+            sections={curriculum.sections}
             onChanged={(message) => {
               setNotice(message);
               load();

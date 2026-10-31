@@ -4,6 +4,7 @@ import type {
   CompetenceInput,
   Curriculum,
   CurriculumCompetence,
+  JourneyInput,
   ModuleInput,
   PreviewContent,
   QuestionDetail,
@@ -85,3 +86,4 @@ function structureApi<Input>(base: string) {
 
 export const sectionsApi = structureApi<SectionInput>(endpoints.admin.curriculumSections);
 export const modulesApi = structureApi<ModuleInput>(endpoints.admin.curriculumModules);
+export const journeysApi = structureApi<JourneyInput>(endpoints.admin.curriculumJourneys);

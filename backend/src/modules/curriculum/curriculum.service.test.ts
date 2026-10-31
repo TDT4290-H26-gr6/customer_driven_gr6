@@ -22,6 +22,10 @@ vi.mock("../../db/prisma", () => {
       competence: model(),
       question: model(),
       sectionModuleSecondaryCompetence: model(),
+      learningJourney: model(),
+      journeySection: model(),
+      learningModule: model(),
+      source: model(),
       $transaction: vi.fn(),
     },
   };
@@ -78,6 +82,37 @@ describe("getCurriculum", () => {
         _count: { questions: 4, mainForModules: 1 },
       },
     ] as never);
+    db.learningJourney.findMany.mockResolvedValue([
+      {
+        id: "lj-1",
+        name: "Data steward",
+        sections: [{ sectionId: "sec-a", coverageLevel: "M" }],
+        modules: [{ id: "step-1", title: "Plan" }],
+        _count: {
+          recommendations: 0,
+          chosenInAdvice: 1,
+          runnerUpInAdvice: 0,
+          satInstances: 0,
+          assessedIn: 0,
+        },
+      },
+      {
+        id: "lj-2",
+        name: "Unused",
+        sections: [],
+        modules: [],
+        _count: {
+          recommendations: 0,
+          chosenInAdvice: 0,
+          runnerUpInAdvice: 0,
+          satInstances: 0,
+          assessedIn: 0,
+        },
+      },
+    ] as never);
+    db.source.findMany.mockResolvedValue([
+      { id: "src-1", courseName: "FAIR", institution: "NTNU" },
+    ] as never);
     db.question.findMany.mockResolvedValue([
       {
         id: "q-1",
@@ -114,6 +149,17 @@ describe("getCurriculum", () => {
         ],
       },
     ]);
+    expect(result.journeys).toEqual([
+      {
+        id: "lj-1",
+        name: "Data steward",
+        sections: [{ sectionId: "sec-a", coverageLevel: "M" }],
+        steps: [{ id: "step-1", title: "Plan" }],
+        used: true,
+      },
+      { id: "lj-2", name: "Unused", sections: [], steps: [], used: false },
+    ]);
+    expect(result.sources).toEqual([{ id: "src-1", courseName: "FAIR", institution: "NTNU" }]);
     expect(result.competences).toEqual([
       { id: "c-1", name: "Licensing", description: null, questionCount: 4, moduleCount: 1 },
     ]);
@@ -428,5 +474,146 @@ describe("modules", () => {
     expect(await curriculum.restoreModule("mod-2")).toBe(true);
     db.sectionModule.updateMany.mockResolvedValueOnce({ count: 0 });
     expect(await curriculum.restoreModule("nope")).toBe(false);
+  });
+});
+
+describe("learning journeys", () => {
+  const journey = {
+    name: "Data steward",
+    description: null,
+    moodleUrl: null,
+    sections: [
+      { sectionId: "sec-a", coverageLevel: "M" as const },
+      { sectionId: "sec-b", coverageLevel: "S" as const },
+    ],
+    steps: [
+      { id: "step-1", title: "Plan your data", description: null, sourceId: "src-1" },
+      { id: null, title: "Share it", description: null, sourceId: null },
+    ],
+  };
+
+  /** Every section and source the journey points at exists. */
+  function refsExist() {
+    db.section.count.mockResolvedValue(2);
+    db.source.count.mockResolvedValue(1);
+  }
+
+  it("creates one with its coverage and numbered steps", async () => {
+    refsExist();
+    db.learningJourney.create.mockResolvedValue({ id: "lj-new" } as never);
+
+    expect(await curriculum.createJourney(journey)).toEqual({ ok: true, id: "lj-new" });
+    expect(db.source.count).toHaveBeenCalledWith({ where: { id: { in: ["src-1"] } } });
+    expect(db.learningJourney.create).toHaveBeenCalledWith({
+      data: {
+        name: "Data steward",
+        description: null,
+        moodleUrl: null,
+        sections: { create: journey.sections },
+        modules: {
+          create: [
+            { order: 1, title: "Plan your data", description: null, sourceId: "src-1" },
+            { order: 2, title: "Share it", description: null, sourceId: null },
+          ],
+        },
+      },
+      select: { id: true },
+    });
+  });
+
+  it("is a 400 when a section or source is gone", async () => {
+    db.section.count.mockResolvedValue(1);
+    db.source.count.mockResolvedValue(1);
+    expect(await curriculum.createJourney(journey)).toMatchObject({ ok: false, status: 400 });
+    expect(db.learningJourney.create).not.toHaveBeenCalled();
+  });
+
+  it("edits one in one transaction, keeping existing steps' ids", async () => {
+    db.learningJourney.findUnique.mockResolvedValue({
+      modules: [{ id: "step-1" }, { id: "step-old" }],
+    } as never);
+    refsExist();
+
+    expect(await curriculum.updateJourney("lj-1", journey)).toEqual({ ok: true, id: "lj-1" });
+    expect(db.$transaction).toHaveBeenCalledTimes(1);
+    expect(db.journeySection.deleteMany).toHaveBeenCalledWith({ where: { journeyId: "lj-1" } });
+    expect(db.journeySection.createMany).toHaveBeenCalledWith({
+      data: [
+        { journeyId: "lj-1", sectionId: "sec-a", coverageLevel: "M" },
+        { journeyId: "lj-1", sectionId: "sec-b", coverageLevel: "S" },
+      ],
+    });
+    // The step left out goes; the kept one is updated in place; the new one is added.
+    expect(db.learningModule.deleteMany).toHaveBeenCalledWith({
+      where: { journeyId: "lj-1", id: { notIn: ["step-1"] } },
+    });
+    expect(db.learningModule.update).toHaveBeenCalledWith({
+      where: { id: "step-1" },
+      data: { order: 1, title: "Plan your data", description: null, sourceId: "src-1" },
+    });
+    expect(db.learningModule.create).toHaveBeenCalledWith({
+      data: { journeyId: "lj-1", order: 2, title: "Share it", description: null, sourceId: null },
+    });
+  });
+
+  it("treats a step id from another journey as a new step", async () => {
+    db.learningJourney.findUnique.mockResolvedValue({ modules: [] } as never);
+    refsExist();
+    await curriculum.updateJourney("lj-1", journey);
+    expect(db.learningModule.update).not.toHaveBeenCalled();
+    expect(db.learningModule.create).toHaveBeenCalledTimes(2);
+  });
+
+  it("an edit is a 404 for an unknown journey and a 400 for a missing section", async () => {
+    db.learningJourney.findUnique.mockResolvedValueOnce(null);
+    expect(await curriculum.updateJourney("nope", journey)).toMatchObject({ status: 404 });
+
+    db.learningJourney.findUnique.mockResolvedValueOnce({ modules: [] } as never);
+    db.section.count.mockResolvedValue(0);
+    db.source.count.mockResolvedValue(1);
+    expect(await curriculum.updateJourney("lj-1", journey)).toMatchObject({ status: 400 });
+  });
+
+  const counts = (overrides = {}) => ({
+    _count: {
+      recommendations: 0,
+      chosenInAdvice: 0,
+      runnerUpInAdvice: 0,
+      satInstances: 0,
+      assessedIn: 0,
+      ...overrides,
+    },
+  });
+
+  it("deletes a journey nothing refers to", async () => {
+    db.learningJourney.findUnique.mockResolvedValue(counts() as never);
+    expect(await curriculum.removeJourney("lj-2")).toBe("deleted");
+    expect(db.learningJourney.delete).toHaveBeenCalledWith({ where: { id: "lj-2" } });
+  });
+
+  it.each([
+    ["recommended", { recommendations: 3 }],
+    ["picked by the AI", { chosenInAdvice: 1 }],
+    ["the AI's second pick", { runnerUpInAdvice: 1 }],
+    ["completed", { satInstances: 1 }],
+    ["assessed", { assessedIn: 2 }],
+  ])("retires a journey that was %s", async (_case, used) => {
+    db.learningJourney.findUnique.mockResolvedValue(counts(used) as never);
+    expect(await curriculum.removeJourney("lj-1")).toBe("retired");
+    expect(db.learningJourney.delete).not.toHaveBeenCalled();
+    expect(db.learningJourney.update).toHaveBeenCalledWith({
+      where: { id: "lj-1" },
+      data: { retiredAt: expect.any(Date) },
+    });
+  });
+
+  it("is null for an unknown journey, and restores a retired one", async () => {
+    db.learningJourney.findUnique.mockResolvedValue(null);
+    expect(await curriculum.removeJourney("nope")).toBeNull();
+
+    db.learningJourney.updateMany.mockResolvedValueOnce({ count: 1 });
+    expect(await curriculum.restoreJourney("lj-1")).toBe(true);
+    db.learningJourney.updateMany.mockResolvedValueOnce({ count: 0 });
+    expect(await curriculum.restoreJourney("nope")).toBe(false);
   });
 });

@@ -27,6 +27,8 @@ const COVERAGE_RANK: Record<CoverageLevel, number> = { M: 0, R: 1, S: 2 };
  */
 export function listJourneys() {
   return prisma.learningJourney.findMany({
+    // Retired journeys (removed in the curriculum editor) aren't offered.
+    where: { retiredAt: null },
     include: {
       ...journeyInclude,
       // Coverage of retired sections isn't shown.
@@ -124,7 +126,7 @@ async function bestJourneyForSections(sectionIds: string[]) {
   if (sectionIds.length === 0) return null;
 
   const links = await prisma.journeySection.findMany({
-    where: { sectionId: { in: sectionIds } },
+    where: { sectionId: { in: sectionIds }, journey: { retiredAt: null } },
     select: { journeyId: true, coverageLevel: true },
   });
   if (links.length === 0) return null;
@@ -302,7 +304,7 @@ export async function journeyCandidatesForSections(
   if (sectionIds.length === 0) return [];
 
   const links = await prisma.journeySection.findMany({
-    where: { sectionId: { in: sectionIds } },
+    where: { sectionId: { in: sectionIds }, journey: { retiredAt: null } },
     select: {
       coverageLevel: true,
       section: { select: { id: true, name: true } },
@@ -338,7 +340,11 @@ export async function journeyCandidatesForSections(
 
 /** One journey with its steps, as the dashboard shows it. */
 export function findJourney(id: string) {
-  return prisma.learningJourney.findUnique({ where: { id }, include: journeyInclude });
+  // A retired journey reads as gone, e.g. when stored advice still names it.
+  return prisma.learningJourney.findFirst({
+    where: { id, retiredAt: null },
+    include: journeyInclude,
+  });
 }
 
 /**

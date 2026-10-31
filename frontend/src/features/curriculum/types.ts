@@ -66,10 +66,35 @@ export type QuestionSummary = {
 
 export type QuestionDetail = QuestionSummary & { authoredContent: AuthoredContent | null };
 
+export type CoverageLevel = "M" | "R" | "S";
+
+export type JourneyStep = {
+  id: string;
+  title: string;
+  description: string | null;
+  sourceId: string | null;
+};
+
+export type CurriculumJourney = {
+  id: string;
+  name: string;
+  description: string | null;
+  moodleUrl: string | null;
+  retiredAt: string | null;
+  sections: { sectionId: string; coverageLevel: CoverageLevel }[];
+  steps: JourneyStep[];
+  /** Recommended, picked by the AI, assessed or completed: removing it retires it. */
+  used: boolean;
+};
+
+export type CurriculumSource = { id: string; courseName: string; institution: string };
+
 export type Curriculum = {
   sections: CurriculumSection[];
   competences: CurriculumCompetence[];
   questions: QuestionSummary[];
+  journeys: CurriculumJourney[];
+  sources: CurriculumSource[];
 };
 
 export type QuestionInput = {
@@ -83,6 +108,20 @@ export type QuestionInput = {
 export type CompetenceInput = { name: string; description: string | null };
 
 export type SectionInput = { code: string | null; name: string; description: string | null };
+
+export type JourneyInput = {
+  name: string;
+  description: string | null;
+  moodleUrl: string | null;
+  sections: { sectionId: string; coverageLevel: CoverageLevel }[];
+  /** A step with an id is an existing one, kept and updated; null for a new one. */
+  steps: {
+    id: string | null;
+    title: string;
+    description: string | null;
+    sourceId: string | null;
+  }[];
+};
 
 export type ModuleInput = {
   name: string;

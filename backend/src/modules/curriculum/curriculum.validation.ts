@@ -299,3 +299,91 @@ export function validateModuleInput(body: unknown): Result<ModuleInput> {
     },
   };
 }
+
+export type CoverageLevel = "M" | "R" | "S";
+
+export type JourneyInput = {
+  name: string;
+  description: string | null;
+  moodleUrl: string | null;
+  /** Each section it covers, and how strongly: M (centred on it), R (covers it well), S (touches it). */
+  sections: { sectionId: string; coverageLevel: CoverageLevel }[];
+  /** Its steps in order. A step with an id is an existing one, kept and updated. */
+  steps: {
+    id: string | null;
+    title: string;
+    description: string | null;
+    sourceId: string | null;
+  }[];
+};
+
+const COVERAGE_LEVELS: readonly string[] = ["M", "R", "S"];
+const MAX_JOURNEY_SECTIONS = 50;
+export const MAX_STEPS = 30;
+
+/** A create/edit-journey body: its details, section coverage and steps. */
+export function validateJourneyInput(body: unknown): Result<JourneyInput> {
+  if (!isObject(body)) return { error: "Invalid request body" };
+  const name = text(body.name);
+  if (!name) return { error: "Give the journey a name" };
+  if (name.length > MAX_NAME_LENGTH) return { error: "The name is too long" };
+  const description = text(body.description) || null;
+  if ((description?.length ?? 0) > MAX_EXHIBIT_LENGTH) {
+    return { error: "The description is too long" };
+  }
+  const moodleUrl = text(body.moodleUrl) || null;
+  if (moodleUrl && (moodleUrl.length > MAX_URL_LENGTH || !validLink(moodleUrl))) {
+    return { error: "The Moodle link must be a full https:// address" };
+  }
+
+  if (!Array.isArray(body.sections) || body.sections.length > MAX_JOURNEY_SECTIONS) {
+    return { error: "Invalid sections" };
+  }
+  const sections: JourneyInput["sections"] = [];
+  for (const entry of body.sections) {
+    if (
+      !isObject(entry) ||
+      typeof entry.sectionId !== "string" ||
+      !entry.sectionId ||
+      !COVERAGE_LEVELS.includes(entry.coverageLevel as string)
+    ) {
+      return { error: "Each section needs a coverage of M, R or S" };
+    }
+    sections.push({
+      sectionId: entry.sectionId,
+      coverageLevel: entry.coverageLevel as CoverageLevel,
+    });
+  }
+  if (new Set(sections.map((s) => s.sectionId)).size !== sections.length) {
+    return { error: "A section is listed twice" };
+  }
+  // Journey assessments ask about the M sections, and recommendations rank on coverage.
+  if (!sections.some((s) => s.coverageLevel === "M")) {
+    return {
+      error: "Mark at least one section as M (main): it's what assessing the journey asks about",
+    };
+  }
+
+  const rawSteps = body.steps ?? [];
+  if (!Array.isArray(rawSteps)) return { error: "Invalid steps" };
+  if (rawSteps.length > MAX_STEPS) return { error: `Use at most ${MAX_STEPS} steps` };
+  const steps: JourneyInput["steps"] = [];
+  for (const step of rawSteps) {
+    if (!isObject(step)) return { error: "Invalid steps" };
+    const title = text(step.title);
+    if (!title) return { error: "Every step needs a title" };
+    if (title.length > MAX_NAME_LENGTH) return { error: "A step's title is too long" };
+    const stepDescription = text(step.description) || null;
+    if ((stepDescription?.length ?? 0) > MAX_EXHIBIT_LENGTH) {
+      return { error: "A step's description is too long" };
+    }
+    steps.push({
+      id: typeof step.id === "string" && step.id ? step.id : null,
+      title,
+      description: stepDescription,
+      sourceId: typeof step.sourceId === "string" && step.sourceId ? step.sourceId : null,
+    });
+  }
+
+  return { data: { name, description, moodleUrl, sections, steps } };
+}

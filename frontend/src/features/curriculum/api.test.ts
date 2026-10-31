@@ -51,6 +51,7 @@ it.each([
 it.each([
   ["sections", api.sectionsApi, "/admin/curriculum/sections"],
   ["modules", api.modulesApi, "/admin/curriculum/modules"],
+  ["journeys", api.journeysApi, "/admin/curriculum/journeys"],
 ] as const)("%s: create, update, remove and restore", async (_name, resource, base) => {
   const body = { name: "X" } as never;
   await resource.create(body);

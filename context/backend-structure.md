@@ -174,7 +174,7 @@ backend/src/
 │   │   └── assessment.pie.ts      # authored question -> PIE item (identical copy of database/src/seed/pie.ts)
 │   ├── curriculum/                # the admin curriculum editor (CD-25)
 │   │   ├── curriculum.routes.ts      # /admin/curriculum/* (requireAdmin)
-│   │   ├── curriculum.service.ts     # questions, competences, sections, modules: create, edit, delete or retire, restore
+│   │   ├── curriculum.service.ts     # questions, competences, sections, modules, journeys: create, edit, delete or retire, restore
 │   │   └── curriculum.validation.ts  # what a question of each type needs to be answerable and scorable
 │   ├── sources/
 │   │   ├── sources.routes.ts      # /sources (requireRole)
@@ -503,14 +503,19 @@ so running it again never duplicates or overwrites.
   - a question is deleted when nobody has answered it;
   - a module is deleted when it has no questions;
   - a section is deleted when it has no modules, no journey covers it and no
-    reassessment was limited to it.
+    reassessment was limited to it;
+  - a learning journey is deleted when nothing refers to it: never
+    recommended, picked by the AI advisor, assessed or completed.
 
   Retired content is left out everywhere learners see it:
   `roleQuestionFilter` drops questions that are retired or in a retired
   module or section (the assessment, saving answers, the reassessment
   picker); the Competencies tab, the competence → section mapping behind
   recommendations, the AI advice's candidates, the journeys page's coverage
-  and the admin visibility matrix skip retired modules and sections. "See
+  and the admin visibility matrix skip retired modules and sections. A
+  retired journey is left out of the journeys page, recommendations, the AI
+  advice's candidates and the Competencies tab's "most relevant", reads as
+  gone in stored advice (`findJourney`), and can't be assessed. "See
   results by section" counts a retired question or module only where that
   attempt answered it.
 - The assessment is adaptive (`assessment.path.ts`): sections in a random order

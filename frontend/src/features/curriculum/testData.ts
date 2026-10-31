@@ -108,6 +108,35 @@ export function curriculum(overrides: Partial<Curriculum> = {}): Curriculum {
         answerCount: 3,
       }),
     ],
+    journeys: [
+      {
+        id: "lj-1",
+        name: "Data steward",
+        description: "For research data work",
+        moodleUrl: "https://moodle.example.org/course/view.php?id=3",
+        retiredAt: null,
+        sections: [
+          { sectionId: "sec-a", coverageLevel: "M" },
+          { sectionId: "sec-b", coverageLevel: "S" },
+        ],
+        steps: [
+          { id: "step-1", title: "Plan your data", description: null, sourceId: "src-1" },
+          { id: "step-2", title: "Share it", description: "In a repository", sourceId: null },
+        ],
+        used: true,
+      },
+      {
+        id: "lj-2",
+        name: "Open code",
+        description: null,
+        moodleUrl: null,
+        retiredAt: null,
+        sections: [{ sectionId: "sec-b", coverageLevel: "M" }],
+        steps: [],
+        used: false,
+      },
+    ],
+    sources: [{ id: "src-1", courseName: "FAIR basics", institution: "NTNU" }],
     ...overrides,
   };
 }
