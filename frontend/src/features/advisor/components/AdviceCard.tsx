@@ -12,7 +12,7 @@ const KIND_LABEL = {
 } as const;
 
 /**
- * "Personalised advice" — the AI's explanation of the learner's results and
+ * "Personalised advice", the AI's explanation of the learner's results and
  * the steps it suggests, shown under the score-based journey
  * recommendation. Always labelled as AI-generated.
  */

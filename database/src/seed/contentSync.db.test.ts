@@ -169,7 +169,7 @@ describe("formatPlan", () => {
       "In the database but not in the file (left as they are, never deleted):",
       "  Section sec-old",
       "",
-      "Warnings — these change results already given on the dashboard:",
+      "Warnings, these change results already given on the dashboard:",
       "  ! Module mod-a1 changes level",
       "  (History is unaffected: it keeps its own copies.)",
     ]);

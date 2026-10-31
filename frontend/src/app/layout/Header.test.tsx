@@ -35,6 +35,17 @@ describe("Header", () => {
     renderHeader(null);
     expect(screen.getByRole("img", { name: /AIOS/ })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Account menu" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: /Co-funded by the European Union/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the funding logos next to the AIOS logo while signed in", () => {
+    renderHeader(ada);
+    expect(
+      screen.getByRole("img", { name: /Co-funded by the European Union/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /IKY/ })).toBeInTheDocument();
   });
 
   it.each([

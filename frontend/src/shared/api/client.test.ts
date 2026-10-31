@@ -193,7 +193,7 @@ describe("apiFetch", () => {
 
     // Not toBeInstanceOf(Blob): jsdom's Response.blob() can return a Blob
     // from a different realm than the test file's global Blob constructor,
-    // so a strict instanceof check is flaky — duck-type it instead.
+    // so a strict instanceof check is flaky, duck-type it instead.
     expect(typeof result.text).toBe("function");
     expect(await result.text()).toBe("a,b\r\n1,2\r\n");
   });
@@ -208,7 +208,7 @@ describe("apiFetch", () => {
   });
 });
 
-/** A fetch that only settles when its signal aborts — like a server that never answers. */
+/** A fetch that only settles when its signal aborts, like a server that never answers. */
 function neverAnswers(_url: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   return new Promise((_resolve, reject) => {
     init?.signal?.addEventListener("abort", () =>

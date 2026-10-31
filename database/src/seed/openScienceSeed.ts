@@ -9,7 +9,7 @@ import seedData from "./data/aios_open_science_seed.json";
 // overhaul (CD-72), re-authored into the new Section → SectionModule →
 // Competence hierarchy. Two of the five original competence areas ("Research
 // Data and Metadata Management", "Reproducibility and Research Workflows")
-// are seeded as bare Competence rows only — no section/module/questions have
+// are seeded as bare Competence rows only, no section/module/questions have
 // ever been authored for them, in the old schema or this one.
 //
 // Currently DORMANT: nothing calls seedOpenScienceContent(); the database is
@@ -38,7 +38,7 @@ function table<T>(name: string, map: (row: Row) => Row = (row) => row): T[] {
  * The real (non-fake) personas this content is for. Granted the real
  * sections/competences below; the FAKE roles stay exclusively on fake
  * content. These names may already exist in the database from before this
- * seed existed — upserted by `name` (its unique key) rather than inserted
+ * seed existed, upserted by `name` (its unique key) rather than inserted
  * with a fixed id, so an existing role keeps its existing id and just gets
  * the grants added, instead of silently ending up with two rows for the
  * same persona.
@@ -74,7 +74,7 @@ export async function seedOpenScienceContent() {
     counts[name] = (await run()).count;
   };
 
-  // What already existed before this run — see the role_section insert below.
+  // What already existed before this run, see the role_section insert below.
   const [existingSections, existingRoles] = await Promise.all([
     prisma.section.findMany({ where: { id: { in: REAL_SECTION_IDS } }, select: { id: true } }),
     prisma.role.findMany({ where: { name: { in: [...REAL_ROLE_NAMES] } }, select: { name: true } }),

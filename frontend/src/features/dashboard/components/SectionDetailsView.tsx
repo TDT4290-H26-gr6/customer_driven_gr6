@@ -105,6 +105,7 @@ export function SectionDetailsView() {
               onClick={() => selectTab(a.instanceNum)}
             >
               Assessment {a.instanceNum}
+              {a.reassessedSections.length > 0 && " (partial)"}
             </button>
           ))}
         </div>
@@ -132,6 +133,11 @@ export function SectionDetailsView() {
               {attempt.completedJourney && (
                 <p className={styles.attemptNote}>
                   After completing <strong>{attempt.completedJourney}</strong>
+                </p>
+              )}
+              {attempt.reassessedSections.length > 0 && (
+                <p className={styles.attemptNote}>
+                  Partial reassessment, limited to: {attempt.reassessedSections.join(", ")}
                 </p>
               )}
             </div>

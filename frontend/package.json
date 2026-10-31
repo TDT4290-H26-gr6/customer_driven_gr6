@@ -2,6 +2,7 @@
   "name": "aios-frontend",
   "version": "0.1.0",
   "private": true,
+  "license": "LGPL-3.0-only",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -15,6 +16,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@pie-element/placement-ordering": "^15.0.7",
     "@pie-framework/pie-fixed-player-static": "1.0.0-963a099.1",
     "google-auth-library": "^9.14.1",
     "jsonwebtoken": "^9.0.2",

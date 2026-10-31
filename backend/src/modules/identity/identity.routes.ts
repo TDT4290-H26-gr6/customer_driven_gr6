@@ -9,13 +9,14 @@ import { hasCompletedMainAssessment } from "../assessment/assessment.service";
 import { requireString } from "../../lib/validate";
 import {
   acceptPrivacyNotice,
+  cancelDeletion,
   completeInitialAssessment,
-  deleteLearner,
   findLearnerById,
   findRole,
   getLearnerProfile,
   listRoles,
   saveLearnerProfile,
+  scheduleDeletion,
   setLearnerRole,
   upsertLearnerFromGoogle,
   upsertLearnerFromOrcid,
@@ -26,7 +27,7 @@ export const identityRouter = Router();
 
 const googleClient = new OAuth2Client(config.googleClientId);
 
-/** A Google ID token is a JWT, typically 800–1500 characters — far longer than an id. */
+/** A Google ID token is a JWT, typically 800–1500 characters, far longer than an id. */
 const MAX_CREDENTIAL_LENGTH = 4096;
 
 identityRouter.post(
@@ -34,7 +35,7 @@ identityRouter.post(
   asyncHandler(async (req, res) => {
     const credential = requireString(req.body?.credential, "credential", MAX_CREDENTIAL_LENGTH);
 
-    // Only the Google check itself is a 401 — a database failure after it
+    // Only the Google check itself is a 401, a database failure after it
     // is ours, and falls through to the error handler as a 500.
     let payload: TokenPayload | undefined;
     try {
@@ -184,7 +185,7 @@ identityRouter.put(
   requireAuth,
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
-    // Only a finished main self-assessment unlocks the dashboard — not a
+    // Only a finished main self-assessment unlocks the dashboard, not a
     // journey assessment, which is taken on its own.
     if (!(await hasCompletedMainAssessment(req.learnerId!))) {
       return res.status(409).json({ error: "Finish the self-assessment first" });
@@ -199,7 +200,7 @@ identityRouter.get(
   requireAuth,
   asyncHandler<AuthedRequest>(async (req, res) => {
     // A deleted account has no profile either, but that's a dead session,
-    // not "nothing filled in yet" — 401 signs the frontend out.
+    // not "nothing filled in yet", 401 signs the frontend out.
     if (!(await findLearnerById(req.learnerId!))) {
       return res.status(401).json({ error: "Account not found" });
     }
@@ -230,11 +231,29 @@ identityRouter.put(
   }),
 );
 
-identityRouter.delete(
-  "/auth/me",
+// "Delete account" in Settings: the personal data is deleted 30 days from
+// now (see scheduleDeletion), and the learner can cancel until then. No
+// requireRole, like the profile routes: anyone signed in may leave.
+identityRouter.post(
+  "/auth/me/deletion",
   requireAuth,
   asyncHandler<AuthedRequest>(async (req, res) => {
-    await deleteLearner(req.learnerId!);
-    res.status(204).end();
+    const learner = await findLearnerById(req.learnerId!);
+    if (!learner) return res.status(401).json({ error: "Account not found" });
+    // Already pending: keep the original date.
+    if (learner.deletionScheduledFor) return res.json(toLearnerDto(learner));
+
+    res.json(toLearnerDto(await scheduleDeletion(req.learnerId!)));
+  }),
+);
+
+identityRouter.delete(
+  "/auth/me/deletion",
+  requireAuth,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    if (!(await findLearnerById(req.learnerId!))) {
+      return res.status(401).json({ error: "Account not found" });
+    }
+    res.json(toLearnerDto(await cancelDeletion(req.learnerId!)));
   }),
 );

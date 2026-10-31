@@ -45,7 +45,9 @@ export function FeedbackAdminPage() {
             {feedback.map((item) => (
               <li key={item.id} className={styles.card}>
                 <div className={styles.meta}>
-                  <span className={styles.sender}>{item.learner.name || item.learner.email}</span>
+                  <span className={styles.sender}>
+                    {item.learner.name || item.learner.email || "Deleted account"}
+                  </span>
                   {item.learner.name && <span>{item.learner.email}</span>}
                   <time dateTime={item.createdAt}>
                     {dateFormat.format(new Date(item.createdAt))}

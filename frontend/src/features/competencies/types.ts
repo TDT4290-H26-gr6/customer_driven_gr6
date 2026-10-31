@@ -19,7 +19,10 @@ export type CompetencyModule = {
   moodleUrl: string | null;
   /** In a section the recommended journey is centred on. */
   relevant: boolean;
+  /** The best this module's ever scored, over every full self-assessment and journey assessment. */
   best: BestResult | null;
+  /** This module's result from the single latest full self-assessment specifically; null if that attempt never reached it. */
+  latest: BestResult | null;
 };
 
 export type CompetencySection = {
@@ -27,16 +30,21 @@ export type CompetencySection = {
   code: string | null;
   name: string;
   relevant: boolean;
-  /** The average of its modules' best results; null before any has one. */
+  /** The average of its modules' best-ever results; null before any has one. */
   percent: number | null;
   assessedModules: number;
+  /** The average of its modules' latest-full-assessment results; null before any has one. */
+  latestPercent: number | null;
+  latestAssessedModules: number;
   moduleCount: number;
   modules: CompetencyModule[];
 };
 
-/** The Competencies overview: relevant sections first, then A–E. */
+/** The Competencies overview, always in A–E order. */
 export type Competencies = {
   /** The journey recommended after the latest self-assessment, whose sections come first. */
   recommendedJourney: { id: string; name: string; moodleUrl: string | null } | null;
+  /** The single full self-assessment "latest" results above are drawn from; null before any. */
+  latestInstance: { instanceNum: number; completedAt: string } | null;
   sections: CompetencySection[];
 };

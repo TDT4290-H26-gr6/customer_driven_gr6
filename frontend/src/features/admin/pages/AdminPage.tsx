@@ -1,100 +1,63 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
-import { GrantChecklist } from "../components/GrantChecklist";
-import {
-  downloadQuestionsCsv,
-  downloadTestsCsv,
-  getVisibility,
-  setCompetenceGrant,
-  setSectionGrant,
-} from "../api";
-import type { VisibilityMatrix } from "../types";
+import { downloadQuestionsCsv, downloadTestsCsv, getDropoff, getVisibility } from "../api";
+import { DropoffChart } from "../components/DropoffChart";
+import { DropoffTable } from "../components/DropoffTable";
+import type { DropoffData, DropoffType, Grantable } from "../types";
 import styles from "./AdminPage.module.css";
 
-type Kind = "section" | "competence";
+const DEFAULT_INACTIVE_DAYS = 7;
+const MAX_INACTIVE_DAYS = 3650;
 
 /**
- * Admin mode: pick a role, then tick the sections and competences it may see.
- * A role sees a question if it's granted the question's competence OR the
- * section its module sits in — and nothing at all until something is granted.
- * Each click is saved straight away.
+ * Admin mode, the admins' main page: at which question do learners abandon
+ * the assessment? A run is "abandoned" when it isn't completed and its last
+ * activity is older than the chosen number of days; runs still within that
+ * window are "in progress" and left out of the rates. Aggregates only ,
+ * nobody is identifiable here. The title row also links to the tester
+ * feedback and holds the two CSV exports. (The old role-visibility screen is
+ * parked in ./legacy.)
  */
 export function AdminPage() {
   const navigate = useNavigate();
-  const [matrix, setMatrix] = useState<VisibilityMatrix | null>(null);
+  const [type, setType] = useState<DropoffType>("initial");
+  const [sectionId, setSectionId] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [inactiveInput, setInactiveInput] = useState(String(DEFAULT_INACTIVE_DAYS));
+  const [sections, setSections] = useState<Grantable[]>([]);
+  const [data, setData] = useState<DropoffData | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [roleId, setRoleId] = useState("");
-  const [pending, setPending] = useState<Set<string>>(new Set());
-  const [error, setError] = useState("");
   const [downloading, setDownloading] = useState<"tests" | "questions" | null>(null);
   const [downloadError, setDownloadError] = useState("");
 
+  const inactiveDays = /^\d+$/.test(inactiveInput) ? Number(inactiveInput) : 0;
+  const inactiveValid = inactiveDays >= 1 && inactiveDays <= MAX_INACTIVE_DAYS;
+
   useEffect(() => {
     getVisibility()
-      .then((loaded) => {
-        setMatrix(loaded);
-        setRoleId((current) => current || loaded.roles[0]?.id || "");
-      })
-      .catch(() => setLoadFailed(true));
+      .then((matrix) => setSections(matrix.sections))
+      .catch(() => setSections([])); // the section filter just stays empty
   }, []);
 
-  const grantedSectionIds = useMemo(
-    () => new Set(matrix?.roleSections.filter((g) => g.roleId === roleId).map((g) => g.sectionId)),
-    [matrix, roleId],
-  );
-  const grantedCompetenceIds = useMemo(
-    () =>
-      new Set(
-        matrix?.roleCompetences.filter((g) => g.roleId === roleId).map((g) => g.competenceId),
-      ),
-    [matrix, roleId],
-  );
-
-  function applyLocally(forRole: string, kind: Kind, itemId: string, granted: boolean) {
-    setMatrix((prev) => {
-      if (!prev) return prev;
-      if (kind === "section") {
-        const others = prev.roleSections.filter(
-          (g) => !(g.roleId === forRole && g.sectionId === itemId),
-        );
-        return {
-          ...prev,
-          roleSections: granted ? [...others, { roleId: forRole, sectionId: itemId }] : others,
-        };
-      }
-      const others = prev.roleCompetences.filter(
-        (g) => !(g.roleId === forRole && g.competenceId === itemId),
-      );
-      return {
-        ...prev,
-        roleCompetences: granted ? [...others, { roleId: forRole, competenceId: itemId }] : others,
-      };
-    });
-  }
-
-  async function toggle(kind: Kind, itemId: string, granted: boolean) {
-    const forRole = roleId;
-    const key = `${kind}:${itemId}`;
-    setError("");
-    setPending((prev) => new Set(prev).add(key));
-    applyLocally(forRole, kind, itemId, granted);
-
-    try {
-      const save = kind === "section" ? setSectionGrant : setCompetenceGrant;
-      await save(forRole, itemId, granted);
-    } catch {
-      applyLocally(forRole, kind, itemId, !granted);
-      setError("Could not save that change. Try again.");
-    } finally {
-      setPending((prev) => {
-        const next = new Set(prev);
-        next.delete(key);
-        return next;
+  useEffect(() => {
+    if (!inactiveValid) return;
+    let stale = false;
+    setData(null);
+    setLoadFailed(false);
+    getDropoff({ type, sectionId, from, to, inactiveDays })
+      .then((loaded) => {
+        if (!stale) setData(loaded);
+      })
+      .catch(() => {
+        if (!stale) setLoadFailed(true);
       });
-    }
-  }
+    return () => {
+      stale = true;
+    };
+  }, [type, sectionId, from, to, inactiveDays, inactiveValid]);
 
   async function handleDownload(kind: "tests" | "questions") {
     setDownloading(kind);
@@ -108,14 +71,14 @@ export function AdminPage() {
     }
   }
 
-  if (loadFailed) {
-    return (
-      <div className={styles.page}>
-        <p className={styles.error}>Could not load the visibility settings.</p>
-      </div>
-    );
-  }
-  if (!matrix) return <Spinner />;
+  const cards = data
+    ? [
+        { label: "Started", value: data.summary.started },
+        { label: "Completed", value: data.summary.completed },
+        { label: "Abandoned", value: data.summary.abandoned },
+        { label: "In progress", value: data.summary.inProgress },
+      ]
+    : [];
 
   return (
     <div className={styles.page}>
@@ -144,11 +107,6 @@ export function AdminPage() {
           </Button>
         </div>
       </div>
-      <p className={styles.subheading}>
-        Choose what each role can see. A role sees a question if it&apos;s granted the
-        question&apos;s competence or the section it&apos;s in, and nothing until something is
-        granted. Changes save as you click.
-      </p>
 
       {downloadError && (
         <p className={styles.error} role="alert">
@@ -156,46 +114,120 @@ export function AdminPage() {
         </p>
       )}
 
-      <label className={styles.roleField}>
-        <span className={styles.roleLabel}>Role</span>
-        <select
-          className={styles.select}
-          value={roleId}
-          onChange={(e) => setRoleId(e.target.value)}
-          disabled={matrix.roles.length === 0}
-        >
-          {matrix.roles.map((role) => (
-            <option key={role.id} value={role.id}>
-              {role.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <h2 className={styles.sectionHeading}>Question drop-off</h2>
+      <p className={styles.subheading}>
+        Where learners stop. &quot;Stopped here&quot; means this was the last question an abandoned
+        run was shown, whether or not it was answered; the rate is that count divided by how many
+        runs were shown the question. A run counts as abandoned when it isn&apos;t completed and its
+        last activity is older than the number of days below; newer unfinished runs are in progress
+        and excluded from the rates.
+      </p>
 
-      {error && (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      )}
-
-      <div className={styles.columns}>
-        <GrantChecklist
-          title="Sections"
-          hint="The role sees every question in the section's modules."
-          items={matrix.sections}
-          grantedIds={grantedSectionIds}
-          isPending={(id) => pending.has(`section:${id}`)}
-          onToggle={(id, granted) => toggle("section", id, granted)}
-        />
-        <GrantChecklist
-          title="Competences"
-          hint="The role sees every question that assesses the competence."
-          items={matrix.competences}
-          grantedIds={grantedCompetenceIds}
-          isPending={(id) => pending.has(`competence:${id}`)}
-          onToggle={(id, granted) => toggle("competence", id, granted)}
-        />
+      <div className={styles.filters}>
+        <label className={styles.field}>
+          <span className={styles.label}>Assessment</span>
+          <select
+            className={styles.control}
+            value={type}
+            onChange={(e) => setType(e.target.value as DropoffType)}
+          >
+            <option value="initial">Initial</option>
+            <option value="targeted_reevaluation">Targeted reevaluation</option>
+          </select>
+        </label>
+        <label className={`${styles.field} ${styles.fieldWide}`}>
+          <span className={styles.label}>Section</span>
+          <select
+            className={styles.control}
+            value={sectionId}
+            onChange={(e) => setSectionId(e.target.value)}
+          >
+            <option value="">All sections</option>
+            {sections.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={styles.field}>
+          <span className={styles.label}>Started from</span>
+          <input
+            className={styles.control}
+            type="date"
+            value={from}
+            max={to || undefined}
+            onChange={(e) => setFrom(e.target.value)}
+          />
+        </label>
+        <label className={styles.field}>
+          <span className={styles.label}>Started until</span>
+          <input
+            className={styles.control}
+            type="date"
+            value={to}
+            min={from || undefined}
+            onChange={(e) => setTo(e.target.value)}
+          />
+        </label>
+        {(from || to) && (
+          <Button
+            variant="secondary"
+            className={styles.clearDates}
+            onClick={() => {
+              setFrom("");
+              setTo("");
+            }}
+          >
+            Clear dates
+          </Button>
+        )}
+        <label className={styles.field}>
+          <span className={styles.label}>Inactive after (days)</span>
+          <input
+            className={styles.control}
+            type="number"
+            min={1}
+            max={MAX_INACTIVE_DAYS}
+            inputMode="numeric"
+            value={inactiveInput}
+            aria-invalid={!inactiveValid}
+            onChange={(e) => setInactiveInput(e.target.value)}
+          />
+        </label>
       </div>
+
+      {!inactiveValid ? (
+        <p className={styles.error} role="alert">
+          Enter a whole number of days, 1 or more.
+        </p>
+      ) : loadFailed ? (
+        <p className={styles.error} role="alert">
+          Could not load the drop-off data.
+        </p>
+      ) : !data ? (
+        <Spinner />
+      ) : (
+        <>
+          <ul className={styles.cards}>
+            {cards.map((card) => (
+              <li key={card.label} className={styles.card}>
+                <span className={styles.cardValue}>{card.value}</span>
+                <span className={styles.cardLabel}>{card.label}</span>
+              </li>
+            ))}
+          </ul>
+
+          {data.summary.abandoned === 0 || data.questions.length === 0 ? (
+            <p className={styles.empty}>No abandoned instances in this period.</p>
+          ) : (
+            <>
+              <DropoffChart questions={data.questions} />
+              <DropoffTable questions={data.questions} />
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }

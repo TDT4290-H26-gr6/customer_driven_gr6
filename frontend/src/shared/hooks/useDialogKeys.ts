@@ -1,6 +1,6 @@
 import { useEffect, type RefObject } from "react";
 
-const FOCUSABLE = "button:not([disabled]), textarea:not([disabled]), [href]";
+const FOCUSABLE = "button:not([disabled]), input:not([disabled]), textarea:not([disabled]), [href]";
 
 /**
  * Keyboard behaviour for a modal dialog: Escape closes it, and Tab/Shift+Tab

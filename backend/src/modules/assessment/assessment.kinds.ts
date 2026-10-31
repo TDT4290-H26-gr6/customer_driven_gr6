@@ -1,6 +1,6 @@
 // The two kinds of SAT instance (SatInstance.kind). Every query for the
-// learner's main results — dashboard, History, progress, AI advice,
-// recommendations, weak competences — filters on MAIN_KIND, so a journey
+// learner's main results, dashboard, History, progress, AI advice,
+// recommendations, weak competences, filters on MAIN_KIND, so a journey
 // assessment never overrides or compares with the main self-assessment.
 // Only the Competencies overview reads both.
 

@@ -16,7 +16,7 @@ function required(name: string, devFallback: string): string {
 
   const problem = value ? "still has its .env.example placeholder" : "is not set";
   if (isProduction) throw new Error(`Environment variable ${name} ${problem}`);
-  console.warn(`${name} ${problem} — using a development fallback. Never do this in production.`);
+  console.warn(`${name} ${problem}, using a development fallback. Never do this in production.`);
   return devFallback;
 }
 
@@ -48,20 +48,20 @@ function corsOrigins(): string[] | true {
   const origins = list("CORS_ORIGIN");
   if (origins?.length) return origins;
   if (isProduction) throw new Error("Environment variable CORS_ORIGIN is not set");
-  console.warn("CORS_ORIGIN is not set — allowing any origin. Never do this in production.");
+  console.warn("CORS_ORIGIN is not set, allowing any origin. Never do this in production.");
   return true;
 }
 
 /**
  * Who may use admin mode (ADMIN_EMAILS, comma-separated, case-insensitive).
- * Unset: everyone in development — today's demo behaviour, with a warning —
+ * Unset: everyone in development, today's demo behaviour, with a warning ,
  * and nobody in production (fail closed).
  */
 function adminEmails(): string[] | "everyone" {
   const emails = list("ADMIN_EMAILS");
   if (emails?.length) return emails.map((email) => email.toLowerCase());
   if (isProduction) return [];
-  console.warn("ADMIN_EMAILS is not set — every signed-in learner can use admin mode.");
+  console.warn("ADMIN_EMAILS is not set, every signed-in learner can use admin mode.");
   return "everyone";
 }
 
@@ -74,7 +74,7 @@ function adminEmails(): string[] | "everyone" {
 function llm() {
   const apiKey = process.env.LLM_API_KEY;
   if (!apiKey || isPlaceholder(apiKey)) {
-    console.warn("LLM_API_KEY is not set — AI advice on the dashboard is turned off.");
+    console.warn("LLM_API_KEY is not set, AI advice on the dashboard is turned off.");
     return null;
   }
   return {
@@ -115,8 +115,8 @@ export const config = {
    * signing in (the frontend's RoleGateModal), role-gated routes refuse
    * learners without one (requireRole), and retakes only ask the questions
    * the role has been granted. While off, nobody needs a role and every SAT
-   * covers the whole question bank. Set back to true — together with
-   * ROLE_SELECTION_ENABLED in frontend/src/shared/lib/features.ts — to
+   * covers the whole question bank. Set back to true, together with
+   * ROLE_SELECTION_ENABLED in frontend/src/shared/lib/features.ts, to
    * bring roles back.
    */
   roleSelectionEnabled: false,

@@ -3,7 +3,7 @@
  * waits until the first has settled; different keys run in parallel. Used
  * to close check-then-insert races (read, decide, write) for one learner.
  *
- * In-process only — correct while the backend runs as a single instance,
+ * In-process only, correct while the backend runs as a single instance,
  * which is how it's deployed. Several instances would need a database lock.
  */
 export function createKeyedLock() {

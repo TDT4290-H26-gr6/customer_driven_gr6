@@ -2,13 +2,20 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AssessmentRunnerPage } from "./AssessmentRunnerPage";
-import { completeAssessment, discardAssessment, getAssessmentPath, saveResponse } from "../api";
+import {
+  completeAssessment,
+  discardAssessment,
+  getAssessmentPath,
+  recordQuestionView,
+  saveResponse,
+} from "../api";
 import { completeInitialAssessment } from "@/features/auth";
 import type { AssessmentPath, PathItem, Question } from "../types";
 
 vi.mock("../api", () => ({
   getAssessmentPath: vi.fn(),
   saveResponse: vi.fn(),
+  recordQuestionView: vi.fn(),
   completeAssessment: vi.fn(),
   discardAssessment: vi.fn(),
 }));
@@ -78,8 +85,9 @@ function path(
   isDone = false,
   sectionCount = 2,
   journey: AssessmentPath["journey"] = null,
+  partial = false,
 ): AssessmentPath {
-  return { items, sectionCount, done: isDone, journey };
+  return { items, sectionCount, done: isDone, journey, partial };
 }
 
 const networkError = { status: 0, message: "offline" };
@@ -87,9 +95,59 @@ const networkError = { status: 0, message: "offline" };
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(saveResponse).mockResolvedValue(undefined);
+  vi.mocked(recordQuestionView).mockResolvedValue(undefined);
   vi.mocked(completeAssessment).mockResolvedValue(undefined);
   vi.mocked(discardAssessment).mockResolvedValue(undefined);
   vi.mocked(completeInitialAssessment).mockResolvedValue({} as never);
+});
+
+describe("AssessmentRunnerPage question views (CD-125)", () => {
+  it("records that the first question was shown, before anything is answered", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
+
+    render(<AssessmentRunnerPage />);
+    await screen.findByText("Question 1");
+
+    await waitFor(() => expect(recordQuestionView).toHaveBeenCalledWith("1"));
+    expect(recordQuestionView).toHaveBeenCalledTimes(1);
+    expect(saveResponse).not.toHaveBeenCalled();
+  });
+
+  it("records the next question once it appears, and not the one already answered", async () => {
+    vi.mocked(getAssessmentPath)
+      .mockResolvedValueOnce(path([item("1")]))
+      .mockResolvedValueOnce(path([item("1", { answered: true }), item("2")]));
+    const user = userEvent.setup();
+
+    render(<AssessmentRunnerPage />);
+    await user.click(await screen.findByRole("button", { name: "Answer" }));
+    await user.click(screen.getByRole("button", { name: /next/i }));
+    await screen.findByText("Question 2");
+
+    await waitFor(() => expect(recordQuestionView).toHaveBeenCalledWith("2"));
+    expect(vi.mocked(recordQuestionView).mock.calls.map(([id]) => id)).toEqual(["1", "2"]);
+  });
+
+  it("does not record questions that were answered before (resume, Back)", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path([item("1", { answered: true }), item("2", { answered: true })], true),
+    );
+
+    render(<AssessmentRunnerPage />);
+    await screen.findByText("Question 2");
+
+    expect(recordQuestionView).not.toHaveBeenCalled();
+  });
+
+  it("carries on when recording a view fails", async () => {
+    vi.mocked(recordQuestionView).mockRejectedValue(networkError);
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
+
+    render(<AssessmentRunnerPage />);
+
+    expect(await screen.findByText("Question 1")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
 });
 
 describe("AssessmentRunnerPage", () => {
@@ -183,7 +241,7 @@ describe("AssessmentRunnerPage", () => {
   });
 
   it("finishes a journey assessment on Competencies, without completing the self-assessment", async () => {
-    const lj2 = { id: "journey-2", name: "LJ2 — Research Data" };
+    const lj2 = { id: "journey-2", name: "LJ2 - Research Data" };
     vi.mocked(getAssessmentPath)
       .mockResolvedValueOnce(path([item("1")], false, 2, lj2))
       .mockResolvedValueOnce(path([item("1", { answered: true })], true, 2, lj2));
@@ -203,13 +261,13 @@ describe("AssessmentRunnerPage", () => {
     vi.mocked(getAssessmentPath).mockResolvedValue(
       path([item("1")], false, 2, {
         id: "journey-2",
-        name: "LJ2 — Research Data",
+        name: "LJ2 - Research Data",
       }),
     );
 
     render(<AssessmentRunnerPage />);
 
-    expect(await screen.findByText("LJ2 — Research Data")).toBeInTheDocument();
+    expect(await screen.findByText("LJ2 - Research Data")).toBeInTheDocument();
     expect(screen.getByText(/doesn't change your self-assessment/i)).toBeInTheDocument();
   });
 
@@ -230,9 +288,34 @@ describe("AssessmentRunnerPage", () => {
     expect(await screen.findByRole("button", { name: "Finish" })).toBeEnabled();
   });
 
-  it("Back shows the previous question with its saved answer", async () => {
+  it("hides Back during the full self-assessment", async () => {
     vi.mocked(getAssessmentPath).mockResolvedValue(
       path([item("1", { answered: true }), item("2")]),
+    );
+
+    render(<AssessmentRunnerPage />);
+    await screen.findByText("Question 2");
+
+    expect(screen.queryByRole("button", { name: "Back" })).not.toBeInTheDocument();
+  });
+
+  it("shows Back during a journey assessment", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path([item("1", { answered: true }), item("2")], false, 2, {
+        id: "journey-2",
+        name: "LJ2 - Research Data",
+      }),
+    );
+
+    render(<AssessmentRunnerPage />);
+    await screen.findByText("Question 2");
+
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+  });
+
+  it("Back shows the previous question with its saved answer, during a partial reassessment", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path([item("1", { answered: true }), item("2")], false, 2, null, true),
     );
     const user = userEvent.setup();
 
@@ -244,7 +327,13 @@ describe("AssessmentRunnerPage", () => {
   });
 
   it("after changing an earlier answer, Next goes on to the question already shown after it", async () => {
-    const shown = path([item("1", { answered: true }), item("2", { answered: true }), item("3")]);
+    const shown = path(
+      [item("1", { answered: true }), item("2", { answered: true }), item("3")],
+      false,
+      2,
+      null,
+      true,
+    );
     // Answered questions stay put whatever the change, so the path keeps them.
     vi.mocked(getAssessmentPath).mockResolvedValue(shown);
     const user = userEvent.setup();

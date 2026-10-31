@@ -13,13 +13,13 @@ import {
 /**
  * Admin mode: managing which sections / competences each role may see.
  *
- * Gated by requireAdmin — learners listed in ADMIN_EMAILS (everyone in
+ * Gated by requireAdmin, learners listed in ADMIN_EMAILS (everyone in
  * development when it's unset; see config.ts). A stopgap until the planned
  * `security` module in context/backend-structure.md has real admin accounts.
  */
 export const identityAdminRouter = Router();
 
-/** Prisma's "foreign key constraint failed" — the role / section / competence doesn't exist. */
+/** Prisma's "foreign key constraint failed", the role / section / competence doesn't exist. */
 function isForeignKeyError(err: unknown) {
   return typeof err === "object" && err !== null && (err as { code?: string }).code === "P2003";
 }

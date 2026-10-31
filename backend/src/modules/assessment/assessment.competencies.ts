@@ -1,4 +1,4 @@
-// Pure logic for the Competencies overview — no Prisma — so it's
+// Pure logic for the Competencies overview, no Prisma, so it's
 // unit-testable directly (same pattern as assessment.progress.ts).
 // assessment.service.ts's getCompetencies loads the answers and calls these.
 
@@ -24,7 +24,7 @@ export type BestResult = {
 };
 
 /**
- * Each module's best result over all the learner's assessments — main and
+ * Each module's best result over all the learner's assessments, main and
  * journey alike. A module's result in one assessment is its answers' points
  * over their maximum; the best is the highest percentage (the newest on a
  * tie). Modules never answered are absent.

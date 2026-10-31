@@ -9,7 +9,7 @@ type Options = Omit<RequestInit, "body"> & {
   auth?: boolean;
   /** Give up after this long (default DEFAULT_TIMEOUT_MS). */
   timeoutMs?: number;
-  /** "json" (default) parses the body as JSON. "blob" returns it raw — e.g. a CSV download. */
+  /** "json" (default) parses the body as JSON. "blob" returns it raw, e.g. a CSV download. */
   responseType?: "json" | "blob";
 };
 
@@ -28,7 +28,7 @@ export function isApiError(err: unknown): err is ApiError {
   );
 }
 
-// Called when a request made with the learner's token comes back 401 — the
+// Called when a request made with the learner's token comes back 401, the
 // session is dead (expired, or the account was deleted). AuthProvider
 // subscribes so the whole app signs out, not just the stored token.
 const unauthorizedListeners = new Set<() => void>();
@@ -49,15 +49,15 @@ async function readErrorMessage(res: Response): Promise<string> {
     const message = (parsed as { error?: unknown } | null)?.error;
     if (typeof message === "string" && message) return message;
   } catch {
-    /* not JSON — use the text as-is */
+    /* not JSON, use the text as-is */
   }
   return text || res.statusText;
 }
 
 /**
  * The only place in the app that calls fetch(). Prefixes the API base URL,
- * attaches the auth header, normalises every failure — HTTP errors, network
- * errors, timeouts, unparsable responses — to ApiError, and signs the
+ * attaches the auth header, normalises every failure, HTTP errors, network
+ * errors, timeouts, unparsable responses, to ApiError, and signs the
  * session out on 401.
  */
 export async function apiFetch<T>(path: string, opts: Options = {}): Promise<T> {
@@ -97,13 +97,13 @@ export async function apiFetch<T>(path: string, opts: Options = {}): Promise<T> 
         body: body !== undefined ? JSON.stringify(body) : undefined,
       });
     } catch (err) {
-      // The caller cancelled on purpose — let them see their own AbortError.
+      // The caller cancelled on purpose, let them see their own AbortError.
       if (signal?.aborted) throw err;
       throw failure("Couldn't reach the server. Check your connection.");
     }
 
     // Only a 401 on a request that carried our token means *our* session is
-    // dead — e.g. a rejected Google credential on /auth/google is not.
+    // dead, e.g. a rejected Google credential on /auth/google is not.
     if (res.status === 401 && token) {
       clearToken();
       unauthorizedListeners.forEach((listener) => listener());

@@ -14,17 +14,17 @@ export type FeedbackDto = {
   suggestion: string | null;
   page: string | null;
   createdAt: Date;
-  learner: { email: string; name: string | null };
+  learner: { email: string | null; name: string | null }; // both null once the sender's account is deleted
 };
 
 export const MAX_FEEDBACK_LENGTH = 2000;
-/** An app path like "/dashboard/details" — 191 is Prisma's MySQL VARCHAR. */
+/** An app path like "/dashboard/details", 191 is Prisma's MySQL VARCHAR. */
 const MAX_PAGE_LENGTH = 191;
 
 /**
  * Validates a POST /feedback body: `message` is required, `suggestion` and
  * `page` are optional. Text is trimmed and a blank optional field becomes
- * null — pure so it's unit-testable without a request/response pair.
+ * null, pure so it's unit-testable without a request/response pair.
  */
 export function validateFeedbackInput(body: unknown): { data: FeedbackInput } | { error: string } {
   if (typeof body !== "object" || body === null) return { error: "Invalid request body" };

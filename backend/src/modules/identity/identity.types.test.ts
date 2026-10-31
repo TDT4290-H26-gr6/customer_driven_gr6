@@ -33,6 +33,8 @@ function learner(overrides: Partial<LearnerWithRole> = {}): LearnerWithRole {
     },
     hasCompletedInitialAssessment: false,
     privacyNoticeAcceptedAt: null,
+    deletionScheduledFor: null,
+    deletedAt: null,
     createdAt: new Date("2026-01-01"),
     updatedAt: new Date("2026-01-01"),
     profile: completeProfile,
@@ -59,7 +61,13 @@ describe("toLearnerDto", () => {
       hasCompletedProfile: true,
       // ADMIN_EMAILS is unset under test: everyone is an admin, as in development.
       isAdmin: true,
+      deletionScheduledFor: null,
     });
+  });
+
+  it("carries the date a pending deletion is scheduled for", () => {
+    const when = new Date("2026-12-01");
+    expect(toLearnerDto(learner({ deletionScheduledFor: when })).deletionScheduledFor).toBe(when);
   });
 
   it("carries role as null when no persona has been picked yet", () => {

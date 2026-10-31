@@ -1,4 +1,4 @@
-import type { Grantable } from "../types";
+import type { Grantable } from "../../types";
 import styles from "./GrantChecklist.module.css";
 
 type Props = {

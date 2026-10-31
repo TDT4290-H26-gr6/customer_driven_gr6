@@ -11,7 +11,13 @@ import { AssessmentProgress } from "../components/AssessmentProgress";
 import { ExitAssessmentDialog, type ExitStatus } from "../components/ExitAssessmentDialog";
 import { QuestionCard } from "../components/QuestionCard";
 import type { PieAnswer } from "../components/PieQuestionPlayer";
-import { completeAssessment, discardAssessment, getAssessmentPath, saveResponse } from "../api";
+import {
+  completeAssessment,
+  discardAssessment,
+  getAssessmentPath,
+  recordQuestionView,
+  saveResponse,
+} from "../api";
 import type { AssessmentPath } from "../types";
 import styles from "./AssessmentRunnerPage.module.css";
 
@@ -26,10 +32,10 @@ function answersOf(path: AssessmentPath): Record<string, PieAnswer> {
  * Runs the adaptive assessment one question at a time. The backend decides
  * the route (assessment.path.ts): sections in a random order, levels 1 → 4
  * within each, every question of a level asked, moving up a level at 2 of 3
- * right and on to the next section as soon as that's out of reach. So the page doesn't hold the whole question list — it
+ * right and on to the next section as soon as that's out of reach. So the page doesn't hold the whole question list, it
  * holds the path so far (answered questions + the next one) and refetches it
  * after every Next. Answered questions are history: Back revisits them and
- * changing an answer only changes its score — which question comes next is
+ * changing an answer only changes its score, which question comes next is
  * decided from where the learner is now, so only answering beyond what's
  * been shown changes the questions.
  *
@@ -44,12 +50,12 @@ function answersOf(path: AssessmentPath): Record<string, PieAnswer> {
  * Next/Finish wait for every answer to be saved (the path and the scores
  * would otherwise be computed without it). A save rejected with 404 means
  * the question is no longer visible to the learner's role (an admin changed
- * it mid-assessment) — retrying can't help, so the path is reloaded instead.
+ * it mid-assessment), retrying can't help, so the path is reloaded instead.
  *
  * Exit opens a dialog: "Save & exit" leaves once every answer is saved (the
  * learner resumes later); "Abort" deletes the in-progress instance and all
  * its answers. Abort first stops queued saves and waits for the one in
- * flight — a save landing after the delete would otherwise create a new
+ * flight, a save landing after the delete would otherwise create a new
  * instance holding just that answer.
  */
 export function AssessmentRunnerPage() {
@@ -62,12 +68,12 @@ export function AssessmentRunnerPage() {
   const [navError, setNavError] = useState<string | null>(null);
   const [questionsRemoved, setQuestionsRemoved] = useState(false);
   // Saves run one after another, in the order the learner made them, and
-  // Next/Finish wait for the queue — the next question depends on the
+  // Next/Finish wait for the queue, the next question depends on the
   // answer, and a save still in flight when the instance is completed would
   // create a brand-new instance for that answer.
   const pendingSaves = useRef<Promise<unknown>>(Promise.resolve());
   // Latest answer (and the elapsed time recorded when it was first queued,
-  // CD-97 — a retry reuses it rather than the time since the retry, which
+  // CD-97, a retry reuses it rather than the time since the retry, which
   // could be much later) per question whose save failed. A ref (read right
   // after awaiting the queue), mirrored into state for rendering.
   const unsaved = useRef(new Map<string, { answer: PieAnswer; timeSpentMs?: number }>());
@@ -85,7 +91,7 @@ export function AssessmentRunnerPage() {
   const navigate = useNavigate();
   const { markInitialAssessmentComplete } = useAuth();
 
-  // When the current question last became the one on screen (CD-97) — reset
+  // When the current question last became the one on screen (CD-97), reset
   // whenever it changes, so a save's elapsed time reflects just this visit,
   // not time spent on earlier questions. Declared before the early returns
   // below so the hook always runs, per the rules of hooks; path/index are
@@ -95,6 +101,20 @@ export function AssessmentRunnerPage() {
   useEffect(() => {
     shownAt.current = Date.now();
   }, [currentQuestionId]);
+
+  // Tell the backend a question was shown (CD-125, drop-off analytics), only
+  // ones not yet answered, since an answered question was seen before. Fire
+  // and forget: a lost request just means one missing view (an answer implies
+  // one anyway), so it's never retried or surfaced, and it never blocks the
+  // learner. Skipped while aborting or finishing, like saves, so nothing gets
+  // recorded against an attempt that is being deleted or closed.
+  const currentUnanswered =
+    path !== null && path.items[Math.min(index, path.items.length - 1)]?.answer == null;
+  useEffect(() => {
+    if (!currentQuestionId || !currentUnanswered) return;
+    if (discarding.current || finishing.current) return;
+    recordQuestionView(currentQuestionId).catch(() => {});
+  }, [currentQuestionId, currentUnanswered]);
 
   const load = useCallback(() => {
     setLoadFailed(false);
@@ -182,11 +202,14 @@ export function AssessmentRunnerPage() {
   const isLast = path.done && index === path.items.length - 1;
   const hasAnswered = answers[current.id]?.complete === true;
   const busy = isMoving || isFinishing;
+  // Back is hidden only for the full self-assessment; a partial
+  // reassessment and a journey assessment both keep it.
+  const canGoBack = path.journey !== null || path.partial;
 
   function handleAnswerChange(answer: PieAnswer) {
     setAnswers((prev) => ({ ...prev, [current.id]: answer }));
     // How long this question has been on screen since it last became the
-    // current one (CD-97) — not scoring, just a best-effort analytics value.
+    // current one (CD-97), not scoring, just a best-effort analytics value.
     if (answer.complete) queueSave(current.id, answer, Date.now() - shownAt.current);
   }
 
@@ -232,7 +255,7 @@ export function AssessmentRunnerPage() {
 
   /**
    * Saves, asks the backend for the path again (the newest answer decides
-   * what comes after it), then moves one step along it — or finishes when
+   * what comes after it), then moves one step along it, or finishes when
    * the path ends here.
    */
   async function handleNext() {
@@ -293,7 +316,7 @@ export function AssessmentRunnerPage() {
   return (
     <div className={styles.page}>
       <div className={styles.topRow}>
-        {/* Left, on the same side as Back — the "leave" side of the page —
+        {/* Left, on the same side as Back, the "leave" side of the page ,
             so the right stays for moving forward (the count, then Next). */}
         <Button variant="danger" onClick={() => setExitOpen(true)} disabled={isFinishing}>
           <CloseIcon width={16} height={16} aria-hidden="true" />
@@ -348,10 +371,16 @@ export function AssessmentRunnerPage() {
       )}
 
       <div className={styles.nav}>
-        <Button variant="secondary" onClick={handleBack} disabled={isFirst || busy}>
-          Back
-        </Button>
-        <Button onClick={() => void handleNext()} disabled={!hasAnswered || busy}>
+        {canGoBack && (
+          <Button variant="secondary" onClick={handleBack} disabled={isFirst || busy}>
+            Back
+          </Button>
+        )}
+        <Button
+          className={!canGoBack ? styles.nextAlone : undefined}
+          onClick={() => void handleNext()}
+          disabled={!hasAnswered || busy}
+        >
           {isFinishing ? "Finishing…" : isLast ? "Finish" : "Next"}
         </Button>
       </div>

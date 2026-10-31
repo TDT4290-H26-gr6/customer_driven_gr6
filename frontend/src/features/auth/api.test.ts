@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { apiFetch } from "@/shared/api/client";
-import { completeInitialAssessment, deleteAccount, getMe, googleLogin } from "./api";
+import {
+  cancelAccountDeletion,
+  completeInitialAssessment,
+  getMe,
+  googleLogin,
+  scheduleAccountDeletion,
+} from "./api";
 import { setToken } from "./session";
 
 vi.mock("@/shared/api/client", () => ({ apiFetch: vi.fn() }));
@@ -42,8 +48,13 @@ describe("auth api", () => {
     expect(apiFetch).toHaveBeenCalledWith("/auth/me/initial-assessment", { method: "PUT" });
   });
 
-  it("deleteAccount deletes the signed-in learner", async () => {
-    await deleteAccount();
-    expect(apiFetch).toHaveBeenCalledWith("/auth/me", { method: "DELETE" });
+  it("scheduleAccountDeletion schedules the signed-in learner's deletion", async () => {
+    await scheduleAccountDeletion();
+    expect(apiFetch).toHaveBeenCalledWith("/auth/me/deletion", { method: "POST" });
+  });
+
+  it("cancelAccountDeletion cancels it", async () => {
+    await cancelAccountDeletion();
+    expect(apiFetch).toHaveBeenCalledWith("/auth/me/deletion", { method: "DELETE" });
   });
 });

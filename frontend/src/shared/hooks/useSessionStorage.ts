@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-/** Like useState, but persisted to sessionStorage under `key` — cleared when the tab/session ends. */
+/** Like useState, but persisted to sessionStorage under `key`, cleared when the tab/session ends. */
 export function useSessionStorage<T>(key: string, initialValue: T) {
   const [value, setValue] = useState<T>(() => {
     try {
@@ -17,7 +17,7 @@ export function useSessionStorage<T>(key: string, initialValue: T) {
       try {
         sessionStorage.setItem(key, JSON.stringify(resolved));
       } catch {
-        /* storage unavailable — value just won't persist */
+        /* storage unavailable, value just won't persist */
       }
       return resolved;
     });

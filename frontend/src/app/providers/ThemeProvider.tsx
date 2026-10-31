@@ -6,7 +6,7 @@ type ResolvedTheme = "light" | "dark";
 
 type ThemeContextValue = {
   preference: ThemePreference;
-  /** What "default" actually resolves to right now — useful for anything
+  /** What "default" actually resolves to right now, useful for anything
    *  that can't read CSS variables (e.g. the Google Sign-In button). */
   resolvedTheme: ResolvedTheme;
   setPreference: (preference: ThemePreference) => void;
@@ -23,7 +23,7 @@ function systemPrefersDark(): boolean {
 /**
  * Three-way "visuals" setting, the same shape as Claude's own theme picker:
  * Default (follows the OS), Light, or Dark. Applied via a `data-theme`
- * attribute on <html> — see styles/globals.css for the token contract this
+ * attribute on <html>, see styles/globals.css for the token contract this
  * relies on, and index.html for the pre-React script that avoids a flash of
  * the wrong theme on first paint.
  */

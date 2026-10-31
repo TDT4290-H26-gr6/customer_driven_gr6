@@ -1,6 +1,6 @@
 import type { SVGProps } from "react";
 
-// Small inline icon set. No icon library dependency — see "keep it boring"
+// Small inline icon set. No icon library dependency, see "keep it boring"
 // in context/frontend-structure.md.
 
 type IconProps = SVGProps<SVGSVGElement>;
@@ -54,7 +54,7 @@ export function RouteIcon(props: IconProps) {
   );
 }
 
-/** Concentric target — the Competencies tab. */
+/** Concentric target, the Competencies tab. */
 export function TargetIcon(props: IconProps) {
   return (
     <svg {...defaults} {...props}>
@@ -65,7 +65,7 @@ export function TargetIcon(props: IconProps) {
   );
 }
 
-/** Question mark in a circle — the FAQ. */
+/** Question mark in a circle, the FAQ. */
 export function HelpIcon(props: IconProps) {
   return (
     <svg {...defaults} {...props}>
@@ -130,7 +130,7 @@ export function ShieldIcon(props: IconProps) {
   );
 }
 
-/** Speech bubble — the "Feedback" button. */
+/** Speech bubble, the "Feedback" button. */
 export function CloseIcon(props: IconProps) {
   return (
     <svg {...defaults} {...props}>

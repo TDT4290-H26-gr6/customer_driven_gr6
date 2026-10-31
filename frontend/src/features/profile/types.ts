@@ -32,6 +32,6 @@ export type LearnerProfileInput = {
   academicDegree: AcademicDegree;
   background: string;
   yearsOfExperience: number;
-  /** Optional — null when left blank. */
+  /** Optional, null when left blank. */
   goals: string | null;
 };

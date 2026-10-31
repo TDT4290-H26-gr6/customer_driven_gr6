@@ -17,7 +17,7 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
       try {
         localStorage.setItem(key, JSON.stringify(resolved));
       } catch {
-        /* storage unavailable — value just won't persist */
+        /* storage unavailable, value just won't persist */
       }
       return resolved;
     });

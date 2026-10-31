@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { scoreBand } from "./scoreBand";
 
 describe("scoreBand", () => {
-  it("is weak at or below 60% — the dashboard's 'Where you're lacking' line", () => {
+  it("is weak at or below 60%, the dashboard's 'Where you're lacking' line", () => {
     expect(scoreBand(0)).toBe("weak");
     expect(scoreBand(60)).toBe("weak");
   });

@@ -12,9 +12,9 @@ export type CompetenceScore = {
 /**
  * One section's results in one SAT, for its own detailed radar. Competences
  * come in level order (A1 … A4). `assessed` is false for a section that SAT
- * didn't touch (e.g. one a journey retake left out) — every score is then
+ * didn't touch (e.g. one a journey retake left out); every score is then
  * 0/0 and `level` is null. Otherwise `level` is how many of its levels the
- * learner passed from the bottom up — 0 if not even the first.
+ * learner passed from the bottom up, 0 if not even the first.
  */
 export type SectionCompetenceScores = {
   section: { id: string; code?: string | null; name: string };

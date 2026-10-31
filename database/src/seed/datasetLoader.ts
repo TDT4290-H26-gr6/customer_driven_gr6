@@ -32,7 +32,7 @@ function withDates(row: Row): Row {
  * (`moodleCourseId`), so the real Moodle site can be swapped in in one place
  * (MOODLE_BASE_URL); a row that already knows its full link gives it as
  * `moodleUrl` instead, which wins. Null when the row has neither.
- * (A source outside Moodle — a partner institution's own course page —
+ * (A source outside Moodle, a partner institution's own course page ,
  * gives its `sourceUrl` directly instead; see withMoodleLink.)
  */
 export function moodleLink(row: Row, baseUrl = config.moodleBaseUrl): string | null {
@@ -260,8 +260,8 @@ export function createDatasetLoader(data: unknown) {
   }
 
   /**
-   * Loads the dataset when any of its own questions or sources are missing —
-   * a fresh database, or one seeded before they were added to it — then
+   * Loads the dataset when any of its own questions or sources are missing ,
+   * a fresh database, or one seeded before they were added to it, then
    * brings existing rows up to date (syncExistingRows). Keyed on this
    * dataset's ids, not "the question bank is empty". Returns whether
    * anything was added or changed.

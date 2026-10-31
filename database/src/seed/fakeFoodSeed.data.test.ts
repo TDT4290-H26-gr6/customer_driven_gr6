@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import seedData from "./data/aios_fake_food_seed.json";
 
-// Structural checks on the authored dataset itself — no DB, no loader. Catches
+// Structural checks on the authored dataset itself, no DB, no loader. Catches
 // a broken id reference or a lopsided section/competence/question count
 // before it ever reaches a database. The shape this enforces: 5 sections
 // (A–E) x 4 section modules (levels 1–4, one competence each) x 3
@@ -92,7 +92,7 @@ describe("fake food seed data: referential integrity", () => {
 
   it("never gives a module a secondary competence that lives in a different section", () => {
     // Each section's axis list (getAttemptSectionScores) is every
-    // competence its own modules cover, main or secondary — a secondary
+    // competence its own modules cover, main or secondary, a secondary
     // competence borrowed from another section would silently give that
     // section a 5th axis, breaking the "4 competences per section" shape.
     const homeSection = new Map<string, string>();

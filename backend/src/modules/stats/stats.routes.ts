@@ -9,7 +9,7 @@ import { listQuestionRows, listTestRows } from "./stats.service";
  * Admin-only CSV export for analysis (CD-23): two linked, tidy tables over
  * completed full self-assessments (see stats.service.ts for why partial
  * reassessments and standalone journey assessments are excluded). No
- * learner is identifiable from either file — no name or email, and years
+ * learner is identifiable from either file, no name or email, and years
  * of experience is bucketed, not exact (see
  * stats.csv.ts). The two join on satInstanceId, itself just a random id.
  */

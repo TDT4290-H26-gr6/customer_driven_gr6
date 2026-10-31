@@ -7,7 +7,8 @@ export {
   getMe,
   completeInitialAssessment,
   acceptPrivacyNotice,
-  deleteAccount,
+  scheduleAccountDeletion,
+  cancelAccountDeletion,
 } from "./api";
 export { getToken, clearToken } from "./session";
 export type { Learner, LoginResult, Role } from "./types";

@@ -6,7 +6,7 @@ import { fileURLToPath, URL } from "node:url";
 
 /**
  * The PIE player's entry (dist/index.js) loads its other files at runtime
- * with `import(specifier)` — paths the bundler can't follow — relative to
+ * with `import(specifier)`, paths the bundler can't follow, relative to
  * wherever that entry ends up: in the production build, inside the main
  * bundle in assets/. The dev server serves them straight from node_modules,
  * but a build would leave them out (the question player then fails to
@@ -52,7 +52,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html", "json-summary"],
       include: ["src/**"],
-      // Only code a unit test can't meaningfully run — keep this list short.
+      // Only code a unit test can't meaningfully run, keep this list short.
       exclude: [
         "src/**/*.test.{ts,tsx}",
         // Shared test helpers, not app code.

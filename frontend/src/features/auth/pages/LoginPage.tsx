@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { FundingLogos } from "@/shared/components/FundingLogos";
 import { Logo } from "@/shared/components/Logo";
 import { GoogleLoginButton } from "../components/GoogleLoginButton";
 import { GreetingBot } from "../components/GreetingBot";
@@ -30,8 +31,12 @@ export function LoginPage() {
       <div className={styles.card}>
         <Logo className={styles.logo} />
         <p className={styles.tagline}>Assess and grow your AI &amp; open-science skills.</p>
-        <GoogleLoginButton onLogin={handleLogin} />
-        <OrcidLoginButton />
+        <div className={styles.signIn}>
+          <GoogleLoginButton onLogin={handleLogin} />
+          <OrcidLoginButton />
+        </div>
+        {/* Funders' logos at the foot of the card, below a divider. */}
+        <FundingLogos className={styles.funding} />
       </div>
     </div>
   );

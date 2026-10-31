@@ -23,6 +23,54 @@
   color: var(--color-text-muted);
 }
 
+/* Mirrors DashboardPage.module.css's own tabs, for a consistent look
+   across the app's tab bars. */
+.tabs {
+  align-self: stretch;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tab,
+.tabActive {
+  flex: none;
+  padding: 10px 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tab:focus-visible,
+.tabActive:focus-visible {
+  outline-offset: -2px;
+}
+
+.tabActive {
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+}
+
+.tabPanel {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
 .card {
   width: 100%;
   display: flex;

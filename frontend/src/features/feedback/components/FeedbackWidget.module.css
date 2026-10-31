@@ -31,7 +31,7 @@
 }
 
 /* Mobile: sit just above the bottom tab bar instead of on top of it, and
-   shrink to a round icon-only button — the full pill covered too much of the
+   shrink to a round icon-only button, the full pill covered too much of the
    content scrolling past underneath it. */
 @media (max-width: 767px) {
   .button {

@@ -23,6 +23,7 @@ import {
   getSatHistory,
   listAssessableSections,
   listQuestions,
+  recordQuestionView,
   saveResponse,
   startJourneyAssessment,
   startReassessment,
@@ -69,7 +70,7 @@ assessmentRouter.post(
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
     const questionId = requireString(req.body?.questionId, "questionId");
-    // The frontend's PieAnswer wrapper ({ session, complete }) — always an object.
+    // The frontend's PieAnswer wrapper ({ session, complete }), always an object.
     const answer = requireObject(req.body?.answer, "answer") as Prisma.InputJsonObject;
     const timeSpentMs = plausibleDurationMs(req.body?.timeSpentMs, MAX_PLAUSIBLE_TIME_SPENT_MS);
 
@@ -86,6 +87,27 @@ assessmentRouter.post(
   }),
 );
 
+// The learner was shown a question (CD-125, drop-off analytics). Fire-and-forget
+// from the frontend; records only the first view per question and attempt.
+assessmentRouter.post(
+  "/assessment/views",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    const questionId = requireString(req.body?.questionId, "questionId");
+
+    const learner = await findLearnerById(req.learnerId!);
+    if (!learner || !isProfileComplete(learner.name, learner.profile)) {
+      return res.status(403).json({ error: "Complete your profile first" });
+    }
+
+    if (!(await recordQuestionView(req.learnerId!, questionId))) {
+      return res.status(404).json({ error: "Unknown question" });
+    }
+    res.status(204).end();
+  }),
+);
+
 // The sections a reassessment can be limited to.
 assessmentRouter.get(
   "/assessment/sections",
@@ -97,7 +119,7 @@ assessmentRouter.get(
 );
 
 // Starts a reassessment limited to the chosen sections. (Reassessing
-// everything needs no start — the first saved answer creates a normal
+// everything needs no start, the first saved answer creates a normal
 // instance.)
 assessmentRouter.post(
   "/assessment/start",

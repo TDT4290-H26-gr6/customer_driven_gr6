@@ -1,4 +1,4 @@
-// The adaptive route through a SAT — pure, no Prisma, so every rule is
+// The adaptive route through a SAT, pure, no Prisma, so every rule is
 // unit-testable. assessment.service.ts loads the questions and answers and
 // asks this what comes next.
 //
@@ -6,28 +6,35 @@
 // section the modules go level 1 → 4 (A1 … A4). Every question of a level is
 // asked, unless the level can no longer be passed:
 // - passed when all its questions are answered and the learner has
-//   PASS_THRESHOLD of its points — they move up to the next level;
+//   PASS_THRESHOLD of its points, they move up to the next level;
 // - failed once PASS_THRESHOLD is out of reach even with every remaining
-//   question right — the section ends there and the next section starts.
+//   question right, the section ends there and the next section starts.
 // Questions never asked (the rest of a failed level, and the levels above
 // it) still count toward the scores, as 0 points (see assessment.service.ts).
 //
+// A partial reassessment (startReassessment's chosen sections) runs
+// `exhaustive` instead: every question of every level in the section is
+// asked regardless of score, since the learner picked that section
+// specifically to retake it in full, not to be routed away from it early.
+//
 // Questions already answered are history: they stay on the path, in the
 // order they were first answered, whatever happens to their answers later.
-// Going Back and changing an answer only changes its score — except that
+// Going Back and changing an answer only changes its score, except that
 // the next question is always worked out from the learner's *current*
 // position (the level of their latest answered question), using their
 // current answers. So only answering beyond what's been revealed changes
 // which questions come.
 
 /**
- * A level counts as passed at 2/3 of its points — 2 of its 3 questions
- * right, once all are answered. Partial credit (multiple-answer questions)
- * adds up toward it.
+ * A level counts as passed at 60% of its points, once all are answered ,
+ * the same line as "weak" on the Competencies page (frontend's scoreBand.ts)
+ * and WEAK_THRESHOLD in learningJourney.service.ts, so a level that reads as
+ * "Good" or better also advances; one that reads "Weak" doesn't. Partial
+ * credit (multiple-answer questions) adds up toward it.
  */
-export const PASS_THRESHOLD = 2 / 3;
+export const PASS_THRESHOLD = 0.6;
 
-/** What an unanswered question is worth — every question is out of 1 point (see assessment.scoring.ts). */
+/** What an unanswered question is worth, every question is out of 1 point (see assessment.scoring.ts). */
 const UNANSWERED_MAX_SCORE = 1;
 
 /** Float slack, so a sum like 0.1 + 0.2 that lands a hair under the threshold still reaches it. */
@@ -38,7 +45,7 @@ export type PathSection = { id: string; modules: PathModule[] };
 export type PathAnswer = {
   score: number | null;
   maxScore: number | null;
-  /** When the question was first answered — editing an answer doesn't change it. */
+  /** When the question was first answered, editing an answer doesn't change it. */
   answeredAt: Date;
 };
 
@@ -54,14 +61,17 @@ export type LevelOutcome =
 
 /**
  * The answered questions (in the order first answered) and the next one:
- * carry on from the level of the latest answered question — that level if
- * it's still undecided, else the levels above it — then each section not
+ * carry on from the level of the latest answered question, that level if
+ * it's still undecided, else the levels above it, then each section not
  * visited yet, in the given order. Answers to questions that aren't in
  * `sections` (deleted, or hidden from the learner's role) are ignored.
+ * `exhaustive` (a partial reassessment) never stops a level early for being
+ * out of reach, see the module comment above.
  */
 export function buildPath(
   sections: PathSection[],
   answers: ReadonlyMap<string, PathAnswer>,
+  exhaustive = false,
 ): AssessmentPath {
   const ordered = sections.map((s) => ({ ...s, modules: byLevel(s.modules) }));
 
@@ -87,30 +97,31 @@ export function buildPath(
   const latest = answered.at(-1);
   if (latest) {
     const { section, module } = position.get(latest)!;
-    const next = continueSection(ordered[section], module, answers);
+    const next = continueSection(ordered[section], module, answers, exhaustive);
     if (next) return { answered, next };
   }
 
   const visited = new Set(answered.map((id) => position.get(id)!.section));
   for (let si = 0; si < ordered.length; si++) {
     if (visited.has(si)) continue;
-    const next = continueSection(ordered[si], 0, answers);
+    const next = continueSection(ordered[si], 0, answers, exhaustive);
     if (next) return { answered, next };
   }
 
   return { answered, next: null };
 }
 
-/** From module `from` upwards: the next question of the first undecided level, or null once the section is over (a level failed, or every level passed). */
+/** From module `from` upwards: the next question of the first undecided level, or null once the section is over (a level failed, or every level passed; never cut short early when `exhaustive`). */
 function continueSection(
   section: PathSection,
   from: number,
   answers: ReadonlyMap<string, PathAnswer>,
+  exhaustive: boolean,
 ): string | null {
   for (let mi = from; mi < section.modules.length; mi++) {
-    const outcome = levelOutcome(section.modules[mi], answers);
+    const outcome = levelOutcome(section.modules[mi], answers, exhaustive);
     if (outcome.status === "open") return outcome.next;
-    if (outcome.status === "failed") return null;
+    if (outcome.status === "failed" && !exhaustive) return null;
   }
   return null;
 }
@@ -118,14 +129,17 @@ function continueSection(
 /**
  * Whether a level is passed, failed, or still open (and its next unanswered
  * question). A level stays open until every question is answered, unless
- * the threshold is already out of reach.
+ * the threshold is already out of reach, unless `exhaustive`, which keeps
+ * it open (asking every remaining question) regardless of reach.
  */
 export function levelOutcome(
   module: PathModule,
   answers: ReadonlyMap<string, Pick<PathAnswer, "score" | "maxScore">>,
+  exhaustive = false,
 ): LevelOutcome {
   const { earned, needed, remaining, firstUnanswered } = levelPoints(module, answers);
   if (firstUnanswered) {
+    if (exhaustive) return { status: "open", next: firstUnanswered };
     return earned + remaining < needed
       ? { status: "failed" }
       : { status: "open", next: firstUnanswered };
@@ -136,7 +150,7 @@ export function levelOutcome(
 /**
  * A level's points so far: what's earned, what's needed to pass it, and
  * what the unanswered questions could still add. A level with nothing
- * scorable needs 0 — no gate.
+ * scorable needs 0, no gate.
  */
 function levelPoints(
   module: PathModule,
@@ -164,11 +178,11 @@ function levelPoints(
 
 /**
  * A learner's skill level in a section: how many levels, from level 1 up
- * without a gap, they've passed — 0 if not even level 1. A level passed
+ * without a gap, they've passed, 0 if not even level 1. A level passed
  * above a failed or unanswered one (possible after editing an earlier
  * answer) doesn't count, since the levels build on each other. Here a level
  * counts as passed once its points reach the threshold, answered in full or
- * not — SATs taken while a passed level skipped its remaining questions
+ * not, SATs taken while a passed level skipped its remaining questions
  * keep their level.
  */
 export function skillLevel(
@@ -192,7 +206,7 @@ function byLevel(modules: PathModule[]): PathModule[] {
 /**
  * A repeatable pseudo-random generator from a string seed (FNV-1a hash into
  * mulberry32), so an attempt's section order and choice order stay the same
- * every time its path is fetched — resuming, going Back, or reloading.
+ * every time its path is fetched, resuming, going Back, or reloading.
  */
 export function seededRandom(seed: string): () => number {
   let h = 2166136261;

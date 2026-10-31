@@ -33,7 +33,7 @@ describe("bestPerModule", () => {
       answer({
         satInstanceId: "journey-1",
         kind: "journey",
-        journeyName: "LJ2 — Research Data",
+        journeyName: "LJ2 - Research Data",
         score: 1,
         completedAt: day(5),
       }),
@@ -44,7 +44,7 @@ describe("bestPerModule", () => {
       percent: 100,
       completedAt: day(5),
       kind: "journey",
-      journeyName: "LJ2 — Research Data",
+      journeyName: "LJ2 - Research Data",
     });
   });
 

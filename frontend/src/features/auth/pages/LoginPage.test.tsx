@@ -41,6 +41,14 @@ describe("LoginPage", () => {
     expect(screen.getByRole("button", { name: "Sign in with Google" })).toBeInTheDocument();
   });
 
+  it("shows the funding logos", () => {
+    renderLogin("signedOut");
+    expect(
+      screen.getByRole("img", { name: /Co-funded by the European Union/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /IKY/ })).toBeInTheDocument();
+  });
+
   it("starts the session and goes home after signing in", async () => {
     renderLogin("signedOut");
     await userEvent.click(screen.getByRole("button", { name: "Sign in with Google" }));

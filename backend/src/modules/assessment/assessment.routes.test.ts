@@ -47,6 +47,36 @@ describe.each([
   });
 });
 
+describe("POST /assessment/views", () => {
+  const body = { questionId: "q1" };
+
+  it("records the view and answers 204", async () => {
+    vi.mocked(assessment.recordQuestionView).mockResolvedValue(true);
+
+    const res = await api.request("POST", "/assessment/views", { token, body });
+
+    expect(res.status).toBe(204);
+    expect(assessment.recordQuestionView).toHaveBeenCalledWith("learner-1", "q1");
+  });
+
+  it("is 404 for an unknown question", async () => {
+    vi.mocked(assessment.recordQuestionView).mockResolvedValue(false);
+    expect((await api.request("POST", "/assessment/views", { token, body })).status).toBe(404);
+  });
+
+  it("is 400 without a question", async () => {
+    expect((await api.request("POST", "/assessment/views", { token, body: {} })).status).toBe(400);
+    expect(assessment.recordQuestionView).not.toHaveBeenCalled();
+  });
+
+  it("needs a session and a complete profile", async () => {
+    expect((await api.request("POST", "/assessment/views", { body })).status).toBe(401);
+    vi.mocked(findLearnerById).mockResolvedValue(learner());
+    expect((await api.request("POST", "/assessment/views", { token, body })).status).toBe(403);
+    expect(assessment.recordQuestionView).not.toHaveBeenCalled();
+  });
+});
+
 describe("POST /assessment/responses", () => {
   const body = { questionId: "q1", answer: { session: {}, complete: true }, timeSpentMs: 4200 };
 

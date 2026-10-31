@@ -121,6 +121,7 @@ model Question {
   updatedAt DateTime @updatedAt
 
   responses Response[]
+  views     QuestionView[]
 
   @@map("assessment_question")
 }
@@ -209,4 +210,25 @@ model CompetenceScore {
 
   @@unique([satInstanceId, competenceId])
   @@map("assessment_competence_score")
+}
+
+/// A question being shown to a learner during an attempt (CD-125), recorded
+/// the first time only. Keyed to the attempt — (learnerId, kind, instanceNum),
+/// the same numbering SatInstance uses — rather than to a SatInstance, because
+/// the instance is only created by the first saved answer: a learner who opens
+/// the first question and leaves has views but no instance. Aggregate-only
+/// analytics (the admin drop-off page); never shown per learner.
+model QuestionView {
+  id          String    @id @default(uuid())
+  learnerId   String
+  learner     Learner   @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  kind        String    @default("main")
+  instanceNum Int
+  questionId  String?
+  question    Question? @relation(fields: [questionId], references: [id], onDelete: SetNull)
+  viewedAt    DateTime  @default(now())
+
+  // First view only — going Back to a question is not a new view.
+  @@unique([learnerId, kind, instanceNum, questionId])
+  @@map("assessment_question_view")
 }

@@ -13,6 +13,7 @@ import { learningJourneyRouter } from "./modules/learningJourney/learningJourney
 import { feedbackRouter } from "./modules/feedback/feedback.routes";
 import { advisorRouter } from "./modules/advisor/advisor.routes";
 import { statsRouter } from "./modules/stats/stats.routes";
+import { dropoffRouter } from "./modules/stats/dropoff.routes";
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
@@ -45,7 +46,7 @@ export function buildServer() {
   // the real client instead of lumping everyone under nginx's address.
   app.set("trust proxy", 1);
 
-  // Standard security headers (no sniffing, no framing, etc.) — this API
+  // Standard security headers (no sniffing, no framing, etc.), this API
   // serves JSON only, so helmet's defaults fit as-is.
   app.use(helmet());
   app.use(cors({ origin: config.corsOrigins }));
@@ -65,6 +66,7 @@ export function buildServer() {
   app.use(feedbackRouter);
   app.use(advisorRouter);
   app.use(statsRouter);
+  app.use(dropoffRouter);
 
   // Unknown paths get JSON like every other error, not Express's HTML page.
   app.use((_req: Request, res: Response) => {

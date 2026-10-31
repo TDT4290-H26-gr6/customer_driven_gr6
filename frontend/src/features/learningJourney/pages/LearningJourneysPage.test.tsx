@@ -11,10 +11,15 @@ vi.mock("../api", () => ({
 }));
 
 const navigate = vi.fn();
-vi.mock("react-router-dom", () => ({ useNavigate: () => navigate }));
+let locationState: unknown = null;
+vi.mock("react-router-dom", () => ({
+  useNavigate: () => navigate,
+  useLocation: () => ({ pathname: "/journeys", state: locationState }),
+}));
 
 beforeEach(() => {
   vi.clearAllMocks();
+  locationState = null;
 });
 
 const section = (code: string, coverageLevel: "M" | "R" | "S") => ({
@@ -67,6 +72,16 @@ describe("LearningJourneysPage", () => {
     await user.click(screen.getByRole("button", { name: "Close journey" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
     expect(card).toHaveFocus();
+  });
+
+  it("opens the requested journey's modal on arrival, then clears it from history", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+    locationState = { openJourneyId: "journey-2" };
+
+    render(<LearningJourneysPage />);
+
+    expect(await screen.findByRole("dialog", { name: "Legal Deep Dive" })).toBeInTheDocument();
+    expect(navigate).toHaveBeenCalledWith("/journeys", { replace: true, state: null });
   });
 
   it("starts the assessment from the modal and closes it", async () => {

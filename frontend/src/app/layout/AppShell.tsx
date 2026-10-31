@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { FeedbackWidget } from "@/features/feedback";
+import { DeletionReminderModal } from "@/features/settings";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { useLocalStorage } from "@/shared/hooks/useLocalStorage";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
@@ -71,6 +72,8 @@ export function AppShell() {
       </div>
 
       {needsRole && <RoleGateModal />}
+      {/* Asks a learner with a pending account deletion whether they still want it. */}
+      <DeletionReminderModal />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/shared/components/Button";
 import { ChevronIcon } from "@/shared/components/icons";
 import { Spinner } from "@/shared/components/Spinner";
@@ -11,11 +11,18 @@ import styles from "./CompetenciesPage.module.css";
 
 const VISIBLE_SECTIONS = 3;
 
+/** Which result each module/section shows: its single latest full self-assessment, or its best ever. */
+type View = "latest" | "best";
+
+function resultOf(module: CompetencyModule, view: View): BestResult | null {
+  return view === "latest" ? module.latest : module.best;
+}
+
 /** "Self-assessment, 3 Oct 2026" or "LJ2 assessment, 5 Oct 2026". */
-function sourceOf(best: BestResult): string {
-  const date = DATE_FORMAT.format(new Date(best.completedAt));
-  return best.kind === "journey" && best.journeyName
-    ? `${best.journeyName} assessment, ${date}`
+function sourceOf(result: BestResult): string {
+  const date = DATE_FORMAT.format(new Date(result.completedAt));
+  return result.kind === "journey" && result.journeyName
+    ? `${result.journeyName} assessment, ${date}`
     : `Self-assessment, ${date}`;
 }
 
@@ -53,14 +60,18 @@ function Ring({ percent }: { percent: number | null }) {
   );
 }
 
-function ModuleRow({ module }: { module: CompetencyModule }) {
+function ModuleRow({ module, view }: { module: CompetencyModule; view: View }) {
+  const result = resultOf(module, view);
+  const label = view === "latest" ? "Latest" : "Best";
   return (
     <li className={styles.module}>
       <span className={`${styles.moduleCode} ${hueClass(module.code)}`}>{module.code ?? "-"}</span>
       <div className={styles.moduleMain}>
         <span className={styles.moduleName}>{module.name}</span>
-        {module.best ? (
-          <span className={styles.muted}>Best: {sourceOf(module.best)}</span>
+        {result ? (
+          <span className={styles.muted}>
+            {label}: {sourceOf(result)}
+          </span>
         ) : (
           <span className={styles.muted}>Not assessed yet</span>
         )}
@@ -75,18 +86,21 @@ function ModuleRow({ module }: { module: CompetencyModule }) {
           </a>
         )}
       </div>
-      {module.best && (
-        <span className={`${styles.modulePercent} ${styles[scoreBand(module.best.percent)]}`}>
-          <strong className={styles.scoreValue}>{module.best.percent}%</strong>
-          <span className={styles.bandLabel}>{BAND_LABEL[scoreBand(module.best.percent)]}</span>
-          <Bar percent={module.best.percent} />
+      {result && (
+        <span className={`${styles.modulePercent} ${styles[scoreBand(result.percent)]}`}>
+          <strong className={styles.scoreValue}>{result.percent}%</strong>
+          <span className={styles.bandLabel}>{BAND_LABEL[scoreBand(result.percent)]}</span>
+          <Bar percent={result.percent} />
         </span>
       )}
     </li>
   );
 }
 
-function SectionCard({ section }: { section: CompetencySection }) {
+function SectionCard({ section, view }: { section: CompetencySection; view: View }) {
+  const percent = view === "latest" ? section.latestPercent : section.percent;
+  const assessedModules =
+    view === "latest" ? section.latestAssessedModules : section.assessedModules;
   return (
     <section
       className={`${styles.card} ${styles.sectionCard} ${hueClass(section.code)}`}
@@ -99,14 +113,14 @@ function SectionCard({ section }: { section: CompetencySection }) {
             {section.name}
           </h2>
           <p className={styles.muted}>
-            {section.assessedModules} of {section.moduleCount} modules assessed
+            {assessedModules} of {section.moduleCount} modules assessed
           </p>
         </div>
-        <Ring percent={section.percent} />
+        <Ring percent={percent} />
       </div>
       <ul className={styles.modules}>
         {section.modules.map((module) => (
-          <ModuleRow key={module.id} module={module} />
+          <ModuleRow key={module.id} module={module} view={view} />
         ))}
       </ul>
     </section>
@@ -121,7 +135,7 @@ function SectionCard({ section }: { section: CompetencySection }) {
  * with `start`, so stepping either way just animates smoothly, no track
  * content to swap around.
  */
-function SectionCarousel({ sections }: { sections: CompetencySection[] }) {
+function SectionCarousel({ sections, view }: { sections: CompetencySection[]; view: View }) {
   const [start, setStart] = useState(0);
   const windowSize = Math.min(VISIBLE_SECTIONS, sections.length);
   const maxStart = Math.max(0, sections.length - windowSize);
@@ -148,7 +162,7 @@ function SectionCarousel({ sections }: { sections: CompetencySection[] }) {
           }}
         >
           {sections.map((section) => (
-            <SectionCard key={section.id} section={section} />
+            <SectionCard key={section.id} section={section} view={view} />
           ))}
         </div>
       </div>
@@ -171,6 +185,7 @@ export function CompetenciesPage() {
   const navigate = useNavigate();
   const [data, setData] = useState<Competencies | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [view, setView] = useState<View>("latest");
 
   useEffect(() => {
     getCompetencies()
@@ -198,13 +213,15 @@ export function CompetenciesPage() {
 
   const relevantModules = data.sections.flatMap((s) => s.modules.filter((m) => m.relevant));
   const anyResult = data.sections.some((s) => s.assessedModules > 0);
+  const recommendedJourney = data.recommendedJourney;
 
   return (
     <div className={styles.page}>
       <h1 className={styles.heading}>Competencies</h1>
       <p className={styles.subheading}>
-        Your best result in each module, across the self-assessment and any journeys you&apos;ve
-        assessed.
+        Your result in each module, across your full self-assessments and any journeys you&apos;ve
+        assessed. A partial reassessment (limited to some sections) doesn&apos;t count here, see
+        your <Link to="/history">History</Link> for those.
       </p>
 
       {!anyResult && (
@@ -214,31 +231,89 @@ export function CompetenciesPage() {
         </p>
       )}
 
-      {data.recommendedJourney && relevantModules.length > 0 && (
+      {recommendedJourney && relevantModules.length > 0 && (
         <section className={styles.relevantCard} aria-labelledby="relevant-heading">
           <div className={styles.relevantHeader}>
             <div className={styles.relevantIntro}>
               <p className={styles.eyebrow}>Most relevant for you</p>
               <h2 id="relevant-heading" className={styles.cardHeading}>
-                {data.recommendedJourney.name}
+                {recommendedJourney.name}
               </h2>
               <p className={styles.muted}>
                 The modules this journey focuses on, recommended after your self-assessment.
               </p>
             </div>
-            <Button variant="secondary" onClick={() => navigate("/journeys")}>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                navigate("/journeys", { state: { openJourneyId: recommendedJourney.id } })
+              }
+            >
               Assess this journey
             </Button>
           </div>
           <ul className={styles.modules}>
             {relevantModules.map((module) => (
-              <ModuleRow key={module.id} module={module} />
+              <ModuleRow key={module.id} module={module} view="best" />
             ))}
           </ul>
         </section>
       )}
 
-      <SectionCarousel sections={data.sections} />
+      {data.sections.length > 0 && (
+        <>
+          <h2 className={styles.overviewHeading}>Competency overview</h2>
+
+          <div className={styles.tabs} role="tablist" aria-label="Competency overview view">
+            <button
+              type="button"
+              role="tab"
+              id="tab-latest"
+              aria-selected={view === "latest"}
+              aria-controls="panel-latest"
+              className={view === "latest" ? styles.tabActive : styles.tab}
+              onClick={() => setView("latest")}
+            >
+              Latest full assessment
+            </button>
+            <button
+              type="button"
+              role="tab"
+              id="tab-best"
+              aria-selected={view === "best"}
+              aria-controls="panel-best"
+              className={view === "best" ? styles.tabActive : styles.tab}
+              onClick={() => setView("best")}
+            >
+              Best ever
+            </button>
+          </div>
+
+          <div
+            id={`panel-${view}`}
+            role="tabpanel"
+            aria-labelledby={`tab-${view}`}
+            className={styles.tabPanel}
+          >
+            {view === "latest" && (
+              <p className={styles.note}>
+                {data.latestInstance
+                  ? `From your latest full self-assessment, ${DATE_FORMAT.format(
+                      new Date(data.latestInstance.completedAt),
+                    )}.`
+                  : "You haven't completed a full self-assessment yet."}
+              </p>
+            )}
+            {view === "best" && (
+              <p className={styles.note}>
+                Each module&apos;s highest score across every full self-assessment and journey
+                assessment you&apos;ve taken, however long ago.
+              </p>
+            )}
+            <SectionCarousel sections={data.sections} view={view} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

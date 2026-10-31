@@ -34,7 +34,7 @@ function toAdviceDto(
     summary: advice.summary,
     steps: steps.map(({ kind, title, url, reason }) => ({ kind, title, url, reason })),
     // The journeys the AI ranked for this learner on their scores and
-    // profile, best fit first — the dashboard highlights the first.
+    // profile, best fit first, the dashboard highlights the first.
     journeys: ranked.map(({ journey, reason }) => ({ journey: toJourneyDto(journey), reason })),
     model: advice.model,
     generatedAt: advice.createdAt,
@@ -59,7 +59,7 @@ async function rankedJourneys(advice: Advice) {
  * 200 with the advice (including the journeys ranked for the learner, when
  * there are any), 204 when there's none to give (no completed assessment
  * yet, or the feature is off), 503 when the LLM couldn't be reached or
- * answered nonsense — the dashboard then just leaves the advice out, and
+ * answered nonsense, the dashboard then just leaves the advice out, and
  * the score-based journeys still show.
  */
 advisorRouter.get(
