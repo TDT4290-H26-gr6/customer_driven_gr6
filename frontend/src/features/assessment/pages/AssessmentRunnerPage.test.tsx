@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AssessmentRunnerPage } from "./AssessmentRunnerPage";
 import {
   completeAssessment,
@@ -25,8 +25,12 @@ vi.mock("@/features/auth", () => ({
 }));
 
 const markInitialAssessmentComplete = vi.fn();
+// No learner by default; the guide tests set one.
+const auth = vi.hoisted(() => ({
+  learner: undefined as { id: string; hasCompletedInitialAssessment: boolean } | undefined,
+}));
 vi.mock("@/app/providers/AuthProvider", () => ({
-  useAuth: () => ({ markInitialAssessmentComplete }),
+  useAuth: () => ({ learner: auth.learner, markInitialAssessmentComplete }),
 }));
 
 const navigate = vi.fn();
@@ -495,5 +499,80 @@ describe("AssessmentRunnerPage exit dialog", () => {
     expect(await screen.findByText(/couldn't abort the assessment/i)).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: /abort/i })).toBeEnabled();
+  });
+});
+
+describe("AssessmentRunnerPage guide", () => {
+  const firstTimer = { id: "learner-1", hasCompletedInitialAssessment: false };
+  const guide = () => screen.queryByRole("dialog", { name: "How the assessment works" });
+
+  afterEach(() => {
+    auth.learner = undefined;
+    localStorage.clear();
+  });
+
+  it("opens by itself at the start of the first self-assessment", async () => {
+    auth.learner = firstTimer;
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
+
+    render(<AssessmentRunnerPage />);
+
+    expect(
+      await screen.findByRole("dialog", { name: "How the assessment works" }),
+    ).toBeInTheDocument();
+    // The full self-assessment has no Back, so the guide says answers are final.
+    expect(screen.getByText(/you can't go back and change it/)).toBeInTheDocument();
+  });
+
+  it("opens by itself only once: skipping it is remembered", async () => {
+    auth.learner = firstTimer;
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")]));
+    const { unmount } = render(<AssessmentRunnerPage />);
+    await screen.findByRole("dialog", { name: "How the assessment works" });
+
+    await userEvent.click(screen.getByRole("button", { name: "Skip guide" }));
+    expect(guide()).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "How the assessment works" })).toHaveFocus();
+    unmount();
+
+    render(<AssessmentRunnerPage />);
+    await screen.findByText("Question 1");
+    expect(guide()).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["a learner who has done the self-assessment before", { hasCompletedInitialAssessment: true }],
+    ["a journey assessment", { journey: { id: "lj-1", name: "Data steward" } }],
+    ["a partial reassessment", { partial: true }],
+  ])("doesn't open by itself for %s", async (_case, setup) => {
+    auth.learner = {
+      ...firstTimer,
+      hasCompletedInitialAssessment: "hasCompletedInitialAssessment" in setup,
+    };
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path(
+        [item("1")],
+        false,
+        2,
+        "journey" in setup ? setup.journey : null,
+        "partial" in setup ? setup.partial : false,
+      ),
+    );
+
+    render(<AssessmentRunnerPage />);
+    await screen.findByText("Question 1");
+    expect(guide()).not.toBeInTheDocument();
+  });
+
+  it("opens from the ? button in any assessment, explaining Back where there is one", async () => {
+    auth.learner = { ...firstTimer, hasCompletedInitialAssessment: true };
+    vi.mocked(getAssessmentPath).mockResolvedValue(path([item("1")], false, 2, null, true));
+    render(<AssessmentRunnerPage />);
+    await screen.findByText("Question 1");
+
+    await userEvent.click(screen.getByRole("button", { name: "How the assessment works" }));
+
+    expect(guide()).toBeInTheDocument();
+    expect(screen.getByText(/go back to earlier questions in this assessment/)).toBeInTheDocument();
   });
 });

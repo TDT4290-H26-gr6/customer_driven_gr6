@@ -5,8 +5,11 @@ import { completeInitialAssessment } from "@/features/auth";
 import { isApiError } from "@/shared/api/client";
 import { withRetry } from "@/shared/api/retry";
 import { Button } from "@/shared/components/Button";
-import { CloseIcon } from "@/shared/components/icons";
+import { CloseIcon, HelpIcon } from "@/shared/components/icons";
 import { Spinner } from "@/shared/components/Spinner";
+import { useLocalStorage } from "@/shared/hooks/useLocalStorage";
+import { assessmentGuideSteps } from "../assessmentGuide";
+import { AssessmentGuide } from "../components/AssessmentGuide";
 import { AssessmentProgress } from "../components/AssessmentProgress";
 import { ExitAssessmentDialog, type ExitStatus } from "../components/ExitAssessmentDialog";
 import { QuestionCard } from "../components/QuestionCard";
@@ -57,6 +60,11 @@ function answersOf(path: AssessmentPath): Record<string, PieAnswer> {
  * its answers. Abort first stops queued saves and waits for the one in
  * flight, a save landing after the delete would otherwise create a new
  * instance holding just that answer.
+ *
+ * A step-by-step guide to the page (AssessmentGuide) opens by itself the
+ * first time a learner starts their first, full self-assessment, and from
+ * the ? button in any assessment. Whether it has been seen is remembered per
+ * learner in this browser, so it never opens by itself twice.
  */
 export function AssessmentRunnerPage() {
   const [path, setPath] = useState<AssessmentPath | null>(null);
@@ -89,7 +97,33 @@ export function AssessmentRunnerPage() {
   const [exitStatus, setExitStatus] = useState<ExitStatus>("idle");
   const [exitError, setExitError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const { markInitialAssessmentComplete } = useAuth();
+  const { learner, markInitialAssessmentComplete } = useAuth();
+  const [guideOpen, setGuideOpen] = useState(false);
+  const [guideSeen, setGuideSeen] = useLocalStorage(
+    `aios.assessmentGuideSeen.${learner?.id ?? "unknown"}`,
+    false,
+  );
+
+  // The guide opens by itself only for the first, full self-assessment, once
+  // it's loaded and has a question to show.
+  const isFirstAssessment =
+    path !== null &&
+    path.items.length > 0 &&
+    path.journey === null &&
+    !path.partial &&
+    learner != null &&
+    !learner.hasCompletedInitialAssessment;
+  useEffect(() => {
+    if (isFirstAssessment && !guideSeen) setGuideOpen(true);
+  }, [isFirstAssessment, guideSeen]);
+
+  const closeGuide = useCallback(() => {
+    setGuideOpen(false);
+    setGuideSeen(true);
+    // Back to the ? button, where the guide can be opened again.
+    document.querySelector<HTMLElement>('[data-guide="help"]')?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // When the current question last became the one on screen (CD-97), reset
   // whenever it changes, so a save's elapsed time reflects just this visit,
@@ -318,11 +352,16 @@ export function AssessmentRunnerPage() {
       <div className={styles.topRow}>
         {/* Left, on the same side as Back, the "leave" side of the page ,
             so the right stays for moving forward (the count, then Next). */}
-        <Button variant="danger" onClick={() => setExitOpen(true)} disabled={isFinishing}>
+        <Button
+          variant="danger"
+          onClick={() => setExitOpen(true)}
+          disabled={isFinishing}
+          data-guide="exit"
+        >
           <CloseIcon width={16} height={16} aria-hidden="true" />
           Exit
         </Button>
-        <div className={styles.progress}>
+        <div className={styles.progress} data-guide="progress">
           {/* Sections are the unit of progress: how many questions a section
               takes depends on the answers. */}
           <AssessmentProgress
@@ -331,6 +370,16 @@ export function AssessmentRunnerPage() {
             label={`Section ${item.sectionNumber} of ${path.sectionCount}`}
           />
         </div>
+        <button
+          type="button"
+          className={styles.help}
+          onClick={() => setGuideOpen(true)}
+          aria-label="How the assessment works"
+          title="How the assessment works"
+          data-guide="help"
+        >
+          <HelpIcon width={20} height={20} aria-hidden="true" />
+        </button>
       </div>
 
       {path.journey && (
@@ -357,12 +406,14 @@ export function AssessmentRunnerPage() {
         </p>
       )}
 
-      <QuestionCard
-        key={current.id}
-        question={current}
-        answer={answers[current.id]}
-        onAnswerChange={handleAnswerChange}
-      />
+      <div data-guide="question">
+        <QuestionCard
+          key={current.id}
+          question={current}
+          answer={answers[current.id]}
+          onAnswerChange={handleAnswerChange}
+        />
+      </div>
 
       {navError && (
         <p className={styles.error} role="alert">
@@ -380,10 +431,15 @@ export function AssessmentRunnerPage() {
           className={!canGoBack ? styles.nextAlone : undefined}
           onClick={() => void handleNext()}
           disabled={!hasAnswered || busy}
+          data-guide="next"
         >
           {isFinishing ? "Finishing…" : isLast ? "Finish" : "Next"}
         </Button>
       </div>
+
+      {guideOpen && (
+        <AssessmentGuide steps={assessmentGuideSteps({ canGoBack })} onClose={closeGuide} />
+      )}
 
       {exitOpen && (
         <ExitAssessmentDialog
