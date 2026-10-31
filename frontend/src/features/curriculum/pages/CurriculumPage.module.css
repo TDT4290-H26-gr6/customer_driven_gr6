@@ -133,6 +133,30 @@
   flex-grow: 2;
 }
 
+/* A short field (a code, a level) that shouldn't stretch. */
+.fields > .fieldNarrow {
+  flex: 0 1 140px;
+}
+
+.fieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.fieldset legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.checkGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 6px 16px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
 .label {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);

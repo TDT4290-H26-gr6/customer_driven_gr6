@@ -11,6 +11,9 @@ vi.mock("../../db/prisma", () => {
     update: vi.fn(),
     updateMany: vi.fn(),
     delete: vi.fn(),
+    deleteMany: vi.fn(),
+    createMany: vi.fn(),
+    count: vi.fn(),
   });
   return {
     prisma: {
@@ -18,6 +21,8 @@ vi.mock("../../db/prisma", () => {
       sectionModule: model(),
       competence: model(),
       question: model(),
+      sectionModuleSecondaryCompetence: model(),
+      $transaction: vi.fn(),
     },
   };
 });
@@ -50,7 +55,21 @@ beforeEach(() => {
 
 describe("getCurriculum", () => {
   it("returns sections, competences with usage counts, and every question", async () => {
-    db.section.findMany.mockResolvedValue([{ id: "sec-a", modules: [] }] as never);
+    db.section.findMany.mockResolvedValue([
+      {
+        id: "sec-a",
+        retiredAt: null,
+        _count: { journeySections: 2, satInstances: 1 },
+        modules: [
+          {
+            id: "mod-1",
+            name: "Licences",
+            secondaryCompetences: [{ competenceId: "c-2" }],
+            _count: { questions: 3 },
+          },
+        ],
+      },
+    ] as never);
     db.competence.findMany.mockResolvedValue([
       {
         id: "c-1",
@@ -84,6 +103,17 @@ describe("getCurriculum", () => {
 
     const result = await curriculum.getCurriculum();
 
+    expect(result.sections).toEqual([
+      {
+        id: "sec-a",
+        retiredAt: null,
+        journeyCount: 2,
+        usedInAssessments: true,
+        modules: [
+          { id: "mod-1", name: "Licences", secondaryCompetenceIds: ["c-2"], questionCount: 3 },
+        ],
+      },
+    ]);
     expect(result.competences).toEqual([
       { id: "c-1", name: "Licensing", description: null, questionCount: 4, moduleCount: 1 },
     ]);
@@ -251,5 +281,152 @@ describe("competences", () => {
     expect(curriculum.isUniqueViolation({ code: "P2002" })).toBe(true);
     expect(curriculum.isUniqueViolation(new Error("other"))).toBe(false);
     expect(curriculum.isUniqueViolation(null)).toBe(false);
+  });
+});
+
+describe("sections", () => {
+  const section = { code: "F", name: "Open education", description: null };
+
+  it("creates and edits one", async () => {
+    db.section.create.mockResolvedValue({ id: "sec-f" } as never);
+    expect(await curriculum.createSection(section)).toEqual({ ok: true, id: "sec-f" });
+
+    db.section.updateMany.mockResolvedValueOnce({ count: 1 });
+    expect(await curriculum.updateSection("sec-f", section)).toEqual({ ok: true, id: "sec-f" });
+    db.section.updateMany.mockResolvedValueOnce({ count: 0 });
+    expect(await curriculum.updateSection("nope", section)).toMatchObject({ status: 404 });
+  });
+
+  it("deletes an empty section", async () => {
+    db.section.findUnique.mockResolvedValue({
+      _count: { modules: 0, journeySections: 0, satInstances: 0 },
+    } as never);
+    expect(await curriculum.removeSection("sec-f")).toBe("deleted");
+    expect(db.section.delete).toHaveBeenCalledWith({ where: { id: "sec-f" } });
+  });
+
+  it.each([
+    ["has modules", { modules: 1, journeySections: 0, satInstances: 0 }],
+    ["is covered by a journey", { modules: 0, journeySections: 1, satInstances: 0 }],
+    ["was a reassessment's scope", { modules: 0, journeySections: 0, satInstances: 1 }],
+  ])("retires a section that %s, losing nothing", async (_case, counts) => {
+    db.section.findUnique.mockResolvedValue({ _count: counts } as never);
+    expect(await curriculum.removeSection("sec-a")).toBe("retired");
+    expect(db.section.delete).not.toHaveBeenCalled();
+    expect(db.section.update).toHaveBeenCalledWith({
+      where: { id: "sec-a" },
+      data: { retiredAt: expect.any(Date) },
+    });
+  });
+
+  it("is null for an unknown section, and restores a retired one", async () => {
+    db.section.findUnique.mockResolvedValue(null);
+    expect(await curriculum.removeSection("nope")).toBeNull();
+
+    db.section.updateMany.mockResolvedValueOnce({ count: 1 });
+    expect(await curriculum.restoreSection("sec-a")).toBe(true);
+    expect(db.section.updateMany).toHaveBeenCalledWith({
+      where: { id: "sec-a" },
+      data: { retiredAt: null },
+    });
+    db.section.updateMany.mockResolvedValueOnce({ count: 0 });
+    expect(await curriculum.restoreSection("nope")).toBe(false);
+  });
+});
+
+describe("modules", () => {
+  const module = {
+    name: "Open licences",
+    description: null,
+    sectionId: "sec-a",
+    level: 2,
+    mainCompetenceId: "c-1",
+    secondaryCompetenceIds: ["c-2", "c-3"],
+    moodleUrl: "https://moodle.ntnu.no/course/view.php?id=7",
+  };
+
+  /** The section and every competence the module points at exist. */
+  function refsExist() {
+    db.section.findUnique.mockResolvedValue({ id: "sec-a" } as never);
+    db.competence.count.mockResolvedValue(3);
+  }
+
+  it("creates one with its secondary competences", async () => {
+    refsExist();
+    db.sectionModule.create.mockResolvedValue({ id: "mod-new" } as never);
+
+    expect(await curriculum.createModule(module)).toEqual({ ok: true, id: "mod-new" });
+    expect(db.competence.count).toHaveBeenCalledWith({
+      where: { id: { in: ["c-1", "c-2", "c-3"] } },
+    });
+    expect(db.sectionModule.create).toHaveBeenCalledWith({
+      data: {
+        name: "Open licences",
+        description: null,
+        sectionId: "sec-a",
+        level: 2,
+        mainCompetenceId: "c-1",
+        moodleUrl: "https://moodle.ntnu.no/course/view.php?id=7",
+        secondaryCompetences: { create: [{ competenceId: "c-2" }, { competenceId: "c-3" }] },
+      },
+      select: { id: true },
+    });
+  });
+
+  it("is a 400 when the section or a competence is gone", async () => {
+    db.section.findUnique.mockResolvedValue({ id: "sec-a" } as never);
+    db.competence.count.mockResolvedValue(2);
+    expect(await curriculum.createModule(module)).toMatchObject({ ok: false, status: 400 });
+    expect(db.sectionModule.create).not.toHaveBeenCalled();
+  });
+
+  it("edits one, replacing its secondary competences in one transaction", async () => {
+    db.sectionModule.findUnique.mockResolvedValue({ id: "mod-1" } as never);
+    refsExist();
+
+    expect(await curriculum.updateModule("mod-1", module)).toEqual({ ok: true, id: "mod-1" });
+    expect(db.$transaction).toHaveBeenCalledTimes(1);
+    expect(db.sectionModuleSecondaryCompetence.deleteMany).toHaveBeenCalledWith({
+      where: { moduleId: "mod-1" },
+    });
+    expect(db.sectionModuleSecondaryCompetence.createMany).toHaveBeenCalledWith({
+      data: [
+        { moduleId: "mod-1", competenceId: "c-2" },
+        { moduleId: "mod-1", competenceId: "c-3" },
+      ],
+    });
+  });
+
+  it("an edit is a 404 for an unknown module and a 400 for a missing section", async () => {
+    db.sectionModule.findUnique.mockResolvedValueOnce(null);
+    expect(await curriculum.updateModule("nope", module)).toMatchObject({ status: 404 });
+
+    db.sectionModule.findUnique.mockResolvedValueOnce({ id: "mod-1" } as never);
+    db.section.findUnique.mockResolvedValue(null);
+    db.competence.count.mockResolvedValue(3);
+    expect(await curriculum.updateModule("mod-1", module)).toMatchObject({ status: 400 });
+  });
+
+  it("deletes a module without questions, and retires one with questions", async () => {
+    db.sectionModule.findUnique.mockResolvedValueOnce({ _count: { questions: 0 } } as never);
+    expect(await curriculum.removeModule("mod-1")).toBe("deleted");
+    expect(db.sectionModule.delete).toHaveBeenCalledWith({ where: { id: "mod-1" } });
+
+    db.sectionModule.findUnique.mockResolvedValueOnce({ _count: { questions: 3 } } as never);
+    expect(await curriculum.removeModule("mod-2")).toBe("retired");
+    expect(db.sectionModule.update).toHaveBeenCalledWith({
+      where: { id: "mod-2" },
+      data: { retiredAt: expect.any(Date) },
+    });
+
+    db.sectionModule.findUnique.mockResolvedValueOnce(null);
+    expect(await curriculum.removeModule("nope")).toBeNull();
+  });
+
+  it("restores a retired module", async () => {
+    db.sectionModule.updateMany.mockResolvedValueOnce({ count: 1 });
+    expect(await curriculum.restoreModule("mod-2")).toBe(true);
+    db.sectionModule.updateMany.mockResolvedValueOnce({ count: 0 });
+    expect(await curriculum.restoreModule("nope")).toBe(false);
   });
 });

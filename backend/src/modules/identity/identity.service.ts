@@ -191,6 +191,7 @@ export async function getVisibilityMatrix() {
   const [roles, sections, competences, roleSections, roleCompetences] = await Promise.all([
     prisma.role.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.section.findMany({
+      where: { retiredAt: null },
       orderBy: { name: "asc" },
       select: { id: true, name: true, description: true },
     }),

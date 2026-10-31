@@ -44,6 +44,8 @@ export const endpoints = {
       `/admin/curriculum/questions/${encodeURIComponent(id)}/restore`,
     curriculumCompetences: "/admin/curriculum/competences",
     curriculumCompetence: (id: string) => `/admin/curriculum/competences/${encodeURIComponent(id)}`,
+    curriculumSections: "/admin/curriculum/sections",
+    curriculumModules: "/admin/curriculum/modules",
     roleSection: (roleId: string, sectionId: string) =>
       `/admin/roles/${encodeURIComponent(roleId)}/sections/${encodeURIComponent(sectionId)}`,
     roleCompetence: (roleId: string, competenceId: string) =>

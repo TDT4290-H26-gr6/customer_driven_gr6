@@ -72,7 +72,9 @@ export function QuestionEditorPage() {
           });
           return;
         }
-        const modules = loaded.sections.flatMap((s) => s.modules);
+        const modules = loaded.sections
+          .filter((s) => s.retiredAt === null)
+          .flatMap((s) => s.modules.filter((m) => m.retiredAt === null));
         const module = modules.find((m) => m.id === searchParams.get("module")) ?? modules[0];
         setForm({
           questionType: DEFAULT_TYPE,
@@ -231,15 +233,24 @@ export function QuestionEditorPage() {
               onChange={(e) => changeModule(e.target.value)}
               required
             >
-              {curriculum.sections.map((section) => (
-                <optgroup key={section.id} label={`${section.code ?? ""} ${section.name}`.trim()}>
-                  {section.modules.map((module) => (
-                    <option key={module.id} value={module.id}>
-                      {moduleLabel(section.code, module)}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
+              {/* Only modules in use, plus the question's own if it's been removed. */}
+              {curriculum.sections.map((section) => {
+                const usable = section.modules.filter(
+                  (m) =>
+                    (m.retiredAt === null && section.retiredAt === null) ||
+                    m.id === original?.sectionModuleId,
+                );
+                if (usable.length === 0) return null;
+                return (
+                  <optgroup key={section.id} label={`${section.code ?? ""} ${section.name}`.trim()}>
+                    {usable.map((module) => (
+                      <option key={module.id} value={module.id}>
+                        {moduleLabel(section.code, module)}
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           </label>
           <label className={styles.field}>

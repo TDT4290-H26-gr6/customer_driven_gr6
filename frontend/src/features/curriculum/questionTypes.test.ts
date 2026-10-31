@@ -7,6 +7,7 @@ import {
   QUESTION_TYPE_INFO,
   questionTypeLabel,
 } from "./questionTypes";
+import { curriculumModule } from "./testData";
 
 describe("question types", () => {
   it("lists every type the backend supports, each with a label and a hint", () => {
@@ -88,8 +89,15 @@ describe("convertContent", () => {
   });
 });
 
+it("plural counts things", async () => {
+  const { plural } = await import("./questionTypes");
+  expect(plural(1, "question")).toBe("1 question");
+  expect(plural(0, "module")).toBe("0 modules");
+  expect(plural(3, "module")).toBe("3 modules");
+});
+
 it("moduleLabel shows the section code and level when known", () => {
-  const module = { id: "m", name: "Data plans", level: 2, mainCompetenceId: "c" };
+  const module = curriculumModule({ id: "m", name: "Data plans", level: 2 });
   expect(moduleLabel("A", module)).toBe("A · Data plans (level 2)");
   expect(moduleLabel(null, { ...module, level: null })).toBe("Data plans");
 });

@@ -2,11 +2,13 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { getCurriculum, removeQuestion, restoreQuestion } from "../api";
-import { curriculum } from "../testData";
+import { getCurriculum, removeQuestion, restoreQuestion, sectionsApi } from "../api";
+import { curriculum, curriculumModule, curriculumSection } from "../testData";
 import { CurriculumPage } from "./CurriculumPage";
 
 vi.mock("../api", () => ({
+  sectionsApi: { create: vi.fn(), update: vi.fn(), remove: vi.fn(), restore: vi.fn() },
+  modulesApi: { create: vi.fn(), update: vi.fn(), remove: vi.fn(), restore: vi.fn() },
   getCurriculum: vi.fn(),
   removeQuestion: vi.fn(),
   restoreQuestion: vi.fn(),
@@ -168,7 +170,7 @@ describe("CurriculumPage", () => {
 
     await userEvent.click(screen.getByRole("tab", { name: "Competences (3)" }));
     expect(screen.getByText("Version control")).toBeInTheDocument();
-    expect(screen.getByText("1 questions · main competence of 1 modules")).toBeInTheDocument();
+    expect(screen.getByText("1 question · main competence of 1 module")).toBeInTheDocument();
   });
 
   it("goes back to admin mode", async () => {
@@ -181,5 +183,45 @@ describe("CurriculumPage", () => {
     vi.mocked(getCurriculum).mockRejectedValue(new Error("403"));
     renderPage();
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not load the curriculum.");
+  });
+});
+
+describe("CurriculumPage: retired sections and modules", () => {
+  it("counts questions in a removed module as removed, and marks them", async () => {
+    const data = curriculum();
+    data.sections[0].modules[0].retiredAt = "2026-10-01T00:00:00.000Z";
+    vi.mocked(getCurriculum).mockResolvedValue(data);
+    renderPage();
+
+    // Only the true/false question in B is left in use, and it's retired itself.
+    expect(await screen.findByRole("tab", { name: "Questions (0)" })).toBeInTheDocument();
+    expect(screen.queryByText("A · Licences (level 1)")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("checkbox", { name: "Show removed questions (3)" }));
+    const row = screen.getByText("Which licence lets anyone reuse data?").closest("li")!;
+    expect(within(row).getByText("In a removed module")).toBeInTheDocument();
+  });
+
+  it("opens the sections & modules tab and reloads after a change there", async () => {
+    vi.mocked(sectionsApi.restore).mockResolvedValue(undefined);
+    vi.mocked(getCurriculum).mockResolvedValue(
+      curriculum({
+        sections: [
+          curriculumSection({
+            id: "sec-x",
+            name: "Old",
+            retiredAt: "2026-10-01",
+            modules: [curriculumModule()],
+          }),
+        ],
+      }),
+    );
+    renderPage();
+    await userEvent.click(await screen.findByRole("tab", { name: "Sections & modules (0)" }));
+    await userEvent.click(screen.getByRole("checkbox", { name: /Show removed sections/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Restore Old" }));
+
+    expect(await screen.findByText("Section restored.")).toBeInTheDocument();
+    expect(getCurriculum).toHaveBeenCalledTimes(2);
   });
 });

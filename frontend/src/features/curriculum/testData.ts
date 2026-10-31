@@ -1,4 +1,4 @@
-import type { Curriculum, QuestionSummary } from "./types";
+import type { Curriculum, CurriculumModule, CurriculumSection, QuestionSummary } from "./types";
 
 // Shared by the curriculum page tests.
 
@@ -16,24 +16,68 @@ export function questionSummary(overrides: Partial<QuestionSummary> = {}): Quest
   };
 }
 
+export function curriculumModule(overrides: Partial<CurriculumModule> = {}): CurriculumModule {
+  return {
+    id: "mod-a1",
+    name: "Licences",
+    description: null,
+    level: 1,
+    mainCompetenceId: "c-lic",
+    secondaryCompetenceIds: [],
+    moodleUrl: null,
+    retiredAt: null,
+    questionCount: 0,
+    ...overrides,
+  };
+}
+
+export function curriculumSection(overrides: Partial<CurriculumSection> = {}): CurriculumSection {
+  return {
+    id: "sec-a",
+    code: "A",
+    name: "Open data",
+    description: null,
+    retiredAt: null,
+    journeyCount: 0,
+    usedInAssessments: false,
+    modules: [],
+    ...overrides,
+  };
+}
+
 export function curriculum(overrides: Partial<Curriculum> = {}): Curriculum {
   return {
     sections: [
-      {
-        id: "sec-a",
-        code: "A",
-        name: "Open data",
+      curriculumSection({
+        description: "Finding, sharing and reusing data",
+        journeyCount: 2,
         modules: [
-          { id: "mod-a1", name: "Licences", level: 1, mainCompetenceId: "c-lic" },
-          { id: "mod-a2", name: "Repositories", level: 2, mainCompetenceId: "c-rep" },
+          curriculumModule({
+            moodleUrl: "https://moodle.example.org/course/view.php?id=1",
+            secondaryCompetenceIds: ["c-rep"],
+            questionCount: 2,
+          }),
+          curriculumModule({
+            id: "mod-a2",
+            name: "Repositories",
+            level: 2,
+            mainCompetenceId: "c-rep",
+          }),
         ],
-      },
-      {
+      }),
+      curriculumSection({
         id: "sec-b",
         code: "B",
         name: "Open code",
-        modules: [{ id: "mod-b1", name: "Versioning", level: 1, mainCompetenceId: "c-git" }],
-      },
+        modules: [
+          curriculumModule({
+            id: "mod-b1",
+            name: "Versioning",
+            mainCompetenceId: "c-git",
+            questionCount: 1,
+          }),
+        ],
+      }),
     ],
     competences: [
       {

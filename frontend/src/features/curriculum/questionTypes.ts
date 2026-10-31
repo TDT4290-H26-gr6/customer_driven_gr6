@@ -99,3 +99,8 @@ export function moduleLabel(sectionCode: string | null, module: CurriculumModule
   const level = module.level !== null ? ` (level ${module.level})` : "";
   return `${sectionCode ? `${sectionCode} · ` : ""}${module.name}${level}`;
 }
+
+/** "1 question", "3 questions". */
+export function plural(count: number, word: string): string {
+  return `${count} ${word}${count === 1 ? "" : "s"}`;
+}

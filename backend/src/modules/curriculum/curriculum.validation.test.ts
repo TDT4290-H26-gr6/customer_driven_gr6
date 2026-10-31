@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { validateCompetenceInput, validateQuestionInput } from "./curriculum.validation";
+import {
+  validateCompetenceInput,
+  validateModuleInput,
+  validateQuestionInput,
+  validateSectionInput,
+} from "./curriculum.validation";
 
 const base = { prompt: "  Which is right?  ", sectionModuleId: "mod-1", competenceId: "c-1" };
 const options = [
@@ -166,6 +171,94 @@ describe("validateCompetenceInput", () => {
     [{ name: "OK", description: "x".repeat(2001) }, "too long"],
   ])("rejects %j", (body, message) => {
     const result = validateCompetenceInput(body);
+    expect("error" in result && result.error).toContain(message);
+  });
+});
+
+describe("validateSectionInput", () => {
+  it("accepts a name with an optional code and description", () => {
+    expect(
+      validateSectionInput({ code: " F ", name: " Open education ", description: "" }),
+    ).toEqual({
+      data: { code: "F", name: "Open education", description: null },
+    });
+    expect(validateSectionInput({ name: "Untitled" })).toEqual({
+      data: { code: null, name: "Untitled", description: null },
+    });
+  });
+
+  it.each([
+    [null, "Invalid"],
+    [{ name: "" }, "name"],
+    [{ name: "x".repeat(192) }, "too long"],
+    [{ name: "OK", code: "TOOLONGCODE" }, "at most 10"],
+    [{ name: "OK", description: "x".repeat(2001) }, "too long"],
+  ])("rejects %j", (body, message) => {
+    const result = validateSectionInput(body);
+    expect("error" in result && result.error).toContain(message);
+  });
+});
+
+describe("validateModuleInput", () => {
+  const module = {
+    name: " Open licences ",
+    sectionId: "sec-a",
+    mainCompetenceId: "c-1",
+    level: 2,
+    secondaryCompetenceIds: ["c-2", "c-2", "c-1"],
+    moodleUrl: " https://moodle.ntnu.no/course/view.php?id=7 ",
+  };
+
+  it("accepts a module, dropping duplicate and main-competence secondaries", () => {
+    expect(validateModuleInput(module)).toEqual({
+      data: {
+        name: "Open licences",
+        description: null,
+        sectionId: "sec-a",
+        level: 2,
+        mainCompetenceId: "c-1",
+        secondaryCompetenceIds: ["c-2"],
+        moodleUrl: "https://moodle.ntnu.no/course/view.php?id=7",
+      },
+    });
+  });
+
+  it("allows no level, no secondaries and no Moodle link", () => {
+    expect(
+      validateModuleInput({ name: "X", sectionId: "s", mainCompetenceId: "c", level: null }),
+    ).toMatchObject({ data: { level: null, secondaryCompetenceIds: [], moodleUrl: null } });
+    expect(
+      validateModuleInput({
+        name: "X",
+        sectionId: "s",
+        mainCompetenceId: "c",
+        moodleUrl: "http://localhost:8080/x",
+      }),
+    ).toMatchObject({ data: { moodleUrl: "http://localhost:8080/x" } });
+  });
+
+  it.each([
+    [null, "Invalid"],
+    [{ ...module, name: " " }, "name"],
+    [{ ...module, name: "x".repeat(192) }, "too long"],
+    [{ ...module, description: "x".repeat(5001) }, "too long"],
+    [{ ...module, sectionId: "" }, "section"],
+    [{ ...module, mainCompetenceId: undefined }, "main competence"],
+    [{ ...module, level: 0 }, "level"],
+    [{ ...module, level: 21 }, "level"],
+    [{ ...module, level: 1.5 }, "level"],
+    [{ ...module, secondaryCompetenceIds: "c-2" }, "secondary"],
+    [{ ...module, secondaryCompetenceIds: [""] }, "secondary"],
+    [
+      { ...module, secondaryCompetenceIds: Array.from({ length: 21 }, (_, i) => `c${i}`) },
+      "at most 20",
+    ],
+    [{ ...module, moodleUrl: "javascript:alert(1)" }, "Moodle link"],
+    [{ ...module, moodleUrl: "http://moodle.ntnu.no" }, "Moodle link"],
+    [{ ...module, moodleUrl: "not a url" }, "Moodle link"],
+    [{ ...module, moodleUrl: `https://x.no/${"a".repeat(512)}` }, "Moodle link"],
+  ])("rejects %j", (body, message) => {
+    const result = validateModuleInput(body);
     expect("error" in result && result.error).toContain(message);
   });
 });

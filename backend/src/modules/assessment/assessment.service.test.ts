@@ -58,6 +58,12 @@ vi.mock("../identity/identity.service", () => ({
 
 const mockPrisma = vi.mocked(prisma, true);
 
+/** What every question query adds: nothing retired (question, module or section). */
+const IN_USE = {
+  retiredAt: null,
+  sectionModule: { retiredAt: null, section: { retiredAt: null } },
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
   // These tests cover the role-based behaviour, which is switched off for now
@@ -195,7 +201,7 @@ describe("saveResponse", () => {
         AND: [
           { id: "q1" },
           {
-            retiredAt: null,
+            ...IN_USE,
             OR: [
               { competenceId: { in: [] } },
               { sectionModule: { sectionId: { in: ["section-1"] } } },
@@ -238,7 +244,7 @@ describe("saveResponse", () => {
 
     expect(getRoleGrants).not.toHaveBeenCalled();
     expect(mockPrisma.question.findFirst).toHaveBeenCalledWith({
-      where: { AND: [{ id: "q1" }, { retiredAt: null }] },
+      where: { AND: [{ id: "q1" }, IN_USE] },
     });
   });
 
@@ -387,7 +393,7 @@ describe("with role selection turned off", () => {
 
     expect(getRoleGrants).not.toHaveBeenCalled();
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { retiredAt: null } }),
+      expect.objectContaining({ where: IN_USE }),
     );
   });
 
@@ -398,7 +404,7 @@ describe("with role selection turned off", () => {
     await listQuestions("learner-1");
 
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { retiredAt: null } }),
+      expect.objectContaining({ where: IN_USE }),
     );
   });
 
@@ -420,7 +426,7 @@ describe("listQuestions", () => {
 
     expect(getRoleGrants).not.toHaveBeenCalled();
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { retiredAt: null } }),
+      expect.objectContaining({ where: IN_USE }),
     );
   });
 
@@ -435,7 +441,7 @@ describe("listQuestions", () => {
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          retiredAt: null,
+          ...IN_USE,
           OR: [
             { competenceId: { in: [] } },
             { sectionModule: { sectionId: { in: ["section-1"] } } },
@@ -459,7 +465,7 @@ describe("listQuestions", () => {
         where: {
           AND: [
             {
-              retiredAt: null,
+              ...IN_USE,
               OR: [
                 { competenceId: { in: [] } },
                 { sectionModule: { sectionId: { in: ["section-1"] } } },
@@ -1057,11 +1063,12 @@ describe("listAssessableSections", () => {
     expect(mockPrisma.section.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
+          retiredAt: null,
           modules: {
             some: {
               questions: {
                 some: {
-                  retiredAt: null,
+                  ...IN_USE,
                   OR: [
                     { competenceId: { in: [] } },
                     { sectionModule: { sectionId: { in: ["section-1"] } } },

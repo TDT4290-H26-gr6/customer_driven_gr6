@@ -10,7 +10,7 @@ import {
   previewQuestion,
   updateQuestion,
 } from "../api";
-import { curriculum, questionSummary } from "../testData";
+import { curriculum, curriculumModule, curriculumSection, questionSummary } from "../testData";
 import { QuestionEditorPage } from "./QuestionEditorPage";
 
 vi.mock("../api", () => ({
@@ -294,5 +294,66 @@ describe("QuestionEditorPage: an existing question", () => {
     renderEditor("/admin/curriculum/questions/gone");
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not load the question");
     expect(screen.getByRole("link", { name: "Back to the curriculum editor" })).toBeInTheDocument();
+  });
+});
+
+describe("QuestionEditorPage: removed modules", () => {
+  it("offers only modules in use, except the question's own", async () => {
+    vi.mocked(getCurriculum).mockResolvedValue(
+      curriculum({
+        sections: [
+          curriculumSection({
+            modules: [
+              curriculumModule({ id: "mod-live", name: "Live" }),
+              curriculumModule({ id: "mod-gone", name: "Gone", retiredAt: "2026-10-01" }),
+            ],
+          }),
+          curriculumSection({
+            id: "sec-old",
+            code: "Z",
+            name: "Old section",
+            retiredAt: "2026-10-01",
+            modules: [curriculumModule({ id: "mod-old", name: "In old section" })],
+          }),
+        ],
+      }),
+    );
+    vi.mocked(getQuestion).mockResolvedValue({
+      ...questionSummary({ sectionModuleId: "mod-gone" }),
+      authoredContent: {
+        options: [
+          { id: "a", text: "x" },
+          { id: "b", text: "y" },
+        ],
+        correctOptionIds: ["a"],
+      },
+    });
+    renderEditor("/admin/curriculum/questions/q-1");
+
+    await screen.findByRole("heading", { name: "Edit question" });
+    const options = screen.getAllByRole("option").map((o) => o.textContent);
+    expect(options).toContain("A · Live (level 1)");
+    expect(options).toContain("A · Gone (level 1)");
+    expect(options).not.toContain("Z · In old section (level 1)");
+    // The removed section has no group at all.
+    expect(screen.queryByRole("group", { name: "Z Old section" })).not.toBeInTheDocument();
+  });
+
+  it("starts a new question in the first module in use", async () => {
+    vi.mocked(getCurriculum).mockResolvedValue(
+      curriculum({
+        sections: [
+          curriculumSection({
+            modules: [
+              curriculumModule({ id: "mod-gone", name: "Gone", retiredAt: "2026-10-01" }),
+              curriculumModule({ id: "mod-live", name: "Live", mainCompetenceId: "c-git" }),
+            ],
+          }),
+        ],
+      }),
+    );
+    renderEditor();
+    await screen.findByRole("heading", { name: "Add a question" });
+    expect(screen.getByRole("combobox", { name: "Section and module" })).toHaveValue("mod-live");
   });
 });

@@ -20,14 +20,26 @@ export type AuthoredContent = {
 export type CurriculumModule = {
   id: string;
   name: string;
+  description: string | null;
   level: number | null;
   mainCompetenceId: string;
+  secondaryCompetenceIds: string[];
+  moodleUrl: string | null;
+  /** ISO date when retired; null while in use. */
+  retiredAt: string | null;
+  questionCount: number;
 };
 
 export type CurriculumSection = {
   id: string;
   code: string | null;
   name: string;
+  description: string | null;
+  retiredAt: string | null;
+  /** Learning journeys covering it. */
+  journeyCount: number;
+  /** Whether a reassessment has been limited to it. */
+  usedInAssessments: boolean;
   modules: CurriculumModule[];
 };
 
@@ -69,6 +81,18 @@ export type QuestionInput = {
 };
 
 export type CompetenceInput = { name: string; description: string | null };
+
+export type SectionInput = { code: string | null; name: string; description: string | null };
+
+export type ModuleInput = {
+  name: string;
+  description: string | null;
+  sectionId: string;
+  level: number | null;
+  mainCompetenceId: string;
+  secondaryCompetenceIds: string[];
+  moodleUrl: string | null;
+};
 
 /** A built question, as the player renders it. */
 export type PreviewContent = PieContent | NativeElementContent;

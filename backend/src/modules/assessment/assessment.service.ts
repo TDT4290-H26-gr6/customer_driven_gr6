@@ -103,9 +103,13 @@ export async function hasCompletedMainAssessment(learnerId: string): Promise<boo
 async function roleQuestionFilter(learnerId: string): Promise<Prisma.QuestionWhereInput | null> {
   const learner = await findLearnerById(learnerId);
   if (!learner) return null;
-  // Retired questions (removed in the curriculum editor after being answered)
-  // are never asked again, whatever the role.
-  const inUse = { retiredAt: null };
+  // Retired content (removed in the curriculum editor after being used) is
+  // never asked again, whatever the role: the question itself, or the module
+  // or section it's in.
+  const inUse = {
+    retiredAt: null,
+    sectionModule: { retiredAt: null, section: { retiredAt: null } },
+  } satisfies Prisma.QuestionWhereInput;
   if (!config.roleSelectionEnabled) return inUse;
   if (!learner.roleId) return null;
 
@@ -151,7 +155,7 @@ export async function listAssessableSections(learnerId: string) {
   if (!roleFilter) return [];
 
   return prisma.section.findMany({
-    where: { modules: { some: { questions: { some: roleFilter } } } },
+    where: { retiredAt: null, modules: { some: { questions: { some: roleFilter } } } },
     select: { id: true, name: true, description: true },
     orderBy: { name: "asc" },
   });
@@ -964,8 +968,16 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
   const assessable = await listAssessableSections(learnerId);
   const shownSectionIds = new Set([...answersBySection.keys(), ...assessable.map((s) => s.id)]);
 
+  // A retired module counts only where this attempt answered it, like a
+  // retired question below.
   const modules = await prisma.sectionModule.findMany({
-    where: { sectionId: { in: [...shownSectionIds] } },
+    where: {
+      sectionId: { in: [...shownSectionIds] },
+      OR: [
+        { retiredAt: null },
+        { questions: { some: { responses: { some: { satInstanceId: instance.id } } } } },
+      ],
+    },
     select: {
       id: true,
       level: true,
@@ -1152,6 +1164,7 @@ export async function getCompetencies(learnerId: string) {
         code: true,
         name: true,
         modules: {
+          where: { retiredAt: null },
           select: { id: true, name: true, level: true, moodleUrl: true },
           orderBy: [{ level: "asc" }, { name: "asc" }],
         },

@@ -55,6 +55,10 @@ model Section {
   code        String? @unique
   name        String  @unique
   description String? @db.Text
+  /// Set when an admin removes a section that isn't empty (curriculum editor):
+  /// it's no longer assessed or recommended, but past results keep it. Null =
+  /// in use. (An empty section is deleted instead.)
+  retiredAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -84,6 +88,10 @@ model SectionModule {
   /// integration: AIOS only links to it). Placeholders until the real URLs
   /// exist — see MOODLE_BASE_URL and the seed data's moodleCourseId.
   moodleUrl        String?    @db.VarChar(512)
+  /// Set when an admin removes a module that has questions: its questions are
+  /// no longer asked, but past results keep them. Null = in use. (A module
+  /// without questions is deleted instead.)
+  retiredAt        DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

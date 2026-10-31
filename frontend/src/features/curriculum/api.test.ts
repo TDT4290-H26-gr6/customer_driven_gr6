@@ -47,3 +47,18 @@ it.each([
   if (options) expect(apiFetch).toHaveBeenCalledWith(path, options);
   else expect(apiFetch).toHaveBeenCalledWith(path);
 });
+
+it.each([
+  ["sections", api.sectionsApi, "/admin/curriculum/sections"],
+  ["modules", api.modulesApi, "/admin/curriculum/modules"],
+] as const)("%s: create, update, remove and restore", async (_name, resource, base) => {
+  const body = { name: "X" } as never;
+  await resource.create(body);
+  expect(apiFetch).toHaveBeenLastCalledWith(base, { method: "POST", body });
+  await resource.update("a b", body);
+  expect(apiFetch).toHaveBeenLastCalledWith(`${base}/a%20b`, { method: "PUT", body });
+  await resource.remove("x");
+  expect(apiFetch).toHaveBeenLastCalledWith(`${base}/x`, { method: "DELETE" });
+  await resource.restore("x");
+  expect(apiFetch).toHaveBeenLastCalledWith(`${base}/x/restore`, { method: "POST" });
+});

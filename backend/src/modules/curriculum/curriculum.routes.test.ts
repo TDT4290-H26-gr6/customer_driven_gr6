@@ -19,6 +19,14 @@ vi.mock("./curriculum.service", async (importOriginal) => {
     restoreQuestion: vi.fn(),
     createCompetence: vi.fn(),
     updateCompetence: vi.fn(),
+    createSection: vi.fn(),
+    updateSection: vi.fn(),
+    removeSection: vi.fn(),
+    restoreSection: vi.fn(),
+    createModule: vi.fn(),
+    updateModule: vi.fn(),
+    removeModule: vi.fn(),
+    restoreModule: vi.fn(),
   };
 });
 
@@ -255,5 +263,76 @@ describe("competences", () => {
         })
       ).status,
     ).toBe(500);
+  });
+});
+
+describe.each([
+  {
+    path: "/admin/curriculum/sections",
+    label: "section",
+    body: { code: "F", name: "Open education" },
+    invalid: { name: "" },
+    fns: ["createSection", "updateSection", "removeSection", "restoreSection"] as const,
+  },
+  {
+    path: "/admin/curriculum/modules",
+    label: "module",
+    body: { name: "Licences", sectionId: "sec-a", mainCompetenceId: "c-1", level: 1 },
+    invalid: { name: "Licences" },
+    fns: ["createModule", "updateModule", "removeModule", "restoreModule"] as const,
+  },
+])("$path", ({ path, label, body, invalid, fns: [create, update, remove, restore] }) => {
+  it("creates one (201), and rejects invalid input (400)", async () => {
+    vi.mocked(curriculum[create]).mockResolvedValue({ ok: true, id: "new" });
+    const res = await api.request("POST", path, { token, body });
+    expect(res.status).toBe(201);
+    expect(res.body).toEqual({ id: "new" });
+    expect((await api.request("POST", path, { token, body: invalid })).status).toBe(400);
+  });
+
+  it("edits one, passing on a 404 and turning a taken name into a 409", async () => {
+    vi.mocked(curriculum[update]).mockResolvedValueOnce({ ok: true, id: "x" });
+    expect((await api.request("PUT", `${path}/x`, { token, body })).status).toBe(200);
+
+    vi.mocked(curriculum[update]).mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      error: "Unknown",
+    });
+    expect((await api.request("PUT", `${path}/x`, { token, body })).status).toBe(404);
+
+    vi.mocked(curriculum[update]).mockRejectedValueOnce(taken);
+    const conflict = await api.request("PUT", `${path}/x`, { token, body });
+    expect(conflict.status).toBe(409);
+    expect(conflict.body).toEqual({ error: expect.stringContaining(`A ${label} with that name`) });
+
+    expect((await api.request("PUT", `${path}/x`, { token, body: invalid })).status).toBe(400);
+  });
+
+  it("passes other failures on as a 500", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.mocked(curriculum[create]).mockRejectedValue(new Error("db down"));
+    expect((await api.request("POST", path, { token, body })).status).toBe(500);
+  });
+
+  it.each(["deleted", "retired"] as const)("DELETE reports it was %s", async (result) => {
+    vi.mocked(curriculum[remove]).mockResolvedValue(result);
+    const res = await api.request("DELETE", `${path}/x`, { token });
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ result });
+  });
+
+  it("DELETE and restore are 404 when unknown; restore is 204", async () => {
+    vi.mocked(curriculum[remove]).mockResolvedValue(null);
+    expect((await api.request("DELETE", `${path}/x`, { token })).status).toBe(404);
+    vi.mocked(curriculum[restore]).mockResolvedValueOnce(false);
+    expect((await api.request("POST", `${path}/x/restore`, { token })).status).toBe(404);
+    vi.mocked(curriculum[restore]).mockResolvedValueOnce(true);
+    expect((await api.request("POST", `${path}/x/restore`, { token })).status).toBe(204);
+  });
+
+  it("is admin only", async () => {
+    vi.mocked(isAdminEmail).mockReturnValue(false);
+    expect((await api.request("POST", path, { token, body })).status).toBe(403);
   });
 });

@@ -201,3 +201,101 @@ export function validateCompetenceInput(body: unknown): Result<CompetenceInput> 
   }
   return { data: { name, description } };
 }
+
+export type SectionInput = { code: string | null; name: string; description: string | null };
+
+export type ModuleInput = {
+  name: string;
+  description: string | null;
+  sectionId: string;
+  /** The step within its section the adaptive assessment asks it at (1 first); null = after the numbered ones. */
+  level: number | null;
+  mainCompetenceId: string;
+  secondaryCompetenceIds: string[];
+  moodleUrl: string | null;
+};
+
+const MAX_CODE_LENGTH = 10;
+export const MAX_LEVEL = 20;
+const MAX_SECONDARY = 20;
+const MAX_URL_LENGTH = 512;
+
+/** A link learners are sent to: https, or http only for a local test server. */
+function validLink(value: string): boolean {
+  try {
+    const url = new URL(value);
+    const local = url.hostname === "localhost" || url.hostname === "127.0.0.1";
+    return url.protocol === "https:" || (url.protocol === "http:" && local);
+  } catch {
+    return false;
+  }
+}
+
+/** A create/edit-section body: a name, and an optional short code ("A") and description. */
+export function validateSectionInput(body: unknown): Result<SectionInput> {
+  if (!isObject(body)) return { error: "Invalid request body" };
+  const name = text(body.name);
+  if (!name) return { error: "Give the section a name" };
+  if (name.length > MAX_NAME_LENGTH) return { error: "The name is too long" };
+  const code = text(body.code) || null;
+  if ((code?.length ?? 0) > MAX_CODE_LENGTH) {
+    return { error: `The code can be at most ${MAX_CODE_LENGTH} characters` };
+  }
+  const description = text(body.description) || null;
+  if ((description?.length ?? 0) > MAX_DESCRIPTION_LENGTH) {
+    return { error: "The description is too long" };
+  }
+  return { data: { code, name, description } };
+}
+
+/** A create/edit-module body. */
+export function validateModuleInput(body: unknown): Result<ModuleInput> {
+  if (!isObject(body)) return { error: "Invalid request body" };
+  const name = text(body.name);
+  if (!name) return { error: "Give the module a name" };
+  if (name.length > MAX_NAME_LENGTH) return { error: "The name is too long" };
+  const description = text(body.description) || null;
+  if ((description?.length ?? 0) > MAX_EXHIBIT_LENGTH) {
+    return { error: "The description is too long" };
+  }
+  if (typeof body.sectionId !== "string" || !body.sectionId) return { error: "Choose a section" };
+  if (typeof body.mainCompetenceId !== "string" || !body.mainCompetenceId) {
+    return { error: "Choose the module's main competence" };
+  }
+
+  const level = body.level ?? null;
+  if (
+    level !== null &&
+    (!Number.isInteger(level) || (level as number) < 1 || (level as number) > MAX_LEVEL)
+  ) {
+    return { error: `The level must be a whole number from 1 to ${MAX_LEVEL}` };
+  }
+
+  const secondary = body.secondaryCompetenceIds ?? [];
+  if (!Array.isArray(secondary) || !secondary.every((id) => typeof id === "string" && id)) {
+    return { error: "Invalid secondary competences" };
+  }
+  const secondaryCompetenceIds = [...new Set(secondary as string[])].filter(
+    (id) => id !== body.mainCompetenceId,
+  );
+  if (secondaryCompetenceIds.length > MAX_SECONDARY) {
+    return { error: `Choose at most ${MAX_SECONDARY} secondary competences` };
+  }
+
+  const moodleUrl = text(body.moodleUrl) || null;
+  if (moodleUrl && (moodleUrl.length > MAX_URL_LENGTH || !validLink(moodleUrl))) {
+    return { error: "The Moodle link must be a full https:// address" };
+  }
+
+  return {
+    data: {
+      name,
+      description,
+      sectionId: body.sectionId,
+      level: level as number | null,
+      mainCompetenceId: body.mainCompetenceId,
+      secondaryCompetenceIds,
+      moodleUrl,
+    },
+  };
+}

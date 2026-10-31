@@ -1,7 +1,12 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../../db/prisma";
 import { buildPieContent } from "../assessment/assessment.pie";
-import type { CompetenceInput, QuestionInput } from "./curriculum.validation";
+import type {
+  CompetenceInput,
+  ModuleInput,
+  QuestionInput,
+  SectionInput,
+} from "./curriculum.validation";
 
 // The curriculum editor (admin): changing the content learners are assessed
 // on. Writes the assessment module's tables (questions, competences) on behalf
@@ -50,9 +55,22 @@ export async function getCurriculum() {
         id: true,
         code: true,
         name: true,
+        description: true,
+        retiredAt: true,
+        _count: { select: { journeySections: true, satInstances: true } },
         modules: {
           orderBy: [{ level: "asc" }, { name: "asc" }],
-          select: { id: true, name: true, level: true, mainCompetenceId: true },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            level: true,
+            mainCompetenceId: true,
+            moodleUrl: true,
+            retiredAt: true,
+            secondaryCompetences: { select: { competenceId: true } },
+            _count: { select: { questions: true } },
+          },
         },
       },
     }),
@@ -72,7 +90,18 @@ export async function getCurriculum() {
   ]);
 
   return {
-    sections,
+    sections: sections.map(({ _count, modules, ...section }) => ({
+      ...section,
+      /** Journeys covering it: a section anything points at is retired, not deleted. */
+      journeyCount: _count.journeySections,
+      /** Whether learners have been assessed with it in scope (a reassessment limited to it). */
+      usedInAssessments: _count.satInstances > 0,
+      modules: modules.map(({ _count: moduleCount, secondaryCompetences, ...module }) => ({
+        ...module,
+        secondaryCompetenceIds: secondaryCompetences.map((c) => c.competenceId),
+        questionCount: moduleCount.questions,
+      })),
+    })),
     competences: competences.map(({ _count, ...competence }) => ({
       ...competence,
       questionCount: _count.questions,
@@ -197,4 +226,125 @@ export async function updateCompetence(id: string, input: CompetenceInput) {
     where: { id },
     select: { id: true, name: true, description: true },
   });
+}
+
+// --- Sections and section modules (phase 2) ---
+
+export type WriteResult =
+  { ok: true; id: string } | { ok: false; status: 400 | 404; error: string };
+
+export async function createSection(input: SectionInput): Promise<WriteResult> {
+  const section = await prisma.section.create({ data: input, select: { id: true } });
+  return { ok: true, id: section.id };
+}
+
+export async function updateSection(id: string, input: SectionInput): Promise<WriteResult> {
+  const { count } = await prisma.section.updateMany({ where: { id }, data: input });
+  if (count === 0) return { ok: false, status: 404, error: "Unknown section" };
+  return { ok: true, id };
+}
+
+/**
+ * Removes a section. An empty one (no modules, no journey covering it, never
+ * a reassessment's scope) is deleted; any other is retired, so nothing it's
+ * part of is lost and it can be restored. Retiring hides it, and everything
+ * in it, from the assessment, recommendations and the Competencies tab.
+ */
+export async function removeSection(id: string): Promise<"deleted" | "retired" | null> {
+  const section = await prisma.section.findUnique({
+    where: { id },
+    select: { _count: { select: { modules: true, journeySections: true, satInstances: true } } },
+  });
+  if (!section) return null;
+  const { modules, journeySections, satInstances } = section._count;
+  if (modules + journeySections + satInstances === 0) {
+    await prisma.section.delete({ where: { id } });
+    return "deleted";
+  }
+  await prisma.section.update({ where: { id }, data: { retiredAt: new Date() } });
+  return "retired";
+}
+
+export async function restoreSection(id: string): Promise<boolean> {
+  const { count } = await prisma.section.updateMany({ where: { id }, data: { retiredAt: null } });
+  return count > 0;
+}
+
+/** Whether the section and every competence a module points at exist. */
+async function moduleRefsExist(input: ModuleInput) {
+  const competenceIds = [input.mainCompetenceId, ...input.secondaryCompetenceIds];
+  const [section, competences] = await Promise.all([
+    prisma.section.findUnique({ where: { id: input.sectionId }, select: { id: true } }),
+    prisma.competence.count({ where: { id: { in: competenceIds } } }),
+  ]);
+  return section !== null && competences === competenceIds.length;
+}
+
+function moduleData({ secondaryCompetenceIds: _secondary, ...input }: ModuleInput) {
+  return input;
+}
+
+export async function createModule(input: ModuleInput): Promise<WriteResult> {
+  if (!(await moduleRefsExist(input))) {
+    return { ok: false, status: 400, error: "The section or a competence no longer exists" };
+  }
+  const module = await prisma.sectionModule.create({
+    data: {
+      ...moduleData(input),
+      secondaryCompetences: {
+        create: input.secondaryCompetenceIds.map((competenceId) => ({ competenceId })),
+      },
+    },
+    select: { id: true },
+  });
+  return { ok: true, id: module.id };
+}
+
+/**
+ * Saves an edit, the secondary competences replaced as a whole. Moving a
+ * module to another section or changing its level also changes how past
+ * attempts read under "See results by section", which is recalculated from
+ * the current structure; the editor says so.
+ */
+export async function updateModule(id: string, input: ModuleInput): Promise<WriteResult> {
+  const existing = await prisma.sectionModule.findUnique({ where: { id }, select: { id: true } });
+  if (!existing) return { ok: false, status: 404, error: "Unknown module" };
+  if (!(await moduleRefsExist(input))) {
+    return { ok: false, status: 400, error: "The section or a competence no longer exists" };
+  }
+  await prisma.$transaction([
+    prisma.sectionModule.update({ where: { id }, data: moduleData(input) }),
+    prisma.sectionModuleSecondaryCompetence.deleteMany({ where: { moduleId: id } }),
+    prisma.sectionModuleSecondaryCompetence.createMany({
+      data: input.secondaryCompetenceIds.map((competenceId) => ({ moduleId: id, competenceId })),
+    }),
+  ]);
+  return { ok: true, id };
+}
+
+/**
+ * Removes a module. One without questions is deleted; one with questions is
+ * retired, so they're no longer asked but past results keep them, and it can
+ * be restored with them.
+ */
+export async function removeModule(id: string): Promise<"deleted" | "retired" | null> {
+  const module = await prisma.sectionModule.findUnique({
+    where: { id },
+    select: { _count: { select: { questions: true } } },
+  });
+  if (!module) return null;
+  if (module._count.questions === 0) {
+    await prisma.sectionModule.delete({ where: { id } });
+    return "deleted";
+  }
+  await prisma.sectionModule.update({ where: { id }, data: { retiredAt: new Date() } });
+  return "retired";
+}
+
+export async function restoreModule(id: string): Promise<boolean> {
+  const { count } = await prisma.sectionModule.updateMany({
+    where: { id },
+    data: { retiredAt: null },
+  });
+  return count > 0;
 }

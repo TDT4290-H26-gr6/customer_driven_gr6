@@ -2,6 +2,7 @@ import { useState } from "react";
 import { isApiError } from "@/shared/api/client";
 import { Button } from "@/shared/components/Button";
 import { createCompetence, updateCompetence } from "../api";
+import { plural } from "../questionTypes";
 import type { CurriculumCompetence } from "../types";
 import styles from "../pages/CurriculumPage.module.css";
 
@@ -127,8 +128,8 @@ export function CompetencesPanel({ competences, onChanged }: Props) {
                     <p className={styles.meta}>{competence.description}</p>
                   )}
                   <p className={styles.meta}>
-                    {competence.questionCount} questions · main competence of{" "}
-                    {competence.moduleCount} modules
+                    {plural(competence.questionCount, "question")} · main competence of{" "}
+                    {plural(competence.moduleCount, "module")}
                   </p>
                 </div>
                 <Button

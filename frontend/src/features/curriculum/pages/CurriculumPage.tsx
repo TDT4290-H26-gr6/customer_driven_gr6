@@ -4,11 +4,12 @@ import { Button } from "@/shared/components/Button";
 import { Spinner } from "@/shared/components/Spinner";
 import { getCurriculum, removeQuestion, restoreQuestion } from "../api";
 import { CompetencesPanel } from "../components/CompetencesPanel";
+import { StructurePanel } from "../components/StructurePanel";
 import { moduleLabel, QUESTION_TYPE_INFO, questionTypeLabel } from "../questionTypes";
 import type { Curriculum, QuestionSummary, QuestionType } from "../types";
 import styles from "./CurriculumPage.module.css";
 
-type Tab = "questions" | "competences";
+type Tab = "questions" | "structure" | "competences";
 
 /** The confirmation for removing a question: what will actually happen to it. */
 function removeMessage(question: QuestionSummary): string {
@@ -66,18 +67,29 @@ export function CurriculumPage() {
   }
   if (!curriculum) return <Spinner />;
 
+  // A question is effectively removed when it, its module or its section is retired.
+  const moduleRetired = new Map(
+    curriculum.sections.flatMap((s) =>
+      s.modules.map((m) => [m.id, s.retiredAt !== null || m.retiredAt !== null] as const),
+    ),
+  );
+  const removed = (q: QuestionSummary) =>
+    q.retiredAt !== null || moduleRetired.get(q.sectionModuleId) === true;
+
   const words = search.toLowerCase().split(/\s+/).filter(Boolean);
   const filtering = type !== "" || words.length > 0;
   const shown = (q: QuestionSummary) =>
-    (showRetired || q.retiredAt === null) &&
+    (showRetired || !removed(q)) &&
     (type === "" || q.questionType === type) &&
     words.every((w) => q.prompt.toLowerCase().includes(w));
 
   const sections = curriculum.sections
     .filter((s) => sectionId === "" || s.id === sectionId)
+    .filter((s) => showRetired || s.retiredAt === null)
     .map((section) => ({
       ...section,
       modules: section.modules
+        .filter((m) => showRetired || m.retiredAt === null)
         .map((module) => ({
           ...module,
           questions: curriculum.questions.filter(
@@ -89,7 +101,7 @@ export function CurriculumPage() {
     }))
     .filter((section) => section.modules.length > 0);
 
-  const inUse = curriculum.questions.filter((q) => q.retiredAt === null).length;
+  const inUse = curriculum.questions.filter((q) => !removed(q)).length;
   const retired = curriculum.questions.length - inUse;
 
   async function remove(question: QuestionSummary) {
@@ -149,6 +161,10 @@ export function CurriculumPage() {
         {(
           [
             ["questions", `Questions (${inUse})`],
+            [
+              "structure",
+              `Sections & modules (${curriculum.sections.filter((s) => s.retiredAt === null).length})`,
+            ],
             ["competences", `Competences (${curriculum.competences.length})`],
           ] as const
         ).map(([value, label]) => (
@@ -167,7 +183,22 @@ export function CurriculumPage() {
         ))}
       </div>
 
-      {tab === "competences" ? (
+      {tab === "structure" ? (
+        <div
+          role="tabpanel"
+          id={`${tabsId}-structure-panel`}
+          aria-labelledby={`${tabsId}-structure`}
+        >
+          <StructurePanel
+            sections={curriculum.sections}
+            competences={curriculum.competences}
+            onChanged={(message) => {
+              setNotice(message);
+              load();
+            }}
+          />
+        </div>
+      ) : tab === "competences" ? (
         <div
           role="tabpanel"
           id={`${tabsId}-competences-panel`}
@@ -281,7 +312,11 @@ export function CurriculumPage() {
                               {question.answerCount === 0
                                 ? "Not answered yet"
                                 : `Answered ${question.answerCount} times`}
-                              {question.retiredAt && <span className={styles.badge}>Removed</span>}
+                              {removed(question) && (
+                                <span className={styles.badge}>
+                                  {question.retiredAt ? "Removed" : "In a removed module"}
+                                </span>
+                              )}
                             </p>
                           </div>
                           <div className={styles.rowActions}>

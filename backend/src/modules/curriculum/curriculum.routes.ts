@@ -1,24 +1,39 @@
-import { Router } from "express";
+import { Router, type Response } from "express";
 import { requireAuth, AuthedRequest } from "../../middleware/requireAuth";
 import { requireAdmin } from "../../middleware/requireAdmin";
 import { asyncHandler } from "../../lib/asyncHandler";
 import { buildPieContent } from "../assessment/assessment.pie";
 import {
   createCompetence,
+  createModule,
   createQuestion,
+  createSection,
   getCurriculum,
   getQuestion,
   isUniqueViolation,
+  removeModule,
   removeQuestion,
+  removeSection,
+  restoreModule,
   restoreQuestion,
+  restoreSection,
   updateCompetence,
+  updateModule,
   updateQuestion,
+  updateSection,
+  type WriteResult,
 } from "./curriculum.service";
-import { validateCompetenceInput, validateQuestionInput } from "./curriculum.validation";
+import {
+  validateCompetenceInput,
+  validateModuleInput,
+  validateQuestionInput,
+  validateSectionInput,
+} from "./curriculum.validation";
 
 /**
- * The curriculum editor: admins change the questions and competences learners
- * are assessed on (CD-25). Admin only, like the rest of /admin/*.
+ * The curriculum editor: admins change the questions, competences, sections
+ * and section modules learners are assessed on (CD-25). Admin only, like the
+ * rest of /admin/*.
  */
 export const curriculumRouter = Router();
 
@@ -137,3 +152,88 @@ curriculumRouter.put(
     }
   }),
 );
+
+/**
+ * Create / edit / remove / restore routes for sections and modules, which
+ * work alike: a taken name (or section code) is a 409, and removing deletes
+ * an empty one or retires one that's in use (see the service).
+ */
+function structureRoutes<Input>(
+  path: string,
+  label: string,
+  validate: (body: unknown) => { data: Input } | { error: string },
+  service: {
+    create: (input: Input) => Promise<WriteResult>;
+    update: (id: string, input: Input) => Promise<WriteResult>;
+    remove: (id: string) => Promise<"deleted" | "retired" | null>;
+    restore: (id: string) => Promise<boolean>;
+  },
+) {
+  const taken = `A ${label} with that name${label === "section" ? " or code" : ""} already exists`;
+
+  async function save(run: () => Promise<WriteResult>, res: Response, created = false) {
+    try {
+      const result = await run();
+      if (!result.ok) return res.status(result.status).json({ error: result.error });
+      res.status(created ? 201 : 200).json({ id: result.id });
+    } catch (err) {
+      if (isUniqueViolation(err)) return res.status(409).json({ error: taken });
+      throw err;
+    }
+  }
+
+  curriculumRouter.post(
+    path,
+    ...admin,
+    asyncHandler<AuthedRequest>(async (req, res) => {
+      const input = validate(req.body);
+      if ("error" in input) return res.status(400).json({ error: input.error });
+      await save(() => service.create(input.data), res, true);
+    }),
+  );
+
+  curriculumRouter.put(
+    `${path}/:id`,
+    ...admin,
+    asyncHandler<AuthedRequest>(async (req, res) => {
+      const input = validate(req.body);
+      if ("error" in input) return res.status(400).json({ error: input.error });
+      await save(() => service.update(req.params.id, input.data), res);
+    }),
+  );
+
+  curriculumRouter.delete(
+    `${path}/:id`,
+    ...admin,
+    asyncHandler<AuthedRequest>(async (req, res) => {
+      const result = await service.remove(req.params.id);
+      if (!result) return res.status(404).json({ error: `Unknown ${label}` });
+      res.json({ result });
+    }),
+  );
+
+  curriculumRouter.post(
+    `${path}/:id/restore`,
+    ...admin,
+    asyncHandler<AuthedRequest>(async (req, res) => {
+      if (!(await service.restore(req.params.id))) {
+        return res.status(404).json({ error: `Unknown ${label}` });
+      }
+      res.status(204).end();
+    }),
+  );
+}
+
+structureRoutes("/admin/curriculum/sections", "section", validateSectionInput, {
+  create: createSection,
+  update: updateSection,
+  remove: removeSection,
+  restore: restoreSection,
+});
+
+structureRoutes("/admin/curriculum/modules", "module", validateModuleInput, {
+  create: createModule,
+  update: updateModule,
+  remove: removeModule,
+  restore: restoreModule,
+});

@@ -174,7 +174,7 @@ backend/src/
 │   │   └── assessment.pie.ts      # authored question -> PIE item (identical copy of database/src/seed/pie.ts)
 │   ├── curriculum/                # the admin curriculum editor (CD-25)
 │   │   ├── curriculum.routes.ts      # /admin/curriculum/* (requireAdmin)
-│   │   ├── curriculum.service.ts     # questions + competences: create, edit, delete or retire, restore
+│   │   ├── curriculum.service.ts     # questions, competences, sections, modules: create, edit, delete or retire, restore
 │   │   └── curriculum.validation.ts  # what a question of each type needs to be answerable and scorable
 │   ├── sources/
 │   │   ├── sources.routes.ts      # /sources (requireRole)
@@ -498,10 +498,21 @@ so running it again never duplicates or overwrites.
   (a new question there needs a real `sectionModuleId` and the `competenceId`
   of that module; in the fake dataset every module (level) has exactly 3
   questions, `fakeFoodSeed.data.test.ts` checks this).
-- **Retired questions:** removing a question in the editor deletes it when
-  nobody has answered it, and otherwise retires it (`retiredAt`): it's no
-  longer asked (`roleQuestionFilter` leaves it out), but past answers keep it,
-  and "See results by section" counts it only where an attempt answered it.
+- **Retired content:** the editor deletes only what nothing uses, and retires
+  (`retiredAt`) the rest, which can be restored:
+  - a question is deleted when nobody has answered it;
+  - a module is deleted when it has no questions;
+  - a section is deleted when it has no modules, no journey covers it and no
+    reassessment was limited to it.
+
+  Retired content is left out everywhere learners see it:
+  `roleQuestionFilter` drops questions that are retired or in a retired
+  module or section (the assessment, saving answers, the reassessment
+  picker); the Competencies tab, the competence → section mapping behind
+  recommendations, the AI advice's candidates, the journeys page's coverage
+  and the admin visibility matrix skip retired modules and sections. "See
+  results by section" counts a retired question or module only where that
+  attempt answered it.
 - The assessment is adaptive (`assessment.path.ts`): sections in a random order
   per attempt, levels 1 → 4 within each. Every question of a level is asked;
   the learner moves up a level at 2 of 3 right (2/3 of the level's points)

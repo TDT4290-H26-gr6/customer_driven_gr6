@@ -29,7 +29,9 @@ export function listJourneys() {
   return prisma.learningJourney.findMany({
     include: {
       ...journeyInclude,
+      // Coverage of retired sections isn't shown.
       sections: {
+        where: { section: { retiredAt: null } },
         select: {
           sectionId: true,
           coverageLevel: true,
@@ -99,14 +101,15 @@ export function pickLowestImprovable(scores: CompetenceScoreInput[]): string | n
  * competence it is, or, if none does, a module that lists it as secondary.
  */
 async function sectionIdsForCompetence(competenceId: string): Promise<string[]> {
+  // Only modules and sections still in use: retired ones are never recommended.
   const asMain = await prisma.sectionModule.findMany({
-    where: { mainCompetenceId: competenceId },
+    where: { mainCompetenceId: competenceId, retiredAt: null, section: { retiredAt: null } },
     select: { sectionId: true },
   });
   if (asMain.length > 0) return [...new Set(asMain.map((m) => m.sectionId))];
 
   const asSecondary = await prisma.sectionModuleSecondaryCompetence.findMany({
-    where: { competenceId },
+    where: { competenceId, module: { retiredAt: null, section: { retiredAt: null } } },
     select: { module: { select: { sectionId: true } } },
   });
   return [...new Set(asSecondary.map((s) => s.module.sectionId))];

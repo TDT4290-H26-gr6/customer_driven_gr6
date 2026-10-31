@@ -76,7 +76,9 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
           include: {
             primarySource: true,
             secondarySources: { include: { source: true } },
+            // Only modules in use: retired ones are never recommended.
             mainForModules: {
+              where: { retiredAt: null, section: { retiredAt: null } },
               select: {
                 id: true,
                 name: true,

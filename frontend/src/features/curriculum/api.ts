@@ -4,9 +4,11 @@ import type {
   CompetenceInput,
   Curriculum,
   CurriculumCompetence,
+  ModuleInput,
   PreviewContent,
   QuestionDetail,
   QuestionInput,
+  SectionInput,
 } from "./types";
 
 export function getCurriculum(): Promise<Curriculum> {
@@ -66,3 +68,20 @@ export function updateCompetence(
     body: input,
   });
 }
+
+/** Create / edit / remove / restore for sections and modules, which work alike. */
+function structureApi<Input>(base: string) {
+  const one = (id: string) => `${base}/${encodeURIComponent(id)}`;
+  return {
+    create: (input: Input) => apiFetch<{ id: string }>(base, { method: "POST", body: input }),
+    update: (id: string, input: Input) =>
+      apiFetch<{ id: string }>(one(id), { method: "PUT", body: input }),
+    /** "deleted" when it was empty; "retired" when anything uses it. */
+    remove: (id: string) =>
+      apiFetch<{ result: "deleted" | "retired" }>(one(id), { method: "DELETE" }),
+    restore: (id: string) => apiFetch<void>(`${one(id)}/restore`, { method: "POST" }),
+  };
+}
+
+export const sectionsApi = structureApi<SectionInput>(endpoints.admin.curriculumSections);
+export const modulesApi = structureApi<ModuleInput>(endpoints.admin.curriculumModules);

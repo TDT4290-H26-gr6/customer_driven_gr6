@@ -142,7 +142,9 @@ describe("recommendJourney", () => {
 
     expect(result).toEqual({ id: "journey-1", name: "Journey via secondary" });
     expect(mockPrisma.sectionModuleSecondaryCompetence.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { competenceId: "weak" } }),
+      expect.objectContaining({
+        where: { competenceId: "weak", module: { retiredAt: null, section: { retiredAt: null } } },
+      }),
     );
   });
 
@@ -457,7 +459,9 @@ describe("suggestJourney", () => {
 
     expect(await suggestJourney("learner-1")).toMatchObject({ id: "journey-1" });
     expect(mockPrisma.sectionModule.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { mainCompetenceId: "b" } }),
+      expect.objectContaining({
+        where: { mainCompetenceId: "b", retiredAt: null, section: { retiredAt: null } },
+      }),
     );
     // A suggestion isn't a "you're lacking" recommendation, so it isn't logged as one.
     expect(mockPrisma.journeyRecommendation.create).not.toHaveBeenCalled();

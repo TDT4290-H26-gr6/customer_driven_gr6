@@ -19,7 +19,7 @@ describe("CompetencesPanel", () => {
     render(<CompetencesPanel competences={competences} onChanged={onChanged} />);
     expect(screen.getByText("Licensing")).toBeInTheDocument();
     expect(screen.getByText("Open licences")).toBeInTheDocument();
-    expect(screen.getByText("2 questions · main competence of 1 modules")).toBeInTheDocument();
+    expect(screen.getByText("2 questions · main competence of 1 module")).toBeInTheDocument();
   });
 
   it("adds a competence", async () => {
