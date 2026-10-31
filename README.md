@@ -15,7 +15,10 @@ everything" slice from sprint 1. Build on top of it.
 3. Start everything: `docker compose up --build`. MySQL starts first, then
    `db-init` applies the schema and, into an empty database, loads the content,
    and exits; then the backend and frontend start. After that the content lives
-   in the database: admins change it in admin mode → **Edit curriculum**.
+   in the database: admins change it in admin mode → **Edit curriculum**,
+   which logs who changed what. To move the curriculum to another database,
+   use **Download curriculum (JSON)** there and load that file in place of
+   `database/src/seed/data/aios_wp2_seed.json`.
 4. Frontend: http://localhost:5173
 5. Backend health check: http://localhost:4000/health
 6. MySQL is exposed on localhost:3306 (user/pass in `.env`) if you want to

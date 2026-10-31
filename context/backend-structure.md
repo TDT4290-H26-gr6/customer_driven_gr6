@@ -47,7 +47,7 @@ possible without a rewrite.
 | **`feedback`**        | what testers say should be improved, sent from the "Feedback" button on every page                                                                                                                                                                                                             | `feedback_feedback`                                                                                                                                                                                                                                                            | `POST /feedback`, `GET /admin/feedback`                                                                                                                                                                                                                |
 | **`advisor`**         | AI advice on the dashboard: explains the learner's results, recommends 1–3 Moodle modules, and **ranks the two learning journeys that fit them best on their scores and profile** (occupation, industry, degree, experience, goals, never name or email; best fit highlighted on the dashboard, score-only top two as the fallback: `GET /learning-journeys/recommendations`), via the NTNU IDUN LLM (`lib/llm.ts`); one stored answer per completed SAT instance; off when `LLM_API_KEY` is unset | `advisor_advice`                                                                                                                                                                                                                                                               | `GET /advice`                                                                                                                                                                                                                                          |
 | **`stats`**           | admin-only CSV export for analysis (CD-23): two tidy tables over completed full kind:"main" self-assessments only (a targeted reassessment has a different question set, and a kind:"journey" assessment never counts towards the main results, both excluded), no name/email, years of experience bucketed; owns no tables, reads `identity`/`assessment` via Prisma             | _(none, read-only)_                                                                                                                                                                                                                                                          | `GET /admin/stats/tests.csv`, `GET /admin/stats/questions.csv`, `GET /admin/sat/dropoff` (CD-125: per-question drop-off aggregates, abandoned = not completed and last activity (view or answer) older than `inactiveDays`; "stopped here" = last question shown, falling back to last answered for attempts without view rows; computed on demand, no learner fields)                                                                                                                                                                                          |
-| **`security`**        | privileged access and traceability                                                                                                                                                                                                                                                             | _(later)_ `security_admin`, `security_audit_event`, `security_api_key`                                                                                                                                                                                                         | _(later)_ real admin access. Until then the `/admin/*` routes live in `identity` (§11) and should move here                                                                                                                                            |
+| **`security`**        | privileged access and traceability                                                                                                                                                                                                                                                             | `security_audit_event` (the curriculum editor's change log); _(later)_ `security_admin`, `security_api_key`                                                                                                                                                                                                         | _(later)_ real admin access. Until then the `/admin/*` routes live in `identity` (§11) and should move here                                                                                                                                            |
 | **`platform`**        | cross‑cutting config                                                                                                                                                                                                                                                                           | _(later)_ `platform_app_setting`, `platform_feature_flag`                                                                                                                                                                                                                      |,                                                                                                                                                                                                                                                      |
 | **`health`**          | liveness / readiness for ops                                                                                                                                                                                                                                                                   |,                                                                                                                                                                                                                                                                              | `GET /health`                                                                                                                                                                                                                                          |
 
@@ -80,7 +80,7 @@ database/prisma/             # the database package owns the schema (§4)
 │   ├── assessment.prisma    # Competence, Section, SectionModule, Question, SatInstance, Response, QuestionView, CompetenceScore + join tables
 │   ├── sources.prisma       # Source
 │   ├── learningJourney.prisma  # LearningJourney, JourneySection, LearningModule, JourneyRecommendation
-│   ├── security.prisma      # (Admin, AuditEvent) , added when the module lands
+│   ├── security.prisma      # AuditEvent (curriculum change log); Admin later
 │   └── platform.prisma      # (AppSetting, FeatureFlag), later
 └── migrations/              # created when we switch to Prisma Migrate (§7)
 ```
@@ -175,6 +175,8 @@ backend/src/
 │   ├── curriculum/                # the admin curriculum editor (CD-25)
 │   │   ├── curriculum.routes.ts      # /admin/curriculum/* (requireAdmin)
 │   │   ├── curriculum.service.ts     # questions, competences, sections, modules, journeys: create, edit, delete or retire, restore
+│   │   ├── curriculum.audit.ts       # the change log: who changed what, values before and after (security_audit_event)
+│   │   ├── curriculum.export.ts      # the whole curriculum as a dataset file db-init can load
 │   │   └── curriculum.validation.ts  # what a question of each type needs to be answerable and scorable
 │   ├── sources/
 │   │   ├── sources.routes.ts      # /sources (requireRole)
@@ -518,6 +520,24 @@ so running it again never duplicates or overwrites.
   gone in stored advice (`findJourney`), and can't be assessed. "See
   results by section" counts a retired question or module only where that
   attempt answered it.
+- **Change log:** every change made in the curriculum editor (created,
+  edited, retired, restored, deleted) is written to `security_audit_event` in
+  the same transaction as the change (`curriculum.audit.ts`), with the
+  admin's name and email and the item's editable values before and after as
+  JSON. The name and email are copied into the entry, so it stays readable
+  after the account is deleted. The editor shows each item's "Added by … ·
+  Edited by …" line; the full log is **Download change log (CSV)** in the
+  editor (`GET /admin/curriculum/changelog.csv`). Items loaded from a dataset
+  have no "Added by" line, and nothing before this log existed is in it.
+- **Moving the curriculum:** **Download curriculum (JSON)** in the editor
+  (`GET /admin/curriculum/export.json`, `curriculum.export.ts`) writes the
+  database's curriculum in the dataset format above: sources, competences,
+  sections, modules, questions (as authored), journeys with their steps,
+  roles and grants, removed items with their `retiredAt`, and full Moodle
+  links. No learners, answers, results or change log. Put it in place of
+  `data/aios_wp2_seed.json` and db-init loads it into an empty database. The
+  committed WP2 file stays the starting point for new databases, tests and
+  `content:sync`, and keeps the `_pendingItems` that aren't in the database.
 - The assessment is adaptive (`assessment.path.ts`): sections in a random order
   per attempt, levels 1 → 4 within each. Every question of a level is asked;
   the learner moves up a level at 2 of 3 right (2/3 of the level's points)
