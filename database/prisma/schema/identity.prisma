@@ -28,6 +28,7 @@ model Learner {
   sectionGrants    RoleSection[]
   competenceGrants RoleCompetence[]
   feedback         Feedback[]
+  auditEvents      AuditEvent[]
 
   @@map("identity_learner")
 }

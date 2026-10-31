@@ -47,7 +47,7 @@ possible without a rewrite.
 | **`feedback`**        | what testers say should be improved, sent from the "Feedback" button on every page                                                                                                                                                                                                             | `feedback_feedback`                                                                                                                                                                                                                                                            | `POST /feedback`, `GET /admin/feedback`                                                                                                                                                                                                                |
 | **`advisor`**         | AI advice on the dashboard: explains the learner's results, recommends 1–3 Moodle modules, and **ranks the two learning journeys that fit them best on their scores and profile** (occupation, industry, degree, experience, goals, never name or email; best fit highlighted on the dashboard, score-only top two as the fallback: `GET /learning-journeys/recommendations`), via the NTNU IDUN LLM (`lib/llm.ts`); one stored answer per completed SAT instance; off when `LLM_API_KEY` is unset | `advisor_advice`                                                                                                                                                                                                                                                               | `GET /advice`                                                                                                                                                                                                                                          |
 | **`stats`**           | admin-only CSV export for analysis (CD-23): two tidy tables over completed full kind:"main" self-assessments only (a targeted reassessment has a different question set, and a kind:"journey" assessment never counts towards the main results, both excluded), no name/email, years of experience bucketed; owns no tables, reads `identity`/`assessment` via Prisma             | _(none, read-only)_                                                                                                                                                                                                                                                          | `GET /admin/stats/tests.csv`, `GET /admin/stats/questions.csv`, `GET /admin/sat/dropoff` (CD-125: per-question drop-off aggregates, abandoned = not completed and last activity (view or answer) older than `inactiveDays`; "stopped here" = last question shown, falling back to last answered for attempts without view rows; computed on demand, no learner fields)                                                                                                                                                                                          |
-| **`security`**        | privileged access and traceability                                                                                                                                                                                                                                                             | _(later)_ `security_admin`, `security_audit_event`, `security_api_key`                                                                                                                                                                                                         | _(later)_ real admin access. Until then the `/admin/*` routes live in `identity` (§11) and should move here                                                                                                                                            |
+| **`security`**        | privileged access and traceability                                                                                                                                                                                                                                                             | `security_audit_event` (the curriculum editor's change log); _(later)_ `security_admin`, `security_api_key`                                                                                                                                                                                                         | _(later)_ real admin access. Until then the `/admin/*` routes live in `identity` (§11) and should move here                                                                                                                                            |
 | **`platform`**        | cross‑cutting config                                                                                                                                                                                                                                                                           | _(later)_ `platform_app_setting`, `platform_feature_flag`                                                                                                                                                                                                                      |,                                                                                                                                                                                                                                                      |
 | **`health`**          | liveness / readiness for ops                                                                                                                                                                                                                                                                   |,                                                                                                                                                                                                                                                                              | `GET /health`                                                                                                                                                                                                                                          |
 
@@ -80,7 +80,7 @@ database/prisma/             # the database package owns the schema (§4)
 │   ├── assessment.prisma    # Competence, Section, SectionModule, Question, SatInstance, Response, QuestionView, CompetenceScore + join tables
 │   ├── sources.prisma       # Source
 │   ├── learningJourney.prisma  # LearningJourney, JourneySection, LearningModule, JourneyRecommendation
-│   ├── security.prisma      # (Admin, AuditEvent) , added when the module lands
+│   ├── security.prisma      # AuditEvent (curriculum change log); Admin later
 │   └── platform.prisma      # (AppSetting, FeatureFlag), later
 └── migrations/              # created when we switch to Prisma Migrate (§7)
 ```
@@ -144,7 +144,7 @@ database/
     ├── db/prisma.ts         # this package's PrismaClient
     └── seed/                # content datasets, see §11
         ├── index.ts         # seedChosenDataset(): the SEED_DATASET one, never mixed
-        ├── datasetLoader.ts # createDatasetLoader(): load / bring up to date one dataset JSON
+        ├── datasetLoader.ts # createDatasetLoader(): load one dataset JSON into an empty database
         ├── pie.ts           # authored question -> PIE item content (buildPieContent)
         ├── contentSync.ts   # `npm run content:sync`: make the DB match the WP2 JSON
         ├── fakeFoodSeed.ts  # the fake food dataset (default)
@@ -170,7 +170,14 @@ backend/src/
 │   ├── assessment/
 │   │   ├── assessment.routes.ts   # /questions, /assessment/*, /competence-scores (all requireRole)
 │   │   ├── assessment.service.ts  # role-filtered questions, saving/scoring answers, score roll-up
-│   │   └── assessment.scoring.ts  # pure scoring rules (multiple choice, likert, drag-and-drop)
+│   │   ├── assessment.scoring.ts  # pure scoring rules (multiple choice, likert, drag-and-drop)
+│   │   └── assessment.pie.ts      # authored question -> PIE item (identical copy of database/src/seed/pie.ts)
+│   ├── curriculum/                # the admin curriculum editor (CD-25)
+│   │   ├── curriculum.routes.ts      # /admin/curriculum/* (requireAdmin)
+│   │   ├── curriculum.service.ts     # questions, competences, sections, modules, journeys: create, edit, delete or retire, restore
+│   │   ├── curriculum.audit.ts       # the change log: who changed what, values before and after (security_audit_event)
+│   │   ├── curriculum.export.ts      # the whole curriculum as a dataset file db-init can load
+│   │   └── curriculum.validation.ts  # what a question of each type needs to be answerable and scorable
 │   ├── sources/
 │   │   ├── sources.routes.ts      # /sources (requireRole)
 │   │   └── sources.service.ts
@@ -458,8 +465,9 @@ loads (`database/src/seed/index.ts`):
   journeys are authored with a placeholder `moodleCourseId`; the loader builds
   the link from `MOODLE_BASE_URL` + that id (`moodleUrl` on modules and
   journeys, `sourceUrl` on sources). A row may give a full `moodleUrl` instead,
-  which wins. Changing the base URL or ids updates existing rows on the next
-  start, so swapping the placeholders for real links is a data change.
+  which wins. Changing the base URL or ids in the dataset reaches an existing
+  database through `npm run content:sync`, so swapping the placeholders for
+  real links is a data change.
 
 `database/src/seed/fakeFoodSeed.ts` loads `database/src/seed/data/aios_fake_food_seed.json`, a
 **fake**, food-themed dataset that _is_ every learner's initial assessment:
@@ -471,20 +479,65 @@ fills in (`sat_instance`, `response`, `competence_score`, `recommendation`). It
 is inserted in dependency order with `createMany({ skipDuplicates: true })`,
 so running it again never duplicates or overwrites.
 
-- **Automatically:** db-init runs `seedChosenDataset()` (`database/src/index.ts`)
-  before the backend starts, when any of the dataset's questions are missing, it loads the
-  whole thing (adding only what's missing), then makes sure section codes,
-  module levels, competence names and Moodle links match the JSON. A fresh
-  database therefore opens with every question, and an older one picks up new
-  questions, codes, levels and links, with no manual step.
+- **Automatically, into an empty database only:** db-init runs
+  `seedChosenDataset()` (`database/src/index.ts`) before the backend starts. A
+  database that holds none of the dataset gets all of it. **Once a database has
+  its content, the database is the source of truth**: admins change it in the
+  curriculum editor, and db-init never re-adds what was deleted or overwrites
+  what was edited. The one thing it still does is fill in a question's
+  `authoredContent` where it's empty (databases from before the editor).
+- **Dataset updates** (e.g. new WP2 items) reach an existing database only on
+  purpose: `docker compose run --rm db-init npm run content:sync` shows what
+  would change, and `-- --apply` applies it. Applying overwrites edits made in
+  the curriculum editor to the rows in the file.
 - **By hand:** `docker compose run --rm db-init npm run seed` (or `npm run seed`
   in `database/`) runs the same loader.
 - The seed authors questions in the simple shape above; the loader converts them
   with `buildPieContent` (which also appends the "I don't know" choice, see
-  above). To add or change questions, edit the JSON (a new question needs a
-  real `sectionModuleId` and the `competenceId` of that module, and every
-  module (level) has exactly 3 questions, `fakeFoodSeed.data.test.ts` checks
-  this).
+  above), and also stores the authored form (`authoredContent`). To change the
+  questions of a running system, use the curriculum editor (admin mode → Edit
+  curriculum); editing the JSON only affects new databases and `content:sync`
+  (a new question there needs a real `sectionModuleId` and the `competenceId`
+  of that module; in the fake dataset every module (level) has exactly 3
+  questions, `fakeFoodSeed.data.test.ts` checks this).
+- **Retired content:** the editor deletes only what nothing uses, and retires
+  (`retiredAt`) the rest, which can be restored:
+  - a question is deleted when nobody has answered it;
+  - a module is deleted when it has no questions;
+  - a section is deleted when it has no modules, no journey covers it and no
+    reassessment was limited to it;
+  - a learning journey is deleted when nothing refers to it: never
+    recommended, picked by the AI advisor, assessed or completed.
+
+  Retired content is left out everywhere learners see it:
+  `roleQuestionFilter` drops questions that are retired or in a retired
+  module or section (the assessment, saving answers, the reassessment
+  picker); the Competencies tab, the competence → section mapping behind
+  recommendations, the AI advice's candidates, the journeys page's coverage
+  and the admin visibility matrix skip retired modules and sections. A
+  retired journey is left out of the journeys page, recommendations, the AI
+  advice's candidates and the Competencies tab's "most relevant", reads as
+  gone in stored advice (`findJourney`), and can't be assessed. "See
+  results by section" counts a retired question or module only where that
+  attempt answered it.
+- **Change log:** every change made in the curriculum editor (created,
+  edited, retired, restored, deleted) is written to `security_audit_event` in
+  the same transaction as the change (`curriculum.audit.ts`), with the
+  admin's name and email and the item's editable values before and after as
+  JSON. The name and email are copied into the entry, so it stays readable
+  after the account is deleted. The editor shows each item's "Added by … ·
+  Edited by …" line; the full log is **Download change log (CSV)** in the
+  editor (`GET /admin/curriculum/changelog.csv`). Items loaded from a dataset
+  have no "Added by" line, and nothing before this log existed is in it.
+- **Moving the curriculum:** **Download curriculum (JSON)** in the editor
+  (`GET /admin/curriculum/export.json`, `curriculum.export.ts`) writes the
+  database's curriculum in the dataset format above: sources, competences,
+  sections, modules, questions (as authored), journeys with their steps,
+  roles and grants, removed items with their `retiredAt`, and full Moodle
+  links. No learners, answers, results or change log. Put it in place of
+  `data/aios_wp2_seed.json` and db-init loads it into an empty database. The
+  committed WP2 file stays the starting point for new databases, tests and
+  `content:sync`, and keeps the `_pendingItems` that aren't in the database.
 - The assessment is adaptive (`assessment.path.ts`): sections in a random order
   per attempt, levels 1 → 4 within each. Every question of a level is asked;
   the learner moves up a level at 2 of 3 right (2/3 of the level's points)

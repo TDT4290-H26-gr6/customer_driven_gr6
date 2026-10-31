@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "../db/prisma";
 import { createDatasetLoader } from "./datasetLoader";
@@ -119,13 +120,14 @@ describe("seed", () => {
     expect(module.moodleUrl).toMatch(/\/course\/view\.php\?id=9$/);
   });
 
-  it("stores questions as PIE items", async () => {
+  it("stores questions as PIE items, and as authored for the curriculum editor", async () => {
     await createDatasetLoader(dataset).seed();
     const [question] = inserted("question");
     expect(question.content).toMatchObject({
       elements: expect.any(Object),
       models: expect.any(Array),
     });
+    expect(question.authoredContent).toEqual(dataset["aios.assessment.question"][0].content);
   });
 
   it("stores the learner's completion flag as a boolean", async () => {
@@ -134,79 +136,34 @@ describe("seed", () => {
   });
 });
 
-describe("seedIfIncomplete", () => {
-  it("loads the dataset when its questions or sources are missing", async () => {
-    db.question.count.mockResolvedValue(0);
-    db.source.count.mockResolvedValue(1);
+describe("seedIfEmpty", () => {
+  it("loads the dataset into a database that holds none of it", async () => {
+    db.section.count.mockResolvedValue(0);
 
-    expect(await createDatasetLoader(dataset).seedIfIncomplete()).toBe(true);
+    expect(await createDatasetLoader(dataset).seedIfEmpty()).toBe(true);
     expect(db.$transaction).toHaveBeenCalledTimes(1);
+    expect(db.section.count).toHaveBeenCalledWith({ where: { id: { in: ["sec-1"] } } });
   });
 
-  it("skips loading when everything is there and nothing changed", async () => {
-    db.question.count.mockResolvedValue(1);
-    db.source.count.mockResolvedValue(1);
+  it("never reloads or overwrites a database that already has its content", async () => {
+    db.section.count.mockResolvedValue(1);
 
-    expect(await createDatasetLoader(dataset).seedIfIncomplete()).toBe(false);
+    expect(await createDatasetLoader(dataset).seedIfEmpty()).toBe(false);
     expect(db.$transaction).not.toHaveBeenCalled();
+    // Nothing an admin may have edited is touched: only empty authored content is filled.
+    for (const model of ["section", "sectionModule", "competence", "learningJourney"]) {
+      expect(db[model].updateMany).not.toHaveBeenCalled();
+    }
   });
 
-  it("brings existing rows up to date and reports the change", async () => {
-    db.question.count.mockResolvedValue(1);
-    db.source.count.mockResolvedValue(1);
-    db.section.updateMany.mockResolvedValue({ count: 1 });
+  it("fills in authored content only where it's missing", async () => {
+    db.section.count.mockResolvedValue(1);
+    db.question.updateMany.mockResolvedValue({ count: 1 });
 
-    expect(await createDatasetLoader(dataset).seedIfIncomplete()).toBe(true);
-    expect(db.$transaction).not.toHaveBeenCalled();
-
-    // Names, codes and levels are only rewritten where they differ.
-    expect(db.competence.updateMany).toHaveBeenCalledWith({
-      where: { id: "c-1", name: { not: "FAIR data" } },
-      data: { name: "FAIR data" },
-    });
-    expect(db.section.updateMany).toHaveBeenCalledWith({
-      where: {
-        id: "sec-1",
-        OR: [{ code: null }, { code: { not: "A" } }, { name: { not: "Data management" } }],
-      },
-      data: { code: "A", name: "Data management" },
-    });
-    expect(db.sectionModule.updateMany).toHaveBeenCalledWith({
-      where: { id: "mod-1", OR: [{ level: null }, { level: { not: 2 } }] },
-      data: { level: 2 },
-    });
-  });
-
-  it("links a competence to its primary source only when the dataset gives one", async () => {
-    db.question.count.mockResolvedValue(1);
-    db.source.count.mockResolvedValue(1);
-
-    await createDatasetLoader(dataset).seedIfIncomplete();
-
-    const primarySourceUpdates = db.competence.updateMany.mock.calls.filter(
-      ([args]) => "primarySourceId" in args.data,
-    );
-    expect(primarySourceUpdates).toEqual([
-      [expect.objectContaining({ data: { primarySourceId: "src-1" } })],
-    ]);
-  });
-
-  it("updates Moodle links, and clears one the dataset no longer has", async () => {
-    db.question.count.mockResolvedValue(1);
-    db.source.count.mockResolvedValue(1);
-
-    await createDatasetLoader(dataset).seedIfIncomplete();
-
-    expect(db.learningJourney.updateMany).toHaveBeenCalledWith({
-      where: {
-        id: "lj-1",
-        OR: [{ moodleUrl: null }, { moodleUrl: { not: "https://moodle.ntnu.no/lj" } }],
-      },
-      data: { moodleUrl: "https://moodle.ntnu.no/lj" },
-    });
-    expect(db.learningJourney.updateMany).toHaveBeenCalledWith({
-      where: { id: "lj-2", moodleUrl: { not: null } },
-      data: { moodleUrl: null },
+    expect(await createDatasetLoader(dataset).seedIfEmpty()).toBe(true);
+    expect(db.question.updateMany).toHaveBeenCalledWith({
+      where: { id: "q-1", authoredContent: { equals: Prisma.DbNull } },
+      data: { authoredContent: dataset["aios.assessment.question"][0].content },
     });
   });
 });

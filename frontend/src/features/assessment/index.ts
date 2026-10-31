@@ -4,4 +4,4 @@ export { AssessmentProgress } from "./components/AssessmentProgress";
 export { AssessmentRunnerPage } from "./pages/AssessmentRunnerPage";
 export { ReassessPage } from "./pages/ReassessPage";
 export { getProgress } from "./api";
-export type { Question, PieContent } from "./types";
+export type { Question, PieContent, NativeElementContent } from "./types";

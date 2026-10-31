@@ -72,6 +72,7 @@ beforeEach(() => {
 
 describe("AdminPage question drop-off", () => {
   it.each([
+    ["Edit curriculum", "/admin/curriculum"],
     ["View tester feedback", "/admin/feedback"],
     ["Exit admin mode", "/dashboard"],
   ])("“%s” goes to %s", async (button, destination) => {

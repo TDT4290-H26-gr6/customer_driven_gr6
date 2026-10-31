@@ -13,8 +13,12 @@ everything" slice from sprint 1. Build on top of it.
 1. Install Docker Desktop (or Docker Engine + Compose) if you don't have it.
 2. Copy the env file: `cp .env.example .env`
 3. Start everything: `docker compose up --build`. MySQL starts first, then
-   `db-init` applies the schema and loads the content and exits, then the
-   backend and frontend start.
+   `db-init` applies the schema and, into an empty database, loads the content,
+   and exits; then the backend and frontend start. After that the content lives
+   in the database: admins change it in admin mode → **Edit curriculum**,
+   which logs who changed what. To move the curriculum to another database,
+   use **Download curriculum (JSON)** there and load that file in place of
+   `database/src/seed/data/aios_wp2_seed.json`.
 4. Frontend: http://localhost:5173
 5. Backend health check: http://localhost:4000/health
 6. MySQL is exposed on localhost:3306 (user/pass in `.env`) if you want to
@@ -89,8 +93,8 @@ docker compose down             # stop everything
 docker compose logs -f backend  # tail backend logs
 docker compose logs db-init     # what the last schema push and seed did
 docker compose run --rm -p 5555:5555 db-init npx prisma studio --browser none  # browse the DB: http://localhost:5555
-docker compose run --rm db-init npm run content:sync              # preview WP2 content changes
-docker compose run --rm db-init npm run content:sync -- --apply   # apply them
+docker compose run --rm db-init npm run content:sync              # preview WP2 dataset changes
+docker compose run --rm db-init npm run content:sync -- --apply   # apply them (overwrites editor changes to those rows)
 ```
 
 After changing the schema (`database/prisma/schema`), rebuild both:

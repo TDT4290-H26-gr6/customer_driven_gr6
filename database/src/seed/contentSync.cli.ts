@@ -17,6 +17,10 @@ import {
 // restarting the app, it reads content from the database on every request.
 // A dry run by default: prints what would change. --apply writes it.
 //
+// The database is the source of truth for content (the admin curriculum
+// editor edits it), so applying a sync overwrites any edits made in the
+// editor to rows that are in the file. Check the dry run first.
+//
 // In Docker, through the db-init service (its src/ is mounted, so this file
 // and the data are live):
 //   docker compose run --rm db-init npm run content:sync -- --apply
@@ -57,6 +61,9 @@ async function main() {
 
   console.log(`Content sync: ${path.relative(process.cwd(), file)} -> "wp2" database\n`);
   console.log(formatPlan(plan));
+  console.log(
+    "\nNote: applying this overwrites any changes made in the curriculum editor to the rows listed above.",
+  );
 
   if (!hasChanges(plan)) return;
   if (!apply) {

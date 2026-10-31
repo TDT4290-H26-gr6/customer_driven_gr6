@@ -97,18 +97,27 @@ export async function hasCompletedMainAssessment(learnerId: string): Promise<boo
  * null for a learner with no role at all, they can't take anything yet.
  *
  * While role selection is turned off (config.roleSelectionEnabled), roles
- * are ignored: every learner gets the whole bank in every SAT.
+ * are ignored: every learner gets the whole bank in every SAT. Retired
+ * questions are left out either way.
  */
 async function roleQuestionFilter(learnerId: string): Promise<Prisma.QuestionWhereInput | null> {
   const learner = await findLearnerById(learnerId);
   if (!learner) return null;
-  if (!config.roleSelectionEnabled) return {};
+  // Retired content (removed in the curriculum editor after being used) is
+  // never asked again, whatever the role: the question itself, or the module
+  // or section it's in.
+  const inUse = {
+    retiredAt: null,
+    sectionModule: { retiredAt: null, section: { retiredAt: null } },
+  } satisfies Prisma.QuestionWhereInput;
+  if (!config.roleSelectionEnabled) return inUse;
   if (!learner.roleId) return null;
 
-  if (await isInitialAssessment(learnerId)) return {};
+  if (await isInitialAssessment(learnerId)) return inUse;
 
   const { sectionIds, competenceIds } = await getRoleGrants(learner.roleId);
   return {
+    ...inUse,
     OR: [
       { competenceId: { in: competenceIds } },
       { sectionModule: { sectionId: { in: sectionIds } } },
@@ -146,7 +155,7 @@ export async function listAssessableSections(learnerId: string) {
   if (!roleFilter) return [];
 
   return prisma.section.findMany({
-    where: { modules: { some: { questions: { some: roleFilter } } } },
+    where: { retiredAt: null, modules: { some: { questions: { some: roleFilter } } } },
     select: { id: true, name: true, description: true },
     orderBy: { name: "asc" },
   });
@@ -622,8 +631,9 @@ export async function startJourneyAssessment(
     };
   }
 
-  const journey = await prisma.learningJourney.findUnique({
-    where: { id: journeyId },
+  // A retired journey can't be started (it isn't listed any more either).
+  const journey = await prisma.learningJourney.findFirst({
+    where: { id: journeyId, retiredAt: null },
     select: {
       name: true,
       sections: { where: { coverageLevel: "M" }, select: { sectionId: true } },
@@ -959,15 +969,28 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
   const assessable = await listAssessableSections(learnerId);
   const shownSectionIds = new Set([...answersBySection.keys(), ...assessable.map((s) => s.id)]);
 
+  // A retired module counts only where this attempt answered it, like a
+  // retired question below.
   const modules = await prisma.sectionModule.findMany({
-    where: { sectionId: { in: [...shownSectionIds] } },
+    where: {
+      sectionId: { in: [...shownSectionIds] },
+      OR: [
+        { retiredAt: null },
+        { questions: { some: { responses: { some: { satInstanceId: instance.id } } } } },
+      ],
+    },
     select: {
       id: true,
       level: true,
       section: { select: { id: true, code: true, name: true } },
       mainCompetence: { select: { id: true, name: true } },
       secondaryCompetences: { select: { competence: { select: { id: true, name: true } } } },
+      // A retired question counts only where this attempt answered it, as if
+      // it had never been in the bank otherwise.
       questions: {
+        where: {
+          OR: [{ retiredAt: null }, { responses: { some: { satInstanceId: instance.id } } }],
+        },
         select: { id: true, competence: { select: { id: true, name: true } } },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       },
@@ -1103,9 +1126,12 @@ async function journeyRecommendedAfterMainAssessment(learnerId: string) {
   if (!latestMain) return null;
 
   const aiPickId = latestMain.advice?.journeyId;
-  const journey = aiPickId
-    ? await prisma.learningJourney.findUnique({ where: { id: aiPickId } })
-    : ((await recommendJourney(learnerId)) ?? (await suggestJourney(learnerId)));
+  // The AI's pick, unless it has been retired since; else the score-based one.
+  const aiPick = aiPickId
+    ? await prisma.learningJourney.findFirst({ where: { id: aiPickId, retiredAt: null } })
+    : null;
+  const journey =
+    aiPick ?? (await recommendJourney(learnerId)) ?? (await suggestJourney(learnerId));
   if (!journey) return null;
 
   const core = await prisma.journeySection.findMany({
@@ -1142,6 +1168,7 @@ export async function getCompetencies(learnerId: string) {
         code: true,
         name: true,
         modules: {
+          where: { retiredAt: null },
           select: { id: true, name: true, level: true, moodleUrl: true },
           orderBy: [{ level: "asc" }, { name: "asc" }],
         },

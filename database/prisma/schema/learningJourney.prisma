@@ -15,6 +15,11 @@ model LearningJourney {
   /// The journey's page in Moodle, where the learner takes it. Placeholder
   /// until the real URL exists (see SectionModule.moodleUrl).
   moodleUrl   String? @db.VarChar(512)
+  /// Set when an admin removes a journey learners have been recommended, or
+  /// have assessed or completed (curriculum editor): it's no longer listed or
+  /// recommended, but past advice, history and results keep it. Null = in use.
+  /// (A journey nothing refers to is deleted instead.)
+  retiredAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

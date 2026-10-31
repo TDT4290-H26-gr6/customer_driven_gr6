@@ -36,7 +36,7 @@ vi.mock("../../db/prisma", () => ({
     question: { findFirst: vi.fn(), findMany: vi.fn() },
     satInstanceSection: { findMany: vi.fn() },
     section: { findMany: vi.fn() },
-    learningJourney: { findUnique: vi.fn() },
+    learningJourney: { findFirst: vi.fn() },
     journeySection: { findMany: vi.fn() },
     response: { findMany: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
     questionView: { createMany: vi.fn(), deleteMany: vi.fn() },
@@ -57,6 +57,12 @@ vi.mock("../identity/identity.service", () => ({
 }));
 
 const mockPrisma = vi.mocked(prisma, true);
+
+/** What every question query adds: nothing retired (question, module or section). */
+const IN_USE = {
+  retiredAt: null,
+  sectionModule: { retiredAt: null, section: { retiredAt: null } },
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -195,6 +201,7 @@ describe("saveResponse", () => {
         AND: [
           { id: "q1" },
           {
+            ...IN_USE,
             OR: [
               { competenceId: { in: [] } },
               { sectionModule: { sectionId: { in: ["section-1"] } } },
@@ -237,7 +244,7 @@ describe("saveResponse", () => {
 
     expect(getRoleGrants).not.toHaveBeenCalled();
     expect(mockPrisma.question.findFirst).toHaveBeenCalledWith({
-      where: { AND: [{ id: "q1" }, {}] },
+      where: { AND: [{ id: "q1" }, IN_USE] },
     });
   });
 
@@ -386,7 +393,7 @@ describe("with role selection turned off", () => {
 
     expect(getRoleGrants).not.toHaveBeenCalled();
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} }),
+      expect.objectContaining({ where: IN_USE }),
     );
   });
 
@@ -397,7 +404,7 @@ describe("with role selection turned off", () => {
     await listQuestions("learner-1");
 
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} }),
+      expect.objectContaining({ where: IN_USE }),
     );
   });
 
@@ -419,7 +426,7 @@ describe("listQuestions", () => {
 
     expect(getRoleGrants).not.toHaveBeenCalled();
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} }),
+      expect.objectContaining({ where: IN_USE }),
     );
   });
 
@@ -434,6 +441,7 @@ describe("listQuestions", () => {
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
+          ...IN_USE,
           OR: [
             { competenceId: { in: [] } },
             { sectionModule: { sectionId: { in: ["section-1"] } } },
@@ -457,6 +465,7 @@ describe("listQuestions", () => {
         where: {
           AND: [
             {
+              ...IN_USE,
               OR: [
                 { competenceId: { in: [] } },
                 { sectionModule: { sectionId: { in: ["section-1"] } } },
@@ -1054,10 +1063,12 @@ describe("listAssessableSections", () => {
     expect(mockPrisma.section.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
+          retiredAt: null,
           modules: {
             some: {
               questions: {
                 some: {
+                  ...IN_USE,
                   OR: [
                     { competenceId: { in: [] } },
                     { sectionModule: { sectionId: { in: ["section-1"] } } },
@@ -1353,7 +1364,7 @@ describe("journey assessments", () => {
 
     it("refuses an unknown journey", async () => {
       mockPrisma.satInstance.findFirst.mockResolvedValueOnce(null);
-      mockPrisma.learningJourney.findUnique.mockResolvedValue(null);
+      mockPrisma.learningJourney.findFirst.mockResolvedValue(null);
 
       expect(await startJourneyAssessment("learner-1", "nope")).toMatchObject({
         ok: false,
@@ -1363,7 +1374,7 @@ describe("journey assessments", () => {
 
     it("asks only for the journey's M sections, and only ones that have questions", async () => {
       mockPrisma.satInstance.findFirst.mockResolvedValueOnce(null); // nothing in progress
-      mockPrisma.learningJourney.findUnique.mockResolvedValue(journey as never);
+      mockPrisma.learningJourney.findFirst.mockResolvedValue(journey as never);
       mockPrisma.section.findMany.mockResolvedValue([
         { id: "sec-a", name: "A" },
         { id: "sec-b", name: "B" },
@@ -1373,8 +1384,10 @@ describe("journey assessments", () => {
       const result = await startJourneyAssessment("learner-1", "journey-2");
 
       expect(result).toEqual({ ok: true, sectionIds: ["sec-a", "sec-b"] });
-      expect(mockPrisma.learningJourney.findUnique).toHaveBeenCalledWith(
+      expect(mockPrisma.learningJourney.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
+          // A retired journey can't be started.
+          where: { id: "journey-2", retiredAt: null },
           select: expect.objectContaining({
             sections: { where: { coverageLevel: "M" }, select: { sectionId: true } },
           }),
@@ -1398,7 +1411,7 @@ describe("journey assessments", () => {
 
     it("refuses a journey with nothing to assess yet", async () => {
       mockPrisma.satInstance.findFirst.mockResolvedValueOnce(null);
-      mockPrisma.learningJourney.findUnique.mockResolvedValue(journey as never);
+      mockPrisma.learningJourney.findFirst.mockResolvedValue(journey as never);
       mockPrisma.section.findMany.mockResolvedValue([] as never);
 
       expect(await startJourneyAssessment("learner-1", "journey-2")).toMatchObject({
@@ -1576,7 +1589,7 @@ describe("journey assessments", () => {
       mockPrisma.satInstance.findFirst.mockResolvedValue({
         advice: { journeyId: "journey-6" },
       } as never);
-      mockPrisma.learningJourney.findUnique.mockResolvedValue({
+      mockPrisma.learningJourney.findFirst.mockResolvedValue({
         id: "journey-6",
         name: "LJ6",
         moodleUrl: null,

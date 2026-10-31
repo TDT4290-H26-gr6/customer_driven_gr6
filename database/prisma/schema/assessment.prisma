@@ -55,6 +55,10 @@ model Section {
   code        String? @unique
   name        String  @unique
   description String? @db.Text
+  /// Set when an admin removes a section that isn't empty (curriculum editor):
+  /// it's no longer assessed or recommended, but past results keep it. Null =
+  /// in use. (An empty section is deleted instead.)
+  retiredAt   DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -84,6 +88,10 @@ model SectionModule {
   /// integration: AIOS only links to it). Placeholders until the real URLs
   /// exist — see MOODLE_BASE_URL and the seed data's moodleCourseId.
   moodleUrl        String?    @db.VarChar(512)
+  /// Set when an admin removes a module that has questions: its questions are
+  /// no longer asked, but past results keep them. Null = in use. (A module
+  /// without questions is deleted instead.)
+  retiredAt        DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -110,8 +118,16 @@ model SectionModuleSecondaryCompetence {
 model Question {
   id              String        @id @default(uuid())
   prompt          String        @db.Text
-  questionType    String // "likert" | "single_choice" | "multi_choice" | "true_false" — see assessment.pie.ts
-  content         Json // PIE item content (elements / models / markup)
+  questionType    String // one of QUESTION_TYPES in database/src/seed/pie.ts (and backend assessment.pie.ts)
+  content         Json // PIE item content (elements / models / markup), built from authoredContent
+  /// The question as authored, before it's built into `content`: the shape the
+  /// curriculum editor edits (AuthoredContent in pie.ts). Null only for rows
+  /// that predate the editor until db-init fills it in from the dataset.
+  authoredContent Json?
+  /// Set when an admin removes a question learners have already answered: it's
+  /// no longer asked, but past answers and results still refer to it. Null =
+  /// in use. (A question nobody answered is deleted instead.)
+  retiredAt       DateTime?
   sectionModuleId String
   sectionModule   SectionModule @relation(fields: [sectionModuleId], references: [id])
   competenceId    String

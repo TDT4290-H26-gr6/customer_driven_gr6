@@ -85,6 +85,7 @@ export function AdminPage() {
       <div className={styles.titleRow}>
         <h1 className={styles.heading}>Admin mode</h1>
         <div className={styles.titleActions}>
+          <Button onClick={() => navigate("/admin/curriculum")}>Edit curriculum</Button>
           <Button variant="secondary" onClick={() => navigate("/admin/feedback")}>
             View tester feedback
           </Button>

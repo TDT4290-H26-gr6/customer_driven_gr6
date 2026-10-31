@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  findJourney,
   journeyCandidatesForSections,
+  listJourneys,
   pickLowestImprovable,
   pickWeakestCompetence,
   recommendJourney,
@@ -17,7 +19,7 @@ vi.mock("../../db/prisma", () => ({
     sectionModule: { findMany: vi.fn() },
     sectionModuleSecondaryCompetence: { findMany: vi.fn() },
     journeySection: { findMany: vi.fn() },
-    learningJourney: { findMany: vi.fn() },
+    learningJourney: { findMany: vi.fn(), findFirst: vi.fn() },
     journeyRecommendation: { findFirst: vi.fn(), create: vi.fn() },
     competence: { findUnique: vi.fn(), findMany: vi.fn() },
   },
@@ -142,7 +144,9 @@ describe("recommendJourney", () => {
 
     expect(result).toEqual({ id: "journey-1", name: "Journey via secondary" });
     expect(mockPrisma.sectionModuleSecondaryCompetence.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { competenceId: "weak" } }),
+      expect.objectContaining({
+        where: { competenceId: "weak", module: { retiredAt: null, section: { retiredAt: null } } },
+      }),
     );
   });
 
@@ -457,7 +461,9 @@ describe("suggestJourney", () => {
 
     expect(await suggestJourney("learner-1")).toMatchObject({ id: "journey-1" });
     expect(mockPrisma.sectionModule.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { mainCompetenceId: "b" } }),
+      expect.objectContaining({
+        where: { mainCompetenceId: "b", retiredAt: null, section: { retiredAt: null } },
+      }),
     );
     // A suggestion isn't a "you're lacking" recommendation, so it isn't logged as one.
     expect(mockPrisma.journeyRecommendation.create).not.toHaveBeenCalled();
@@ -477,6 +483,22 @@ describe("suggestJourney", () => {
     ] as never);
 
     expect(await suggestJourney("learner-1")).toBeNull();
+  });
+});
+
+describe("listJourneys and findJourney", () => {
+  it("leave retired journeys out", async () => {
+    mockPrisma.learningJourney.findMany.mockResolvedValue([] as never);
+    await listJourneys();
+    expect(mockPrisma.learningJourney.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { retiredAt: null } }),
+    );
+
+    mockPrisma.learningJourney.findFirst.mockResolvedValue(null as never);
+    expect(await findJourney("lj-1")).toBeNull();
+    expect(mockPrisma.learningJourney.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "lj-1", retiredAt: null } }),
+    );
   });
 });
 
@@ -508,6 +530,12 @@ describe("journeyCandidatesForSections", () => {
 
     // M beats R beats S; at the same level, more sections covered wins.
     expect(candidates.map((c) => c.id)).toEqual(["one-m", "two-r", "s-only"]);
+    // Retired journeys are never candidates.
+    expect(mockPrisma.journeySection.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { sectionId: { in: ["a", "b"] }, journey: { retiredAt: null } },
+      }),
+    );
     expect(candidates[1].coverage).toEqual([
       { sectionId: "a", section: "Section a", level: "R" },
       { sectionId: "b", section: "Section b", level: "R" },
