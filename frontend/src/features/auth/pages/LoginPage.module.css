@@ -108,7 +108,11 @@
    mismatch makes the browser paint a white backdrop behind it. */
 .signIn {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: stretch;
+  width: fit-content;
+  margin: 0 auto;
+  gap: 12px;
   color-scheme: light;
 }
 
