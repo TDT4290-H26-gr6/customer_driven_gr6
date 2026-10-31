@@ -144,7 +144,7 @@ database/
     ├── db/prisma.ts         # this package's PrismaClient
     └── seed/                # content datasets, see §11
         ├── index.ts         # seedChosenDataset(): the SEED_DATASET one, never mixed
-        ├── datasetLoader.ts # createDatasetLoader(): load / bring up to date one dataset JSON
+        ├── datasetLoader.ts # createDatasetLoader(): load one dataset JSON into an empty database
         ├── pie.ts           # authored question -> PIE item content (buildPieContent)
         ├── contentSync.ts   # `npm run content:sync`: make the DB match the WP2 JSON
         ├── fakeFoodSeed.ts  # the fake food dataset (default)
@@ -170,7 +170,12 @@ backend/src/
 │   ├── assessment/
 │   │   ├── assessment.routes.ts   # /questions, /assessment/*, /competence-scores (all requireRole)
 │   │   ├── assessment.service.ts  # role-filtered questions, saving/scoring answers, score roll-up
-│   │   └── assessment.scoring.ts  # pure scoring rules (multiple choice, likert, drag-and-drop)
+│   │   ├── assessment.scoring.ts  # pure scoring rules (multiple choice, likert, drag-and-drop)
+│   │   └── assessment.pie.ts      # authored question -> PIE item (identical copy of database/src/seed/pie.ts)
+│   ├── curriculum/                # the admin curriculum editor (CD-25)
+│   │   ├── curriculum.routes.ts      # /admin/curriculum/* (requireAdmin)
+│   │   ├── curriculum.service.ts     # questions + competences: create, edit, delete or retire, restore
+│   │   └── curriculum.validation.ts  # what a question of each type needs to be answerable and scorable
 │   ├── sources/
 │   │   ├── sources.routes.ts      # /sources (requireRole)
 │   │   └── sources.service.ts
@@ -458,8 +463,9 @@ loads (`database/src/seed/index.ts`):
   journeys are authored with a placeholder `moodleCourseId`; the loader builds
   the link from `MOODLE_BASE_URL` + that id (`moodleUrl` on modules and
   journeys, `sourceUrl` on sources). A row may give a full `moodleUrl` instead,
-  which wins. Changing the base URL or ids updates existing rows on the next
-  start, so swapping the placeholders for real links is a data change.
+  which wins. Changing the base URL or ids in the dataset reaches an existing
+  database through `npm run content:sync`, so swapping the placeholders for
+  real links is a data change.
 
 `database/src/seed/fakeFoodSeed.ts` loads `database/src/seed/data/aios_fake_food_seed.json`, a
 **fake**, food-themed dataset that _is_ every learner's initial assessment:
@@ -471,20 +477,31 @@ fills in (`sat_instance`, `response`, `competence_score`, `recommendation`). It
 is inserted in dependency order with `createMany({ skipDuplicates: true })`,
 so running it again never duplicates or overwrites.
 
-- **Automatically:** db-init runs `seedChosenDataset()` (`database/src/index.ts`)
-  before the backend starts, when any of the dataset's questions are missing, it loads the
-  whole thing (adding only what's missing), then makes sure section codes,
-  module levels, competence names and Moodle links match the JSON. A fresh
-  database therefore opens with every question, and an older one picks up new
-  questions, codes, levels and links, with no manual step.
+- **Automatically, into an empty database only:** db-init runs
+  `seedChosenDataset()` (`database/src/index.ts`) before the backend starts. A
+  database that holds none of the dataset gets all of it. **Once a database has
+  its content, the database is the source of truth**: admins change it in the
+  curriculum editor, and db-init never re-adds what was deleted or overwrites
+  what was edited. The one thing it still does is fill in a question's
+  `authoredContent` where it's empty (databases from before the editor).
+- **Dataset updates** (e.g. new WP2 items) reach an existing database only on
+  purpose: `docker compose run --rm db-init npm run content:sync` shows what
+  would change, and `-- --apply` applies it. Applying overwrites edits made in
+  the curriculum editor to the rows in the file.
 - **By hand:** `docker compose run --rm db-init npm run seed` (or `npm run seed`
   in `database/`) runs the same loader.
 - The seed authors questions in the simple shape above; the loader converts them
   with `buildPieContent` (which also appends the "I don't know" choice, see
-  above). To add or change questions, edit the JSON (a new question needs a
-  real `sectionModuleId` and the `competenceId` of that module, and every
-  module (level) has exactly 3 questions, `fakeFoodSeed.data.test.ts` checks
-  this).
+  above), and also stores the authored form (`authoredContent`). To change the
+  questions of a running system, use the curriculum editor (admin mode → Edit
+  curriculum); editing the JSON only affects new databases and `content:sync`
+  (a new question there needs a real `sectionModuleId` and the `competenceId`
+  of that module; in the fake dataset every module (level) has exactly 3
+  questions, `fakeFoodSeed.data.test.ts` checks this).
+- **Retired questions:** removing a question in the editor deletes it when
+  nobody has answered it, and otherwise retires it (`retiredAt`): it's no
+  longer asked (`roleQuestionFilter` leaves it out), but past answers keep it,
+  and "See results by section" counts it only where an attempt answered it.
 - The assessment is adaptive (`assessment.path.ts`): sections in a random order
   per attempt, levels 1 → 4 within each. Every question of a level is asked;
   the learner moves up a level at 2 of 3 right (2/3 of the level's points)

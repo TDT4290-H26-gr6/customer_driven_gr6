@@ -92,6 +92,7 @@ const TABLES: TableSpec[] = [
     // renders) them as PIE items, the same build the seed uses.
     map: (row) => ({
       ...row,
+      authoredContent: row.content,
       content: buildPieContent(
         String(row.questionType),
         String(row.prompt),

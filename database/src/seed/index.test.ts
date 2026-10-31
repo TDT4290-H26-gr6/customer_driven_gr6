@@ -6,10 +6,10 @@ import { otherDatasetsPresent, seedChosenDataset } from ".";
 
 vi.mock("../db/prisma", () => ({ prisma: { section: { count: vi.fn() } } }));
 vi.mock("./fakeFoodSeed", () => ({
-  fakeFoodDataset: { sectionIds: ["sec-fake-a"], seedIfIncomplete: vi.fn() },
+  fakeFoodDataset: { sectionIds: ["sec-fake-a"], seedIfEmpty: vi.fn() },
 }));
 vi.mock("./wp2Seed", () => ({
-  wp2Dataset: { sectionIds: ["sec-wp2-a"], seedIfIncomplete: vi.fn() },
+  wp2Dataset: { sectionIds: ["sec-wp2-a"], seedIfEmpty: vi.fn() },
 }));
 
 const sectionCount = vi.mocked(prisma.section.count);
@@ -24,8 +24,8 @@ function databaseHolds(...ids: string[]) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.mocked(fakeFoodDataset.seedIfIncomplete).mockResolvedValue(true);
-  vi.mocked(wp2Dataset.seedIfIncomplete).mockResolvedValue(true);
+  vi.mocked(fakeFoodDataset.seedIfEmpty).mockResolvedValue(true);
+  vi.mocked(wp2Dataset.seedIfEmpty).mockResolvedValue(true);
 });
 
 describe("seedChosenDataset", () => {
@@ -33,22 +33,22 @@ describe("seedChosenDataset", () => {
     databaseHolds();
 
     await expect(seedChosenDataset("wp2")).resolves.toBe(true);
-    expect(wp2Dataset.seedIfIncomplete).toHaveBeenCalledOnce();
-    expect(fakeFoodDataset.seedIfIncomplete).not.toHaveBeenCalled();
+    expect(wp2Dataset.seedIfEmpty).toHaveBeenCalledOnce();
+    expect(fakeFoodDataset.seedIfEmpty).not.toHaveBeenCalled();
   });
 
   it("updates the chosen dataset when it's already there", async () => {
     databaseHolds("sec-fake-a");
 
     await seedChosenDataset("fake");
-    expect(fakeFoodDataset.seedIfIncomplete).toHaveBeenCalledOnce();
+    expect(fakeFoodDataset.seedIfEmpty).toHaveBeenCalledOnce();
   });
 
   it("refuses, loading nothing, when the database holds another dataset", async () => {
     databaseHolds("sec-fake-a");
 
     await expect(seedChosenDataset("wp2")).rejects.toThrow(/already holds the "fake" dataset/);
-    expect(wp2Dataset.seedIfIncomplete).not.toHaveBeenCalled();
+    expect(wp2Dataset.seedIfEmpty).not.toHaveBeenCalled();
   });
 });
 

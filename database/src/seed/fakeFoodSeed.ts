@@ -9,4 +9,4 @@ import { createDatasetLoader } from "./datasetLoader";
 export const fakeFoodDataset = createDatasetLoader(seedData);
 
 export const seedFakeFood = fakeFoodDataset.seed;
-export const seedIfIncomplete = fakeFoodDataset.seedIfIncomplete;
+export const seedIfEmpty = fakeFoodDataset.seedIfEmpty;

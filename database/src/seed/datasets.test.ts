@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import fakeData from "./data/aios_fake_food_seed.json";
 import wp2Data from "./data/aios_wp2_seed.json";
-import { fakeFoodDataset, seedFakeFood, seedIfIncomplete } from "./fakeFoodSeed";
+import { fakeFoodDataset, seedFakeFood, seedIfEmpty } from "./fakeFoodSeed";
 import { wp2Dataset } from "./wp2Seed";
 
 vi.mock("../db/prisma", () => ({ prisma: {} }));
@@ -26,6 +26,6 @@ describe("the dataset loaders", () => {
 
   it("the fake dataset's shortcuts are its loader's own functions", () => {
     expect(seedFakeFood).toBe(fakeFoodDataset.seed);
-    expect(seedIfIncomplete).toBe(fakeFoodDataset.seedIfIncomplete);
+    expect(seedIfEmpty).toBe(fakeFoodDataset.seedIfEmpty);
   });
 });

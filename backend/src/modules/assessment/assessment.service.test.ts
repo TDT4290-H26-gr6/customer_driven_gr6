@@ -195,6 +195,7 @@ describe("saveResponse", () => {
         AND: [
           { id: "q1" },
           {
+            retiredAt: null,
             OR: [
               { competenceId: { in: [] } },
               { sectionModule: { sectionId: { in: ["section-1"] } } },
@@ -237,7 +238,7 @@ describe("saveResponse", () => {
 
     expect(getRoleGrants).not.toHaveBeenCalled();
     expect(mockPrisma.question.findFirst).toHaveBeenCalledWith({
-      where: { AND: [{ id: "q1" }, {}] },
+      where: { AND: [{ id: "q1" }, { retiredAt: null }] },
     });
   });
 
@@ -386,7 +387,7 @@ describe("with role selection turned off", () => {
 
     expect(getRoleGrants).not.toHaveBeenCalled();
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} }),
+      expect.objectContaining({ where: { retiredAt: null } }),
     );
   });
 
@@ -397,7 +398,7 @@ describe("with role selection turned off", () => {
     await listQuestions("learner-1");
 
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} }),
+      expect.objectContaining({ where: { retiredAt: null } }),
     );
   });
 
@@ -419,7 +420,7 @@ describe("listQuestions", () => {
 
     expect(getRoleGrants).not.toHaveBeenCalled();
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: {} }),
+      expect.objectContaining({ where: { retiredAt: null } }),
     );
   });
 
@@ -434,6 +435,7 @@ describe("listQuestions", () => {
     expect(mockPrisma.question.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
+          retiredAt: null,
           OR: [
             { competenceId: { in: [] } },
             { sectionModule: { sectionId: { in: ["section-1"] } } },
@@ -457,6 +459,7 @@ describe("listQuestions", () => {
         where: {
           AND: [
             {
+              retiredAt: null,
               OR: [
                 { competenceId: { in: [] } },
                 { sectionModule: { sectionId: { in: ["section-1"] } } },
@@ -1058,6 +1061,7 @@ describe("listAssessableSections", () => {
             some: {
               questions: {
                 some: {
+                  retiredAt: null,
                   OR: [
                     { competenceId: { in: [] } },
                     { sectionModule: { sectionId: { in: ["section-1"] } } },

@@ -36,6 +36,14 @@ export const endpoints = {
     dropoff: "/admin/sat/dropoff",
     statsTests: "/admin/stats/tests.csv",
     statsQuestions: "/admin/stats/questions.csv",
+    curriculum: "/admin/curriculum",
+    curriculumQuestions: "/admin/curriculum/questions",
+    curriculumPreview: "/admin/curriculum/questions/preview",
+    curriculumQuestion: (id: string) => `/admin/curriculum/questions/${encodeURIComponent(id)}`,
+    curriculumRestore: (id: string) =>
+      `/admin/curriculum/questions/${encodeURIComponent(id)}/restore`,
+    curriculumCompetences: "/admin/curriculum/competences",
+    curriculumCompetence: (id: string) => `/admin/curriculum/competences/${encodeURIComponent(id)}`,
     roleSection: (roleId: string, sectionId: string) =>
       `/admin/roles/${encodeURIComponent(roleId)}/sections/${encodeURIComponent(sectionId)}`,
     roleCompetence: (roleId: string, competenceId: string) =>

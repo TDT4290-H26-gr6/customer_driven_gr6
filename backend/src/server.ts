@@ -13,6 +13,7 @@ import { learningJourneyRouter } from "./modules/learningJourney/learningJourney
 import { feedbackRouter } from "./modules/feedback/feedback.routes";
 import { advisorRouter } from "./modules/advisor/advisor.routes";
 import { statsRouter } from "./modules/stats/stats.routes";
+import { curriculumRouter } from "./modules/curriculum/curriculum.routes";
 import { dropoffRouter } from "./modules/stats/dropoff.routes";
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
@@ -66,6 +67,7 @@ export function buildServer() {
   app.use(feedbackRouter);
   app.use(advisorRouter);
   app.use(statsRouter);
+  app.use(curriculumRouter);
   app.use(dropoffRouter);
 
   // Unknown paths get JSON like every other error, not Express's HTML page.

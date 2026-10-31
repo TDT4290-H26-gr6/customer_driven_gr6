@@ -31,6 +31,10 @@ vi.mock("@/features/faq", () => ({ FaqPage: page("faq") }));
 vi.mock("@/features/learningJourney", () => ({ LearningJourneysPage: page("journeys") }));
 vi.mock("@/features/admin", () => ({ AdminPage: page("admin") }));
 vi.mock("@/features/feedback", () => ({ FeedbackAdminPage: page("feedback admin") }));
+vi.mock("@/features/curriculum", () => ({
+  CurriculumPage: page("curriculum editor"),
+  QuestionEditorPage: page("question editor"),
+}));
 
 const signedIn = {
   status: "signedIn",
@@ -102,6 +106,9 @@ describe("AppRoutes", () => {
   it.each([
     ["/admin", "admin"],
     ["/admin/feedback", "feedback admin"],
+    ["/admin/curriculum", "curriculum editor"],
+    ["/admin/curriculum/questions/new", "question editor"],
+    ["/admin/curriculum/questions/q-1", "question editor"],
   ])("%s is for admins only", (path, name) => {
     visit(path, { status: "signedIn", learner: { hasCompletedProfile: true, isAdmin: true } });
     expect(screen.getByText(name)).toBeInTheDocument();

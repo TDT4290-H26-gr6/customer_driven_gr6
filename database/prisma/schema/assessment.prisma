@@ -110,8 +110,16 @@ model SectionModuleSecondaryCompetence {
 model Question {
   id              String        @id @default(uuid())
   prompt          String        @db.Text
-  questionType    String // "likert" | "single_choice" | "multi_choice" | "true_false" — see assessment.pie.ts
-  content         Json // PIE item content (elements / models / markup)
+  questionType    String // one of QUESTION_TYPES in database/src/seed/pie.ts (and backend assessment.pie.ts)
+  content         Json // PIE item content (elements / models / markup), built from authoredContent
+  /// The question as authored, before it's built into `content`: the shape the
+  /// curriculum editor edits (AuthoredContent in pie.ts). Null only for rows
+  /// that predate the editor until db-init fills it in from the dataset.
+  authoredContent Json?
+  /// Set when an admin removes a question learners have already answered: it's
+  /// no longer asked, but past answers and results still refer to it. Null =
+  /// in use. (A question nobody answered is deleted instead.)
+  retiredAt       DateTime?
   sectionModuleId String
   sectionModule   SectionModule @relation(fields: [sectionModuleId], references: [id])
   competenceId    String

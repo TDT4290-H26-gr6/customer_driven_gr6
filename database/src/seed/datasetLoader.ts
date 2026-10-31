@@ -1,16 +1,20 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../db/prisma";
 import { config } from "../config";
 import { buildPieContent, type AuthoredContent } from "./pie";
 
-// Loads one content dataset (a JSON file in data/) into the database: every
-// table of schema v3 except the ones a learner fills in themselves
+// Loads one content dataset (a JSON file in data/) into an empty database:
+// every table of schema v3 except the ones a learner fills in themselves
 // (sat_instance, response, competence_score, recommendation), so a freshly
 // signed-in learner starts with all questions unanswered. Used for both the
 // fake food-themed dataset and the real WP2 curriculum (see seed/index.ts).
 //
-// Every insert skips rows that already exist, so it is safe to run again. The
-// whole load is one transaction: if any table fails, nothing is kept, and the
+// Once a database holds the content, the database is the source of truth:
+// admins change it in the curriculum editor, and this never reloads or
+// overwrites it (see seedIfEmpty). Dataset updates are applied on purpose
+// with `npm run content:sync`.
+//
+// The load is one transaction: if any table fails, nothing is kept, and the
 // next start simply tries again.
 
 type Row = Record<string, unknown>;
@@ -63,7 +67,6 @@ export function createDatasetLoader(data: unknown) {
 
   const sectionIds = (tables["aios.assessment.section"] ?? []).map((row) => String(row.id));
   const questionIds = (tables["aios.assessment.question"] ?? []).map((row) => String(row.id));
-  const sourceIds = (tables["aios.sources.source"] ?? []).map((row) => String(row.id));
 
   async function seedTables(tx: Prisma.TransactionClient) {
     const counts: Record<string, number> = {};
@@ -126,6 +129,8 @@ export function createDatasetLoader(data: unknown) {
       tx.question.createMany({
         data: table<Prisma.QuestionCreateManyInput>("aios.assessment.question", (row) => ({
           ...row,
+          // Kept as authored too: the curriculum editor edits this form.
+          authoredContent: row.content as Prisma.InputJsonValue,
           // The seed authors questions in a simple shape; the app stores (and
           // renders) them as PIE items.
           content: buildPieContent(
@@ -187,95 +192,37 @@ export function createDatasetLoader(data: unknown) {
   }
 
   /**
-   * Brings rows seeded earlier up to date with the dataset: section codes and
-   * names, module levels, competence names and Moodle links (so swapping the
-   * placeholder links for real ones is a data change). createMany's
-   * skipDuplicates never updates rows that are already there. Only touches
-   * rows whose value differs, so it's a no-op (and leaves updatedAt alone)
-   * once they match.
+   * Fills in each question's authored content where the database lacks it:
+   * rows loaded before the curriculum editor existed. Only ever fills an
+   * empty column, so it never overwrites what an admin has edited.
    */
-  async function syncExistingRows() {
-    let changed = 0;
-    for (const competence of tables["aios.assessment.competence"] ?? []) {
-      const name = competence.name as string;
-      const { count } = await prisma.competence.updateMany({
-        where: { id: String(competence.id), name: { not: name } },
-        data: { name },
+  async function backfillAuthoredContent() {
+    let filled = 0;
+    for (const question of tables["aios.assessment.question"] ?? []) {
+      const { count } = await prisma.question.updateMany({
+        where: { id: String(question.id), authoredContent: { equals: Prisma.DbNull } },
+        data: { authoredContent: question.content as Prisma.InputJsonValue },
       });
-      changed += count;
-      // A competence given its primary source after it was first seeded.
-      const primarySourceId = (competence.primarySourceId as string | undefined) ?? null;
-      if (primarySourceId) {
-        const { count: linked } = await prisma.competence.updateMany({
-          where: {
-            id: String(competence.id),
-            OR: [{ primarySourceId: null }, { primarySourceId: { not: primarySourceId } }],
-          },
-          data: { primarySourceId },
-        });
-        changed += linked;
-      }
+      filled += count;
     }
-    for (const section of tables["aios.assessment.section"] ?? []) {
-      const code = section.code as string;
-      const name = section.name as string;
-      const { count } = await prisma.section.updateMany({
-        where: {
-          id: String(section.id),
-          OR: [{ code: null }, { code: { not: code } }, { name: { not: name } }],
-        },
-        data: { code, name },
-      });
-      changed += count;
-    }
-    for (const module of tables["aios.assessment.section_module"] ?? []) {
-      const level = module.level as number;
-      const { count } = await prisma.sectionModule.updateMany({
-        where: { id: String(module.id), OR: [{ level: null }, { level: { not: level } }] },
-        data: { level },
-      });
-      changed += count;
-      changed += await syncMoodleUrl("sectionModule", String(module.id), moodleLink(module));
-    }
-    for (const journey of tables["aios.learningJourney.journey"] ?? []) {
-      changed += await syncMoodleUrl("learningJourney", String(journey.id), moodleLink(journey));
-    }
-    return changed;
-  }
-
-  async function syncMoodleUrl(
-    model: "sectionModule" | "learningJourney",
-    id: string,
-    moodleUrl: string | null,
-  ) {
-    const where =
-      moodleUrl === null
-        ? { id, moodleUrl: { not: null } }
-        : { id, OR: [{ moodleUrl: null }, { moodleUrl: { not: moodleUrl } }] };
-    const { count } =
-      model === "sectionModule"
-        ? await prisma.sectionModule.updateMany({ where, data: { moodleUrl } })
-        : await prisma.learningJourney.updateMany({ where, data: { moodleUrl } });
-    return count;
+    return filled;
   }
 
   /**
-   * Loads the dataset when any of its own questions or sources are missing ,
-   * a fresh database, or one seeded before they were added to it, then
-   * brings existing rows up to date (syncExistingRows). Keyed on this
-   * dataset's ids, not "the question bank is empty". Returns whether
-   * anything was added or changed.
+   * Loads the dataset into a database that holds none of it yet (none of its
+   * sections). A database that already has its content is left as it is,
+   * apart from backfillAuthoredContent: what's in it may have been edited in
+   * the curriculum editor, and re-adding deleted rows or overwriting edits
+   * would undo that. Returns whether anything was added or filled in.
    */
-  async function seedIfIncomplete() {
-    const [questionsPresent, sourcesPresent] = await Promise.all([
-      prisma.question.count({ where: { id: { in: questionIds } } }),
-      prisma.source.count({ where: { id: { in: sourceIds } } }),
-    ]);
-    const seeded = questionsPresent < questionIds.length || sourcesPresent < sourceIds.length;
-    if (seeded) await seed();
-    const synced = (await syncExistingRows()) > 0;
-    return seeded || synced;
+  async function seedIfEmpty() {
+    const present = await prisma.section.count({ where: { id: { in: sectionIds } } });
+    if (present === 0) {
+      await seed();
+      return true;
+    }
+    return (await backfillAuthoredContent()) > 0;
   }
 
-  return { seed, seedIfIncomplete, sectionIds, questionIds };
+  return { seed, seedIfEmpty, sectionIds, questionIds };
 }

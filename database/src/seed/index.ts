@@ -20,12 +20,13 @@ export async function otherDatasetsPresent(name: DatasetName): Promise<DatasetNa
 }
 
 /**
- * Loads the dataset chosen by SEED_DATASET (or brings it up to date). Two
+ * Loads the dataset chosen by SEED_DATASET into an empty database (see
+ * seedIfEmpty: a database that already holds it is left alone). Two
  * datasets never share a database: a learner's first assessment covers the
  * whole question bank, so a mix would hand them both. When the database
  * already holds another dataset this refuses and says so, switching means
  * backing the database up and starting from an empty one; nothing is
- * deleted automatically. Returns whether anything was added or changed.
+ * deleted automatically. Returns whether anything was added or filled in.
  */
 export async function seedChosenDataset(name: DatasetName = config.seedDataset): Promise<boolean> {
   const conflicting = await otherDatasetsPresent(name);
@@ -36,5 +37,5 @@ export async function seedChosenDataset(name: DatasetName = config.seedDataset):
         `or set SEED_DATASET back to "${conflicting[0]}". Nothing was loaded.`,
     );
   }
-  return DATASETS[name].seedIfIncomplete();
+  return DATASETS[name].seedIfEmpty();
 }

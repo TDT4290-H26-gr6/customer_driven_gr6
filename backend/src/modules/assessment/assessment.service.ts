@@ -97,18 +97,23 @@ export async function hasCompletedMainAssessment(learnerId: string): Promise<boo
  * null for a learner with no role at all, they can't take anything yet.
  *
  * While role selection is turned off (config.roleSelectionEnabled), roles
- * are ignored: every learner gets the whole bank in every SAT.
+ * are ignored: every learner gets the whole bank in every SAT. Retired
+ * questions are left out either way.
  */
 async function roleQuestionFilter(learnerId: string): Promise<Prisma.QuestionWhereInput | null> {
   const learner = await findLearnerById(learnerId);
   if (!learner) return null;
-  if (!config.roleSelectionEnabled) return {};
+  // Retired questions (removed in the curriculum editor after being answered)
+  // are never asked again, whatever the role.
+  const inUse = { retiredAt: null };
+  if (!config.roleSelectionEnabled) return inUse;
   if (!learner.roleId) return null;
 
-  if (await isInitialAssessment(learnerId)) return {};
+  if (await isInitialAssessment(learnerId)) return inUse;
 
   const { sectionIds, competenceIds } = await getRoleGrants(learner.roleId);
   return {
+    ...inUse,
     OR: [
       { competenceId: { in: competenceIds } },
       { sectionModule: { sectionId: { in: sectionIds } } },
@@ -967,7 +972,12 @@ export async function getAttemptSectionScores(learnerId: string, instanceNum?: n
       section: { select: { id: true, code: true, name: true } },
       mainCompetence: { select: { id: true, name: true } },
       secondaryCompetences: { select: { competence: { select: { id: true, name: true } } } },
+      // A retired question counts only where this attempt answered it, as if
+      // it had never been in the bank otherwise.
       questions: {
+        where: {
+          OR: [{ retiredAt: null }, { responses: { some: { satInstanceId: instance.id } } }],
+        },
         select: { id: true, competence: { select: { id: true, name: true } } },
         orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       },
