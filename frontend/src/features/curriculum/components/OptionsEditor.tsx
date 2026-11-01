@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { Button } from "@/shared/components/Button";
-import { nextOptionId } from "../questionTypes";
+import { newOptionId } from "../questionTypes";
 import type { Option } from "../types";
 import styles from "./Editors.module.css";
 
@@ -67,7 +67,7 @@ export function OptionsEditor({
   }
 
   function add() {
-    onChange([...options, { id: nextOptionId(options), text: "" }], correctIds);
+    onChange([...options, { id: newOptionId(options), text: "" }], correctIds);
   }
 
   return (

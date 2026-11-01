@@ -1,5 +1,6 @@
 import {
   buildPieContent,
+  isMatrixType,
   QUESTION_TYPES,
   TRUE_FALSE_COLUMNS,
   type AuthoredContent,
@@ -79,12 +80,6 @@ function validateOptions(
   }
   return { data: options };
 }
-
-const MATRIX_TYPES: readonly QuestionType[] = [
-  "true_false_matrix",
-  "classification_matrix",
-  "matching",
-];
 
 /**
  * A matrix question's columns and rows. Every row needs one of the columns
@@ -181,7 +176,7 @@ function validateContent(type: QuestionType, value: unknown): Result<AuthoredCon
     return { data: { scale: { min: from, max: to, minLabel, maxLabel } } };
   }
 
-  if (MATRIX_TYPES.includes(type)) return validateMatrix(type, content);
+  if (isMatrixType(type)) return validateMatrix(type, content);
 
   const options = validateOptions(content.options);
   if ("error" in options) return options;

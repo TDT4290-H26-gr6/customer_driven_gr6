@@ -5,7 +5,7 @@ import { buildPieContent, type AuthoredContent } from "./assessment.pie";
 import { withoutAnswers } from "./assessment.redact";
 
 describe("withoutAnswers", () => {
-  it("drops which choices are right, keeping what the player shows and records", () => {
+  it("sends multiple choice only what the player shows and records", () => {
     const content = {
       markup: "<multiple-choice id='1'></multiple-choice>",
       elements: { "multiple-choice": "@pie-element/multiple-choice@latest" },
@@ -15,8 +15,9 @@ describe("withoutAnswers", () => {
           element: "multiple-choice",
           choiceMode: "checkbox",
           prompt: "Pick",
+          rationale: "Because a",
           choices: [
-            { label: "<div>A</div>", value: "a", correct: true },
+            { label: "<div>A</div>", value: "a", correct: true, rationale: "Right", feedback: {} },
             { label: "<div>B</div>", value: "b", correct: false },
             { label: "<div>I don't know</div>", value: "__idk__", correct: false },
           ],
@@ -24,10 +25,14 @@ describe("withoutAnswers", () => {
       ],
     };
     expect(withoutAnswers(content)).toEqual({
-      ...content,
+      markup: content.markup,
+      elements: content.elements,
       models: [
         {
-          ...content.models[0],
+          id: "1",
+          element: "multiple-choice",
+          choiceMode: "checkbox",
+          prompt: "Pick",
           choices: [
             { label: "<div>A</div>", value: "a" },
             { label: "<div>B</div>", value: "b" },
@@ -38,7 +43,7 @@ describe("withoutAnswers", () => {
     });
   });
 
-  it("drops an ordering question's correct sequence, keeping its items", () => {
+  it("sends an ordering question its items, not the correct sequence", () => {
     const model = {
       id: "1",
       element: "aios-placement-ordering",
@@ -48,58 +53,62 @@ describe("withoutAnswers", () => {
         { id: "a", label: "First" },
       ],
       orientation: "vertical",
-      partialScoring: true,
     };
     expect(
       withoutAnswers({
         element: "aios-placement-ordering",
-        model: { ...model, correctResponse: ["a", "b"] },
+        model: { ...model, correctResponse: ["a", "b"], partialScoring: true },
       }),
     ).toEqual({ element: "aios-placement-ordering", model });
   });
 
-  it("drops each matrix row's right column, keeping the rows and columns", () => {
-    const content = {
+  it("sends a matrix its rows and columns, not each row's right column", () => {
+    const model = {
+      id: "1",
       element: "aios-match",
-      model: {
-        id: "1",
-        element: "aios-match",
-        choiceMode: "radio",
-        headers: ["", "True", "False", "I don't know"],
-        layout: 4,
-        rows: [{ id: "s1", title: "A statement", values: [true, false, false] }],
-      },
+      prompt: "<p>True or false?</p>",
+      choiceMode: "radio",
+      headers: ["", "True", "False", "I don't know"],
+      layout: 4,
+      lockChoiceOrder: true,
     };
-    expect(withoutAnswers(content)).toEqual({
-      ...content,
-      model: { ...content.model, rows: [{ id: "s1", title: "A statement" }] },
+    expect(
+      withoutAnswers({
+        element: "aios-match",
+        model: {
+          ...model,
+          partialScoring: true,
+          rows: [{ id: "s1", title: "A statement", values: [true, false, false], feedback: "x" }],
+        },
+      }),
+    ).toEqual({
+      element: "aios-match",
+      model: { ...model, rows: [{ id: "s1", title: "A statement" }] },
     });
   });
 
-  it("drops the answers and after-answer texts any other PIE model could carry", () => {
+  it("leaves out any field it doesn't know, so a new answer field stays on the server", () => {
+    const redacted = withoutAnswers({
+      models: [{ id: "1", element: "multiple-choice", choices: [], answerKey: ["a"] }],
+      solution: "a",
+    });
+    expect(redacted).toEqual({ models: [{ id: "1", element: "multiple-choice", choices: [] }] });
+  });
+
+  it("sends an element it doesn't know nothing but its id", () => {
     const redacted = withoutAnswers({
       models: [
-        {
-          id: "1",
-          element: "drag-in-the-blank",
-          markup: "{{0}}",
-          correctResponse: { "0": "a" },
-          alternateResponses: { "0": ["b"] },
-          rationale: "Because",
-          feedback: { correct: { type: "custom" } },
-          teacherInstructions: "The answer is a",
-        },
+        { id: "1", element: "drag-in-the-blank", markup: "{{0}}", correctResponse: { "0": "a" } },
       ],
     });
-    expect(redacted).toEqual({
-      models: [{ id: "1", element: "drag-in-the-blank", markup: "{{0}}" }],
-    });
+    expect(redacted).toEqual({ models: [{ id: "1", element: "drag-in-the-blank" }] });
   });
 
-  it("leaves content that isn't a question item as it is", () => {
+  it("leaves content that isn't a question item empty", () => {
     expect(withoutAnswers(null)).toBeNull();
     expect(withoutAnswers({})).toEqual({});
-    expect(withoutAnswers({ models: ["odd"] })).toEqual({ models: ["odd"] });
+    expect(withoutAnswers({ answer: "a" })).toEqual({});
+    expect(withoutAnswers({ models: ["odd"] })).toEqual({ models: [{}] });
   });
 
   it("doesn't change the stored content it's given", () => {
@@ -109,20 +118,34 @@ describe("withoutAnswers", () => {
   });
 });
 
-/** Every key anywhere in `value`. */
-function keysIn(value: unknown): Set<string> {
-  const keys = new Set<string>();
-  const walk = (v: unknown) => {
-    if (Array.isArray(v)) v.forEach(walk);
-    else if (v && typeof v === "object") {
-      for (const [key, child] of Object.entries(v)) {
-        keys.add(key);
-        walk(child);
-      }
-    }
-  };
-  walk(value);
-  return keys;
+type DatasetQuestion = {
+  id: string;
+  questionType: string;
+  prompt: string;
+  content: AuthoredContent;
+};
+
+/** The same question with a different right answer (a self-rating scale has none). */
+function withOtherAnswer(q: DatasetQuestion): AuthoredContent {
+  const c = q.content;
+  const ids = (c.options ?? []).map((o) => o.id);
+  if (c.correctOptionIds) {
+    const wrong = ids.find((id) => !c.correctOptionIds!.includes(id))!;
+    return { ...c, correctOptionIds: [wrong] };
+  }
+  if (c.correctOrder) return { ...c, correctOrder: [...c.correctOrder].reverse() };
+  if (c.rows) {
+    const columns =
+      q.questionType === "true_false_matrix" ? ["true", "false"] : c.columns!.map((x) => x.id);
+    return {
+      ...c,
+      rows: c.rows.map((r) => ({
+        ...r,
+        correctColumnId: columns.find((id) => id !== r.correctColumnId)!,
+      })),
+    };
+  }
+  return c;
 }
 
 describe("withoutAnswers on every WP2 question", () => {
@@ -132,21 +155,22 @@ describe("withoutAnswers on every WP2 question", () => {
       "utf8",
     ),
   ) as Record<string, unknown>;
-  const questions = dataset["aios.assessment.question"] as {
-    id: string;
-    questionType: string;
-    prompt: string;
-    content: AuthoredContent;
-  }[];
+  const questions = (dataset["aios.assessment.question"] as DatasetQuestion[]).filter(
+    (q) => q.questionType !== "likert",
+  );
 
+  // Built with another right answer, the stored question differs; what a
+  // learner gets must not, or something in it gives the answer away.
   it.each(questions.map((q) => [q.id, q] as const))(
-    "%s reaches the browser without its answer",
+    "%s reaches the browser the same whatever its right answer is",
     (_id, q) => {
-      const built = buildPieContent(q.questionType, q.prompt, q.content);
-      const keys = keysIn(withoutAnswers(built as never));
-      for (const key of ["correct", "correctResponse", "values", "alternateResponses"]) {
-        expect(keys).not.toContain(key);
-      }
+      const build = (content: AuthoredContent) =>
+        buildPieContent(q.questionType, q.prompt, content) as never;
+      const stored = build(q.content);
+      const otherStored = build(withOtherAnswer(q));
+
+      expect(otherStored).not.toEqual(stored);
+      expect(withoutAnswers(otherStored)).toEqual(withoutAnswers(stored));
     },
   );
 });

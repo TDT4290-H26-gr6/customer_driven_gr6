@@ -233,6 +233,43 @@ describe("PieQuestionPlayer", () => {
         });
       });
 
+      it("stays complete when the learner moves an item back to where it started", () => {
+        vi.mocked(loadPlacementOrdering).mockReturnValue(new Promise(() => {}));
+        const onAnswerChange = vi.fn();
+        const { container } = render(
+          <PieQuestionPlayer content={ordering} onAnswerChange={onAnswerChange} />,
+        );
+        const element = nativeElement(container);
+        const report = (value: string[]) => {
+          element.session = { id: "1", element: "aios-placement-ordering", value };
+          element.dispatchEvent(new CustomEvent("session-changed", { detail: { complete: true } }));
+        };
+
+        report(["b", "a"]); // shown: not an answer yet
+        report(["a", "b"]); // moved
+        report(["b", "a"]); // moved back: saved too, so the server has what's on screen
+
+        expect(onAnswerChange.mock.calls.map(([a]) => a.complete)).toEqual([false, true, true]);
+        expect(onAnswerChange.mock.lastCall![0].session).toMatchObject({ value: ["b", "a"] });
+      });
+
+      it("counts a saved answer in the starting order, which the learner chose", () => {
+        vi.mocked(loadPlacementOrdering).mockReturnValue(new Promise(() => {}));
+        const onAnswerChange = vi.fn();
+        const saved = { id: "1", element: "aios-placement-ordering", value: ["b", "a"] };
+        const { container } = render(
+          <PieQuestionPlayer
+            content={ordering}
+            answer={{ session: saved, complete: true }}
+            onAnswerChange={onAnswerChange}
+          />,
+        );
+        const element = nativeElement(container);
+        element.session = saved;
+        element.dispatchEvent(new CustomEvent("session-changed", { detail: { complete: true } }));
+        expect(onAnswerChange).toHaveBeenLastCalledWith({ session: saved, complete: true });
+      });
+
       it("says how to answer under the items", () => {
         vi.mocked(loadPlacementOrdering).mockReturnValue(new Promise(() => {}));
         const { getByText } = render(<PieQuestionPlayer content={ordering} />);

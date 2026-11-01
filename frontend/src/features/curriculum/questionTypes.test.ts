@@ -4,7 +4,7 @@ import {
   emptyContent,
   isMatrixType,
   moduleLabel,
-  nextOptionId,
+  newOptionId,
   QUESTION_TYPE_INFO,
   questionTypeLabel,
 } from "./questionTypes";
@@ -47,17 +47,20 @@ describe("question types", () => {
   });
 });
 
-describe("nextOptionId", () => {
-  it("uses the first free letter, then numbered ids", () => {
-    expect(
-      nextOptionId([
-        { id: "a", text: "" },
-        { id: "c", text: "" },
-      ]),
-    ).toBe("b");
-    const all = "abcdefghijklmnopqrstuvwxyz".split("").map((id) => ({ id, text: "" }));
-    expect(nextOptionId(all)).toBe("o26");
-    expect(nextOptionId([...all, { id: "o26", text: "" }])).toBe("o27");
+describe("newOptionId", () => {
+  it("makes a short random id, never one the question has", () => {
+    const existing = [
+      { id: "a", text: "" },
+      { id: "b", text: "" },
+    ];
+    const ids = Array.from({ length: 200 }, () => newOptionId(existing));
+    for (const id of ids) expect(id).toMatch(/^[a-z0-9]{8}$/);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("never reuses a removed option's id, which saved answers may still point at", () => {
+    // "b" was removed in an earlier save; letters-in-order would hand it out again.
+    expect(newOptionId([{ id: "a", text: "" }])).not.toBe("b");
   });
 });
 
@@ -100,8 +103,8 @@ describe("convertContent", () => {
         { id: "false", text: "False" },
       ],
       rows: [
-        { id: "a", text: "", correctColumnId: "true" },
-        { id: "b", text: "", correctColumnId: "true" },
+        { id: "a", text: "", correctColumnId: "" },
+        { id: "b", text: "", correctColumnId: "" },
       ],
     });
     expect(emptyContent("matching").rows?.map((r) => r.correctColumnId)).toEqual(["", ""]);

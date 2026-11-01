@@ -561,6 +561,7 @@ describe("listQuestions", () => {
           models: [
             {
               id: "1",
+              element: "multiple-choice",
               choiceMode: "radio",
               choices: [
                 { value: "a", correct: false },

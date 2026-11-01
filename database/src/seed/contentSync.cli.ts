@@ -67,17 +67,18 @@ async function main() {
     loadAssessedSectionIds(),
     onlyNew ? loadDeletedInEditor() : Promise.resolve(new Set<string>()),
   ]);
-  const plan = planContentSync(
-    onlyNew ? newRowsOnly(data, current, deleted) : data,
-    current,
-    assessed,
-  );
+  const onlyNewRows = onlyNew ? newRowsOnly(data, current, deleted) : null;
+  const plan = planContentSync(onlyNewRows?.data ?? data, current, assessed);
   // Everything else is "not in the file" only because it was filtered out.
   if (onlyNew) plan.notInFile = [];
 
   const mode = onlyNew ? " (only new rows)" : "";
   console.log(`Content sync${mode}: ${path.relative(process.cwd(), file)} -> "wp2" database\n`);
   console.log(formatPlan(plan));
+  if (onlyNewRows && onlyNewRows.skipped.length > 0) {
+    console.log("\nNew in the file but left out, since a row they point at is gone:");
+    for (const s of onlyNewRows.skipped) console.log(`  ${s.label} ${s.key}: ${s.reason}`);
+  }
   console.log(
     onlyNew
       ? "\nOnly rows the database doesn't have are added; nothing changed in the curriculum editor is touched."

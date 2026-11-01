@@ -72,7 +72,9 @@ const ORDERING_TAG = "aios-placement-ordering";
  * element reports that as complete from the start, before the learner has
  * moved anything, so it doesn't count as an answer until they have (the
  * backend never starts them in the correct order, so this never holds back
- * a right answer).
+ * a right answer). Once they have moved one, every order counts, the
+ * starting one too if they move it back: what's on screen is always what's
+ * saved.
  */
 function isStartingOrder(content: NativeElementContent, session: unknown): boolean {
   if (content.element !== ORDERING_TAG || !Array.isArray(content.model.choices)) return false;
@@ -90,6 +92,9 @@ function isNativeElementContent(
 export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
   const ref = useRef<PieFixedPlayerElement | NativeQuestionElement>(null);
   const native = isNativeElementContent(content);
+  // Whether the learner has answered this ordering question yet: moved an
+  // item now, or before (a saved answer). See isStartingOrder.
+  const orderingTouched = useRef(answer?.complete === true);
 
   useEffect(() => {
     // The player is loaded on first use (see loadPiePlayer/loadNativeElement);
@@ -142,7 +147,8 @@ export function PieQuestionPlayer({ content, answer, onAnswerChange }: Props) {
       // which then finds nothing to clear.
       const session = clearOthersIfIdk(current);
       if (session !== current && ref.current) ref.current.session = session;
-      const untouched = native && isStartingOrder(content, session);
+      if (native && !isStartingOrder(content, session)) orderingTouched.current = true;
+      const untouched = native && !orderingTouched.current && isStartingOrder(content, session);
       onAnswerChange?.({ session, complete: Boolean(detail?.complete) && !untouched });
     };
     ref.current.addEventListener("session-changed", handler);

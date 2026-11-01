@@ -81,6 +81,17 @@ export const QUESTION_TYPES = [
 ] as const;
 export type QuestionType = (typeof QUESTION_TYPES)[number];
 
+/** The types shown as a table (@pie-element/match), a column per answer, scored per row. */
+export const MATRIX_QUESTION_TYPES: readonly QuestionType[] = [
+  "true_false_matrix",
+  "classification_matrix",
+  "matching",
+];
+
+export function isMatrixType(questionType: string): boolean {
+  return (MATRIX_QUESTION_TYPES as readonly string[]).includes(questionType);
+}
+
 function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
