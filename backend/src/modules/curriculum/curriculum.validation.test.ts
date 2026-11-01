@@ -155,6 +155,88 @@ describe("validateQuestionInput: per question type", () => {
   });
 });
 
+describe("validateQuestionInput: matrix types", () => {
+  const columns = [
+    { id: "good", text: " Good practice " },
+    { id: "poor", text: "Poor practice" },
+  ];
+  const rows = [
+    { id: "r1", text: " Maintain a README ", correctColumnId: "good" },
+    { id: "r2", text: "Skip the README", correctColumnId: "poor" },
+  ];
+
+  it("accepts columns and rows, trimmed, each row with its answer", () => {
+    expect(check("classification_matrix", { columns, rows, options: ["ignored"] })).toMatchObject({
+      data: {
+        content: {
+          columns: [
+            { id: "good", text: "Good practice" },
+            { id: "poor", text: "Poor practice" },
+          ],
+          rows: [
+            { id: "r1", text: "Maintain a README", correctColumnId: "good" },
+            { id: "r2", text: "Skip the README", correctColumnId: "poor" },
+          ],
+        },
+      },
+    });
+  });
+
+  it("allows a matching distractor: a column no row uses", () => {
+    const withDistractor = [...columns, { id: "neither", text: "Neither" }];
+    expect(errorOf(check("matching", { columns: withDistractor, rows }))).toBeNull();
+  });
+
+  it("always gives a true/false matrix True and False columns", () => {
+    const statements = [
+      { id: "s1", text: "A DOI is persistent.", correctColumnId: "true" },
+      { id: "s2", text: "Every repository takes everything.", correctColumnId: "false" },
+    ];
+    const result = check("true_false_matrix", { columns, rows: statements });
+    expect(result).toMatchObject({
+      data: {
+        content: {
+          columns: [
+            { id: "true", text: "True" },
+            { id: "false", text: "False" },
+          ],
+        },
+      },
+    });
+  });
+
+  it.each([
+    ["classification_matrix", { columns: [columns[0]], rows }, "Add at least 2 answers"],
+    ["matching", { columns, rows: [rows[0]] }, "Add at least 2 items"],
+    [
+      "true_false_matrix",
+      { rows: [{ id: "s1", text: "x", correctColumnId: "true" }] },
+      "Add at least 2 statements",
+    ],
+    [
+      "matching",
+      { columns, rows: [rows[0], { ...rows[1], text: " maintain a readme" }] },
+      "Two items have the same text",
+    ],
+    [
+      "classification_matrix",
+      { columns, rows: [rows[0], { ...rows[1], correctColumnId: "nope" }] },
+      "Choose the right answer for every row",
+    ],
+    ["true_false_matrix", { rows: [rows[0], rows[1]] }, "Choose the right answer for every row"],
+    [
+      "matching",
+      {
+        columns,
+        rows: Array.from({ length: 21 }, (_, i) => ({ ...rows[0], id: `r${i}`, text: `${i}` })),
+      },
+      "Use at most 20 items",
+    ],
+  ])("%s: rejects %j", (type, content, error) => {
+    expect(errorOf(check(type, content))).toBe(error);
+  });
+});
+
 describe("validateCompetenceInput", () => {
   it("accepts a name and an optional description", () => {
     expect(validateCompetenceInput({ name: " FAIR data ", description: " " })).toEqual({

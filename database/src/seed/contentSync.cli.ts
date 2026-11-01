@@ -8,10 +8,12 @@ import {
   hasChanges,
   loadAssessedSectionIds,
   loadCurrentContent,
+  loadDeletedInEditor,
+  newRowsOnly,
   planContentSync,
 } from "./contentSync";
 
-// `npm run content:sync [-- --apply] [--file <path>]`
+// `npm run content:sync [-- --apply] [--only-new] [--file <path>]`
 //
 // Makes the database match the WP2 dataset JSON file (see contentSync.ts) without
 // restarting the app, it reads content from the database on every request.
@@ -19,11 +21,14 @@ import {
 //
 // The database is the source of truth for content (the admin curriculum
 // editor edits it), so applying a sync overwrites any edits made in the
-// editor to rows that are in the file. Check the dry run first.
+// editor to rows that are in the file. Check the dry run first. --only-new
+// only adds rows the database doesn't have yet (e.g. newly delivered items)
+// and changes nothing that's there, nor re-adds what an admin deleted.
 //
 // In Docker, through the db-init service (its src/ is mounted, so this file
 // and the data are live):
 //   docker compose run --rm db-init npm run content:sync -- --apply
+//   docker compose run --rm db-init npm run content:sync -- --only-new --apply
 
 const DEFAULT_FILE = path.join(__dirname, "data", "aios_wp2_seed.json");
 
@@ -39,12 +44,13 @@ function parseArgs(argv: string[]) {
   };
   return {
     apply: argv.includes("--apply"),
+    onlyNew: argv.includes("--only-new"),
     file: path.resolve(valueOf("--file") ?? DEFAULT_FILE),
   };
 }
 
 async function main() {
-  const { apply, file } = parseArgs(process.argv.slice(2));
+  const { apply, onlyNew, file } = parseArgs(process.argv.slice(2));
 
   // Same rule as the seed: two datasets never share a database.
   const conflicting = await otherDatasetsPresent("wp2");
@@ -56,20 +62,34 @@ async function main() {
 
   // Read fresh from disk (not imported), so the latest edits are what's synced.
   const data: unknown = JSON.parse(readFileSync(file, "utf8"));
-  const [current, assessed] = await Promise.all([loadCurrentContent(), loadAssessedSectionIds()]);
-  const plan = planContentSync(data, current, assessed);
+  const [current, assessed, deleted] = await Promise.all([
+    loadCurrentContent(),
+    loadAssessedSectionIds(),
+    onlyNew ? loadDeletedInEditor() : Promise.resolve(new Set<string>()),
+  ]);
+  const onlyNewRows = onlyNew ? newRowsOnly(data, current, deleted) : null;
+  const plan = planContentSync(onlyNewRows?.data ?? data, current, assessed);
+  // Everything else is "not in the file" only because it was filtered out.
+  if (onlyNew) plan.notInFile = [];
 
-  console.log(`Content sync: ${path.relative(process.cwd(), file)} -> "wp2" database\n`);
+  const mode = onlyNew ? " (only new rows)" : "";
+  console.log(`Content sync${mode}: ${path.relative(process.cwd(), file)} -> "wp2" database\n`);
   console.log(formatPlan(plan));
+  if (onlyNewRows && onlyNewRows.skipped.length > 0) {
+    console.log("\nNew in the file but left out, since a row they point at is gone:");
+    for (const s of onlyNewRows.skipped) console.log(`  ${s.label} ${s.key}: ${s.reason}`);
+  }
   console.log(
-    "\nNote: applying this overwrites any changes made in the curriculum editor to the rows listed above.",
+    onlyNew
+      ? "\nOnly rows the database doesn't have are added; nothing changed in the curriculum editor is touched."
+      : "\nNote: applying this overwrites any changes made in the curriculum editor to the rows listed above.",
   );
 
   if (!hasChanges(plan)) return;
   if (!apply) {
     console.log(
       "\nDry run: nothing was changed. To write these changes, run:\n" +
-        "  npm run content:sync -- --apply\n" +
+        `  npm run content:sync -- ${onlyNew ? "--only-new " : ""}--apply\n` +
         "(The -- matters: without it npm keeps --apply to itself and this stays a dry run.)",
     );
     return;

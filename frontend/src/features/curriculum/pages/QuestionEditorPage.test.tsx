@@ -161,6 +161,49 @@ describe("QuestionEditorPage: a new question", () => {
     );
   });
 
+  it("saves a sorting question: categories, and each item's right category", async () => {
+    renderEditor();
+    await screen.findByRole("heading", { name: "Add a question" });
+    await userEvent.selectOptions(select("Question type"), "classification_matrix");
+    expect(screen.getByText(/Every row also gets an "I don't know" answer/)).toBeInTheDocument();
+    await typeInto("Question", "Classify each practice.");
+    await typeInto("Category 1 text", "Good practice");
+    await typeInto("Category 2 text", "Poor practice");
+    await typeInto("Item 1 text", "Maintain a README");
+    await typeInto("Item 2 text", "Skip the README");
+    await userEvent.selectOptions(select("Item 1: right answer"), "Good practice");
+    await userEvent.selectOptions(select("Item 2: right answer"), "Poor practice");
+    await userEvent.click(screen.getByRole("button", { name: "Add question" }));
+
+    expect(createQuestion).toHaveBeenCalledWith(
+      expect.objectContaining({
+        questionType: "classification_matrix",
+        content: {
+          columns: [
+            { id: "a", text: "Good practice" },
+            { id: "b", text: "Poor practice" },
+          ],
+          rows: [
+            { id: "a", text: "Maintain a README", correctColumnId: "a" },
+            { id: "b", text: "Skip the README", correctColumnId: "b" },
+          ],
+        },
+      }),
+    );
+  });
+
+  it("keeps the statements when a sorting question becomes true/false statements", async () => {
+    renderEditor();
+    await screen.findByRole("heading", { name: "Add a question" });
+    await userEvent.selectOptions(select("Question type"), "matching");
+    await typeInto("Item 1 text", "A DOI is persistent.");
+    await userEvent.selectOptions(select("Question type"), "true_false_matrix");
+    expect(screen.getByRole("textbox", { name: "Statement 1 text" })).toHaveValue(
+      "A DOI is persistent.",
+    );
+    expect(screen.queryByRole("textbox", { name: "Answer 1 text" })).not.toBeInTheDocument();
+  });
+
   it("shows the server's reason when a save is refused", async () => {
     vi.mocked(createQuestion).mockRejectedValue({
       status: 400,

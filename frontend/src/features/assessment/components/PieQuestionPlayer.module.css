@@ -33,6 +33,14 @@
   pointer-events: none;
 }
 
+/* Under an ordering question, which otherwise doesn't say what to do. */
+.hint {
+  margin: 8px 0 0;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+}
+
 @media (max-width: 767px) {
   .canvas {
     padding: 8px;

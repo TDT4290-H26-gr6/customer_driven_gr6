@@ -132,6 +132,29 @@ export function scoreOrdering(correctOrder: string[], placedOrder: (string | nul
   };
 }
 
+/**
+ * Scores a matrix response (true/false statements, classification, matching:
+ * the standalone @pie-element/match element, see PieQuestionPlayer.tsx), out
+ * of 1: the share of rows answered with their correct column. Each row is a
+ * radio group, so a row counts only when its correct column is the one
+ * selected. A row left empty or marked "I don't know" (the last column, never
+ * correct) counts as wrong, the same as a wrong pick.
+ */
+export function scoreMatrix(
+  rows: { id: string; correctColumn: number }[],
+  answers: Record<string, boolean[]>,
+): ScoreResult {
+  if (rows.length === 0) return { score: 0, maxScore: QUESTION_MAX_SCORE };
+  const correctCount = rows.filter((row) => {
+    const selected = answers[row.id] ?? [];
+    return selected[row.correctColumn] === true && selected.filter(Boolean).length === 1;
+  }).length;
+  return {
+    score: (correctCount / rows.length) * QUESTION_MAX_SCORE,
+    maxScore: QUESTION_MAX_SCORE,
+  };
+}
+
 // --- Extracting selections out of the PIE widget's own session payload ---
 //
 // `PieQuestionPlayer` persists `<pie-fixed-player>.session` as-is (see
@@ -194,6 +217,22 @@ export function extractOrderingValues(session: unknown): (string | null)[] {
   const value = isRecord(session) ? session.value : undefined;
   if (!Array.isArray(value)) return [];
   return value.map((v) => (typeof v === "string" ? v : null));
+}
+
+/**
+ * @pie-element/match's own session, from its published session.schema.json:
+ * `{ id, element, answers: { [rowId]: boolean[] } }`, for each row which
+ * columns are selected (the row texts' column not included). Standalone, so
+ * not wrapped in `{ id, data: [...] }`, like placement-ordering's.
+ */
+export function extractMatrixAnswers(session: unknown): Record<string, boolean[]> {
+  const answers = isRecord(session) ? session.answers : undefined;
+  if (!isRecord(answers)) return {};
+  return Object.fromEntries(
+    Object.entries(answers).flatMap(([rowId, values]) =>
+      Array.isArray(values) ? [[rowId, values.map((v) => v === true)]] : [],
+    ),
+  );
 }
 
 export function extractDragAndDropBlanks(

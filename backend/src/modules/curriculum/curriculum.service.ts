@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../../db/prisma";
-import { buildPieContent } from "../assessment/assessment.pie";
+import { buildPieContent, isMatrixType, type AuthoredContent } from "../assessment/assessment.pie";
 import {
   historiesFrom,
   NO_HISTORY,
@@ -264,10 +264,19 @@ export function createQuestion(actor: Actor, input: QuestionInput): Promise<Save
   });
 }
 
+/** A matrix question's column ids, in order: what its saved answers are positions in. */
+function columnIds(content: unknown): string {
+  const columns = (content as AuthoredContent | null)?.columns ?? [];
+  return columns.map((c) => c.id).join("|");
+}
+
 /**
  * Saves an edit. A question learners have answered keeps its type: their saved
  * answers are in that type's shape, so a different type means retiring it and
- * adding a new question. Answers already saved keep the score they got.
+ * adding a new question. A matrix question keeps its columns too (they can be
+ * reworded): a saved answer is a tick per column position, so adding,
+ * removing or reordering one would move learners' ticks to other answers.
+ * Answers already saved keep the score they got.
  */
 export function updateQuestion(
   actor: Actor,
@@ -280,16 +289,35 @@ export function updateQuestion(
     async (tx) => {
       const existing = await tx.question.findUnique({
         where: { id },
-        select: { questionType: true, _count: { select: { responses: true } } },
+        select: {
+          questionType: true,
+          authoredContent: true,
+          _count: { select: { responses: true } },
+        },
       });
       if (!existing) return { skip: { ok: false, status: 404, error: "Unknown question" } };
-      if (existing._count.responses > 0 && existing.questionType !== input.questionType) {
+      const answered = existing._count.responses > 0;
+      if (answered && existing.questionType !== input.questionType) {
         return {
           skip: {
             ok: false,
             status: 409,
             error:
               "Learners have answered this question, so its type can't change. Remove it and add a new question instead.",
+          },
+        };
+      }
+      if (
+        answered &&
+        isMatrixType(input.questionType) &&
+        columnIds(existing.authoredContent) !== columnIds(input.content)
+      ) {
+        return {
+          skip: {
+            ok: false,
+            status: 409,
+            error:
+              "Learners have answered this question, so its answers (the columns) can't be added, removed or reordered; you can still reword them. Remove it and add a new question instead.",
           },
         };
       }

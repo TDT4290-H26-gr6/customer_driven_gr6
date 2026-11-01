@@ -377,6 +377,69 @@ describe("saveResponse", () => {
       }),
     );
   });
+
+  it.each(["true_false_matrix", "classification_matrix", "matching"])(
+    "scores a %s question by how many rows were answered correctly",
+    async (questionType) => {
+      // Stored content as database/src/seed/pie.ts's matrixContent writes it:
+      // each row's `values` marks its correct column, "I don't know" last.
+      mockPrisma.satInstance.findFirst.mockResolvedValueOnce({ id: "instance-1" } as never);
+      mockPrisma.question.findFirst.mockResolvedValue({
+        id: "q5",
+        questionType,
+        content: {
+          element: "aios-match",
+          model: {
+            id: "1",
+            element: "aios-match",
+            headers: ["", "A", "B", "I don't know"],
+            layout: 4,
+            rows: [
+              { id: "r1", title: "One", values: [true, false, false] },
+              { id: "r2", title: "Two", values: [false, true, false] },
+              { id: "r3", title: "Three", values: [true, false, false] },
+              { id: "r4", title: "Four", values: [false, true, false] },
+            ],
+          },
+        },
+      } as never);
+
+      // Right, wrong, "I don't know", right.
+      const answer = {
+        session: {
+          id: "1",
+          answers: {
+            r1: [true, false, false],
+            r2: [true, false, false],
+            r3: [false, false, true],
+            r4: [false, true, false],
+          },
+        },
+        complete: true,
+      };
+      await saveResponse("learner-1", "q5", answer);
+
+      expect(mockPrisma.response.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          update: { answer, score: 0.5, maxScore: 1, timeSpentMs: null },
+        }),
+      );
+    },
+  );
+
+  it("scores a matrix question whose stored rows are missing as unscorable", async () => {
+    mockPrisma.satInstance.findFirst.mockResolvedValueOnce({ id: "instance-1" } as never);
+    mockPrisma.question.findFirst.mockResolvedValue({
+      id: "q6",
+      questionType: "matching",
+      content: { element: "aios-match", model: {} },
+    } as never);
+    const answer = { session: { answers: {} }, complete: false };
+    await saveResponse("learner-1", "q6", answer);
+    expect(mockPrisma.response.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ update: expect.objectContaining({ score: null }) }),
+    );
+  });
 });
 
 describe("with role selection turned off", () => {
@@ -498,6 +561,7 @@ describe("listQuestions", () => {
           models: [
             {
               id: "1",
+              element: "multiple-choice",
               choiceMode: "radio",
               choices: [
                 { value: "a", correct: false },
@@ -519,6 +583,57 @@ describe("listQuestions", () => {
     expect(choices.map((c) => c.value)).toContain("b");
     expect(choices.map((c) => c.value)).toContain("c");
     expect(choices.at(-1)?.value).toBe(IDK_VALUE);
+    // Nor which ones are right: that stays on the server.
+    expect(choices.every((c) => !("correct" in c))).toBe(true);
+  });
+
+  describe("an ordering question", () => {
+    function mockOrderingQuestion() {
+      vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);
+      mockPrisma.satInstance.count.mockResolvedValue(0);
+      mockPrisma.question.findMany.mockResolvedValue([
+        {
+          id: "q-order",
+          prompt: "Put them in order",
+          questionType: "ordering",
+          competence: { id: "c1", name: "Comp" },
+          // Authored in the correct order, as every WP2 ordering item is.
+          content: {
+            element: "aios-placement-ordering",
+            model: {
+              choices: [{ id: "a" }, { id: "b" }, { id: "c" }],
+              correctResponse: ["a", "b", "c"],
+            },
+          },
+        },
+      ] as never);
+    }
+    const itemIds = (question: { content: unknown }) =>
+      (question.content as { model: { choices: { id: string }[] } }).model.choices.map((c) => c.id);
+
+    it("starts its items in a random order", async () => {
+      mockOrderingQuestion();
+      const random = vi.spyOn(Math, "random").mockReturnValue(0);
+
+      const [question] = await listQuestions("learner-1");
+      random.mockRestore();
+
+      expect(itemIds(question)).toEqual(["b", "c", "a"]);
+    });
+
+    it("never starts them in the correct order, which would score full marks untouched", async () => {
+      mockOrderingQuestion();
+      // A shuffle that changes nothing.
+      const random = vi.spyOn(Math, "random").mockReturnValue(0.99);
+
+      const [question] = await listQuestions("learner-1");
+      random.mockRestore();
+
+      expect(itemIds(question)).not.toEqual(["a", "b", "c"]);
+      expect([...itemIds(question)].sort()).toEqual(["a", "b", "c"]);
+      // Nor sends the correct order along.
+      expect((question.content as { model: object }).model).not.toHaveProperty("correctResponse");
+    });
   });
 });
 
@@ -528,7 +643,13 @@ function mockPathInputs({
   active,
   responses,
 }: {
-  questions: { id: string; competenceId: string; level?: number }[];
+  questions: {
+    id: string;
+    competenceId: string;
+    level?: number;
+    questionType?: string;
+    content?: unknown;
+  }[];
   active: {
     id: string;
     instanceNum: number;
@@ -550,8 +671,8 @@ function mockPathInputs({
     questions.map((q) => ({
       id: q.id,
       prompt: `Prompt ${q.id}`,
-      questionType: "single_choice",
-      content: {},
+      questionType: q.questionType ?? "single_choice",
+      content: q.content ?? {},
       competenceId: q.competenceId,
       competence: { id: q.competenceId, name: q.competenceId },
       sectionModule: {
@@ -575,6 +696,34 @@ function mockPathInputs({
 }
 
 describe("getAssessmentPath", () => {
+  it("sends each question without its answers, which are scored from the stored copy", async () => {
+    mockPathInputs({
+      questions: [
+        {
+          id: "q1",
+          competenceId: "comp-a",
+          questionType: "true_false_matrix",
+          content: {
+            element: "aios-match",
+            model: {
+              layout: 4,
+              rows: [{ id: "s1", title: "A statement", values: [true, false, false] }],
+            },
+          },
+        },
+      ],
+      active: null,
+      responses: [],
+    });
+
+    const path = await getAssessmentPath("learner-1");
+
+    expect(path?.items[0].question.content).toEqual({
+      element: "aios-match",
+      model: { layout: 4, rows: [{ id: "s1", title: "A statement" }] },
+    });
+  });
+
   it("returns the answered questions on the path, with answers, then the next one", async () => {
     mockPathInputs({
       questions: [

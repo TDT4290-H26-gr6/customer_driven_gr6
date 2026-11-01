@@ -3,13 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { NativeElementContent, PieContent } from "../types";
 import { PieQuestionPlayer } from "./PieQuestionPlayer";
 import { IDK_VALUE } from "./idkSession";
-import { loadPlacementOrdering } from "./loadNativeElement";
+import { buildPlacementOrderingModel, loadMatch, loadPlacementOrdering } from "./loadNativeElement";
 import { loadPiePlayer } from "./loadPiePlayer";
 
 // The real players are web components (placement-ordering's own React tree
 // included) that jsdom can't run.
 vi.mock("./loadPiePlayer", () => ({ loadPiePlayer: vi.fn() }));
-vi.mock("./loadNativeElement", () => ({ loadPlacementOrdering: vi.fn() }));
+vi.mock("./loadNativeElement", () => ({
+  loadPlacementOrdering: vi.fn(),
+  buildPlacementOrderingModel: vi.fn(),
+  loadMatch: vi.fn(),
+}));
 
 const content = { id: "q1" } as unknown as PieContent;
 
@@ -24,6 +28,8 @@ describe("PieQuestionPlayer", () => {
   beforeEach(() => {
     vi.mocked(loadPiePlayer).mockReset();
     vi.mocked(loadPlacementOrdering).mockReset();
+    vi.mocked(loadMatch).mockReset();
+    vi.mocked(buildPlacementOrderingModel).mockReset();
   });
 
   it("hands the item and saved answer to the player only once it has loaded", async () => {
@@ -118,11 +124,15 @@ describe("PieQuestionPlayer", () => {
       };
     }
 
+    // What placement-ordering's controller builds out of the stored model.
+    const builtModel = { choices: [{ id: "a", label: "First" }], completeLength: 1 };
+
     it("routes to the element named in content.element instead of <pie-fixed-player>, setting .model not .config", async () => {
       let finishLoading!: () => void;
       vi.mocked(loadPlacementOrdering).mockReturnValue(
         new Promise<void>((r) => (finishLoading = r)),
       );
+      vi.mocked(buildPlacementOrderingModel).mockResolvedValue(builtModel);
 
       const { container } = render(
         <PieQuestionPlayer
@@ -135,7 +145,8 @@ describe("PieQuestionPlayer", () => {
       expect(element.model).toBeUndefined();
 
       finishLoading();
-      await vi.waitFor(() => expect(element.model).toBe(nativeContent.model));
+      await vi.waitFor(() => expect(element.model).toBe(builtModel));
+      expect(buildPlacementOrderingModel).toHaveBeenCalledWith(nativeContent.model);
       expect(element.session).toEqual({ value: ["a"] });
       expect(loadPiePlayer).not.toHaveBeenCalled();
     });
@@ -155,6 +166,133 @@ describe("PieQuestionPlayer", () => {
         session: { id: "s", element: "aios-placement-ordering", value: ["a", null] },
         complete: false,
       });
+    });
+
+    it("starts a matrix question from an empty session, which it needs to draw anything", async () => {
+      vi.mocked(loadMatch).mockResolvedValue();
+      const matrix = {
+        element: "aios-match",
+        model: { id: "1", rows: [] },
+      } as NativeElementContent;
+      const { container } = render(<PieQuestionPlayer content={matrix} />);
+      const element = container.querySelector("aios-match") as HTMLElement & {
+        model?: unknown;
+        session?: unknown;
+      };
+      await vi.waitFor(() => expect(element.model).toBe(matrix.model));
+      expect(element.session).toEqual({ id: "1", element: "aios-match" });
+      expect(loadPlacementOrdering).not.toHaveBeenCalled();
+    });
+
+    it("restores a matrix question's saved answer instead", async () => {
+      vi.mocked(loadMatch).mockResolvedValue();
+      const matrix = { element: "aios-match", model: { id: "1" } } as NativeElementContent;
+      const saved = { id: "1", answers: { r1: [true, false, false] } };
+      const { container } = render(
+        <PieQuestionPlayer content={matrix} answer={{ session: saved, complete: true }} />,
+      );
+      const element = container.querySelector("aios-match") as HTMLElement & { session?: unknown };
+      await vi.waitFor(() => expect(element.session).toBe(saved));
+    });
+
+    it("starts an unanswered ordering question from an empty session, from its controller's model", async () => {
+      vi.mocked(loadPlacementOrdering).mockResolvedValue();
+      vi.mocked(buildPlacementOrderingModel).mockResolvedValue(builtModel);
+      const { container } = render(<PieQuestionPlayer content={nativeContent} />);
+      const element = nativeElement(container);
+      await vi.waitFor(() => expect(element.model).toBe(builtModel));
+      expect(element.session).toEqual({ id: "1", element: "aios-placement-ordering" });
+    });
+
+    describe("an ordering answer", () => {
+      const ordering = {
+        element: "aios-placement-ordering",
+        model: { id: "1", choices: [{ id: "b" }, { id: "a" }], correctResponse: ["a", "b"] },
+      } as NativeElementContent;
+
+      function reportedFor(value: string[]) {
+        vi.mocked(loadPlacementOrdering).mockReturnValue(new Promise(() => {}));
+        const onAnswerChange = vi.fn();
+        const { container } = render(
+          <PieQuestionPlayer content={ordering} onAnswerChange={onAnswerChange} />,
+        );
+        const element = nativeElement(container);
+        element.session = { id: "1", element: "aios-placement-ordering", value };
+        element.dispatchEvent(new CustomEvent("session-changed", { detail: { complete: true } }));
+        return onAnswerChange.mock.calls[0][0];
+      }
+
+      it("isn't complete while the items are still in the order they started in", () => {
+        expect(reportedFor(["b", "a"])).toMatchObject({ complete: false });
+      });
+
+      it("is complete once the learner has moved one", () => {
+        expect(reportedFor(["a", "b"])).toEqual({
+          session: { id: "1", element: "aios-placement-ordering", value: ["a", "b"] },
+          complete: true,
+        });
+      });
+
+      it("stays complete when the learner moves an item back to where it started", () => {
+        vi.mocked(loadPlacementOrdering).mockReturnValue(new Promise(() => {}));
+        const onAnswerChange = vi.fn();
+        const { container } = render(
+          <PieQuestionPlayer content={ordering} onAnswerChange={onAnswerChange} />,
+        );
+        const element = nativeElement(container);
+        const report = (value: string[]) => {
+          element.session = { id: "1", element: "aios-placement-ordering", value };
+          element.dispatchEvent(new CustomEvent("session-changed", { detail: { complete: true } }));
+        };
+
+        report(["b", "a"]); // shown: not an answer yet
+        report(["a", "b"]); // moved
+        report(["b", "a"]); // moved back: saved too, so the server has what's on screen
+
+        expect(onAnswerChange.mock.calls.map(([a]) => a.complete)).toEqual([false, true, true]);
+        expect(onAnswerChange.mock.lastCall![0].session).toMatchObject({ value: ["b", "a"] });
+      });
+
+      it("counts a saved answer in the starting order, which the learner chose", () => {
+        vi.mocked(loadPlacementOrdering).mockReturnValue(new Promise(() => {}));
+        const onAnswerChange = vi.fn();
+        const saved = { id: "1", element: "aios-placement-ordering", value: ["b", "a"] };
+        const { container } = render(
+          <PieQuestionPlayer
+            content={ordering}
+            answer={{ session: saved, complete: true }}
+            onAnswerChange={onAnswerChange}
+          />,
+        );
+        const element = nativeElement(container);
+        element.session = saved;
+        element.dispatchEvent(new CustomEvent("session-changed", { detail: { complete: true } }));
+        expect(onAnswerChange).toHaveBeenLastCalledWith({ session: saved, complete: true });
+      });
+
+      it("says how to answer under the items", () => {
+        vi.mocked(loadPlacementOrdering).mockReturnValue(new Promise(() => {}));
+        const { getByText } = render(<PieQuestionPlayer content={ordering} />);
+        expect(getByText("Drag the items into the right order.")).toBeTruthy();
+      });
+    });
+
+    it("says nothing extra under a matrix question", () => {
+      vi.mocked(loadMatch).mockReturnValue(new Promise(() => {}));
+      const matrix = { element: "aios-match", model: { id: "1" } } as NativeElementContent;
+      const { queryByText } = render(<PieQuestionPlayer content={matrix} />);
+      expect(queryByText("Drag the items into the right order.")).toBeNull();
+    });
+
+    it("leaves an ordering question empty when its controller fails", async () => {
+      vi.mocked(loadPlacementOrdering).mockResolvedValue();
+      vi.mocked(buildPlacementOrderingModel).mockRejectedValue(new Error("offline"));
+      const { container } = render(<PieQuestionPlayer content={nativeContent} />);
+      const element = nativeElement(container);
+      await vi.waitFor(() => expect(buildPlacementOrderingModel).toHaveBeenCalled());
+      await Promise.resolve();
+      expect(element.model).toBeUndefined();
+      expect(element.session).toBeUndefined();
     });
 
     it("still renders, empty, when a native element has no registered loader", async () => {

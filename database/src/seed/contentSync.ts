@@ -20,6 +20,11 @@ import { withMoodleLink } from "./datasetLoader";
 //   by section" (which recompute from today's questions; History doesn't)
 //   come with a warning.
 //
+// With --only-new (newRowsOnly) it only adds what the database doesn't have
+// yet, e.g. newly delivered items, and leaves every existing row as the
+// curriculum editor left it, nor does it bring back anything an admin
+// deleted there.
+//
 // planContentSync is pure (file + database rows in, plan out), so every rule
 // is unit-testable; applyContentSync writes a plan in one transaction.
 
@@ -121,6 +126,114 @@ const TABLES: TableSpec[] = [
     key: ["id"],
   },
 ];
+
+/**
+ * What the curriculum editor's change log (security_audit_event) calls each
+ * table's rows, to tell which ones an admin deleted.
+ */
+const ENTITY_TYPE: Record<string, string> = {
+  "aios.assessment.competence": "competence",
+  "aios.assessment.section": "section",
+  "aios.assessment.section_module": "module",
+  "aios.assessment.question": "question",
+  "aios.learningJourney.journey": "journey",
+};
+
+/** A journey's steps belong to it: only-new adds them only with a new journey. */
+const PART_OF: Record<string, { field: string; table: string }> = {
+  "aios.learningJourney.learning_module": {
+    field: "journeyId",
+    table: "aios.learningJourney.journey",
+  },
+};
+
+/** The rows each table's rows point at (foreign keys); a nullable one may be empty. */
+const REFERENCES: Record<string, { field: string; table: string }[]> = {
+  "aios.assessment.competence": [{ field: "primarySourceId", table: "aios.sources.source" }],
+  "aios.assessment.competence_secondary_source": [
+    { field: "competenceId", table: "aios.assessment.competence" },
+    { field: "sourceId", table: "aios.sources.source" },
+  ],
+  "aios.assessment.section_module": [
+    { field: "sectionId", table: "aios.assessment.section" },
+    { field: "mainCompetenceId", table: "aios.assessment.competence" },
+  ],
+  "aios.assessment.section_module_secondary_competence": [
+    { field: "moduleId", table: "aios.assessment.section_module" },
+    { field: "competenceId", table: "aios.assessment.competence" },
+  ],
+  "aios.assessment.question": [
+    { field: "sectionModuleId", table: "aios.assessment.section_module" },
+    { field: "competenceId", table: "aios.assessment.competence" },
+  ],
+  "aios.learningJourney.journey_section": [
+    { field: "journeyId", table: "aios.learningJourney.journey" },
+    { field: "sectionId", table: "aios.assessment.section" },
+  ],
+  "aios.learningJourney.learning_module": [
+    { field: "journeyId", table: "aios.learningJourney.journey" },
+    { field: "sourceId", table: "aios.sources.source" },
+  ],
+};
+
+/** A new row --only-new leaves out because something it points at is gone. */
+export type SkippedRow = { label: string; key: string; reason: string };
+
+/**
+ * The file cut down to what the database doesn't have yet: new rows, and the
+ * links and steps of new rows only (a link of an existing row may have been
+ * removed in the editor on purpose). Rows an admin deleted in the editor
+ * (`deleted`, "type:id" from the change log) stay deleted. Planned like any
+ * file, this only creates; nothing existing is changed or removed.
+ *
+ * A new row is only added when every row it points at exists, in the
+ * database or added with it. One that points at a row deleted in the editor
+ * (a question in a deleted module, say) can't be, the database would refuse
+ * it and the whole apply would fail, so it's left out and listed in
+ * `skipped`, already in the dry run.
+ */
+export function newRowsOnly(
+  data: unknown,
+  current: CurrentContent,
+  deleted: ReadonlySet<string>,
+): { data: Record<string, Row[]>; skipped: SkippedRow[] } {
+  const tables = data as Record<string, Row[] | undefined>;
+  const out: Record<string, Row[]> = {};
+  const skipped: SkippedRow[] = [];
+  const added = new Map<string, Set<string>>();
+  const present = (table: string, id: string) =>
+    (added.get(table)?.has(id) ?? false) ||
+    (current[table] ?? []).some((row) => String(row.id) === id);
+  const labelOf = (table: string) => TABLES.find((t) => t.table === table)?.label ?? table;
+
+  for (const spec of TABLES) {
+    const existing = new Set((current[spec.table] ?? []).map((row) => keyOf(spec, row)));
+    const owner = spec.owner ?? PART_OF[spec.table];
+    const type = ENTITY_TYPE[spec.table];
+    out[spec.table] = (tables[spec.table] ?? []).filter((row) => {
+      if (existing.has(keyOf(spec, row))) return false;
+      if (owner && !(added.get(owner.table)?.has(String(row[owner.field])) ?? false)) {
+        return false;
+      }
+      if (type && deleted.has(`${type}:${String(row.id)}`)) return false;
+      const missing = (REFERENCES[spec.table] ?? []).find(
+        ({ field, table }) => row[field] != null && !present(table, String(row[field])),
+      );
+      if (missing) {
+        const parent = `${labelOf(missing.table)} ${String(row[missing.field])}`;
+        skipped.push({
+          label: spec.label,
+          key: keyOf(spec, row),
+          reason: `${parent} isn't in the database (deleted in the curriculum editor?)`,
+        });
+        return false;
+      }
+      return true;
+    });
+    added.set(spec.table, new Set(out[spec.table].map((row) => String(row.id))));
+  }
+  return { data: out, skipped };
+}
 
 /** Bookkeeping columns: never compared or written. */
 const IGNORED_FIELDS = new Set(["createdAt", "updatedAt"]);
@@ -362,6 +475,15 @@ export async function loadCurrentContent(): Promise<CurrentContent> {
     ),
   );
   return Object.fromEntries(entries);
+}
+
+/** What admins deleted in the curriculum editor, as "type:id", from its change log. */
+export async function loadDeletedInEditor(): Promise<Set<string>> {
+  const events = await prisma.auditEvent.findMany({
+    where: { action: "deleted" },
+    select: { entityType: true, entityId: true },
+  });
+  return new Set(events.map((e) => `${e.entityType}:${e.entityId}`));
 }
 
 /** Sections at least one completed assessment has answers in, where structural changes alter old results. */

@@ -4,7 +4,18 @@ import type { NativeElementContent, PieContent } from "@/features/assessment";
 // backend/src/modules/assessment/assessment.pie.ts).
 
 export type QuestionType =
-  "likert" | "single_choice" | "multi_choice" | "true_false" | "criteria_check" | "ordering";
+  | "likert"
+  | "single_choice"
+  | "multi_choice"
+  | "true_false"
+  | "criteria_check"
+  | "ordering"
+  | "true_false_matrix"
+  | "classification_matrix"
+  | "matching";
+
+/** A matrix question's row: a statement or item, and the id of its correct column. */
+export type MatrixRow = { id: string; text: string; correctColumnId: string };
 
 export type Option = { id: string; text: string };
 
@@ -15,6 +26,9 @@ export type AuthoredContent = {
   correctOptionIds?: string[];
   exhibit?: string;
   correctOrder?: string[];
+  /** The matrix types: the answer columns (always True / False for true_false_matrix). */
+  columns?: Option[];
+  rows?: MatrixRow[];
 };
 
 export type ChangeAction = "created" | "edited" | "deleted" | "retired" | "restored";

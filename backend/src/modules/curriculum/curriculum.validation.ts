@@ -1,6 +1,8 @@
 import {
   buildPieContent,
+  isMatrixType,
   QUESTION_TYPES,
+  TRUE_FALSE_COLUMNS,
   type AuthoredContent,
   type QuestionType,
 } from "../assessment/assessment.pie";
@@ -28,6 +30,9 @@ export const MAX_OPTION_LENGTH = 500;
 export const MAX_EXHIBIT_LENGTH = 5000;
 export const MIN_OPTIONS = 2;
 export const MAX_OPTIONS = 12;
+/** A matrix question's rows (statements / items to classify or match). */
+export const MIN_ROWS = 2;
+export const MAX_ROWS = 20;
 /** A likert scale's ends, e.g. 1-5 or 0-10. */
 export const LIKERT_MIN = 0;
 export const LIKERT_MAX = 10;
@@ -41,30 +46,81 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 
 const text = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
-/** The options list: 2-12 options, each with a unique id and non-blank, unique text. */
-function validateOptions(value: unknown): Result<{ id: string; text: string }[]> {
-  if (!Array.isArray(value) || value.length < MIN_OPTIONS) {
-    return { error: `Add at least ${MIN_OPTIONS} options` };
+/**
+ * A list of options (or a matrix's answer columns or rows): `min`-`max` of
+ * them, each with a unique id and non-blank, unique text. `noun` names them
+ * in the messages.
+ */
+function validateOptions(
+  value: unknown,
+  { noun = "option", min = MIN_OPTIONS, max = MAX_OPTIONS } = {},
+): Result<{ id: string; text: string }[]> {
+  if (!Array.isArray(value) || value.length < min) {
+    return { error: `Add at least ${min} ${noun}s` };
   }
-  if (value.length > MAX_OPTIONS) return { error: `Use at most ${MAX_OPTIONS} options` };
+  if (value.length > max) return { error: `Use at most ${max} ${noun}s` };
 
   const options: { id: string; text: string }[] = [];
   for (const option of value) {
     if (!isObject(option) || typeof option.id !== "string" || !OPTION_ID.test(option.id)) {
-      return { error: "Every option needs a valid id" };
+      return { error: `Every ${noun} needs a valid id` };
     }
     const optionText = text(option.text);
-    if (!optionText) return { error: "Every option needs some text" };
-    if (optionText.length > MAX_OPTION_LENGTH) return { error: "An option's text is too long" };
+    if (!optionText) return { error: `Every ${noun} needs some text` };
+    if (optionText.length > MAX_OPTION_LENGTH) {
+      return { error: `The text of one ${noun} is too long` };
+    }
     options.push({ id: option.id, text: optionText });
   }
   if (new Set(options.map((o) => o.id)).size !== options.length) {
-    return { error: "Two options have the same id" };
+    return { error: `Two ${noun}s have the same id` };
   }
   if (new Set(options.map((o) => o.text.toLowerCase())).size !== options.length) {
-    return { error: "Two options have the same text" };
+    return { error: `Two ${noun}s have the same text` };
   }
   return { data: options };
+}
+
+/**
+ * A matrix question's columns and rows. Every row needs one of the columns
+ * as its answer; a column no row uses is a distractor. A true/false matrix's
+ * columns are always True and False.
+ */
+function validateMatrix(
+  type: QuestionType,
+  content: Record<string, unknown>,
+): Result<AuthoredContent> {
+  const columns =
+    type === "true_false_matrix"
+      ? { data: TRUE_FALSE_COLUMNS }
+      : validateOptions(content.columns, { noun: "answer" });
+  if ("error" in columns) return columns;
+  const rows = validateOptions(content.rows, {
+    noun: type === "true_false_matrix" ? "statement" : "item",
+    min: MIN_ROWS,
+    max: MAX_ROWS,
+  });
+  if ("error" in rows) return rows;
+
+  const given = Array.isArray(content.rows) ? content.rows : [];
+  const columnIds = new Set(columns.data.map((c) => c.id));
+  const withAnswers = rows.data.map((row, i) => ({
+    ...row,
+    correctColumnId: isObject(given[i]) ? given[i].correctColumnId : undefined,
+  }));
+  if (
+    withAnswers.some(
+      (row) => typeof row.correctColumnId !== "string" || !columnIds.has(row.correctColumnId),
+    )
+  ) {
+    return { error: "Choose the right answer for every row" };
+  }
+  return {
+    data: {
+      columns: columns.data,
+      rows: withAnswers as { id: string; text: string; correctColumnId: string }[],
+    },
+  };
 }
 
 /** Which options are correct: ids from the list, at least `min` (and exactly `exact`, if given). */
@@ -119,6 +175,8 @@ function validateContent(type: QuestionType, value: unknown): Result<AuthoredCon
     }
     return { data: { scale: { min: from, max: to, minLabel, maxLabel } } };
   }
+
+  if (isMatrixType(type)) return validateMatrix(type, content);
 
   const options = validateOptions(content.options);
   if ("error" in options) return options;

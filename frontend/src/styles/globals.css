@@ -375,7 +375,8 @@ select {
 
 /* <pie-fixed-player> renders via Material-UI in the regular light DOM (not
    Shadow DOM, it turns out, global CSS can reach it), but it's built
-   assuming a light page and doesn't read our tokens itself. Override its
+   assuming a light page and doesn't read our tokens itself. The same goes for
+   the standalone PIE elements (aios-match, aios-placement-ordering). Override their
    text/fill/border colors to ours in dark mode. `!important` is required
    to beat MUI's own inline/JS-set styles. Duplicated across both dark
    blocks like every other token, see the note at the top of this file.
@@ -390,7 +391,15 @@ select {
   :root:not([data-theme="light"]) pie-fixed-player .MuiTypography-root,
   :root:not([data-theme="light"]) pie-fixed-player .MuiFormLabel-root,
   :root:not([data-theme="light"]) pie-fixed-player .choice-label,
-  :root:not([data-theme="light"]) pie-fixed-player .option-label {
+  :root:not([data-theme="light"]) pie-fixed-player .option-label,
+  :root:not([data-theme="light"]) aios-match,
+  :root:not([data-theme="light"]) aios-match *,
+  :root:not([data-theme="light"]) aios-match svg text,
+  :root:not([data-theme="light"]) aios-match svg tspan,
+  :root:not([data-theme="light"]) aios-match .MuiTypography-root,
+  :root:not([data-theme="light"]) aios-match .MuiFormLabel-root,
+  :root:not([data-theme="light"]) aios-placement-ordering,
+  :root:not([data-theme="light"]) aios-placement-ordering * {
     color: var(--color-text) !important;
     fill: var(--color-text) !important;
     background-color: transparent !important;
@@ -405,7 +414,15 @@ select {
 :root[data-theme="dark"] pie-fixed-player .MuiTypography-root,
 :root[data-theme="dark"] pie-fixed-player .MuiFormLabel-root,
 :root[data-theme="dark"] pie-fixed-player .choice-label,
-:root[data-theme="dark"] pie-fixed-player .option-label {
+:root[data-theme="dark"] pie-fixed-player .option-label,
+:root[data-theme="dark"] aios-match,
+:root[data-theme="dark"] aios-match *,
+:root[data-theme="dark"] aios-match svg text,
+:root[data-theme="dark"] aios-match svg tspan,
+:root[data-theme="dark"] aios-match .MuiTypography-root,
+:root[data-theme="dark"] aios-match .MuiFormLabel-root,
+:root[data-theme="dark"] aios-placement-ordering,
+:root[data-theme="dark"] aios-placement-ordering * {
   color: var(--color-text) !important;
   fill: var(--color-text) !important;
   background-color: transparent !important;
@@ -440,4 +457,55 @@ pie-fixed-player .aios-exhibit {
 :root[data-theme="dark"] pie-fixed-player .aios-exhibit {
   border-left-color: var(--color-primary) !important;
   background-color: var(--color-primary-soft) !important;
+}
+
+/* The matrix questions (true/false statements, classification, matching:
+   @pie-element/match, see PieQuestionPlayer.tsx). On a phone the table is
+   wider than the card: it scrolls sideways on its own, so the question above
+   it stays in view, and the row texts stay in place while the answers
+   scroll. The "I don't know" column is set apart by a line, like the
+   "I don't know" choice elsewhere. */
+aios-match {
+  display: block;
+}
+
+aios-match div:has(> table) {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+aios-match table {
+  min-width: 100%;
+}
+
+aios-match th:first-child,
+aios-match td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 9rem;
+  background: var(--color-surface);
+}
+
+aios-match th {
+  min-width: 4.5rem;
+}
+
+aios-match th:last-child,
+aios-match td:last-child {
+  border-left: 1px solid var(--color-border);
+}
+
+/* The overrides above make every background transparent in dark mode; the
+   pinned row texts need theirs back, or the answers show through them. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) aios-match th:first-child,
+  :root:not([data-theme="light"]) aios-match td:first-child {
+    background-color: var(--color-surface) !important;
+  }
+}
+
+:root[data-theme="dark"] aios-match th:first-child,
+:root[data-theme="dark"] aios-match td:first-child {
+  background-color: var(--color-surface) !important;
 }

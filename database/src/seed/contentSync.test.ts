@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { formatPlan, hasChanges, planContentSync, type CurrentContent } from "./contentSync";
+import {
+  formatPlan,
+  hasChanges,
+  newRowsOnly,
+  planContentSync,
+  type CurrentContent,
+} from "./contentSync";
 
 vi.mock("../db/prisma", () => ({ prisma: {} }));
 
@@ -9,8 +15,10 @@ const QUESTION = "aios.assessment.question";
 const JOURNEY = "aios.learningJourney.journey";
 const JOURNEY_SECTION = "aios.learningJourney.journey_section";
 const SOURCE = "aios.sources.source";
+const COMPETENCE = "aios.assessment.competence";
 
 const section = { id: "sec-a", code: "A", name: "Foundations", description: null };
+const competence = { id: "comp-1", name: "Open Science basics", primarySourceId: null };
 const module = {
   id: "mod-a1",
   name: "A1",
@@ -52,6 +60,7 @@ function syncedFrom(tables: Record<string, object[]>): CurrentContent {
     learningJourney: JOURNEY,
     journeySection: JOURNEY_SECTION,
     source: SOURCE,
+    competence: COMPETENCE,
   };
   for (const c of plan.creates) (current[tableOf[c.model]] ??= []).push({ ...c.data });
   return current;
@@ -211,6 +220,133 @@ describe("planContentSync", () => {
 
     expect(plan.updates).toHaveLength(2);
     expect(plan.warnings).toEqual([]);
+  });
+});
+
+describe("newRowsOnly (--only-new)", () => {
+  const STEP = "aios.learningJourney.learning_module";
+  const newQuestion = { ...question, id: "q-2", prompt: "A new item" };
+  const all = {
+    [COMPETENCE]: [competence],
+    [SECTION]: [section],
+    [MODULE]: [module],
+    [QUESTION]: [question, newQuestion],
+    [JOURNEY]: [journey],
+    [JOURNEY_SECTION]: [{ journeyId: "lj-1", sectionId: "sec-a", coverageLevel: "M" }],
+  };
+
+  it("adds only what the database doesn't have, changing nothing that's there", () => {
+    // In the editor: the question reworded, the journey's coverage removed.
+    const current = syncedFrom({
+      [COMPETENCE]: [competence],
+      [SECTION]: [section],
+      [MODULE]: [module],
+      [QUESTION]: [question],
+      [JOURNEY]: [journey],
+    });
+    current[QUESTION][0].prompt = "Reworded in the editor";
+
+    const plan = planContentSync(newRowsOnly(all, current, new Set()).data, current, new Set());
+
+    expect(plan.creates.map((c) => c.key)).toEqual(["q-2"]);
+    expect(plan.updates).toEqual([]);
+    expect(plan.linkRemovals).toEqual([]);
+  });
+
+  it("doesn't bring back what an admin deleted in the editor", () => {
+    const current = syncedFrom({
+      [COMPETENCE]: [competence],
+      [SECTION]: [section],
+      [MODULE]: [module],
+    });
+    const plan = planContentSync(
+      newRowsOnly(all, current, new Set(["question:q-2", "journey:lj-1"])).data,
+      current,
+      new Set(),
+    );
+    expect(plan.creates.map((c) => `${c.label} ${c.key}`)).toEqual(["Question q-1"]);
+  });
+
+  it("adds a new journey with its coverage and steps, but no step of an existing journey", () => {
+    const steps = [
+      {
+        id: "step-1",
+        journeyId: "lj-1",
+        order: 1,
+        title: "Plan",
+        description: null,
+        sourceId: null,
+      },
+      {
+        id: "step-2",
+        journeyId: "lj-2",
+        order: 1,
+        title: "Share",
+        description: null,
+        sourceId: null,
+      },
+    ];
+    const tables = {
+      ...all,
+      [JOURNEY]: [journey, { ...journey, id: "lj-2", name: "LJ2" }],
+      [JOURNEY_SECTION]: [
+        { journeyId: "lj-1", sectionId: "sec-a", coverageLevel: "M" },
+        { journeyId: "lj-2", sectionId: "sec-a", coverageLevel: "M" },
+      ],
+      [STEP]: steps,
+    };
+    const current = syncedFrom({ [SECTION]: [section], [MODULE]: [module], [JOURNEY]: [journey] });
+    const filtered = newRowsOnly(tables, current, new Set()).data;
+    expect(filtered[JOURNEY].map((j) => j.id)).toEqual(["lj-2"]);
+    expect(filtered[JOURNEY_SECTION]).toEqual([tables[JOURNEY_SECTION][1]]);
+    expect(filtered[STEP]).toEqual([steps[1]]);
+  });
+});
+
+describe("newRowsOnly with something a new row points at deleted in the editor", () => {
+  // The module was deleted in the editor; the file still has it, and a new
+  // question in it.
+  const newQuestion = { ...question, id: "q-2", prompt: "A new item" };
+  const tables = {
+    [COMPETENCE]: [competence],
+    [SECTION]: [section],
+    [MODULE]: [module],
+    [QUESTION]: [question, newQuestion],
+    [JOURNEY]: [journey],
+    [JOURNEY_SECTION]: [{ journeyId: "lj-1", sectionId: "sec-a", coverageLevel: "M" }],
+  };
+
+  it("leaves out a new question in a deleted module, rather than failing the whole apply", () => {
+    const current = syncedFrom({ [COMPETENCE]: [competence], [SECTION]: [section] });
+    const { data, skipped } = newRowsOnly(tables, current, new Set([`module:${module.id}`]));
+
+    expect(data[MODULE]).toEqual([]);
+    expect(data[QUESTION]).toEqual([]);
+    expect(skipped).toEqual([
+      expect.objectContaining({ label: "Question", key: "q-1" }),
+      expect.objectContaining({ label: "Question", key: "q-2" }),
+    ]);
+    expect(skipped[0].reason).toContain(`Section module ${module.id}`);
+  });
+
+  it("leaves out a new journey's coverage of a deleted section, keeping the journey", () => {
+    const current = syncedFrom({ [MODULE]: [] });
+    const { data, skipped } = newRowsOnly(
+      { [SECTION]: [section], [JOURNEY]: [journey], [JOURNEY_SECTION]: tables[JOURNEY_SECTION] },
+      current,
+      new Set([`section:${section.id}`]),
+    );
+
+    expect(data[JOURNEY].map((j) => j.id)).toEqual(["lj-1"]);
+    expect(data[JOURNEY_SECTION]).toEqual([]);
+    expect(skipped.map((s) => `${s.label} ${s.key}`)).toEqual(["Journey section lj-1 / sec-a"]);
+  });
+
+  it("adds a new row whose parents are new in the same run", () => {
+    const { data, skipped } = newRowsOnly(tables, syncedFrom({}), new Set());
+
+    expect(data[QUESTION].map((q) => q.id)).toEqual(["q-1", "q-2"]);
+    expect(skipped).toEqual([]);
   });
 });
 

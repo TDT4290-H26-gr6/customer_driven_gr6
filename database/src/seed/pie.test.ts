@@ -183,3 +183,89 @@ describe("buildPieContent: ordering", () => {
     ).toThrow(/must list every option exactly once/);
   });
 });
+
+describe("buildPieContent: the matrix types", () => {
+  const classify = {
+    columns: [
+      { id: "good", text: "Good practice" },
+      { id: "poor", text: "Poor <practice>" },
+    ],
+    rows: [
+      { id: "r1", text: "Maintain a README", correctColumnId: "good" },
+      { id: "r2", text: "Keep only the latest file", correctColumnId: "poor" },
+    ],
+  };
+  const modelOf = (content: ReturnType<typeof buildPieContent>) =>
+    (content as NativeElementContent).model as {
+      headers: string[];
+      layout: number;
+      rows: { id: string; title: string; values: boolean[] }[];
+    };
+
+  it("builds a match (matrix) native element: a row per item, a column per answer, 'I don't know' last", () => {
+    const content = buildPieContent("classification_matrix", "Classify each practice", classify);
+    expect(content).toMatchObject({
+      element: "aios-match",
+      model: {
+        element: "aios-match",
+        prompt: "<p>Classify each practice</p>",
+        choiceMode: "radio",
+        partialScoring: true,
+      },
+    });
+    const model = modelOf(content);
+    expect(model.headers).toEqual(["", "Good practice", "Poor &lt;practice&gt;", "I don't know"]);
+    // The row texts' column, two answers and "I don't know".
+    expect(model.layout).toBe(4);
+    expect(model.rows).toEqual([
+      { id: "r1", title: "Maintain a README", values: [true, false, false] },
+      { id: "r2", title: "Keep only the latest file", values: [false, true, false] },
+    ]);
+  });
+
+  it("gives a true/false matrix True and False columns, whatever was authored", () => {
+    const model = modelOf(
+      buildPieContent("true_false_matrix", "True or false?", {
+        columns: [{ id: "x", text: "Ignored" }],
+        rows: [
+          { id: "s1", text: "A DOI is persistent.", correctColumnId: "true" },
+          { id: "s2", text: "Every repository accepts everything.", correctColumnId: "false" },
+        ],
+      }),
+    );
+    expect(model.headers).toEqual(["", "True", "False", "I don't know"]);
+    expect(model.rows.map((r) => r.values)).toEqual([
+      [true, false, false],
+      [false, true, false],
+    ]);
+  });
+
+  it("allows matching with a distractor column and a column shared by two rows", () => {
+    const model = modelOf(
+      buildPieContent("matching", "Match each case", {
+        columns: [
+          { id: "deployer", text: "Deployer" },
+          { id: "provider", text: "Provider" },
+          { id: "neither", text: "Neither" },
+        ],
+        rows: [
+          { id: "a", text: "Case A", correctColumnId: "deployer" },
+          { id: "b", text: "Case B", correctColumnId: "deployer" },
+          { id: "c", text: "Case C", correctColumnId: "provider" },
+        ],
+      }),
+    );
+    expect(model.rows.map((r) => r.values.indexOf(true))).toEqual([0, 0, 1]);
+  });
+
+  it.each([
+    [{ ...classify, rows: [] }, /needs content.rows/],
+    [{ ...classify, columns: [classify.columns[0]] }, /at least 2 columns/],
+    [
+      { ...classify, rows: [{ id: "r1", text: "x", correctColumnId: "nope" }] },
+      /row "r1" has an unknown correctColumnId/,
+    ],
+  ])("refuses an unusable matrix (%#)", (content, error) => {
+    expect(() => buildPieContent("classification_matrix", "Classify", content)).toThrow(error);
+  });
+});

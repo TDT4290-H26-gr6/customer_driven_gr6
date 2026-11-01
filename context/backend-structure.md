@@ -171,6 +171,7 @@ backend/src/
 │   │   ├── assessment.routes.ts   # /questions, /assessment/*, /competence-scores (all requireRole)
 │   │   ├── assessment.service.ts  # role-filtered questions, saving/scoring answers, score roll-up
 │   │   ├── assessment.scoring.ts  # pure scoring rules (multiple choice, likert, drag-and-drop)
+│   │   ├── assessment.redact.ts   # a question's content without its answers, as learners get it
 │   │   └── assessment.pie.ts      # authored question -> PIE item (identical copy of database/src/seed/pie.ts)
 │   ├── curriculum/                # the admin curriculum editor (CD-25)
 │   │   ├── curriculum.routes.ts      # /admin/curriculum/* (requireAdmin)
@@ -389,8 +390,9 @@ real users exist.
 ### Question types and scoring
 
 Authored simply, stored as PIE. A question's `questionType` decides how
-`database/src/seed/pie.ts` builds its PIE item; **all five use PIE's `multiple-choice`
-element** (already rendered and scored by the app):
+`database/src/seed/pie.ts` builds its PIE item. The choice types below use PIE's
+`multiple-choice` element; `ordering` and the three matrix types use a standalone
+PIE element of their own (`NativeElementContent`, mounted by `PieQuestionPlayer.tsx`):
 
 | `questionType`  | Authored `content`                        | PIE                       | Score                                                                                                  |
 | --------------- | ----------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -399,12 +401,39 @@ element** (already rendered and scored by the app):
 | `multi_choice`  | `options[]`, several correct ids          | checkbox                  | share of correct options ticked − share of wrong options ticked, floored at 0 (ticking everything = 0) |
 | `likert`        | `scale {min,max,minLabel,maxLabel}`, or `labels[]` for every step | radio, ordered `min..max` | the scale value picked ÷ the top of the scale                                                          |
 | `criteria_check` | `exhibit` (the example to judge: a README, a change log …) + `options[]` = the criteria, correct ids = those the example meets | checkbox; the exhibit in a box under the prompt (`.aios-exhibit`, globals.css) | as `multi_choice`, so ticking every criterion scores 0 |
+| `ordering` | `options[]` in the correct order (`correctOrder`) | `@pie-element/placement-ordering` | share of items in their correct place |
+| `true_false_matrix` | `rows[]` (statements), each with `correctColumnId` `true`/`false` | `@pie-element/match` (a table, one radio per cell), columns True / False / I don't know | share of rows answered right; "I don't know" or an empty row counts as wrong |
+| `classification_matrix` | `columns[]` (the categories) + `rows[]` (items), each with its `correctColumnId` | as above, a column per category | as above |
+| `matching` | `columns[]` (the answers; one no row needs is a distractor, one can fit several rows) + `rows[]` | as above, a column per answer | as above |
 
 Every question is out of 1 point; "I don't know" scores 0 out of 1.
 
 - Each choice's `value` is what gets scored: the option id, or for likert the
   scale number itself. `withShuffledChoices` shuffles answer order, except for
   `likert` and `true_false` where the order is the point.
+- `ordering` items are shuffled too, per attempt, and never into the correct
+  order: they're authored in that order, and the element takes the order on
+  screen as the learner's starting answer. The frontend only counts an
+  ordering answer once the learner has moved an item; from then on every
+  order counts, the starting one too, so the saved answer is always what's on
+  screen.
+- Learners never get the answers: `/questions` and `/assessment/path` send
+  each question through `withoutAnswers` (`assessment.redact.ts`).
+  - It keeps only the fields each element needs (an allowlist per element,
+    `ALLOWED`), so `correct` flags, `correctResponse`, a matrix row's
+    `values`, feedback, rationales and any field added later all stay on the
+    server. Anything the browser has can be read in its developer tools, and
+    it doesn't need them: scoring reads the stored content.
+  - Only the admin curriculum editor (and its preview) sees the answers.
+  - A new element, or a new field one needs, has to be added to `ALLOWED`;
+    until then it's left out. `assessment.redact.test.ts` builds every WP2
+    question with a different right answer and checks that learners get
+    exactly the same either way.
+- A matrix question learners have answered keeps its columns (they can be
+  reworded, not added, removed or reordered): a saved answer is a tick per
+  column position, so changing them would move learners' ticks. The editor
+  gives every new option, column or row a random id, so a removed one's id
+  (which saved answers may point at) never comes back on a different text.
 - The seed data's own notes describe `multi_choice` as "1 point per correct
   pick". We kept the existing penalty for wrong picks (it stops "tick
   everything" from scoring full marks). If you want no penalty, change the
@@ -455,9 +484,9 @@ loads (`database/src/seed/index.ts`):
   the backend doesn't start until `SEED_DATASET` is fixed. Switching an
   existing database = back it up, start from an empty one.
 - **WP2 is not complete yet**, which is why `fake` stays the default: A1 and A4
-  have no items, several modules have 1–2, and items of types the app can't
-  render yet (matrices, ordering, matching) are kept in the file's
-  `_pendingItems` instead of loaded. The file's `_meta` lists the open points
+  have no items and several modules have 1–2. All 61 items delivered so far
+  are loaded, the true/false matrices, classification and matching ones as
+  the matrix question types. The file's `_meta` lists the open points
   (modules stored as levels 1–4 although they're parallel topics; mixed
   coverage values like "M/S" stored as their first letter until confirmed).
   `wp2Seed.data.test.ts` checks its structure.
@@ -489,7 +518,12 @@ so running it again never duplicates or overwrites.
 - **Dataset updates** (e.g. new WP2 items) reach an existing database only on
   purpose: `docker compose run --rm db-init npm run content:sync` shows what
   would change, and `-- --apply` applies it. Applying overwrites edits made in
-  the curriculum editor to the rows in the file.
+  the curriculum editor to the rows in the file. To only add what's new (e.g.
+  newly delivered items) and leave everything edited in the editor alone, use
+  `-- --only-new --apply`: it adds rows the database doesn't have, with their
+  links, and never re-adds anything the change log says an admin deleted. A
+  new row pointing at something deleted (a new question in a deleted module)
+  is left out and listed in the dry run, rather than failing the apply.
 - **By hand:** `docker compose run --rm db-init npm run seed` (or `npm run seed`
   in `database/`) runs the same loader.
 - The seed authors questions in the simple shape above; the loader converts them
@@ -537,7 +571,7 @@ so running it again never duplicates or overwrites.
   links. No learners, answers, results or change log. Put it in place of
   `data/aios_wp2_seed.json` and db-init loads it into an empty database. The
   committed WP2 file stays the starting point for new databases, tests and
-  `content:sync`, and keeps the `_pendingItems` that aren't in the database.
+  `content:sync`.
 - The assessment is adaptive (`assessment.path.ts`): sections in a random order
   per attempt, levels 1 → 4 within each. Every question of a level is asked;
   the learner moves up a level at 2 of 3 right (2/3 of the level's points)

@@ -15,5 +15,7 @@ declare namespace JSX {
       React.HTMLAttributes<HTMLElement>,
       HTMLElement
     >;
+    // @pie-element/match's delivery element (the matrix question types).
+    "aios-match": React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
   }
 }
