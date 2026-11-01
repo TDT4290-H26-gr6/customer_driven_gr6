@@ -142,7 +142,7 @@
   }
 }
 
-/* Keyboard-only "skip to content" link — offscreen until it receives focus
+/* Keyboard-only "skip to content" link, offscreen until it receives focus
    (Tab from the very top of the page), so keyboard/screen-reader users can
    bypass the header + sidebar nav instead of tabbing through every link. */
 .skipLink {

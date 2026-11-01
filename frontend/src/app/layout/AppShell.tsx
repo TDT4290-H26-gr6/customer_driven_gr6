@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { FeedbackWidget } from "@/features/feedback";
+import { DeletionReminderModal } from "@/features/settings";
 import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 import { useLocalStorage } from "@/shared/hooks/useLocalStorage";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
@@ -24,6 +25,7 @@ export function AppShell() {
   const { learner } = useAuth();
   // Role selection is temporarily off (shared/lib/features.ts): no gate.
   const needsRole = ROLE_SELECTION_ENABLED && Boolean(learner && !learner.role);
+  const blocked = needsRole;
   const [collapsed, setCollapsed] = useLocalStorage("aios.sidebarCollapsed", false);
   const isMobile = useMediaQuery(MOBILE_QUERY);
   const appRef = useRef<HTMLDivElement>(null);
@@ -31,11 +33,11 @@ export function AppShell() {
   const toggleCollapsed = () => setCollapsed((c) => !c);
 
   // `inert` (not just visually covered) while the role gate is up: blocks
-  // clicks AND removes everything underneath from the tab order, so there's
-  // no keyboard escape route into the rest of the app either.
+  // clicks AND removes everything underneath from the tab order, so there's no
+  // keyboard escape route into the rest of the app either.
   useEffect(() => {
-    if (appRef.current) appRef.current.inert = needsRole;
-  }, [needsRole]);
+    if (appRef.current) appRef.current.inert = blocked;
+  }, [blocked]);
 
   return (
     <div className={styles.shell}>
@@ -55,7 +57,7 @@ export function AppShell() {
           <main id="main-content" tabIndex={-1} className={styles.main}>
             {/* A page that crashes while rendering shows a fallback here while
                 the header and nav keep working; navigating away resets it. */}
-            {needsRole ? null : (
+            {blocked ? null : (
               <ErrorBoundary resetKey={pathname}>
                 <Outlet />
               </ErrorBoundary>
@@ -65,11 +67,13 @@ export function AppShell() {
             <Sidebar layout="bottom" collapsed={collapsed} onToggleCollapsed={toggleCollapsed} />
           )}
         </div>
-        {/* Inside the inert wrapper: unreachable while the role gate is up. */}
+        {/* Inside the inert wrapper: unreachable while a gate is up. */}
         <FeedbackWidget />
       </div>
 
       {needsRole && <RoleGateModal />}
+      {/* Asks a learner with a pending account deletion whether they still want it. */}
+      <DeletionReminderModal />
     </div>
   );
 }

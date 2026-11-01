@@ -7,7 +7,7 @@ const ADVICE_TIMEOUT_MS = 60_000;
 
 /**
  * AI advice on the latest completed self-assessment, or null when there's
- * none to give (no completed assessment, or the feature is off — 204).
+ * none to give (no completed assessment, or the feature is off, 204).
  * Rejects when the LLM is unavailable (503).
  */
 export function getAdvice(): Promise<Advice | null> {

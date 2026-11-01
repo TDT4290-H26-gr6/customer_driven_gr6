@@ -1,10 +1,10 @@
 import { HttpError } from "./httpError";
 
 // Small request-input guards. Each returns the value narrowed to the right
-// type, or throws a 400 the error handler turns into a response — so a
+// type, or throws a 400 the error handler turns into a response, so a
 // malformed body never reaches Prisma and surfaces as a 500.
 
-/** Default cap for an id from a client — ids are uuids, far shorter; 191 is Prisma's MySQL VARCHAR. */
+/** Default cap for an id from a client, ids are uuids, far shorter; 191 is Prisma's MySQL VARCHAR. */
 const MAX_ID_LENGTH = 191;
 
 /** A non-empty string of at most `maxLength` characters (default: id-sized). */
@@ -33,7 +33,7 @@ export function requireObject(value: unknown, field: string): Record<string, unk
 /**
  * A plausible non-negative duration in milliseconds, or undefined if it's
  * missing, the wrong type, or outside [0, maxMs]. Unlike the `require*`
- * guards above, this never throws — it's a best-effort analytics value
+ * guards above, this never throws, it's a best-effort analytics value
  * (CD-97's time-per-question), not core data, so an implausible clock
  * reading (e.g. a backgrounded tab) silently drops just that one field
  * rather than failing the whole save.

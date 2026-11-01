@@ -1,4 +1,4 @@
-/** The "I don't know" choice's value — IDK_VALUE in backend/src/modules/assessment/assessment.scoring.ts. */
+/** The "I don't know" choice's value, IDK_VALUE in backend/src/modules/assessment/assessment.scoring.ts. */
 export const IDK_VALUE = "__idk__";
 
 type ChoiceSession = { id?: string; data?: { id?: string; value?: unknown }[] };

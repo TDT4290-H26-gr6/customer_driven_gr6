@@ -12,7 +12,7 @@ const section = (code: string, coverageLevel: "M" | "R" | "S") => ({
 
 const journey: LearningJourney = {
   id: "journey-wp2-lj2",
-  name: "LJ2 — Research Data, Reproducibility and AI Practices",
+  name: "LJ2 - Research Data, Reproducibility and AI Practices",
   description:
     "Final applied output: Documented research-data and responsible-AI workflow package.",
   moodleUrl: "https://moodle.example.org/course/view.php?id=2002",
@@ -20,14 +20,14 @@ const journey: LearningJourney = {
   sections: [section("E", "R"), section("A", "M"), section("C", "S"), section("B", "M")],
 };
 
-function renderCard(expanded = false) {
+function renderCard() {
   const props = {
-    onToggle: vi.fn(),
+    onOpen: vi.fn(),
     onAssess: vi.fn(),
     starting: false,
     assessDisabled: false,
   };
-  render(<JourneyCard journey={journey} index={0} expanded={expanded} {...props} />);
+  render(<JourneyCard journey={journey} index={0} {...props} />);
   return props;
 }
 
@@ -49,28 +49,14 @@ describe("JourneyCard", () => {
     expect(screen.getByText("4")).toBeInTheDocument();
   });
 
-  it("shows each section's coverage, core first, and the steps when expanded", () => {
-    renderCard(true);
+  it("opens the details when the card is clicked, and keeps them out of the card itself", async () => {
+    const props = renderCard();
 
-    const rows = screen
-      .getAllByRole("listitem")
-      .filter((li) => li.textContent?.includes("Section"));
-    expect(rows.map((r) => r.textContent)).toEqual([
-      "ASection ACore",
-      "BSection BCore",
-      "ESection ERecommended",
-      "CSection CSelective",
-    ]);
-    expect(screen.getByText("Plan your data")).toBeInTheDocument();
-  });
-
-  it("hides the details until expanded", () => {
-    renderCard(false);
     expect(screen.queryByText("What it covers")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /read more/i })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
+    expect(screen.queryByText("Plan your data")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: /view details/i }));
+
+    expect(props.onOpen).toHaveBeenCalledOnce();
   });
 
   it("assesses the journey and links to it in Moodle from the footer", async () => {
@@ -79,7 +65,7 @@ describe("JourneyCard", () => {
 
     await user.click(screen.getByRole("button", { name: "Assess this journey" }));
     expect(props.onAssess).toHaveBeenCalledOnce();
-    expect(props.onToggle).not.toHaveBeenCalled();
+    expect(props.onOpen).not.toHaveBeenCalled();
     const footer = screen.getByRole("link", { name: /open in moodle/i });
     expect(footer).toHaveAttribute("href", journey.moodleUrl);
     expect(within(footer.parentElement!).getByRole("button")).toBeInTheDocument();

@@ -44,6 +44,33 @@
   width: auto;
 }
 
+/* The account menu, on its own. */
+.right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* As tall as the AIOS logo (.logo), so the three logos read as equals. */
+.funding {
+  --funding-logo-height: 40px;
+}
+
+/* Mobile: tighter, and on phones too narrow for 40px logos, they shrink
+   to fit what's left beside the AIOS logo and the avatar. The 4.1 is the
+   two funding logos' combined width-to-height ratio (EU ~2.96, IKY ~1.07,
+   plus their gap); 200px covers the AIOS logo, the avatar, the gaps and
+   the header's side padding. */
+@media (max-width: 767px) {
+  .left {
+    gap: 8px;
+  }
+
+  .funding {
+    --funding-logo-height: min(40px, calc((100vw - 200px) / 4.1));
+  }
+}
+
 .userMenu {
   position: relative;
 }

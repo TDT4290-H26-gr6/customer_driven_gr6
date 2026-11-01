@@ -1,5 +1,5 @@
 /* pie-fixed-player renders via Material-UI in the light DOM, not Shadow
-   DOM — styles/globals.css overrides its internal text/fill/border colors
+   DOM, styles/globals.css overrides its internal text/fill/border colors
    for dark mode, so this just needs to be a normal themed surface like
    everything else (not a fixed light box). */
 .canvas {
@@ -14,8 +14,8 @@
 }
 
 /* A line between the real answers and the "I don't know" choice the backend
-   appends to every question. Matched by its input's value — "__idk__" is
-   IDK_VALUE in backend/src/modules/assessment/assessment.scoring.ts — since
+   appends to every question. Matched by its input's value, "__idk__" is
+   IDK_VALUE in backend/src/modules/assessment/assessment.scoring.ts, since
    PIE's own class names are generated and not stable. `.choice-input` is the
    wrapper PIE's multiple-choice element renders around each choice. */
 .canvas :global(.choice-input:has(input[value="__idk__"])) {
@@ -31,6 +31,14 @@
   :global(.choice-input:not(:has(input[value="__idk__"]))) {
   opacity: 0.5;
   pointer-events: none;
+}
+
+/* Under an ordering question, which otherwise doesn't say what to do. */
+.hint {
+  margin: 8px 0 0;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
 }
 
 @media (max-width: 767px) {

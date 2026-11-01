@@ -1,5 +1,6 @@
 import type { WeakCompetence } from "../types";
 import styles from "./WeakCompetencesSection.module.css";
+import { isWebLink } from "@/shared/lib/webLink";
 
 type Props = {
   competences: WeakCompetence[];
@@ -10,7 +11,7 @@ function percent(score: number, maxScore: number): number {
 }
 
 /**
- * Every competence at or below the 60% threshold (CD-90) — the full picture
+ * Every competence at or below the 60% threshold (CD-90), the full picture
  * of where a learner is lacking, not just the single journey "Recommended
  * for you" picks. Shows a positive message instead of an empty list when
  * nothing qualifies.
@@ -21,7 +22,7 @@ export function WeakCompetencesSection({ competences }: Props) {
       <p className={styles.eyebrow}>Where you&apos;re lacking</p>
 
       {competences.length === 0 ? (
-        <p className={styles.sufficient}>You&apos;re sufficient in every area — nice work.</p>
+        <p className={styles.sufficient}>You&apos;re sufficient in every area. Nice work.</p>
       ) : (
         <ul className={styles.list}>
           {competences.map((c) => (
@@ -33,7 +34,7 @@ export function WeakCompetencesSection({ competences }: Props) {
               {c.journey && (
                 <span className={styles.journeyName}>
                   Covered by:{" "}
-                  {c.journey.moodleUrl ? (
+                  {isWebLink(c.journey.moodleUrl) ? (
                     <a
                       className={styles.journeyLink}
                       href={c.journey.moodleUrl}

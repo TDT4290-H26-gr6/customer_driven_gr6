@@ -1,4 +1,4 @@
-// The FAQ's questions and answers — content only, so it can be edited without
+// The FAQ's questions and answers, content only, so it can be edited without
 // touching the page. Each answer is one or more paragraphs of plain text.
 // Keep answers in line with how the app actually behaves; they were written
 // against it (thresholds, button names, what's stored).
@@ -20,7 +20,7 @@ export const FAQ: FaqCategory[] = [
       {
         question: "Why do I have to fill in a profile first?",
         answer: [
-          "Your profile — industry, academic degree, occupation and years of experience in AI or Open Science — helps tailor your recommendations to your role. You fill it in once before your first assessment, and can change it later in Settings.",
+          "Your profile (industry, academic degree, occupation and years of experience in AI or Open Science) helps tailor your recommendations to your role. You fill it in once before your first assessment, and can change it later in Settings.",
         ],
       },
       {
@@ -36,26 +36,26 @@ export const FAQ: FaqCategory[] = [
       {
         question: "How does the self-assessment work?",
         answer: [
-          "The questions are grouped into sections (A-E), and each section into modules. You start at the first module of a section and move up to the next when you answer most of its questions correctly. When a module is too difficult, you move on to the next section — so the number of questions depends on your answers.",
+          "The questions are grouped into sections (A-E), and each section into modules. You start at the first module of a section and move up to the next when you answer most of its questions correctly. When a module is too difficult, you move on to the next section, so the number of questions depends on your answers.",
         ],
       },
       {
         question: "What kinds of questions are there?",
         answer: [
-          "Multiple choice (one or several correct answers), true/false, self-ratings where you choose how comfortable you are with something, and questions where you judge an example — such as a README or a data-sharing plan — against quality criteria.",
+          "Multiple choice (one or several correct answers), true/false, self-ratings where you choose how comfortable you are with something, and questions where you judge an example, such as a README or a data-sharing plan, against quality criteria.",
         ],
       },
       {
         question: "Should I guess if I don't know the answer?",
         answer: [
-          'No — choose "I don\'t know". It scores 0 for that question but never costs you anything extra, while ticking a wrong option on a question with several correct answers counts against you. Answering honestly also gives you better recommendations.',
+          'No. Choose "I don\'t know". It scores 0 for that question but never costs you anything extra, while ticking a wrong option on a question with several correct answers counts against you. Answering honestly also gives you better recommendations.',
         ],
       },
       {
         question: "Can I take a break and continue later?",
         answer: [
           'Yes. Choose "Save & exit" and your answers are kept. The dashboard then shows "Continue assessment" so you can pick up where you left off.',
-          'If you\'d rather start over, choose "Abort" instead — that deletes the answers from that attempt.',
+          'If you\'d rather start over, choose "Abort" instead, which deletes the answers from that attempt.',
         ],
       },
       {
@@ -85,7 +85,7 @@ export const FAQ: FaqCategory[] = [
       {
         question: "What is the Competencies tab?",
         answer: [
-          "Your best result in each module, across all your assessments — the self-assessment and any learning journeys you've assessed — and an overall percentage per section. The modules of the journey recommended for you are shown at the top.",
+          "Your best result in each module, across all your assessments (the self-assessment and any learning journeys you've assessed) and an overall percentage per section. The modules of the journey recommended for you are shown at the top.",
         ],
       },
       {
@@ -103,19 +103,19 @@ export const FAQ: FaqCategory[] = [
       {
         question: "What is a learning journey?",
         answer: [
-          "A learning journey is a set of modules built around a role or goal — for example research data work, teaching, policy or business. You take the learning material for it in Moodle.",
+          "A learning journey is a set of modules built around a role or goal, for example research data work, teaching, policy or business. You take the learning material for it in Moodle.",
         ],
       },
       {
         question: "How are learning journeys recommended to me?",
         answer: [
-          "You're recommended two journeys, best fit first. They're ranked on both your results — the sections where you scored low — and your profile, so a journey designed for your kind of work comes first. If the AI advisor isn't available, they're ranked on your scores alone.",
+          "You're recommended two journeys, best fit first. They're ranked on both your results (the sections where you scored low) and your profile, so a journey designed for your kind of work comes first. If the AI advisor isn't available, they're ranked on your scores alone.",
         ],
       },
       {
         question: 'What does "Assess this journey" do?',
         answer: [
-          "It starts a short assessment with only the questions from the sections that journey focuses on. It doesn't change your self-assessment or your dashboard — your result shows under Competencies. You can only have one assessment in progress at a time.",
+          "It starts a short assessment with only the questions from the sections that journey focuses on. It doesn't change your self-assessment or your dashboard; your result shows under Competencies. You can only have one assessment in progress at a time.",
         ],
       },
       {
@@ -167,9 +167,15 @@ export const FAQ: FaqCategory[] = [
         ],
       },
       {
+        question: "Where can I read the information letter I consented to?",
+        answer: [
+          'In Settings, under "Information letter". It describes the research project, how your data is used and your rights.',
+        ],
+      },
+      {
         question: "How do I delete my account?",
         answer: [
-          'In Settings, under "Delete account". It permanently deletes your account and everything tied to it — answers, scores, profile, advice and feedback. This can\'t be undone.',
+          'In Settings, under "Delete account". Your personal data (name, email, Google sign-in, role, profile and advice) is deleted 30 days later, and until then you can cancel the deletion in the same place.',
         ],
       },
       {
@@ -181,7 +187,7 @@ export const FAQ: FaqCategory[] = [
       {
         question: "How do I give feedback or report a problem?",
         answer: [
-          'Use the "Feedback" button in the bottom-right corner of any page. Tell us what could be better and, if you like, how — it goes straight to the team.',
+          'Use the "Feedback" button in the bottom-right corner of any page. Tell us what could be better and, if you like, how; it goes straight to the team.',
         ],
       },
     ],

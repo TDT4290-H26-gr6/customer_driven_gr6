@@ -14,7 +14,7 @@ export function setToken(token: string): void {
   try {
     localStorage.setItem(KEY, token);
   } catch {
-    /* storage unavailable — session just won't persist */
+    /* storage unavailable, session just won't persist */
   }
 }
 

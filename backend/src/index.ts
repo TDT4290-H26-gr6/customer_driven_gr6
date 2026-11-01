@@ -1,7 +1,7 @@
 import { buildServer } from "./server";
 import { config } from "./config";
 import { prisma } from "./db/prisma";
-import { seedChosenDataset } from "./seed";
+import { startDeletionJob } from "./modules/identity/identity.deletionJob";
 
 /** How long in-flight requests get to finish on shutdown before we exit anyway. */
 const SHUTDOWN_TIMEOUT_MS = 10_000;
@@ -14,48 +14,42 @@ process.on("unhandledRejection", (reason) => {
   console.error("Unhandled promise rejection:", reason);
 });
 process.on("uncaughtException", (err) => {
-  console.error("Uncaught exception — exiting:", err);
+  console.error("Uncaught exception, exiting:", err);
   process.exit(1);
 });
 
 async function main() {
-  // A fresh database gets the dataset SEED_DATASET names (the fake one by
-  // default; "wp2" for the real curriculum), and an older one gets whatever
-  // that dataset has gained since. Awaited before listening so the first
-  // request never sees an empty or half-updated question bank. A failure here
-  // is logged, not fatal — the API still starts, it just has nothing (new)
-  // to show. That includes refusing to mix two datasets (see seed/index.ts).
-  try {
-    if (await seedChosenDataset())
-      console.log(`Dataset "${config.seedDataset}" loaded or brought up to date.`);
-  } catch (err) {
-    console.error("Startup seeding failed:", err);
-  }
-
+  // The database is prepared before this starts: db-init pushes the schema
+  // and loads the content (see database/ and docker-compose.yml), so the
+  // backend only serves the API.
   const server = buildServer().listen(config.port, () => {
     console.log(`AIOS backend listening on http://localhost:${config.port}`);
   });
 
-  // e.g. EADDRINUSE — without this the error is thrown asynchronously.
+  // e.g. EADDRINUSE, without this the error is thrown asynchronously.
   server.on("error", (err) => {
     console.error("HTTP server failed:", err);
     process.exit(1);
   });
 
+  // Deletes the personal data of accounts whose 30 days are up.
+  const stopDeletionJob = startDeletionJob();
+
   // Stop taking new requests, let in-flight ones finish, then release the
-  // database connections — so a restart (docker stop, tsx watch reload)
+  // database connections, so a restart (docker stop, tsx watch reload)
   // never cuts a response or a transaction off halfway.
   let shuttingDown = false;
   const shutdown = (signal: NodeJS.Signals) => {
     if (shuttingDown) return;
     shuttingDown = true;
-    console.log(`${signal} received — shutting down.`);
+    console.log(`${signal} received, shutting down.`);
 
     setTimeout(() => {
-      console.error("Shutdown timed out — forcing exit.");
+      console.error("Shutdown timed out, forcing exit.");
       process.exit(1);
     }, SHUTDOWN_TIMEOUT_MS).unref();
 
+    stopDeletionJob();
     server.close(() => {
       prisma
         .$disconnect()

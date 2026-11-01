@@ -12,21 +12,29 @@ export type LearnerDto = {
   name: string | null;
   role: Role | null;
   hasCompletedInitialAssessment: boolean;
-  /** Every profile field is filled in — required before taking the assessment. */
+  /** Ticked the information-letter checkbox on the profile step. */
+  hasAcceptedPrivacyNotice: boolean;
+  /** Every profile field is filled in, required before taking the assessment. */
   hasCompletedProfile: boolean;
-  /** May use admin mode — so the frontend can hide it; requireAdmin is the real check. */
+  /** May use admin mode, so the frontend can hide it; requireAdmin is the real check. */
   isAdmin: boolean;
+  /** When the account's personal data will be deleted, or null if no deletion is pending. */
+  deletionScheduledFor: Date | null;
 };
 
 export function toLearnerDto(learner: LearnerWithRole): LearnerDto {
   return {
     id: learner.id,
-    email: learner.email,
+    // Only a deleted account has no email, and those never get a DTO
+    // (findLearnerById doesn't return them).
+    email: learner.email ?? "",
     name: learner.name,
     role: learner.userRole,
     hasCompletedInitialAssessment: learner.hasCompletedInitialAssessment,
+    hasAcceptedPrivacyNotice: learner.privacyNoticeAcceptedAt !== null,
     hasCompletedProfile: isProfileComplete(learner.name, learner.profile),
     isAdmin: isAdminEmail(learner.email),
+    deletionScheduledFor: learner.deletionScheduledFor,
   };
 }
 
@@ -77,7 +85,7 @@ export type LearnerProfileInput = {
   academicDegree: AcademicDegree;
   background: string;
   yearsOfExperience: number;
-  /** Optional — null when left blank. */
+  /** Optional, null when left blank. */
   goals: string | null;
 };
 
@@ -86,7 +94,7 @@ const MAX_TEXT_LENGTH = 2000;
 
 /**
  * Validates a PUT /auth/me/profile body. Every field but goals is required
- * — the profile has to be complete before the assessment — and text is
+ *, the profile has to be complete before the assessment, and text is
  * trimmed. A blank or missing goals is saved as null.
  * Pure so it's unit-testable without a request/response pair.
  */

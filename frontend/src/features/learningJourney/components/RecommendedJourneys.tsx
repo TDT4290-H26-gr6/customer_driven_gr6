@@ -1,6 +1,7 @@
 import type { JourneySource } from "../api";
 import type { LearningJourney } from "../types";
 import styles from "./RecommendedJourneys.module.css";
+import { isWebLink } from "@/shared/lib/webLink";
 
 /** A recommended journey and why it fits; reason is null when it's ranked on score alone. */
 export type RankedJourney = {
@@ -11,7 +12,7 @@ export type RankedJourney = {
 type Props = {
   /** Best fit first; the first is highlighted, the second shown smaller. */
   ranked: RankedJourney[];
-  /** "recommended": for weak areas. "suggested": nothing is weak — journeys to keep improving with. */
+  /** "recommended": for weak areas. "suggested": nothing is weak, journeys to keep improving with. */
   source: JourneySource;
 };
 
@@ -74,7 +75,9 @@ export function RecommendedJourneys({ ranked, source }: Props) {
               ))}
             </ol>
           )}
-          {best.journey.moodleUrl && <MoodleLink url={best.journey.moodleUrl} prominent />}
+          {isWebLink(best.journey.moodleUrl) && (
+            <MoodleLink url={best.journey.moodleUrl} prominent />
+          )}
         </li>
 
         {runnerUp && (
@@ -82,7 +85,7 @@ export function RecommendedJourneys({ ranked, source }: Props) {
             <span className={styles.runnerUpLabel}>Also a good fit</span>
             <h3 className={styles.runnerUpName}>{runnerUp.journey.name}</h3>
             {runnerUp.reason && <p className={styles.runnerUpReason}>{runnerUp.reason}</p>}
-            {runnerUp.journey.moodleUrl && (
+            {isWebLink(runnerUp.journey.moodleUrl) && (
               <MoodleLink url={runnerUp.journey.moodleUrl} prominent={false} />
             )}
           </li>

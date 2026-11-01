@@ -13,6 +13,8 @@ import { learningJourneyRouter } from "./modules/learningJourney/learningJourney
 import { feedbackRouter } from "./modules/feedback/feedback.routes";
 import { advisorRouter } from "./modules/advisor/advisor.routes";
 import { statsRouter } from "./modules/stats/stats.routes";
+import { curriculumRouter } from "./modules/curriculum/curriculum.routes";
+import { dropoffRouter } from "./modules/stats/dropoff.routes";
 
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000;
 
@@ -25,7 +27,7 @@ const apiLimiter = rateLimit({
   limit: 1000,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { error: "Too many requests — please slow down and try again shortly." },
+  message: { error: "Too many requests. Please slow down and try again shortly." },
 });
 
 const loginLimiter = rateLimit({
@@ -33,7 +35,7 @@ const loginLimiter = rateLimit({
   limit: 50,
   standardHeaders: "draft-7",
   legacyHeaders: false,
-  message: { error: "Too many sign-in attempts — please wait a few minutes." },
+  message: { error: "Too many sign-in attempts. Please wait a few minutes." },
 });
 
 // Assembles the Express app. Registering a module = one import + one app.use().
@@ -45,7 +47,7 @@ export function buildServer() {
   // the real client instead of lumping everyone under nginx's address.
   app.set("trust proxy", 1);
 
-  // Standard security headers (no sniffing, no framing, etc.) — this API
+  // Standard security headers (no sniffing, no framing, etc.), this API
   // serves JSON only, so helmet's defaults fit as-is.
   app.use(helmet());
   app.use(cors({ origin: config.corsOrigins }));
@@ -65,6 +67,8 @@ export function buildServer() {
   app.use(feedbackRouter);
   app.use(advisorRouter);
   app.use(statsRouter);
+  app.use(curriculumRouter);
+  app.use(dropoffRouter);
 
   // Unknown paths get JSON like every other error, not Express's HTML page.
   app.use((_req: Request, res: Response) => {

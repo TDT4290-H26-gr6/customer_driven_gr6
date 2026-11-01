@@ -1,12 +1,82 @@
 import { describe, expect, it } from "vitest";
 import {
   extractDragAndDropBlanks,
+  extractMatrixAnswers,
   extractMultipleChoiceValues,
+  extractOrderingValues,
   IDK_VALUE,
   scoreDragAndDrop,
   scoreLikert,
+  scoreMatrix,
   scoreMultipleChoice,
+  scoreOrdering,
 } from "./assessment.scoring";
+
+describe("scoreMatrix", () => {
+  // Columns: True, False, I don't know.
+  const rows = [
+    { id: "s1", correctColumn: 0 },
+    { id: "s2", correctColumn: 1 },
+    { id: "s3", correctColumn: 0 },
+    { id: "s4", correctColumn: 1 },
+  ];
+
+  it("is the share of rows answered with their correct column", () => {
+    expect(
+      scoreMatrix(rows, {
+        s1: [true, false, false],
+        s2: [false, true, false],
+        s3: [true, false, false],
+        s4: [false, true, false],
+      }),
+    ).toEqual({ score: 1, maxScore: 1 });
+    expect(
+      scoreMatrix(rows, {
+        s1: [true, false, false],
+        s2: [true, false, false],
+        s3: [true, false, false],
+        s4: [true, false, false],
+      }).score,
+    ).toBe(0.5);
+  });
+
+  it('counts a row marked "I don\'t know", left empty or missing as wrong', () => {
+    expect(
+      scoreMatrix(rows, {
+        s1: [true, false, false],
+        s2: [false, false, true],
+        s3: [false, false, false],
+      }).score,
+    ).toBe(0.25);
+  });
+
+  it("doesn't credit a row with more than one column selected", () => {
+    expect(scoreMatrix([rows[0]], { s1: [true, true, false] }).score).toBe(0);
+  });
+
+  it("scores 0 for a matrix without rows", () => {
+    expect(scoreMatrix([], {})).toEqual({ score: 0, maxScore: 1 });
+  });
+});
+
+describe("extractMatrixAnswers", () => {
+  it("reads each row's selected columns from the element's own session", () => {
+    expect(
+      extractMatrixAnswers({ id: "1", answers: { s1: [true, false], s2: [false, "yes"] } }),
+    ).toEqual({ s1: [true, false], s2: [false, false] });
+  });
+
+  it.each([null, "x", { answers: null }, { answers: [true] }, { data: [] }])(
+    "treats a malformed session (%j) as no answer",
+    (session) => {
+      expect(extractMatrixAnswers(session)).toEqual({});
+    },
+  );
+
+  it("skips a row whose value isn't a list", () => {
+    expect(extractMatrixAnswers({ answers: { s1: true, s2: [true] } })).toEqual({ s2: [true] });
+  });
+});
 
 describe("scoreMultipleChoice", () => {
   const choices = [
@@ -222,5 +292,64 @@ describe("scoreLikert", () => {
     expect(scoreLikert(scale, ["1000"])).toEqual({ score: 0, maxScore: 1 });
     expect(scoreLikert(scale, ["-3"])).toEqual({ score: 0, maxScore: 1 });
     expect(scoreLikert(scale, ["abc"])).toEqual({ score: 0, maxScore: 1 });
+  });
+});
+
+describe("scoreOrdering", () => {
+  const correctOrder = ["a", "b", "c", "d"];
+
+  it("scores 1 for the exact correct order", () => {
+    expect(scoreOrdering(correctOrder, ["a", "b", "c", "d"])).toEqual({ score: 1, maxScore: 1 });
+  });
+
+  it("scores the share of items left in their correct position", () => {
+    // a and c stayed put; b and d swapped.
+    expect(scoreOrdering(correctOrder, ["a", "d", "c", "b"])).toEqual({ score: 0.5, maxScore: 1 });
+  });
+
+  it("scores 0 when nothing was placed", () => {
+    expect(scoreOrdering(correctOrder, [])).toEqual({ score: 0, maxScore: 1 });
+  });
+
+  it("scores 0 when every slot is empty", () => {
+    expect(scoreOrdering(correctOrder, [null, null, null, null])).toEqual({
+      score: 0,
+      maxScore: 1,
+    });
+  });
+
+  it("doesn't credit an item placed at the wrong index, even if it appears elsewhere in the answer", () => {
+    expect(scoreOrdering(correctOrder, ["b", "a", "c", "d"])).toEqual({ score: 0.5, maxScore: 1 });
+  });
+
+  it("scores 0 for an empty correctOrder rather than dividing by zero", () => {
+    expect(scoreOrdering([], ["a"])).toEqual({ score: 0, maxScore: 1 });
+  });
+});
+
+describe("extractOrderingValues", () => {
+  it("reads the choice ids straight off session.value, in order", () => {
+    expect(
+      extractOrderingValues({
+        id: "s1",
+        element: "aios-placement-ordering",
+        value: ["a", "c", "b"],
+      }),
+    ).toEqual(["a", "c", "b"]);
+  });
+
+  it("keeps a null for an empty slot", () => {
+    expect(extractOrderingValues({ value: ["a", null, "c"] })).toEqual(["a", null, "c"]);
+  });
+
+  it("treats a non-string, non-null entry as an empty slot rather than trusting it", () => {
+    expect(extractOrderingValues({ value: ["a", 42, {}] })).toEqual(["a", null, null]);
+  });
+
+  it("returns an empty array for a missing or malformed session", () => {
+    expect(extractOrderingValues(undefined)).toEqual([]);
+    expect(extractOrderingValues(null)).toEqual([]);
+    expect(extractOrderingValues({})).toEqual([]);
+    expect(extractOrderingValues({ value: "not-an-array" })).toEqual([]);
   });
 });

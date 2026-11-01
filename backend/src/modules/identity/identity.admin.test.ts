@@ -14,6 +14,10 @@ describe("isAdminEmail", () => {
     expect(isAdminEmail("student@ntnu.no", admins)).toBe(false);
   });
 
+  it("never lets a deleted account (no email) in", () => {
+    expect(isAdminEmail(null, "everyone")).toBe(false);
+  });
+
   it("lets nobody in with an empty list (production without ADMIN_EMAILS)", () => {
     expect(isAdminEmail("admin@ntnu.no", [])).toBe(false);
   });

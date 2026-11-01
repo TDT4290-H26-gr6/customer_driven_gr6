@@ -17,10 +17,37 @@
   min-width: 0;
 }
 
+/* The ? that opens the guide: round, quiet, the same height as Exit. */
+.help {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.help:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
 .nav {
   display: flex;
   justify-content: space-between;
   gap: 12px;
+}
+
+/* Without Back, space-between would leave Next at the start instead of the
+   end (its usual side) since it's the only item. */
+.nextAlone {
+  margin-left: auto;
 }
 
 .alert {
@@ -54,7 +81,7 @@
     gap: 16px;
   }
 
-  /* Back / Next split the row evenly — two big thumb targets instead of two
+  /* Back / Next split the row evenly, two big thumb targets instead of two
      small buttons at opposite edges. */
   .nav > * {
     flex: 1;

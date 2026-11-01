@@ -5,6 +5,7 @@ import { useTheme, type ThemePreference } from "@/app/providers/ThemeProvider";
 import { MonitorIcon, MoonIcon, SunIcon } from "@/shared/components/icons";
 import { RoleSelect } from "@/features/onboarding";
 import type { Role } from "@/features/onboarding";
+import { InformationLetterLink } from "@/features/privacy";
 import { ProfileForm } from "@/features/profile";
 import { ROLE_SELECTION_ENABLED } from "@/shared/lib/features";
 import { DeleteAccountSection } from "../components/DeleteAccountSection";
@@ -17,7 +18,8 @@ const VISUAL_OPTIONS: { value: ThemePreference; label: string; Icon: typeof Moni
 ];
 
 /**
- * Account settings: visuals, profile, role and account deletion. The role
+ * Account settings: visuals, profile, role, the information letter and
+ * account deletion. The role
  * card is hidden while role selection is temporarily off
  * (shared/lib/features.ts).
  */
@@ -100,10 +102,19 @@ export function SettingsPage() {
             onDone={handleRoleChange}
           />
           {saved && (
-            <p className={styles.confirmation}>Saved — you&apos;re now set as {saved.name}.</p>
+            <p className={styles.confirmation}>Saved. You&apos;re now set as {saved.name}.</p>
           )}
         </div>
       )}
+
+      <div className={styles.card}>
+        <h2 className={styles.cardHeading}>Information letter</h2>
+        <p className={styles.cardHint}>
+          The information about the research project that you consented to when you set up your
+          profile.
+        </p>
+        <InformationLetterLink>Read the information letter</InformationLetterLink>
+      </div>
 
       <div className={styles.card}>
         <DeleteAccountSection />

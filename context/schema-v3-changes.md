@@ -1,8 +1,8 @@
-# Schema v3 — role visibility, section/module hierarchy, sources, admin mode
+# Schema v3, role visibility, section/module hierarchy, sources, admin mode
 
 - **Date:** 2026-09-23
 - **Branch:** `dbschema/changes_to_db`
-- **Based on:** the "AIOS DB Schema — Role Visibility" Lucidchart diagram and
+- **Based on:** the "AIOS DB Schema, Role Visibility" Lucidchart diagram and
   `aios_fake_food_seed.json`
 - **Companion docs:** [`backend-structure.md`](./backend-structure.md) §11 (how the
   model behaves) and [`frontend-structure.md`](./frontend-structure.md) (the
@@ -13,7 +13,7 @@ docs describe the result; this one describes the move.
 
 ---
 
-## Update — 2026-09-28: a full-bank, no-guessing initial assessment
+## Update, 2026-09-28: a full-bank, no-guessing initial assessment
 
 **Branch:** `CD-8-Present-no-more-than-50-questions-to-each-user`
 
@@ -29,7 +29,7 @@ docs describe the result; this one describes the move.
   until a learner finishes their first run; the role filter applies to every
   run after that. The two score views (`getLatestCompetenceScores`,
   `getLatestSectionCompetenceScores`) no longer re-apply the _current_ role
-  filter at all — they show whatever a past instance actually covered.
+  filter at all, they show whatever a past instance actually covered.
 - **A no-penalty "I don't know" choice on every question.** Appended by
   `assessment.pie.ts` to every generated PIE model (not authored per
   question); selecting it always scores `0/0` for that question, checked in
@@ -47,11 +47,11 @@ docs describe the result; this one describes the move.
   `openScienceSeed.ts` / `aios_open_science_seed.json` are untouched; nothing
   calls `seedOpenScienceContent()` any more. See backend-structure.md §11 for
   how to re-enable it.
-- CD-8's "no more than 50 questions" cap is **not implemented** — the team
+- CD-8's "no more than 50 questions" cap is **not implemented**, the team
   agreed 60 (5×4×3) was fine instead.
 
 Existing databases need the same reset as before (see backend-structure.md
-§11, "Resetting the database") — the new dataset only loads into an empty one.
+§11, "Resetting the database"), the new dataset only loads into an empty one.
 
 ---
 

@@ -1,0 +1,31 @@
+/// Security module: traceability of privileged changes. Tables: security_*.
+
+/// One change an admin made in the curriculum editor: who, when, to which
+/// item, and the item's editable values before and after. Written in the same
+/// transaction as the change itself, so there is never one without the other.
+/// Read by the admin "change log" CSV download; the editor shows each item's
+/// latest entries ("Last edited by … on …").
+model AuditEvent {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  /// The admin's account; null once that account is deleted. Their name and
+  /// email are copied below, so the entry stays readable (accountability is
+  /// the log's purpose).
+  actorId    String?
+  actor      Learner? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorName  String?
+  actorEmail String
+  /// "question" | "competence" | "section" | "module" | "journey"
+  entityType String
+  entityId   String
+  /// The item's name (or a question's prompt) at the time, for reading the log.
+  entityLabel String  @db.VarChar(191)
+  /// "created" | "edited" | "deleted" | "retired" | "restored"
+  action     String
+  before     Json?
+  after      Json?
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("security_audit_event")
+}

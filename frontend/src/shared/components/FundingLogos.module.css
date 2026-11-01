@@ -1,0 +1,37 @@
+/* No plate in either theme: the EU logo's text follows the theme, and IKY's
+   framed blue square reads on both backgrounds. */
+.logos {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Both logos the same height, which the caller can set through
+   --funding-logo-height; width: auto keeps each one's proportions. */
+.eu,
+.iky {
+  display: block;
+  height: var(--funding-logo-height, 40px);
+  width: auto;
+}
+
+.flag {
+  fill: var(--eu-blue);
+}
+
+.stars {
+  fill: var(--eu-yellow);
+}
+
+.statement {
+  fill: var(--color-eu-text);
+  font-family: var(--font-family-eu);
+  font-size: 93px;
+  font-weight: var(--font-weight-bold);
+}
+
+.project {
+  fill: var(--color-text);
+  font-family: var(--font-family-sans);
+  font-size: 57px;
+}

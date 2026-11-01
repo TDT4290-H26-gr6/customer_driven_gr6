@@ -1,11 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { env } from "@/config/env";
-import { useTheme } from "@/app/providers/ThemeProvider";
 import { googleLogin } from "../api";
 import type { Learner } from "../types";
+import styles from "./GoogleLoginButton.module.css";
 
 // Minimal shape of the Google Identity Services client (loaded via the
-// <script> tag in index.html) — just the bits this component calls. No
+// <script> tag in index.html), just the bits this component calls. No
 // official types package is installed for it, so this stays hand-rolled
 // rather than falling back to `any`.
 type GoogleIdentityServices = {
@@ -26,34 +26,74 @@ declare global {
   }
 }
 
+/** The <script> tag in index.html that loads Google's sign-in client. */
+const GOOGLE_SCRIPT = 'script[src^="https://accounts.google.com/gsi/client"]';
+
 export function GoogleLoginButton({ onLogin }: { onLogin: (learner: Learner) => void }) {
-  const { resolvedTheme } = useTheme();
+  const [unavailable, setUnavailable] = useState(false);
 
   useEffect(() => {
-    if (!window.google) return;
+    // Google's script loads async, so it can still be on its way when this
+    // mounts (the production bundle is often faster): draw the button once
+    // it has loaded. If it can't load (blocked by an extension, a network
+    // filter or the page's own security policy), say so: it's the only way
+    // to sign in.
+    if (window.google) {
+      drawButton(window.google, onLogin);
+      return;
+    }
+    const script = document.querySelector(GOOGLE_SCRIPT);
+    // The page has finished loading (async scripts included) without it.
+    if (!script || document.readyState === "complete") {
+      setUnavailable(true);
+      return;
+    }
+    const onLoad = () => {
+      if (window.google) drawButton(window.google, onLogin);
+      else setUnavailable(true);
+    };
+    const onError = () => setUnavailable(true);
+    script.addEventListener("load", onLoad);
+    script.addEventListener("error", onError);
+    return () => {
+      script.removeEventListener("load", onLoad);
+      script.removeEventListener("error", onError);
+    };
+  }, []);
 
-    window.google.accounts.id.initialize({
-      client_id: env.GOOGLE_CLIENT_ID,
-      callback: async (response: { credential: string }) => {
-        try {
-          const { learner } = await googleLogin(response.credential);
-          onLogin(learner);
-        } catch {
-          // Leave the button in place; the next session check will show state.
-        }
-      },
-    });
+  return (
+    <>
+      <div id="google-signin-button"></div>
+      {unavailable && (
+        <p className={styles.unavailable} role="alert">
+          Google sign-in couldn&apos;t load. Check your connection, or allow this site in any
+          blocker, then reload the page.
+        </p>
+      )}
+    </>
+  );
+}
 
-    // Google's widget doesn't read our CSS variables, so hand it a matching
-    // theme directly whenever the resolved (system-aware) theme changes.
-    const container = document.getElementById("google-signin-button");
-    if (!container) return;
-    container.innerHTML = "";
-    window.google.accounts.id.renderButton(container, {
-      theme: resolvedTheme === "dark" ? "filled_black" : "outline",
-      size: "large",
-    });
-  }, [resolvedTheme]);
+function drawButton(google: GoogleIdentityServices, onLogin: (learner: Learner) => void) {
+  google.accounts.id.initialize({
+    client_id: env.GOOGLE_CLIENT_ID,
+    callback: async (response: { credential: string }) => {
+      try {
+        const { learner } = await googleLogin(response.credential);
+        onLogin(learner);
+      } catch {
+        // Leave the button in place; the next session check will show state.
+      }
+    },
+  });
 
-  return <div id="google-signin-button"></div>;
+  // Always Google's white "outline" button, in dark mode too: the black
+  // one blends into the dark login card.
+  const container = document.getElementById("google-signin-button");
+  if (!container) return;
+  container.innerHTML = "";
+  google.accounts.id.renderButton(container, {
+    theme: "outline",
+    size: "large",
+  });
 }

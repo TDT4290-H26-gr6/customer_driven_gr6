@@ -33,8 +33,8 @@ import { selectTargets } from "./advisor.candidates";
 // through their services.
 
 const MAX_CANDIDATES = 15;
-/** There are six learning journeys today; more than this would just be noise for the model. */
-const MAX_JOURNEY_CANDIDATES = 6;
+/** There are four learning journeys today; more than this would just be noise for the model. */
+const MAX_JOURNEY_CANDIDATES = 4;
 
 const adviceLock = createKeyedLock();
 
@@ -52,7 +52,7 @@ export type StoredStep = Pick<AdviceStep, "kind" | "id" | "title" | "url" | "rea
  *
  * Everything follows the competences the advice targets (every one at or
  * below the weak threshold, else the single lowest; none after a perfect
- * score — see advisor.candidates.ts), weakest first:
+ * score, see advisor.candidates.ts), weakest first:
  * - step candidates: the curriculum modules that teach them, linked to their
  *   page in Moodle, then any learning sources linked to them. The Moodle
  *   links are placeholders until the real pages exist (MOODLE_BASE_URL + the
@@ -76,7 +76,9 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
           include: {
             primarySource: true,
             secondarySources: { include: { source: true } },
+            // Only modules in use: retired ones are never recommended.
             mainForModules: {
+              where: { retiredAt: null, section: { retiredAt: null } },
               select: {
                 id: true,
                 name: true,
@@ -109,7 +111,7 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
 
   const { targets, minSteps } = selectTargets(weakestFirst, WEAK_THRESHOLD);
 
-  // 1. The curriculum modules (A1 … E4) that teach each target competence —
+  // 1. The curriculum modules (A1 … E4) that teach each target competence ,
   //    what the learner actually takes, in Moodle.
   for (const { competence } of targets) {
     const modules = [...competence.mainForModules].sort(
@@ -148,7 +150,7 @@ async function buildContext(learnerId: string): Promise<AdviceContext> {
   // Journeys covering the target competences' sections, for the model to
   // choose from with the learner's role in mind. The score-based pick leads
   // as the default (when there's none, e.g. nothing below the threshold, the
-  // best-covering journey of the lowest area does — the dashboard suggestion).
+  // best-covering journey of the lowest area does, the dashboard suggestion).
   const targetSectionIds = [
     ...new Set(
       targets.flatMap(({ competence }) => competence.mainForModules.map((m) => m.section.id)),
@@ -238,7 +240,7 @@ async function generateAdvice(
 
 /**
  * The AI advice for the learner's latest completed self-assessment:
- * generated the first time it's asked for, then read back from the table —
+ * generated the first time it's asked for, then read back from the table ,
  * one LLM call per assessment, however often the dashboard is opened.
  *
  * Returns null when there's nothing to advise on yet (no completed

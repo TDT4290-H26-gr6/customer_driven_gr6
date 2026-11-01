@@ -17,8 +17,32 @@ services:
       timeout: 5s
       retries: 10
 
+  # Prepares the database, then exits: applies the schema and loads the
+  # SEED_DATASET content (see database/Dockerfile). Runs on every `up`; both
+  # steps are no-ops once the database is current. If either fails (including
+  # a schema change that would lose data), it exits with an error and the
+  # backend doesn't start: see `docker compose logs db-init`.
+  db-init:
+    build: ./database
+    restart: "no"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      # Which content to load ("fake" by default, or "wp2"), and the Moodle
+      # site placeholder links are built from; see .env.example.
+      SEED_DATASET: ${SEED_DATASET:-}
+      MOODLE_BASE_URL: ${MOODLE_BASE_URL:-}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./database/src:/app/src:ro
+
+  # The API only. Built from the repository root so it can generate its
+  # Prisma client from database/prisma/schema (see backend/Dockerfile).
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -32,10 +56,6 @@ services:
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_BASE_URL: ${LLM_BASE_URL:-}
       LLM_MODEL: ${LLM_MODEL:-}
-      # Which content to load ("fake" by default, or "wp2"), and the Moodle
-      # site placeholder links are built from — see .env.example.
-      SEED_DATASET: ${SEED_DATASET:-}
-      MOODLE_BASE_URL: ${MOODLE_BASE_URL:-}
       # tsx watch's file watcher misses bind-mount changes on Docker
       # Desktop/Windows (native fs events don't cross the mount) — same
       # class of issue the frontend's vite.config.ts already works around
@@ -43,15 +63,19 @@ services:
       CHOKIDAR_USEPOLLING: "true"
     ports:
       - "${BACKEND_PORT}:4000"
-      - "5555:5555"
     depends_on:
-      mysql:
-        condition: service_healthy
+      # Starts only once the schema is in place and the content is loaded.
+      db-init:
+        condition: service_completed_successfully
     volumes:
-      - ./backend/src:/app/src
+      - ./backend/src:/app/src:ro
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      # The Vite dev server with hot reload. The VM uses the "prod" target
+      # instead — see docker-compose.prod.yml.
+      target: dev
     restart: unless-stopped
     environment:
       VITE_API_URL: ${VITE_API_URL}

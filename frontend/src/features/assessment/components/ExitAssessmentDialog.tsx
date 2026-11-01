@@ -5,7 +5,7 @@ import styles from "./ExitAssessmentDialog.module.css";
 export type ExitStatus = "idle" | "leaving" | "discarding";
 
 type Props = {
-  /** Answers whose save failed — Save & exit retries them before leaving. */
+  /** Answers whose save failed, Save & exit retries them before leaving. */
   unsavedCount: number;
   status: ExitStatus;
   error: string | null;
@@ -87,14 +87,14 @@ export function ExitAssessmentDialog({
 
         <p className={styles.hint}>
           Save &amp; exit keeps your answers so you can continue later from where you stopped. Abort
-          deletes every answer in this assessment — you&apos;ll start from the first question next
+          deletes every answer in this assessment, so you&apos;ll start from the first question next
           time.
         </p>
 
         {unsavedCount > 0 && (
           <p className={styles.warning}>
             {unsavedCount === 1 ? "1 answer hasn't" : `${unsavedCount} answers haven't`} been saved
-            yet — Save &amp; exit will try again before leaving.
+            yet. Save &amp; exit will try again before leaving.
           </p>
         )}
 

@@ -1,0 +1,14 @@
+# Production overrides for the VM, layered on top of docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# The frontend is served as a minified production build (see
+# frontend/Dockerfile) instead of the Vite dev server. VITE_* values from
+# .env are baked in at build time, so rebuild the frontend after changing them.
+services:
+  frontend:
+    build:
+      target: prod
+      args:
+        VITE_API_URL: ${VITE_API_URL}
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}

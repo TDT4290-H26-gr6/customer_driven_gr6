@@ -5,7 +5,7 @@ import { isAdminEmail } from "../modules/identity/identity.admin";
 
 /**
  * Must run after requireAuth. Lets through only learners listed in
- * ADMIN_EMAILS (everyone in development when it's unset — see config.ts).
+ * ADMIN_EMAILS (everyone in development when it's unset, see config.ts).
  * The frontend hides admin mode from non-admins too, but only this check
  * is a boundary.
  */

@@ -1,5 +1,6 @@
 import type { Advice } from "../types";
 import styles from "./AdviceCard.module.css";
+import { isWebLink } from "@/shared/lib/webLink";
 
 /** What the dashboard knows about the advice so far. */
 export type AdviceState =
@@ -12,7 +13,7 @@ const KIND_LABEL = {
 } as const;
 
 /**
- * "Personalised advice" — the AI's explanation of the learner's results and
+ * "Personalised advice", the AI's explanation of the learner's results and
  * the steps it suggests, shown under the score-based journey
  * recommendation. Always labelled as AI-generated.
  */
@@ -37,7 +38,7 @@ export function AdviceCard({ state }: { state: AdviceState }) {
       {state.status === "unavailable" && (
         <p className={styles.muted}>
           Personalised advice isn&apos;t available right now. Your recommended journey above is
-          still up to date — try again later.
+          still up to date. Try again later.
         </p>
       )}
 
@@ -50,7 +51,7 @@ export function AdviceCard({ state }: { state: AdviceState }) {
               {state.advice.steps.map((step, i) => (
                 <li key={`${step.kind}-${step.title}-${i}`} className={styles.step}>
                   <span className={styles.kind}>{KIND_LABEL[step.kind]}</span>
-                  {step.url ? (
+                  {isWebLink(step.url) ? (
                     <a
                       className={styles.title}
                       href={step.url}
@@ -70,7 +71,7 @@ export function AdviceCard({ state }: { state: AdviceState }) {
 
           <p className={styles.disclaimer}>
             Written by an AI model hosted by NTNU, based on your latest self-assessment. It can make
-            mistakes — use it as a starting point.
+            mistakes, so use it as a starting point.
           </p>
         </>
       )}
