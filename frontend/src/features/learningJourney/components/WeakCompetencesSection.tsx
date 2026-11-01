@@ -1,5 +1,6 @@
 import type { WeakCompetence } from "../types";
 import styles from "./WeakCompetencesSection.module.css";
+import { isWebLink } from "@/shared/lib/webLink";
 
 type Props = {
   competences: WeakCompetence[];
@@ -33,7 +34,7 @@ export function WeakCompetencesSection({ competences }: Props) {
               {c.journey && (
                 <span className={styles.journeyName}>
                   Covered by:{" "}
-                  {c.journey.moodleUrl ? (
+                  {isWebLink(c.journey.moodleUrl) ? (
                     <a
                       className={styles.journeyLink}
                       href={c.journey.moodleUrl}

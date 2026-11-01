@@ -8,6 +8,7 @@ import { getCompetencies } from "../api";
 import { BAND_LABEL, scoreBand } from "../scoreBand";
 import type { BestResult, Competencies, CompetencyModule, CompetencySection } from "../types";
 import styles from "./CompetenciesPage.module.css";
+import { isWebLink } from "@/shared/lib/webLink";
 
 const VISIBLE_SECTIONS = 3;
 
@@ -75,7 +76,7 @@ function ModuleRow({ module, view }: { module: CompetencyModule; view: View }) {
         ) : (
           <span className={styles.muted}>Not assessed yet</span>
         )}
-        {module.moodleUrl && (
+        {isWebLink(module.moodleUrl) && (
           <a
             className={styles.moodleLink}
             href={module.moodleUrl}

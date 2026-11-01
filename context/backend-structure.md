@@ -415,6 +415,9 @@ Every question is out of 1 point; "I don't know" scores 0 out of 1.
   order: they're authored in that order, and the element takes the order on
   screen as the learner's starting answer. The frontend only counts an
   ordering answer once the learner has moved an item.
+- All text in a question (prompt, options, rows, columns, the example) is
+  HTML-escaped by `assessment.pie.ts`, since PIE renders it as markup: what
+  an admin types can't add tags or scripts for learners.
 - Learners never get the answers: `/questions` and `/assessment/path` send
   each question through `withoutAnswers` (`assessment.redact.ts`), which
   drops the choices' `correct` flags, `correctResponse` (ordering's correct
@@ -548,7 +551,10 @@ so running it again never duplicates or overwrites.
   JSON. The name and email are copied into the entry, so it stays readable
   after the account is deleted. The editor shows each item's "Added by … ·
   Edited by …" line; the full log is **Download change log (CSV)** in the
-  editor (`GET /admin/curriculum/changelog.csv`). Items loaded from a dataset
+  editor (`GET /admin/curriculum/changelog.csv`). Like every CSV here (`toCsv`
+  in `stats.csv.ts`), a text field that would start a spreadsheet formula
+  (`=`, `+`, `-`, `@`) gets a leading `'`, so a name or item text can't run
+  as one when the file is opened in Excel. Items loaded from a dataset
   have no "Added by" line, and nothing before this log existed is in it.
 - **Moving the curriculum:** **Download curriculum (JSON)** in the editor
   (`GET /admin/curriculum/export.json`, `curriculum.export.ts`) writes the

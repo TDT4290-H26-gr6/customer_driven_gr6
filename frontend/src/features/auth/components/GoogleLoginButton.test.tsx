@@ -55,6 +55,37 @@ describe("GoogleLoginButton", () => {
     expect(onLogin).not.toHaveBeenCalled();
   });
 
+  describe("when Google's script is still loading", () => {
+    let script: HTMLScriptElement;
+    beforeEach(() => {
+      delete window.google;
+      script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      document.head.appendChild(script);
+    });
+    afterEach(() => script.remove());
+
+    it("draws the button once it has loaded", () => {
+      const { container } = render(<GoogleLoginButton onLogin={vi.fn()} />);
+      expect(renderButton).not.toHaveBeenCalled();
+
+      window.google = { accounts: { id: { initialize, renderButton } } };
+      script.dispatchEvent(new Event("load"));
+
+      expect(container).toHaveTextContent("Sign in with Google");
+    });
+
+    it("stops waiting once the login page is gone", () => {
+      const { unmount } = render(<GoogleLoginButton onLogin={vi.fn()} />);
+      unmount();
+
+      window.google = { accounts: { id: { initialize, renderButton } } };
+      script.dispatchEvent(new Event("load"));
+
+      expect(renderButton).not.toHaveBeenCalled();
+    });
+  });
+
   it("renders an empty slot when Google's script hasn't loaded (e.g. blocked)", () => {
     delete window.google;
     const { container } = render(<GoogleLoginButton onLogin={vi.fn()} />);

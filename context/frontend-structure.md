@@ -228,6 +228,24 @@ is given everything it needs via props and stays reusable. A feature's
 - **Env:** read only through `@/config/env.ts`. Nothing else touches
   `import.meta.env`. All frontend vars are prefixed `VITE_` and listed in
   `frontend/.env.example`.
+- **Injection (XSS):**
+  - Show text with React (`{text}`), which escapes it. Never use
+    `dangerouslySetInnerHTML`/`innerHTML` for anything from the API or a user.
+  - A link from data goes through `isWebLink` (`@/shared/lib/webLink`): it
+    only renders an `href` for http(s), never `javascript:`/`data:`.
+  - Question HTML for PIE is built (and escaped) on the backend
+    (`assessment.pie.ts`).
+  - The production build has a Content-Security-Policy
+    (`src/config/contentSecurityPolicy.ts`, put in `index.html` by
+    `vite.config.ts`). It runs only the app's own scripts, the hashed inline
+    theme script and Google sign-in. A new third-party script, frame or API
+    host has to be added there.
+  - The rest of the security headers (`frame-ancestors`, `nosniff`, referrer
+    policy) are in `frontend/security-headers.conf`, included in every
+    `nginx.conf` location.
+  - The CSP also blocks the CDNs the question player's math library
+    (MathJax) would load from. No question uses math. If one ever does,
+    serve its fonts and data from the app.
 
 ---
 

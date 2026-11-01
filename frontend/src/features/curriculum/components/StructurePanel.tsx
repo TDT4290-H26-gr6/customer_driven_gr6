@@ -14,6 +14,7 @@ import { ModuleForm } from "./ModuleForm";
 import { SectionForm } from "./SectionForm";
 import { ChangeHistory } from "./ChangeHistory";
 import styles from "../pages/CurriculumPage.module.css";
+import { isWebLink } from "@/shared/lib/webLink";
 
 type Props = {
   sections: CurriculumSection[];
@@ -268,7 +269,7 @@ export function StructurePanel({ sections, competences, onChanged }: Props) {
                           {module.secondaryCompetenceIds.length > 0 &&
                             ` (+${module.secondaryCompetenceIds.length} secondary)`}{" "}
                           · {plural(module.questionCount, "question")}
-                          {module.moodleUrl && (
+                          {isWebLink(module.moodleUrl) && (
                             <>
                               {" · "}
                               <a href={module.moodleUrl} target="_blank" rel="noopener noreferrer">
