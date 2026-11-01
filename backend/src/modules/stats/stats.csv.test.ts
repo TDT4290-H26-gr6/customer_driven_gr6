@@ -46,6 +46,18 @@ describe("toCsv", () => {
     );
   });
 
+  it("quotes a field with a semicolon, which Excel in a Norwegian locale splits on", () => {
+    expect(toCsv(["a"], [{ a: "Ok;=cmd|'/c calc'!A0" }])).toBe(`a\r\n"Ok;=cmd|'/c calc'!A0"\r\n`);
+  });
+
+  it("defuses a formula behind leading spaces or a line break", () => {
+    expect(
+      toCsv(["a"], [{ a: "  =1+1" }, { a: "\n=1+1" }])
+        .split("\r\n")
+        .slice(1, -1),
+    ).toEqual(["'  =1+1", `"'\n=1+1"`]);
+  });
+
   it("quotes a field with a carriage return", () => {
     expect(toCsv(["a"], [{ a: "one\rtwo" }])).toBe('a\r\n"one\rtwo"\r\n');
   });

@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { googleLogin } from "../api";
 import { GoogleLoginButton } from "./GoogleLoginButton";
@@ -57,13 +57,19 @@ describe("GoogleLoginButton", () => {
 
   describe("when Google's script is still loading", () => {
     let script: HTMLScriptElement;
+    let readyState: { mockRestore(): void };
     beforeEach(() => {
       delete window.google;
       script = document.createElement("script");
       script.src = "https://accounts.google.com/gsi/client";
       document.head.appendChild(script);
+      // The page is still loading: async scripts hold off "complete".
+      readyState = vi.spyOn(document, "readyState", "get").mockReturnValue("interactive");
     });
-    afterEach(() => script.remove());
+    afterEach(() => {
+      script.remove();
+      readyState.mockRestore();
+    });
 
     it("draws the button once it has loaded", () => {
       const { container } = render(<GoogleLoginButton onLogin={vi.fn()} />);
@@ -73,6 +79,17 @@ describe("GoogleLoginButton", () => {
       script.dispatchEvent(new Event("load"));
 
       expect(container).toHaveTextContent("Sign in with Google");
+    });
+
+    it("says so when it fails to load, since it's the only way to sign in", () => {
+      render(<GoogleLoginButton onLogin={vi.fn()} />);
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+      act(() => {
+        script.dispatchEvent(new Event("error"));
+      });
+
+      expect(screen.getByRole("alert")).toHaveTextContent("Google sign-in couldn't load");
     });
 
     it("stops waiting once the login page is gone", () => {
@@ -86,9 +103,10 @@ describe("GoogleLoginButton", () => {
     });
   });
 
-  it("renders an empty slot when Google's script hasn't loaded (e.g. blocked)", () => {
+  it("says so when the page has loaded without Google's script (e.g. blocked)", () => {
     delete window.google;
     const { container } = render(<GoogleLoginButton onLogin={vi.fn()} />);
     expect(container.firstChild).toBeEmptyDOMElement();
+    expect(screen.getByRole("alert")).toHaveTextContent("Google sign-in couldn't load");
   });
 });

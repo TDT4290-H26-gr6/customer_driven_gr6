@@ -6,7 +6,7 @@ import { COVERAGE_INFO, plural } from "../questionTypes";
 import type { CurriculumJourney, CurriculumSection } from "../types";
 import { ChangeHistory } from "./ChangeHistory";
 import styles from "../pages/CurriculumPage.module.css";
-import { isWebLink } from "@/shared/lib/webLink";
+import { MoodleLinkNote } from "./MoodleLinkNote";
 
 type Props = {
   journeys: CurriculumJourney[];
@@ -150,14 +150,7 @@ export function JourneysPanel({ journeys, sections, onChanged }: Props) {
             </dl>
             <p className={styles.meta}>
               {plural(journey.steps.length, "step")}
-              {isWebLink(journey.moodleUrl) && (
-                <>
-                  {" · "}
-                  <a href={journey.moodleUrl} target="_blank" rel="noopener noreferrer">
-                    Moodle page
-                  </a>
-                </>
-              )}
+              <MoodleLinkNote url={journey.moodleUrl} />
             </p>
           </section>
         );

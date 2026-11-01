@@ -14,7 +14,7 @@ import { ModuleForm } from "./ModuleForm";
 import { SectionForm } from "./SectionForm";
 import { ChangeHistory } from "./ChangeHistory";
 import styles from "../pages/CurriculumPage.module.css";
-import { isWebLink } from "@/shared/lib/webLink";
+import { MoodleLinkNote } from "./MoodleLinkNote";
 
 type Props = {
   sections: CurriculumSection[];
@@ -269,14 +269,7 @@ export function StructurePanel({ sections, competences, onChanged }: Props) {
                           {module.secondaryCompetenceIds.length > 0 &&
                             ` (+${module.secondaryCompetenceIds.length} secondary)`}{" "}
                           · {plural(module.questionCount, "question")}
-                          {isWebLink(module.moodleUrl) && (
-                            <>
-                              {" · "}
-                              <a href={module.moodleUrl} target="_blank" rel="noopener noreferrer">
-                                Moodle page
-                              </a>
-                            </>
-                          )}
+                          <MoodleLinkNote url={module.moodleUrl} />
                           {moduleRetired && <span className={styles.badge}>Removed</span>}
                         </p>
                         <ChangeHistory history={module.history} />

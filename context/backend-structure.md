@@ -527,6 +527,17 @@ so running it again never duplicates or overwrites.
   links, and never re-adds anything the change log says an admin deleted. A
   new row pointing at something deleted (a new question in a deleted module)
   is left out and listed in the dry run, rather than failing the apply.
+- **Rebuilding stored questions:** learners get each question's stored
+  `content`, built when it was saved. After a change to how questions are
+  built (`pie.ts`, e.g. escaping prompts as HTML), `docker compose run --rm
+  db-init npm run content:rebuild` lists the questions stored differently
+  from how they're built now, and `-- --apply` rebuilds them from their
+  authored form. Nothing else changes: not the prompt, the answers or the
+  scores.
+- **Links in a dataset** (a module's or journey's `moodleUrl`, a source's
+  `sourceUrl`) must be web addresses (http or https), the same rule as the
+  curriculum editor: loading or syncing a file with any other link fails,
+  naming the row.
 - **By hand:** `docker compose run --rm db-init npm run seed` (or `npm run seed`
   in `database/`) runs the same loader.
 - The seed authors questions in the simple shape above; the loader converts them

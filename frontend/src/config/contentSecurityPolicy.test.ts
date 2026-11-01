@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contentSecurityPolicy } from "./contentSecurityPolicy";
+import { contentSecurityPolicy, inlineScripts } from "./contentSecurityPolicy";
 
 function directives(policy: string): Record<string, string[]> {
   return Object.fromEntries(
@@ -51,5 +51,23 @@ describe("contentSecurityPolicy", () => {
 
   it("falls back to the page itself for anything not listed", () => {
     expect(policy["default-src"]).toEqual(["'self'"]);
+  });
+});
+
+describe("inlineScripts", () => {
+  it("finds each inline script, with or without attributes, but not one loaded from a file", () => {
+    const html = `<head>
+      <script>one()</script>
+      <script type="module" async>two()</script>
+      <script src="https://accounts.google.com/gsi/client" async defer></script>
+      <SCRIPT>three()</SCRIPT>
+    </head>`;
+    expect(inlineScripts(html)).toEqual(["one()", "two()", "three()"]);
+  });
+
+  it("hashes what the browser runs: Windows line endings become \\n", () => {
+    expect(inlineScripts("<script>\r\n  a();\r\n  b();\r</script>")).toEqual([
+      "\n  a();\n  b();\n",
+    ]);
   });
 });

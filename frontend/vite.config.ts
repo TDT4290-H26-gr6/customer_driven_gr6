@@ -4,7 +4,8 @@ import react from "@vitejs/plugin-react";
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
-import { contentSecurityPolicy } from "./src/config/contentSecurityPolicy";
+import { contentSecurityPolicy, inlineScripts } from "./src/config/contentSecurityPolicy";
+import { DEFAULT_API_URL } from "./src/config/defaults";
 
 /**
  * The PIE player's entry (dist/index.js) loads its other files at runtime
@@ -44,8 +45,8 @@ function contentSecurityPolicyMeta(apiUrl: string): Plugin {
     transformIndexHtml: {
       order: "post",
       handler(html) {
-        const inlineScriptHashes = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(
-          ([, code]) => `'sha256-${createHash("sha256").update(code).digest("base64")}'`,
+        const inlineScriptHashes = inlineScripts(html).map(
+          (code) => `'sha256-${createHash("sha256").update(code).digest("base64")}'`,
         );
         const policy = contentSecurityPolicy({ apiUrl, inlineScriptHashes });
         return html.replace(
@@ -61,9 +62,8 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     copyPieRuntimeFiles(),
-    // The same fallback as src/config/env.ts.
     contentSecurityPolicyMeta(
-      loadEnv(mode, process.cwd(), "VITE_").VITE_API_URL || "http://localhost:4000",
+      loadEnv(mode, process.cwd(), "VITE_").VITE_API_URL || DEFAULT_API_URL,
     ),
   ],
   resolve: {

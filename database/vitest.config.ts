@@ -14,6 +14,7 @@ export default defineConfig({
         // Entry points: run the seed / the content sync and exit.
         "src/index.ts",
         "src/seed/contentSync.cli.ts",
+        "src/seed/contentRebuild.cli.ts",
         // Constructs the Prisma client; every test mocks it.
         "src/db/prisma.ts",
         // Dormant: nothing calls it (see the file's header). Delete or test it

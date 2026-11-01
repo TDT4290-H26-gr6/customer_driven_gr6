@@ -18,6 +18,9 @@ ARG VITE_GOOGLE_CLIENT_ID
 ENV VITE_API_URL=$VITE_API_URL \
     VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 COPY . .
+# Without it, the build would point the app (and its security policy) at
+# localhost:4000, and every API call would fail on the server.
+RUN test -n "$VITE_API_URL" || (echo "VITE_API_URL must be set in .env for the production build" >&2 && exit 1)
 RUN npm run build
 
 FROM nginx:1.27-alpine AS prod

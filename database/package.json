@@ -9,6 +9,7 @@
     "schema:push:accept-data-loss": "prisma db push --accept-data-loss --skip-generate",
     "seed": "tsx src/index.ts",
     "content:sync": "tsx src/seed/contentSync.cli.ts",
+    "content:rebuild": "tsx src/seed/contentRebuild.cli.ts",
     "studio": "prisma studio",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

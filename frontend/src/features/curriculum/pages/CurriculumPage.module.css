@@ -425,6 +425,11 @@
   color: var(--color-danger);
 }
 
+/* A Moodle link learners can't be given, see MoodleLinkNote. */
+.linkWarning {
+  color: var(--color-danger);
+}
+
 @media (pointer: coarse) {
   .iconButton {
     width: 44px;

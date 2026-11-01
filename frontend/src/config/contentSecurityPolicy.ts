@@ -49,3 +49,16 @@ export function contentSecurityPolicy({
     .map(([name, sources]) => `${name} ${sources.join(" ")}`)
     .join("; ");
 }
+
+/**
+ * The text of each inline <script> in `html` (one without a src), as the
+ * browser hashes it to check against the policy: line endings normalised to
+ * \n, as the HTML parser does before running it. A checkout with Windows
+ * line endings (core.autocrlf) has \r\n in index.html, and a hash over that
+ * would block the script.
+ */
+export function inlineScripts(html: string): string[] {
+  return [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)]
+    .filter(([, attributes]) => !/\bsrc\s*=/i.test(attributes))
+    .map(([, , code]) => code.replace(/\r\n?/g, "\n"));
+}
