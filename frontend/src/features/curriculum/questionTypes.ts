@@ -68,13 +68,19 @@ export function questionTypeLabel(type: QuestionType): string {
   return QUESTION_TYPE_INFO.find((info) => info.type === type)?.label ?? type;
 }
 
-/** An id for a new option, unique among `existing` ("a", "b", … then "o27"). */
-export function nextOptionId(existing: Option[]): string {
+/**
+ * An id for an option, column or row added in the editor: random, so never
+ * one the question had before. Learners' saved answers point at these ids,
+ * and one removed in an earlier save (which the editor can't see) must not
+ * come back on a different text, carrying their old answer with it.
+ */
+export function newOptionId(existing: Option[]): string {
   const used = new Set(existing.map((o) => o.id));
-  for (const letter of "abcdefghijklmnopqrstuvwxyz") if (!used.has(letter)) return letter;
-  let n = existing.length;
-  while (used.has(`o${n}`)) n++;
-  return `o${n}`;
+  for (;;) {
+    const bytes = crypto.getRandomValues(new Uint8Array(8));
+    const id = Array.from(bytes, (b) => (b % 36).toString(36)).join("");
+    if (!used.has(id)) return id;
+  }
 }
 
 /** What a new question of this type starts with. */
@@ -94,17 +100,19 @@ export function emptyContent(type: QuestionType): AuthoredContent {
       return { exhibit: "", options: twoOptions(), correctOptionIds: [] };
     case "ordering":
       return { options: twoOptions() };
+    // No right answer chosen yet, so saving asks for one for every row
+    // rather than letting a forgotten one default to True.
     case "true_false_matrix":
-      return { columns: TRUE_FALSE_COLUMNS, rows: twoRows("true") };
+      return { columns: TRUE_FALSE_COLUMNS, rows: twoRows() };
     case "classification_matrix":
     case "matching":
-      return { columns: twoOptions(), rows: twoRows("") };
+      return { columns: twoOptions(), rows: twoRows() };
     default:
       return { options: twoOptions(), correctOptionIds: [] };
   }
 }
 
-function twoRows(correctColumnId: string): MatrixRow[] {
+function twoRows(correctColumnId = ""): MatrixRow[] {
   return [
     { id: "a", text: "", correctColumnId },
     { id: "b", text: "", correctColumnId },

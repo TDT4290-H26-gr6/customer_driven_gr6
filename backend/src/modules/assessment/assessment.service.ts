@@ -7,6 +7,7 @@ import { JOURNEY_KIND, MAIN_KIND, type AssessmentKind } from "./assessment.kinds
 import { bestPerModule, sectionPercent } from "./assessment.competencies";
 import { recommendJourney, suggestJourney } from "../learningJourney/learningJourney.service";
 import { completedCompetenceScoresQuery, newestPerCompetence } from "./assessment.newestScores";
+import { isMatrixType } from "./assessment.pie";
 import { withoutAnswers } from "./assessment.redact";
 import {
   buildPath,
@@ -40,13 +41,6 @@ import {
  * withShuffledOrderingItems.)
  */
 const ORDERED_QUESTION_TYPES: readonly string[] = ["likert", "true_false"];
-
-/** The question types shown as a matrix (@pie-element/match), scored per row. */
-const MATRIX_QUESTION_TYPES: readonly string[] = [
-  "true_false_matrix",
-  "classification_matrix",
-  "matching",
-];
 
 /**
  * Randomizes the on-screen order of a question's answer choices (Fisher–
@@ -271,7 +265,7 @@ function scoreAnswer(
     return scoreOrdering(correctOrder, extractOrderingValues(session));
   }
 
-  if (MATRIX_QUESTION_TYPES.includes(question.questionType)) {
+  if (isMatrixType(question.questionType)) {
     const native = question.content as { model?: { rows?: unknown } } | null;
     const rows = native?.model?.rows;
     if (!Array.isArray(rows)) return null;

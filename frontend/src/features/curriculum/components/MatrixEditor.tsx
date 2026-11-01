@@ -1,5 +1,5 @@
 import { Button } from "@/shared/components/Button";
-import { nextOptionId, TRUE_FALSE_COLUMNS } from "../questionTypes";
+import { newOptionId, TRUE_FALSE_COLUMNS } from "../questionTypes";
 import type { MatrixRow, Option, QuestionType } from "../types";
 import { OptionsEditor } from "./OptionsEditor";
 import styles from "./Editors.module.css";
@@ -18,7 +18,8 @@ type Props = {
  * The table of a matrix question (true/false statements, sorting into
  * categories, matching): its answer columns, and its rows, each with the
  * column that's right for it. A true/false matrix's columns are fixed. Ids
- * never change once made: learners' saved answers refer to the rows.
+ * never change once made, and a new row never gets an old one's id (see
+ * newOptionId): learners' saved answers refer to the rows.
  */
 export function MatrixEditor({ questionType, columns, rows, onChange }: Props) {
   const trueFalse = questionType === "true_false_matrix";
@@ -144,9 +145,9 @@ export function MatrixEditor({ questionType, columns, rows, onChange }: Props) {
             onChange(columns, [
               ...rows,
               {
-                id: nextOptionId(rows),
+                id: newOptionId(rows),
                 text: "",
-                correctColumnId: trueFalse ? "true" : "",
+                correctColumnId: "",
               },
             ])
           }

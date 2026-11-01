@@ -348,6 +348,77 @@ describe("updateQuestion", () => {
     expect(await curriculum.updateQuestion(actor, "q-1", input)).toEqual({ ok: true, id: "q-1" });
   });
 
+  describe("a matrix question learners have answered", () => {
+    const columns = [
+      { id: "c1", text: "Good practice" },
+      { id: "c2", text: "Poor practice" },
+    ];
+    const rows = [
+      { id: "r1", text: "Document changes", correctColumnId: "c1" },
+      { id: "r2", text: "Skip the README", correctColumnId: "c2" },
+    ];
+    const matrix = (content: object) => ({
+      ...input,
+      questionType: "classification_matrix" as const,
+      content: content as never,
+    });
+    function answered() {
+      db.question.findUnique.mockResolvedValue({
+        questionType: "classification_matrix",
+        authoredContent: { columns, rows },
+        _count: { responses: 3 },
+      } as never);
+      placementExists();
+    }
+
+    it.each([
+      ["added", [...columns, { id: "c3", text: "Depends" }]],
+      ["removed", columns.slice(0, 1)],
+      ["reordered", [...columns].reverse()],
+    ])("refuses columns %s, which would move learners' saved ticks", async (_, changed) => {
+      answered();
+      expect(
+        await curriculum.updateQuestion(actor, "q-1", matrix({ columns: changed, rows })),
+      ).toMatchObject({ ok: false, status: 409, error: expect.stringContaining("columns") });
+      expect(db.question.update).not.toHaveBeenCalled();
+    });
+
+    it("still lets the columns be reworded, and the rows and answers change", async () => {
+      answered();
+      const reworded = columns.map((c) => ({ ...c, text: `${c.text}!` }));
+      const newRows = [{ ...rows[0], correctColumnId: "c2" }, rows[1]];
+      expect(
+        await curriculum.updateQuestion(actor, "q-1", matrix({ columns: reworded, rows: newRows })),
+      ).toEqual({ ok: true, id: "q-1" });
+    });
+  });
+
+  it("lets an unanswered matrix question's columns change", async () => {
+    db.question.findUnique.mockResolvedValue({
+      questionType: "classification_matrix",
+      authoredContent: { columns: [{ id: "c1" }, { id: "c2" }] },
+      _count: { responses: 0 },
+    } as never);
+    placementExists();
+    const content = {
+      columns: [
+        { id: "c2", text: "B" },
+        { id: "c1", text: "A" },
+      ],
+      rows: [
+        { id: "r1", text: "One", correctColumnId: "c1" },
+        { id: "r2", text: "Two", correctColumnId: "c2" },
+      ],
+    };
+    expect(
+      await curriculum.updateQuestion(actor, "q-1", {
+        ...input,
+        questionType: "classification_matrix",
+        content: content as never,
+      }),
+    ).toEqual({ ok: true, id: "q-1" });
+  });
+
   it("is a 404 for an unknown question and a 400 for a missing module", async () => {
     db.question.findUnique.mockResolvedValueOnce(null);
     expect(await curriculum.updateQuestion(actor, "nope", input)).toMatchObject({ status: 404 });

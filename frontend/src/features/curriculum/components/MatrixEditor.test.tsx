@@ -95,10 +95,13 @@ describe("MatrixEditor", () => {
       "Record provenance",
       "Skip the README",
     ]);
-    expect(nextRows[0]).toMatchObject({ id: "c", correctColumnId: "" });
+    expect(nextRows[0]).toMatchObject({
+      id: expect.stringMatching(/^[a-z0-9]{8}$/),
+      correctColumnId: "",
+    });
   });
 
-  it("gives a true/false matrix fixed True and False answers, new statements starting True", async () => {
+  it("gives a true/false matrix fixed True and False answers, new statements with none chosen yet", async () => {
     const onChange = vi.fn();
     render(
       <Harness
@@ -116,7 +119,13 @@ describe("MatrixEditor", () => {
     expect(answer).toHaveDisplayValue("False");
 
     await userEvent.click(screen.getByRole("button", { name: "Add statement" }));
-    expect(onChange.mock.lastCall![1][2]).toEqual({ id: "c", text: "", correctColumnId: "true" });
+    // Not True by default: a false statement whose select was forgotten
+    // would otherwise go live with the wrong answer.
+    expect(onChange.mock.lastCall![1][2]).toEqual({
+      id: expect.stringMatching(/^[a-z0-9]{8}$/),
+      text: "",
+      correctColumnId: "",
+    });
   });
 
   it("names an answer without text by its number", () => {

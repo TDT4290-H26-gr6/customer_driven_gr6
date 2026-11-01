@@ -414,18 +414,29 @@ Every question is out of 1 point; "I don't know" scores 0 out of 1.
 - `ordering` items are shuffled too, per attempt, and never into the correct
   order: they're authored in that order, and the element takes the order on
   screen as the learner's starting answer. The frontend only counts an
-  ordering answer once the learner has moved an item.
+  ordering answer once the learner has moved an item; from then on every
+  order counts, the starting one too, so the saved answer is always what's on
+  screen.
 - All text in a question (prompt, options, rows, columns, the example) is
   HTML-escaped by `assessment.pie.ts`, since PIE renders it as markup: what
   an admin types can't add tags or scripts for learners.
 - Learners never get the answers: `/questions` and `/assessment/path` send
-  each question through `withoutAnswers` (`assessment.redact.ts`), which
-  drops the choices' `correct` flags, `correctResponse` (ordering's correct
-  sequence) and the matrix rows' `values`. Anything the browser has can be
-  read in its developer tools, and it doesn't need them: scoring reads the
-  stored content. Only the admin curriculum editor (and its preview) sees
-  them. A new question type whose answer sits in another field needs adding
-  there; `assessment.redact.test.ts` checks every WP2 question.
+  each question through `withoutAnswers` (`assessment.redact.ts`).
+  - It keeps only the fields each element needs (an allowlist per element,
+    `ALLOWED`), so `correct` flags, `correctResponse`, a matrix row's
+    `values`, feedback, rationales and any field added later all stay on the
+    server. Anything the browser has can be read in its developer tools, and
+    it doesn't need them: scoring reads the stored content.
+  - Only the admin curriculum editor (and its preview) sees the answers.
+  - A new element, or a new field one needs, has to be added to `ALLOWED`;
+    until then it's left out. `assessment.redact.test.ts` builds every WP2
+    question with a different right answer and checks that learners get
+    exactly the same either way.
+- A matrix question learners have answered keeps its columns (they can be
+  reworded, not added, removed or reordered): a saved answer is a tick per
+  column position, so changing them would move learners' ticks. The editor
+  gives every new option, column or row a random id, so a removed one's id
+  (which saved answers may point at) never comes back on a different text.
 - The seed data's own notes describe `multi_choice` as "1 point per correct
   pick". We kept the existing penalty for wrong picks (it stops "tick
   everything" from scoring full marks). If you want no penalty, change the
@@ -513,7 +524,9 @@ so running it again never duplicates or overwrites.
   the curriculum editor to the rows in the file. To only add what's new (e.g.
   newly delivered items) and leave everything edited in the editor alone, use
   `-- --only-new --apply`: it adds rows the database doesn't have, with their
-  links, and never re-adds anything the change log says an admin deleted.
+  links, and never re-adds anything the change log says an admin deleted. A
+  new row pointing at something deleted (a new question in a deleted module)
+  is left out and listed in the dry run, rather than failing the apply.
 - **By hand:** `docker compose run --rm db-init npm run seed` (or `npm run seed`
   in `database/`) runs the same loader.
 - The seed authors questions in the simple shape above; the loader converts them
