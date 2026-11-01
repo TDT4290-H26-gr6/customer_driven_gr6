@@ -1,0 +1,8 @@
+/* Shown instead of the button when Google's sign-in script can't load. */
+.unavailable {
+  margin: 0;
+  max-width: 320px;
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}

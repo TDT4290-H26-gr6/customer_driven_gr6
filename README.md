@@ -96,6 +96,8 @@ docker compose run --rm -p 5555:5555 db-init npx prisma studio --browser none  #
 docker compose run --rm db-init npm run content:sync              # preview WP2 dataset changes
 docker compose run --rm db-init npm run content:sync -- --apply   # apply them (overwrites editor changes to those rows)
 docker compose run --rm db-init npm run content:sync -- --only-new --apply  # only add new rows (e.g. new WP2 items), keep editor changes
+docker compose run --rm db-init npm run content:rebuild             # preview questions stored differently from how they're built now
+docker compose run --rm db-init npm run content:rebuild -- --apply  # rebuild them (e.g. after a change to escaping in pie.ts)
 ```
 
 After changing the schema (`database/prisma/schema`), rebuild both:

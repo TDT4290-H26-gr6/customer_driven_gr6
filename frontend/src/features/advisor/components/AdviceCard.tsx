@@ -1,5 +1,6 @@
 import type { Advice } from "../types";
 import styles from "./AdviceCard.module.css";
+import { isWebLink } from "@/shared/lib/webLink";
 
 /** What the dashboard knows about the advice so far. */
 export type AdviceState =
@@ -50,7 +51,7 @@ export function AdviceCard({ state }: { state: AdviceState }) {
               {state.advice.steps.map((step, i) => (
                 <li key={`${step.kind}-${step.title}-${i}`} className={styles.step}>
                   <span className={styles.kind}>{KIND_LABEL[step.kind]}</span>
-                  {step.url ? (
+                  {isWebLink(step.url) ? (
                     <a
                       className={styles.title}
                       href={step.url}

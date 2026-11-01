@@ -52,4 +52,18 @@ describe("withMoodleLink", () => {
     expect(row.sourceUrl).toBe("https://moodle.example.org/course/view.php?id=101");
     expect(row).not.toHaveProperty("moodleCourseId");
   });
+
+  it.each([
+    ["javascript:alert(1)", "moodleUrl"],
+    ["data:text/html,<script>alert(1)</script>", "sourceUrl"],
+    ["moodle.example.org/course/view.php?id=1", "moodleUrl"],
+  ] as const)("refuses %s, which isn't a web address, naming the row", (link, key) => {
+    expect(() => withMoodleLink({ id: "mod-bad", [key]: link }, key)).toThrow(
+      /mod-bad: .* isn't a web address/,
+    );
+  });
+
+  it("leaves a row without a link as it is", () => {
+    expect(withMoodleLink({ id: "lj-1" }, "moodleUrl")).toEqual({ id: "lj-1", moodleUrl: null });
+  });
 });

@@ -92,6 +92,13 @@ export function isMatrixType(questionType: string): boolean {
   return (MATRIX_QUESTION_TYPES as readonly string[]).includes(questionType);
 }
 
+/**
+ * Plain text made safe to put between HTML tags: PIE renders prompts,
+ * labels and headers as HTML, so text from the dataset or the curriculum
+ * editor must never be able to add markup (a script, an `onerror`). Quotes
+ * are left alone, so it isn't safe inside an attribute; nothing here puts
+ * text in one.
+ */
 function escapeHtml(text: string): string {
   return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -105,7 +112,8 @@ type PieChoice = { value: string; label: string; correct: boolean };
  * picking it as answering the question; no frontend change needed.
  */
 function multipleChoiceContent(
-  prompt: string,
+  /** HTML, already escaped (see escapeHtml), PIE renders it as markup. */
+  promptHtml: string,
   choiceMode: "radio" | "checkbox",
   choices: PieChoice[],
 ): PieContent {
@@ -117,7 +125,13 @@ function multipleChoiceContent(
   return {
     elements: { "multiple-choice": "@pie-element/multiple-choice@latest" },
     models: [
-      { id: "1", element: "multiple-choice", prompt, choiceMode, choices: [...choices, idkChoice] },
+      {
+        id: "1",
+        element: "multiple-choice",
+        prompt: promptHtml,
+        choiceMode,
+        choices: [...choices, idkChoice],
+      },
     ],
     markup: "<multiple-choice id='1'></multiple-choice>",
   };
@@ -255,12 +269,12 @@ export function buildPieContent(
   switch (questionType) {
     case "likert":
       if (!content.scale) throw new Error("likert question needs content.scale");
-      return multipleChoiceContent(prompt, "radio", likertChoices(content.scale));
+      return multipleChoiceContent(escapeHtml(prompt), "radio", likertChoices(content.scale));
     case "single_choice":
     case "true_false":
-      return multipleChoiceContent(prompt, "radio", optionChoices(content));
+      return multipleChoiceContent(escapeHtml(prompt), "radio", optionChoices(content));
     case "multi_choice":
-      return multipleChoiceContent(prompt, "checkbox", optionChoices(content));
+      return multipleChoiceContent(escapeHtml(prompt), "checkbox", optionChoices(content));
     // "Judge an example against criteria": tick every criterion the example
     // meets. Scored exactly like multi_choice, each criterion found counts,
     // each one ticked that the example doesn't meet counts against.

@@ -11,6 +11,7 @@ import {
   splitName,
 } from "./journeyDisplay";
 import styles from "./JourneyModal.module.css";
+import { isWebLink } from "@/shared/lib/webLink";
 
 type Props = {
   journey: LearningJourney;
@@ -152,7 +153,7 @@ export function JourneyModal({
           >
             {starting ? "Starting…" : "Assess this journey"}
           </button>
-          {journey.moodleUrl && (
+          {isWebLink(journey.moodleUrl) && (
             <a
               href={journey.moodleUrl}
               target="_blank"

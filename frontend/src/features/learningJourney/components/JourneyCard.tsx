@@ -2,6 +2,7 @@ import { RouteIcon } from "@/shared/components/icons";
 import type { LearningJourney } from "../types";
 import { bannerGradient, coreSectionCodes, sortedSections, splitName } from "./journeyDisplay";
 import styles from "./JourneyCard.module.css";
+import { isWebLink } from "@/shared/lib/webLink";
 
 // A card with a banner, badges, title, a short fact row and the actions in a
 // footer. Clicking the card opens the journey's details in a modal
@@ -76,7 +77,7 @@ export function JourneyCard({ journey, index, onOpen, onAssess, starting, assess
         >
           {starting ? "Starting…" : "Assess this journey"}
         </button>
-        {journey.moodleUrl && (
+        {isWebLink(journey.moodleUrl) && (
           <a
             href={journey.moodleUrl}
             target="_blank"

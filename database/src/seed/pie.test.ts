@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildPieContent, IDK_VALUE, type NativeElementContent, type PieContent } from "./pie";
+import {
+  buildPieContent,
+  IDK_VALUE,
+  type AuthoredContent,
+  type NativeElementContent,
+  type PieContent,
+} from "./pie";
 
 type Choice = { value: string; correct: boolean };
 function choicesOf(content: ReturnType<typeof buildPieContent>): Choice[] {
@@ -267,5 +273,50 @@ describe("buildPieContent: the matrix types", () => {
     ],
   ])("refuses an unusable matrix (%#)", (content, error) => {
     expect(() => buildPieContent("classification_matrix", "Classify", content)).toThrow(error);
+  });
+});
+
+describe("buildPieContent: no text can add markup", () => {
+  // PIE renders prompts, labels and headers as HTML, so text written in the
+  // curriculum editor must come out as text, never as a tag or a handler.
+  const attack = `<img src=x onerror="alert(1)">`;
+  const options = [
+    { id: "a", text: attack },
+    { id: "b", text: "Fine" },
+  ];
+  const cases: [string, AuthoredContent][] = [
+    ["likert", { scale: { min: 1, max: 2, labels: [attack, "Fine"] } }],
+    ["single_choice", { options, correctOptionIds: ["a"] }],
+    ["true_false", { options, correctOptionIds: ["a"] }],
+    ["multi_choice", { options, correctOptionIds: ["a"] }],
+    ["criteria_check", { options, correctOptionIds: ["a"], exhibit: attack }],
+    ["ordering", { options, correctOrder: ["a", "b"] }],
+    [
+      "classification_matrix",
+      {
+        columns: [
+          { id: "c1", text: attack },
+          { id: "c2", text: "Fine" },
+        ],
+        rows: [
+          { id: "r1", text: attack, correctColumnId: "c1" },
+          { id: "r2", text: "Fine", correctColumnId: "c2" },
+        ],
+      },
+    ],
+  ];
+
+  it.each(cases)("%s escapes its prompt and every text", (questionType, content) => {
+    const built = JSON.stringify(buildPieContent(questionType, attack, content));
+    expect(built).not.toContain("<img");
+    expect(built).toContain("&lt;img src=x onerror=");
+  });
+
+  it("leaves a prompt without markup characters exactly as written", () => {
+    const content = buildPieContent("single_choice", `Is it "open"? Yes`, {
+      options,
+      correctOptionIds: ["b"],
+    }) as PieContent;
+    expect((content.models[0] as { prompt: string }).prompt).toBe(`Is it "open"? Yes`);
   });
 });

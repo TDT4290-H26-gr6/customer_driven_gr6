@@ -1,8 +1,11 @@
 /// <reference types="vitest/config" />
-import { defineConfig, type Plugin } from "vite";
+import { defineConfig, loadEnv, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath, URL } from "node:url";
+import { contentSecurityPolicy, inlineScripts } from "./src/config/contentSecurityPolicy";
+import { DEFAULT_API_URL } from "./src/config/defaults";
 
 /**
  * The PIE player's entry (dist/index.js) loads its other files at runtime
@@ -29,8 +32,40 @@ function copyPieRuntimeFiles(): Plugin {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), copyPieRuntimeFiles()],
+/**
+ * Puts the Content-Security-Policy (see src/config/contentSecurityPolicy.ts)
+ * at the top of the built index.html, with a hash for each inline <script>
+ * so they still run. Only in the build: the dev server injects scripts of
+ * its own for hot reload.
+ */
+function contentSecurityPolicyMeta(apiUrl: string): Plugin {
+  return {
+    name: "content-security-policy-meta",
+    apply: "build",
+    transformIndexHtml: {
+      order: "post",
+      handler(html) {
+        const inlineScriptHashes = inlineScripts(html).map(
+          (code) => `'sha256-${createHash("sha256").update(code).digest("base64")}'`,
+        );
+        const policy = contentSecurityPolicy({ apiUrl, inlineScriptHashes });
+        return html.replace(
+          "<head>",
+          `<head>\n    <meta http-equiv="Content-Security-Policy" content="${policy}" />`,
+        );
+      },
+    },
+  };
+}
+
+export default defineConfig(({ mode }) => ({
+  plugins: [
+    react(),
+    copyPieRuntimeFiles(),
+    contentSecurityPolicyMeta(
+      loadEnv(mode, process.cwd(), "VITE_").VITE_API_URL || DEFAULT_API_URL,
+    ),
+  ],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
@@ -75,4 +110,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

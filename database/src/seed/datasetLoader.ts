@@ -45,14 +45,29 @@ export function moodleLink(row: Row, baseUrl = config.moodleBaseUrl): string | n
   return `${baseUrl}/course/view.php?id=${row.moodleCourseId}`;
 }
 
+/** Whether `url` is a web address (http or https), the only links learners are given. */
+function isWebLink(url: string): boolean {
+  try {
+    return ["http:", "https:"].includes(new URL(url).protocol);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The row without the authoring-only Moodle fields, plus the built link under
  * `key`. A source that gives its own `sourceUrl` (a partner's course page,
- * not Moodle) keeps it.
+ * not Moodle) keeps it. A link that isn't a web address (a `javascript:` or
+ * `data:` one would run code when clicked, a typo without `https://` leads
+ * nowhere) fails the load, as the curriculum editor refuses one.
  */
 export function withMoodleLink(row: Row, key: "moodleUrl" | "sourceUrl"): Row {
   const own = key === "sourceUrl" && typeof row.sourceUrl === "string" && row.sourceUrl;
-  const out: Row = { ...row, [key]: own || moodleLink(row) };
+  const link = own || moodleLink(row);
+  if (link && !isWebLink(link)) {
+    throw new Error(`${String(row.id)}: its ${key} "${link}" isn't a web address (http or https)`);
+  }
+  const out: Row = { ...row, [key]: link };
   delete out.moodleCourseId;
   if (key !== "moodleUrl") delete out.moodleUrl;
   return out;

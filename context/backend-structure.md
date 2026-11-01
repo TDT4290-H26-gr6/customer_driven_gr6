@@ -417,6 +417,9 @@ Every question is out of 1 point; "I don't know" scores 0 out of 1.
   ordering answer once the learner has moved an item; from then on every
   order counts, the starting one too, so the saved answer is always what's on
   screen.
+- All text in a question (prompt, options, rows, columns, the example) is
+  HTML-escaped by `assessment.pie.ts`, since PIE renders it as markup: what
+  an admin types can't add tags or scripts for learners.
 - Learners never get the answers: `/questions` and `/assessment/path` send
   each question through `withoutAnswers` (`assessment.redact.ts`).
   - It keeps only the fields each element needs (an allowlist per element,
@@ -524,6 +527,17 @@ so running it again never duplicates or overwrites.
   links, and never re-adds anything the change log says an admin deleted. A
   new row pointing at something deleted (a new question in a deleted module)
   is left out and listed in the dry run, rather than failing the apply.
+- **Rebuilding stored questions:** learners get each question's stored
+  `content`, built when it was saved. After a change to how questions are
+  built (`pie.ts`, e.g. escaping prompts as HTML), `docker compose run --rm
+  db-init npm run content:rebuild` lists the questions stored differently
+  from how they're built now, and `-- --apply` rebuilds them from their
+  authored form. Nothing else changes: not the prompt, the answers or the
+  scores.
+- **Links in a dataset** (a module's or journey's `moodleUrl`, a source's
+  `sourceUrl`) must be web addresses (http or https), the same rule as the
+  curriculum editor: loading or syncing a file with any other link fails,
+  naming the row.
 - **By hand:** `docker compose run --rm db-init npm run seed` (or `npm run seed`
   in `database/`) runs the same loader.
 - The seed authors questions in the simple shape above; the loader converts them
@@ -561,7 +575,10 @@ so running it again never duplicates or overwrites.
   JSON. The name and email are copied into the entry, so it stays readable
   after the account is deleted. The editor shows each item's "Added by … ·
   Edited by …" line; the full log is **Download change log (CSV)** in the
-  editor (`GET /admin/curriculum/changelog.csv`). Items loaded from a dataset
+  editor (`GET /admin/curriculum/changelog.csv`). Like every CSV here (`toCsv`
+  in `stats.csv.ts`), a text field that would start a spreadsheet formula
+  (`=`, `+`, `-`, `@`) gets a leading `'`, so a name or item text can't run
+  as one when the file is opened in Excel. Items loaded from a dataset
   have no "Added by" line, and nothing before this log existed is in it.
 - **Moving the curriculum:** **Download curriculum (JSON)** in the editor
   (`GET /admin/curriculum/export.json`, `curriculum.export.ts`) writes the
