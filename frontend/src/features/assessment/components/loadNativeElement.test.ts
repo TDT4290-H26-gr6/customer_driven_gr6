@@ -116,3 +116,26 @@ describe("buildPlacementOrderingModel", () => {
     expect(built).not.toHaveProperty("correctResponse");
   });
 });
+
+describe("buildMatchModel", () => {
+  it("lets a column header wrap after each slash", async () => {
+    const { buildMatchModel } = await import("./loadNativeElement");
+    const model = {
+      id: "1",
+      headers: ["", "information/resource support", "Metadata", "I don't know"],
+      rows: [{ id: "r1", title: "Library" }],
+    };
+    expect(await buildMatchModel(model)).toEqual({
+      ...model,
+      headers: ["", "information/<wbr>resource support", "Metadata", "I don't know"],
+    });
+    // The stored model itself is left as it is.
+    expect(model.headers[1]).toBe("information/resource support");
+  });
+
+  it("leaves a model without headers as it is", async () => {
+    const { buildMatchModel } = await import("./loadNativeElement");
+    const model = { id: "1" };
+    expect(await buildMatchModel(model)).toBe(model);
+  });
+});

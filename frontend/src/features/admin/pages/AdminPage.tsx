@@ -17,8 +17,7 @@ const MAX_INACTIVE_DAYS = 3650;
  * activity is older than the chosen number of days; runs still within that
  * window are "in progress" and left out of the rates. Aggregates only ,
  * nobody is identifiable here. The title row also links to the tester
- * feedback and holds the two CSV exports. (The old role-visibility screen is
- * parked in ./legacy.)
+ * feedback and holds the two CSV exports.
  */
 export function AdminPage() {
   const navigate = useNavigate();

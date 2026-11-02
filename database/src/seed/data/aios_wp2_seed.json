@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "description": "The AIOS WP2 curriculum: sections A–E, their 20 modules (A1–E4) with main and secondary competences, the 36 competences, the five WP3-revised learning journeys (Athena, Apollo, Hephaestus, Prometheus, Themis), and the self-assessment items delivered so far. Built from 'AIOS competence mapping' and 'AIOS WP 2 Plan to populate the SAT' (last edit 28 Sep 2026). Loaded when SEED_DATASET=wp2.",
+    "description": "The AIOS WP2 curriculum: sections A–E, their 20 modules (A1–E4) with main and secondary competences, the 36 competences, the five WP3-revised learning journeys (Athena, Apollo, Hephaestus, Prometheus, Themis), and the self-assessment items delivered so far. Built from 'AIOS competence mapping' and 'AIOS WP 2 Plan to populate the SAT' (last edit 28 Sep 2026). Loaded by db-init into an empty database.",
     "moodle": "Every module and journey names a PLACEHOLDER Moodle course (moodleCourseId); links are built from MOODLE_BASE_URL. Replace with the real ids, or give a full moodleUrl, once the Moodle pages exist.",
     "levels": "Each section's four modules are stored as levels 1-4 (A1 = level 1), as the current adaptive assessment expects. In the curriculum they are parallel topics, not difficulty levels. Open question for the team.",
     "coverage": "Mixed coverage values in the source are stored as their first letter until confirmed with the customer: LJ5 B 'M/S' -> M, LJ5 D 'R/M' -> R, LJ6 A 'M/S' -> M.",

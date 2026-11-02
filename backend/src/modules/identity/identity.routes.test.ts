@@ -178,9 +178,9 @@ describe("GET /auth/me", () => {
     expect((await api.request("GET", "/auth/me", { token: "not-a-jwt" })).status).toBe(401);
   });
 
-  it("is 404 when the account no longer exists", async () => {
+  it("is 401 when the account no longer exists, so the app signs out", async () => {
     vi.mocked(identity.findLearnerById).mockResolvedValue(null);
-    expect((await api.request("GET", "/auth/me", { token })).status).toBe(404);
+    expect((await api.request("GET", "/auth/me", { token })).status).toBe(401);
   });
 });
 

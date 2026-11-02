@@ -345,38 +345,3 @@ describe("getVisibilityMatrix", () => {
     });
   });
 });
-
-describe("grants", () => {
-  it("grants a section once, recording who granted it", async () => {
-    await identity.grantSection("role-1", "sec-1", "admin-1");
-    expect(mockPrisma.roleSection.upsert).toHaveBeenCalledWith({
-      where: { roleId_sectionId: { roleId: "role-1", sectionId: "sec-1" } },
-      // Granting again leaves the original grant (and who made it) alone.
-      update: {},
-      create: { roleId: "role-1", sectionId: "sec-1", grantedByLearnerId: "admin-1" },
-    });
-  });
-
-  it("revokes a section grant", async () => {
-    await identity.revokeSection("role-1", "sec-1");
-    expect(mockPrisma.roleSection.deleteMany).toHaveBeenCalledWith({
-      where: { roleId: "role-1", sectionId: "sec-1" },
-    });
-  });
-
-  it("grants a competence once, recording who granted it", async () => {
-    await identity.grantCompetence("role-1", "c-1", "admin-1");
-    expect(mockPrisma.roleCompetence.upsert).toHaveBeenCalledWith({
-      where: { roleId_competenceId: { roleId: "role-1", competenceId: "c-1" } },
-      update: {},
-      create: { roleId: "role-1", competenceId: "c-1", grantedByLearnerId: "admin-1" },
-    });
-  });
-
-  it("revokes a competence grant", async () => {
-    await identity.revokeCompetence("role-1", "c-1");
-    expect(mockPrisma.roleCompetence.deleteMany).toHaveBeenCalledWith({
-      where: { roleId: "role-1", competenceId: "c-1" },
-    });
-  });
-});

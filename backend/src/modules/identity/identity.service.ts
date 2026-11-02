@@ -245,27 +245,3 @@ export async function getVisibilityMatrix() {
   ]);
   return { roles, sections, competences, roleSections, roleCompetences };
 }
-
-export function grantSection(roleId: string, sectionId: string, grantedByLearnerId: string) {
-  return prisma.roleSection.upsert({
-    where: { roleId_sectionId: { roleId, sectionId } },
-    update: {},
-    create: { roleId, sectionId, grantedByLearnerId },
-  });
-}
-
-export function revokeSection(roleId: string, sectionId: string) {
-  return prisma.roleSection.deleteMany({ where: { roleId, sectionId } });
-}
-
-export function grantCompetence(roleId: string, competenceId: string, grantedByLearnerId: string) {
-  return prisma.roleCompetence.upsert({
-    where: { roleId_competenceId: { roleId, competenceId } },
-    update: {},
-    create: { roleId, competenceId, grantedByLearnerId },
-  });
-}
-
-export function revokeCompetence(roleId: string, competenceId: string) {
-  return prisma.roleCompetence.deleteMany({ where: { roleId, competenceId } });
-}

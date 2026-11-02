@@ -45,8 +45,8 @@ docs describe the result; this one describes the move.
   covers both views).
 - **The real open-science seed is dormant, not deleted.**
   `openScienceSeed.ts` / `aios_open_science_seed.json` are untouched; nothing
-  calls `seedOpenScienceContent()` any more. See backend-structure.md §11 for
-  how to re-enable it.
+  calls `seedOpenScienceContent()` any more. (Both were removed later, once
+  the WP2 curriculum replaced them; they're in git history.)
 - CD-8's "no more than 50 questions" cap is **not implemented**, the team
   agreed 60 (5×4×3) was fine instead.
 

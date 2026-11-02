@@ -9,7 +9,6 @@ async function loadConfig(env: Record<string, string>) {
 }
 
 beforeEach(() => {
-  vi.stubEnv("SEED_DATASET", "");
   vi.stubEnv("MOODLE_BASE_URL", "");
 });
 
@@ -18,23 +17,13 @@ afterEach(() => {
 });
 
 describe("config", () => {
-  it("defaults to the fake dataset and the placeholder Moodle site", async () => {
-    const config = await loadConfig({});
-    expect(config.seedDataset).toBe("fake");
-    expect(config.moodleBaseUrl).toBe("https://moodle.example.org");
+  it("defaults to the placeholder Moodle site", async () => {
+    expect((await loadConfig({})).moodleBaseUrl).toBe("https://moodle.example.org");
   });
 
-  it("reads the dataset (any case, spaces trimmed) and the Moodle site (no trailing slash)", async () => {
-    const config = await loadConfig({
-      SEED_DATASET: " WP2 ",
-      MOODLE_BASE_URL: "https://moodle.ntnu.no//",
-    });
-    expect(config.seedDataset).toBe("wp2");
+  it("reads the Moodle site, without a trailing slash", async () => {
+    const config = await loadConfig({ MOODLE_BASE_URL: "https://moodle.ntnu.no//" });
     expect(config.moodleBaseUrl).toBe("https://moodle.ntnu.no");
-  });
-
-  it("accepts fake by name", async () => {
-    expect((await loadConfig({ SEED_DATASET: "fake" })).seedDataset).toBe("fake");
   });
 
   it("accepts a local Moodle test server over http", async () => {
@@ -49,9 +38,5 @@ describe("config", () => {
     "ftp://moodle.ntnu.no",
   ])("rejects MOODLE_BASE_URL=%s", async (value) => {
     await expect(loadConfig({ MOODLE_BASE_URL: value })).rejects.toThrow("MOODLE_BASE_URL");
-  });
-
-  it("rejects an unknown dataset", async () => {
-    await expect(loadConfig({ SEED_DATASET: "real" })).rejects.toThrow("SEED_DATASET");
   });
 });

@@ -40,7 +40,7 @@ possible without a rewrite.
 
 | Module                | Responsibility                                                                                                                                                                                                                                                                                 | Tables (target names)                                                                                                                                                                                                                                                          | Routes                                                                                                                                                                                                                                                 |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **`identity`**        | who the user is: accounts, Google and ORCID sign‑in, the persona role picked at onboarding, initial-assessment completion, and which sections / competences each role may see (the allow-lists managed in admin mode)                                                                                    | `identity_learner`, `identity_role`, `identity_role_section`, `identity_role_competence`, _(later)_ `identity_session`                                                                                                                                                         | `POST /auth/google`, `POST /auth/orcid`, `GET /auth/me`, `PUT /auth/me/role`, `PUT /auth/me/initial-assessment`, `GET /roles`, `GET /admin/visibility`, `PUT/DELETE /admin/roles/:roleId/sections/:sectionId`, `PUT/DELETE /admin/roles/:roleId/competences/:competenceId` |
+| **`identity`**        | who the user is: accounts, Google and ORCID sign‑in, the persona role picked at onboarding, initial-assessment completion, and which sections / competences each role may see (allow-lists set by the dataset)                                                                                    | `identity_learner`, `identity_role`, `identity_role_section`, `identity_role_competence`, _(later)_ `identity_session`                                                                                                                                                         | `POST /auth/google`, `POST /auth/orcid`, `GET /auth/me`, `PUT /auth/me/role`, `PUT /auth/me/initial-assessment`, `GET /roles`, `GET /admin/visibility` |
 | **`assessment`**      | the content hierarchy (competence, section, module), the question bank, self‑assessment runs, answers, scores                                                                                                                                                                                  | `assessment_competence`, `assessment_competence_secondary_source`, `assessment_section`, `assessment_section_module`, `assessment_section_module_secondary_competence`, `assessment_question`, `assessment_sat_instance`, `assessment_response`, `assessment_question_view`, `assessment_competence_score` | `GET /questions`, `GET /assessment/progress`, `POST /assessment/responses`, `POST /assessment/views` (CD-125: a question was shown, first view per learner/kind/attempt only, keyed to the attempt not an instance because the instance is created by the first answer; deleted again when the attempt is aborted), `POST /assessment/complete`, `GET /competence-scores`, `GET /competence-scores/by-section`, `GET /competence-scores/progress` (dashboard: latest vs previous SAT)                                                                                                                      |
 | **`sources`**         | third‑party learning resources (courses, training programmes, institutional initiatives) that build a competence                                                                                                                                                                               | `sources_source`                                                                                                                                                                                                                                                               | `GET /sources`                                                                                                                                                                                                                                         |
 | **`learningJourney`** | curated step-by-step journeys, the sections each covers, and the score-based recommendation                                                                                                                                                                                                    | `learning_journey_journey`, `learning_journey_journey_section`, `learning_journey_learning_module`, `learning_journey_recommendation`                                                                                                                                          | `GET /learning-journeys`, `GET /learning-journeys/recommendation`                                                                                                                                                                                      |
@@ -137,19 +137,17 @@ starts (`docker-compose.yml`: mysql → db-init → backend).
 database/
 ├── Dockerfile               # db-init: pre-push.sql, prisma db push, then the seed; exits
 ├── prisma/                  # the schema (§3) and pre-push.sql
-├── scripts/seed-dev-scores.ts  # old dev helper; predates schema v3 and no longer runs
 └── src/
-    ├── index.ts             # db-init's last step: seedChosenDataset(); a failure stops db-init
-    ├── config.ts            # SEED_DATASET, MOODLE_BASE_URL
+    ├── index.ts             # db-init's last step: seedWp2(); a failure stops db-init
+    ├── config.ts            # MOODLE_BASE_URL
     ├── db/prisma.ts         # this package's PrismaClient
     └── seed/                # content datasets, see §11
-        ├── index.ts         # seedChosenDataset(): the SEED_DATASET one, never mixed
+        ├── index.ts         # seedWp2(): into an empty database, never over the old test dataset
         ├── datasetLoader.ts # createDatasetLoader(): load one dataset JSON into an empty database
         ├── pie.ts           # authored question -> PIE item content (buildPieContent)
         ├── contentSync.ts   # `npm run content:sync`: make the DB match the WP2 JSON
-        ├── fakeFoodSeed.ts  # the fake food dataset (default)
-        ├── wp2Seed.ts       # the real WP2 curriculum (SEED_DATASET=wp2)
-        └── data/aios_fake_food_seed.json, aios_wp2_seed.json
+        ├── wp2Seed.ts       # the WP2 curriculum
+        └── data/aios_wp2_seed.json
 
 backend/src/
 ├── index.ts                 # process entry: start the server (the database is already prepared)
@@ -164,7 +162,7 @@ backend/src/
 ├── modules/
 │   ├── identity/
 │   │   ├── identity.routes.ts       # /auth/*, /roles, /auth/me/role, /auth/me/privacy-notice (sets Learner.privacyNoticeAcceptedAt)
-│   │   ├── identity.admin.routes.ts # /admin/*, role visibility grants (admin mode)
+│   │   ├── identity.admin.routes.ts # GET /admin/visibility: the role allow-lists, for admin mode's filters
 │   │   ├── identity.service.ts      # all Prisma access for identity_* tables
 │   │   └── identity.types.ts
 │   ├── assessment/
@@ -383,11 +381,12 @@ risk hiding a competence the learner was genuinely just scored on (e.g. after
 a role change since that run); they show exactly what that instance actually
 covered.
 
-**Admin mode** role endpoints (`/admin/visibility`, `/admin/roles/...`, `identity.admin.routes.ts`) edit these allow-lists (their frontend screen is parked in `features/admin/legacy/`, unrouted, while role selection is off);
-each grant is stamped with `grantedByLearnerId`. **It is not secured yet**, any
-signed-in learner who has picked a role can call it. That is a demo-stage
-decision; gate it on a real admin check (the planned `security` module) before
-real users exist.
+The allow-lists come from the dataset; admin mode only reads them
+(`GET /admin/visibility`, `identity.admin.routes.ts`, for its section filter).
+The endpoints and screen that edited them were removed while role selection is
+off (they're in git history); a grant's `grantedByLearnerId` stays in the schema.
+Like all of admin mode, it's limited to the accounts in `ADMIN_EMAILS`
+(`requireAdmin`).
 
 ### Question types and scoring
 
@@ -474,21 +473,18 @@ A recommendation row is logged only when the recommended journey changes.
 
 ### Seeding
 
-There are two content datasets, and `SEED_DATASET` picks which one db-init
-loads (`database/src/seed/index.ts`):
+db-init loads one content dataset, the AIOS WP2 curriculum
+(`database/src/seed/data/aios_wp2_seed.json`, see `seed/index.ts`): sections
+A–E, 20 modules (A1–E4) with main and secondary competences, 36 competences,
+the learning journeys, and the self-assessment items delivered so far.
 
-| `SEED_DATASET` | File | What it is |
-| --- | --- | --- |
-| `fake` (default) | `data/aios_fake_food_seed.json` | Fake food-themed test data, described below |
-| `wp2` | `data/aios_wp2_seed.json` | The real AIOS WP2 curriculum: sections A–E, 20 modules (A1–E4) with main and secondary competences, 36 competences, the 4 learning journeys, and the self-assessment items delivered so far |
-
-- **Never mixed.** A learner's first assessment covers the whole question bank,
-  so two datasets in one database would hand learners both. If the database
-  already holds the other dataset, db-init refuses to load it (logged in
-  `docker compose logs db-init`, nothing changed) and exits with an error, so
-  the backend doesn't start until `SEED_DATASET` is fixed. Switching an
-  existing database = back it up, start from an empty one.
-- **WP2 is not complete yet**, which is why `fake` stays the default: A1 and A4
+- **The old food-themed test dataset was removed** (it used to be the
+  default). A database that still holds it is refused rather than mixed with
+  WP2: a learner's first assessment covers the whole question bank, so a mix
+  would hand them both. db-init (and `content:sync`) then exits with an error
+  in `docker compose logs db-init`, nothing changed: back the database up and
+  start from an empty one.
+- **WP2 is not complete yet**: A1 and A4
   have no items and several modules have 1–2. All 61 items delivered so far
   are loaded, the true/false matrices, classification and matching ones as
   the matrix question types. The file's `_meta` lists the open points
@@ -503,18 +499,13 @@ loads (`database/src/seed/index.ts`):
   database through `npm run content:sync`, so swapping the placeholders for
   real links is a data change.
 
-`database/src/seed/fakeFoodSeed.ts` loads `database/src/seed/data/aios_fake_food_seed.json`, a
-**fake**, food-themed dataset that _is_ every learner's initial assessment:
-**5 sections (A–E) × 4 section modules (levels 1–4, one competence each) ×
-3 questions = 60 questions**, plus 26
-Moodle-linked sources (each competence has its own primary source and 1–2
-secondary ones) and 4 fake roles. It covers every table except those a learner
-fills in (`sat_instance`, `response`, `competence_score`, `recommendation`). It
-is inserted in dependency order with `createMany({ skipDuplicates: true })`,
-so running it again never duplicates or overwrites.
+It covers every table except those a learner fills in (`sat_instance`,
+`response`, `competence_score`, `recommendation`). It is inserted in dependency
+order with `createMany({ skipDuplicates: true })`, so running it again never
+duplicates or overwrites.
 
 - **Automatically, into an empty database only:** db-init runs
-  `seedChosenDataset()` (`database/src/index.ts`) before the backend starts. A
+  `seedWp2()` (`database/src/index.ts`) before the backend starts. A
   database that holds none of the dataset gets all of it. **Once a database has
   its content, the database is the source of truth**: admins change it in the
   curriculum editor, and db-init never re-adds what was deleted or overwrites
@@ -548,8 +539,7 @@ so running it again never duplicates or overwrites.
   questions of a running system, use the curriculum editor (admin mode → Edit
   curriculum); editing the JSON only affects new databases and `content:sync`
   (a new question there needs a real `sectionModuleId` and the `competenceId`
-  of that module; in the fake dataset every module (level) has exactly 3
-  questions, `fakeFoodSeed.data.test.ts` checks this).
+  of that module; `wp2Seed.data.test.ts` checks this).
 - **Retired content:** the editor deletes only what nothing uses, and retires
   (`retiredAt`) the rest, which can be restored:
   - a question is deleted when nobody has answered it;
@@ -599,12 +589,10 @@ so running it again never duplicates or overwrites.
   asked (the rest of a failed level and the levels above it) still count in
   the scores, as 0 of 1, so every SAT is scored over the same questions.
 - There is no longer a default-roles bootstrap: roles come from the seed, so the
-  role picker lists the seed's (fake) roles.
-- **The real open-science content is dormant, not deleted.**
-  `database/src/seed/openScienceSeed.ts` + `data/aios_open_science_seed.json`
-  are untouched and still valid, but nothing calls `seedOpenScienceContent()`,
-  so it never runs. To bring it back (e.g. as a _second_, later assessment
-  rather than the initial one), call it from `database/src/index.ts`.
+  role picker lists the dataset's roles.
+- **The earlier open-science content was removed** once the WP2 curriculum
+  replaced it (`openScienceSeed.ts` and `data/aios_open_science_seed.json`,
+  dormant since schema v3). It's in git history if it's ever needed again.
 
 ### Journey assessments and the Competencies overview
 

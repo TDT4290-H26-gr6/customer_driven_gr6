@@ -143,7 +143,10 @@ identityRouter.get(
   requireAuth,
   asyncHandler<AuthedRequest>(async (req, res) => {
     const learner = await findLearnerById(req.learnerId!);
-    if (!learner) return res.status(404).json({ error: "Not found" });
+    // A valid token for an account that's gone (deleted, or a reset
+    // database): 401 like the routes below, so the app signs out instead of
+    // waiting on a session that can't come back.
+    if (!learner) return res.status(401).json({ error: "Account not found" });
     res.json(toLearnerDto(learner));
   }),
 );

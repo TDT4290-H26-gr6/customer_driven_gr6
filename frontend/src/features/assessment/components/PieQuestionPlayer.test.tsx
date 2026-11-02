@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { NativeElementContent, PieContent } from "../types";
 import { PieQuestionPlayer } from "./PieQuestionPlayer";
 import { IDK_VALUE } from "./idkSession";
-import { buildPlacementOrderingModel, loadMatch, loadPlacementOrdering } from "./loadNativeElement";
+import {
+  buildMatchModel,
+  buildPlacementOrderingModel,
+  loadMatch,
+  loadPlacementOrdering,
+} from "./loadNativeElement";
 import { loadPiePlayer } from "./loadPiePlayer";
 
 // The real players are web components (placement-ordering's own React tree
@@ -12,6 +17,7 @@ vi.mock("./loadPiePlayer", () => ({ loadPiePlayer: vi.fn() }));
 vi.mock("./loadNativeElement", () => ({
   loadPlacementOrdering: vi.fn(),
   buildPlacementOrderingModel: vi.fn(),
+  buildMatchModel: vi.fn(),
   loadMatch: vi.fn(),
 }));
 
@@ -30,6 +36,10 @@ describe("PieQuestionPlayer", () => {
     vi.mocked(loadPlacementOrdering).mockReset();
     vi.mocked(loadMatch).mockReset();
     vi.mocked(buildPlacementOrderingModel).mockReset();
+    // Passes the matrix model through unless a test says otherwise.
+    vi.mocked(buildMatchModel)
+      .mockReset()
+      .mockImplementation(async (model) => model);
   });
 
   it("hands the item and saved answer to the player only once it has loaded", async () => {
@@ -182,6 +192,20 @@ describe("PieQuestionPlayer", () => {
       await vi.waitFor(() => expect(element.model).toBe(matrix.model));
       expect(element.session).toEqual({ id: "1", element: "aios-match" });
       expect(loadPlacementOrdering).not.toHaveBeenCalled();
+    });
+
+    it("gives a matrix the model built for it, with wrappable headers", async () => {
+      vi.mocked(loadMatch).mockResolvedValue();
+      const built = { id: "1", headers: ["", "a/<wbr>b"] };
+      vi.mocked(buildMatchModel).mockResolvedValue(built);
+      const matrix = {
+        element: "aios-match",
+        model: { id: "1", headers: ["", "a/b"] },
+      } as NativeElementContent;
+      const { container } = render(<PieQuestionPlayer content={matrix} />);
+      const element = container.querySelector("aios-match") as HTMLElement & { model?: unknown };
+      await vi.waitFor(() => expect(element.model).toBe(built));
+      expect(buildMatchModel).toHaveBeenCalledWith(matrix.model);
     });
 
     it("restores a matrix question's saved answer instead", async () => {

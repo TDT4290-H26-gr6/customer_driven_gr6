@@ -7,8 +7,10 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    # On the machine itself only (localhost): the backend and db-init reach
+    # it inside Docker, and nothing on the network should be able to try.
     ports:
-      - "${MYSQL_PORT}:3306"
+      - "127.0.0.1:${MYSQL_PORT}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -18,7 +20,7 @@ services:
       retries: 10
 
   # Prepares the database, then exits: applies the schema and loads the
-  # SEED_DATASET content (see database/Dockerfile). Runs on every `up`; both
+  # WP2 curriculum into an empty database (see database/Dockerfile). Runs on every `up`; both
   # steps are no-ops once the database is current. If either fails (including
   # a schema change that would lose data), it exits with an error and the
   # backend doesn't start: see `docker compose logs db-init`.
@@ -27,9 +29,7 @@ services:
     restart: "no"
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      # Which content to load ("fake" by default, or "wp2"), and the Moodle
-      # site placeholder links are built from; see .env.example.
-      SEED_DATASET: ${SEED_DATASET:-}
+      # The Moodle site placeholder links are built from; see .env.example.
       MOODLE_BASE_URL: ${MOODLE_BASE_URL:-}
     depends_on:
       mysql:

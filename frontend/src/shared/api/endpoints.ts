@@ -50,9 +50,5 @@ export const endpoints = {
     curriculumJourneys: "/admin/curriculum/journeys",
     curriculumExport: "/admin/curriculum/export.json",
     curriculumChangeLog: "/admin/curriculum/changelog.csv",
-    roleSection: (roleId: string, sectionId: string) =>
-      `/admin/roles/${encodeURIComponent(roleId)}/sections/${encodeURIComponent(sectionId)}`,
-    roleCompetence: (roleId: string, competenceId: string) =>
-      `/admin/roles/${encodeURIComponent(roleId)}/competences/${encodeURIComponent(competenceId)}`,
   },
 } as const;

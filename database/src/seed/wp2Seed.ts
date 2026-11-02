@@ -6,8 +6,8 @@ import { createDatasetLoader } from "./datasetLoader";
 // competences, the five WP3-revised learning journeys (Athena, Apollo,
 // Hephaestus, Prometheus, Themis), and the self-assessment items delivered
 // so far, the matrix and matching items included. Moodle links are
-// placeholders (moodleCourseId + MOODLE_BASE_URL). Loaded when
-// SEED_DATASET=wp2, see seed/index.ts.
+// placeholders (moodleCourseId + MOODLE_BASE_URL). db-init loads it into an
+// empty database, see seed/index.ts.
 //
 // The journey ids don't line up with AIOS_Competence_Mapping_5_Learning_
 // Journeys_BETA.docx's LJ numbering (e.g. "LJ3 - Hephaestus" keeps id

@@ -63,3 +63,22 @@ export const loadMatch = loadNativeElement(
   "aios-match",
   () => import("@pie-element/match/delivery"),
 );
+
+/**
+ * match's model as stored, with a line-break opportunity after each "/" in
+ * the column headers, so a header like "information/resource support" can
+ * wrap and the table fits the card instead of scrolling sideways. Headers are
+ * HTML the builder has already escaped (see pie.ts), so `<wbr>` is the only
+ * markup added.
+ */
+export async function buildMatchModel(
+  model: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  if (!Array.isArray(model.headers)) return model;
+  return {
+    ...model,
+    headers: model.headers.map((h: unknown) =>
+      typeof h === "string" ? h.replace(/\//g, "/<wbr>") : h,
+    ),
+  };
+}
