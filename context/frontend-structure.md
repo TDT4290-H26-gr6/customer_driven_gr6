@@ -287,6 +287,18 @@ is given everything it needs via props and stays reusable. A feature's
 /             -> redirect to /login or /dashboard based on session
 ```
 
+**Prompts after an assessment.** `ToastProvider` (`app/providers`) shows one
+short notice at a time (`shared/components/Toast`): bottom right, above the
+Feedback button, fading after 5 s (not while hovered or focused), closable
+with ×. When a self-assessment finishes, `AssessmentRunnerPage` shows one: a
+partial reassessment says it's complete, and the learner's second
+self-assessment (Assessment 2, full or partial) asks "How was it? Give
+feedback", which opens the feedback window through `useFeedback()`
+(`features/feedback/FeedbackProvider`). Both providers sit above the routes,
+since finishing passes through `/` (outside AppShell) on its way to the
+dashboard. The tester feedback page shows the ratings' median, count and
+spread (`features/feedback/ratings.ts`).
+
 Admin mode's pages (`/admin`, `/admin/feedback`, `/admin/curriculum/...`) are
 loaded on demand (`React.lazy` in `routes.tsx`), so the bundle every learner
 downloads doesn't carry them. They're imported from their own files, not the

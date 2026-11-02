@@ -9,7 +9,7 @@ beforeEach(() => {
 });
 
 it("sendFeedback posts the feedback", async () => {
-  const input = { message: "Hard to read", suggestion: null, page: "/dashboard" };
+  const input = { message: "Hard to read", suggestion: null, page: "/dashboard", rating: 4 };
   await sendFeedback(input);
   expect(apiFetch).toHaveBeenCalledWith("/feedback", { method: "POST", body: input });
 });

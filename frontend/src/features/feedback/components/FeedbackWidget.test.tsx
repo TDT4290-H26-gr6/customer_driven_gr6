@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { FeedbackWidget } from "./FeedbackWidget";
 import { sendFeedback } from "../api";
+import { FeedbackProvider, useFeedback } from "../FeedbackProvider";
 
 vi.mock("../api", () => ({
   sendFeedback: vi.fn(),
@@ -13,30 +14,48 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
+/** Opens the window from elsewhere in the app, as the prompt after an assessment does. */
+function OpenFromElsewhere() {
+  const { openFeedback } = useFeedback();
+  return <button onClick={openFeedback}>prompt</button>;
+}
+
 function renderWidget(path = "/dashboard") {
   return render(
     <MemoryRouter initialEntries={[path]}>
-      <FeedbackWidget />
+      <FeedbackProvider>
+        <FeedbackWidget />
+        <OpenFromElsewhere />
+      </FeedbackProvider>
     </MemoryRouter>,
   );
 }
 
 async function openForm(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole("button", { name: /feedback/i }));
+  await user.click(screen.getByRole("button", { name: /^feedback$/i }));
   return screen.getByRole("dialog", { name: /share your feedback/i });
 }
 
 describe("FeedbackWidget", () => {
-  it("opens the form with the first field focused", async () => {
+  it("opens the form with the first question, the satisfaction faces, focused", async () => {
     const user = userEvent.setup();
     renderWidget();
 
     await openForm(user);
 
-    expect(screen.getByLabelText(/what should be improved/i)).toHaveFocus();
+    expect(screen.getByRole("radio", { name: "Very unhappy" })).toHaveFocus();
   });
 
-  it("can't be sent until something is written", async () => {
+  it("can be opened from elsewhere in the app", async () => {
+    const user = userEvent.setup();
+    renderWidget();
+
+    await user.click(screen.getByRole("button", { name: "prompt" }));
+
+    expect(screen.getByRole("dialog", { name: /share your feedback/i })).toBeInTheDocument();
+  });
+
+  it("can't be sent until a face is chosen or something is written", async () => {
     const user = userEvent.setup();
     renderWidget();
     await openForm(user);
@@ -46,6 +65,24 @@ describe("FeedbackWidget", () => {
 
     await user.type(screen.getByLabelText(/what should be improved/i), "   ");
     expect(send).toBeDisabled();
+  });
+
+  it("sends just a face, which makes the text optional", async () => {
+    vi.mocked(sendFeedback).mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderWidget();
+    await openForm(user);
+
+    await user.click(screen.getByRole("radio", { name: "Happy" }));
+    expect(screen.getByText(/what should be improved/i)).toHaveTextContent("(optional)");
+    await user.click(screen.getByRole("button", { name: /send feedback/i }));
+
+    expect(sendFeedback).toHaveBeenCalledWith({
+      message: null,
+      suggestion: null,
+      page: "/dashboard",
+      rating: 4,
+    });
   });
 
   it("sends trimmed text with the current page, then thanks the tester", async () => {
@@ -62,6 +99,7 @@ describe("FeedbackWidget", () => {
       message: "Chart is hard to read",
       suggestion: "Bigger labels",
       page: "/dashboard/details",
+      rating: null,
     });
     expect(await screen.findByRole("dialog", { name: /thank you/i })).toBeInTheDocument();
   });
@@ -79,6 +117,7 @@ describe("FeedbackWidget", () => {
       message: "Slow",
       suggestion: null,
       page: "/dashboard",
+      rating: null,
     });
   });
 
@@ -104,7 +143,7 @@ describe("FeedbackWidget", () => {
     await user.keyboard("{Escape}");
 
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /feedback/i })).toHaveFocus();
+    expect(screen.getByRole("button", { name: /^feedback$/i })).toHaveFocus();
 
     await openForm(user);
     expect(screen.getByLabelText(/what should be improved/i)).toHaveValue("Half-written");

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { useToast } from "@/app/providers/ToastProvider";
 import { completeInitialAssessment } from "@/features/auth";
+import { useFeedback } from "@/features/feedback";
 import { isApiError } from "@/shared/api/client";
 import { withRetry } from "@/shared/api/retry";
 import { Button } from "@/shared/components/Button";
@@ -97,6 +99,8 @@ export function AssessmentRunnerPage() {
   const [exitStatus, setExitStatus] = useState<ExitStatus>("idle");
   const [exitError, setExitError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { openFeedback } = useFeedback();
   const { learner, markInitialAssessmentComplete } = useAuth();
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideSeen, setGuideSeen] = useLocalStorage(
@@ -261,6 +265,22 @@ export function AssessmentRunnerPage() {
     return false;
   }
 
+  /**
+   * Once a self-assessment is finished: a partial reassessment says so, and
+   * the learner's second self-assessment (full or partial, Assessment 2 on
+   * History) asks for feedback, once, since that attempt only finishes once.
+   * Clicking the feedback prompt opens the feedback window.
+   */
+  function showCompletedToast() {
+    const askFeedback = path?.instanceNum === 2;
+    const title = path?.partial ? "Partial assessment completed." : "Assessment completed.";
+    if (askFeedback) {
+      showToast({ title, action: { label: "How was it? Give feedback", onAction: openFeedback } });
+    } else if (path?.partial) {
+      showToast({ title: `${title} Your results are below.` });
+    }
+  }
+
   async function finish() {
     setIsFinishing(true);
     finishing.current = true;
@@ -277,6 +297,7 @@ export function AssessmentRunnerPage() {
       }
       await withRetry(() => completeInitialAssessment());
       markInitialAssessmentComplete();
+      showCompletedToast();
       if (path?.partial) {
         navigate("/history", { replace: true, state: { tab: "partial" } });
         return;

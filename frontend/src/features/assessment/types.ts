@@ -60,4 +60,6 @@ export type AssessmentPath = {
   partial: boolean;
   /** Every question in this attempt's sections; an exact total only when `partial`. */
   totalQuestions: number;
+  /** Which attempt this is (History's "Assessment N"); journey assessments are numbered on their own. */
+  instanceNum: number;
 };

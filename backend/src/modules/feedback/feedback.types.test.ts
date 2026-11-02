@@ -19,29 +19,54 @@ describe("validateFeedbackInput", () => {
         message: "The results page is hard to read",
         suggestion: "Bigger labels on the chart",
         page: "/results",
+        rating: null,
       },
     });
   });
 
   it("accepts a message alone, with the optional fields as null", () => {
     expect(validateFeedbackInput({ message: "Loading is slow" })).toEqual({
-      data: { message: "Loading is slow", suggestion: null, page: null },
+      data: { message: "Loading is slow", suggestion: null, page: null, rating: null },
     });
   });
 
   it("turns a blank suggestion into null", () => {
     const result = validateFeedbackInput({ message: "Slow", suggestion: "   " });
-    expect(result).toEqual({ data: { message: "Slow", suggestion: null, page: null } });
+    expect(result).toEqual({
+      data: { message: "Slow", suggestion: null, page: null, rating: null },
+    });
+  });
+
+  it("accepts a rating alone, the satisfaction faces without any text", () => {
+    expect(validateFeedbackInput({ rating: 4, page: "/dashboard" })).toEqual({
+      data: { message: null, suggestion: null, page: "/dashboard", rating: 4 },
+    });
+  });
+
+  it("accepts a rating and a message together", () => {
+    expect(validateFeedbackInput({ message: "Nice", rating: 5 })).toEqual({
+      data: { message: "Nice", suggestion: null, page: null, rating: 5 },
+    });
   });
 
   it.each([
-    ["a missing message", {}],
+    ["nothing", {}],
     ["a blank message", { message: "   " }],
-    ["a non-string message", { message: 42 }],
-  ])("rejects %s", (_label, body) => {
+    ["only a suggestion", { suggestion: "Bigger text" }],
+  ])("rejects %s: it needs a rating or a message", (_label, body) => {
     expect(validateFeedbackInput(body)).toEqual({
-      error: "Please describe what should be improved",
+      error: "Please choose how satisfied you are, or describe what should be improved",
     });
+  });
+
+  it.each([0, 6, 2.5, "4", true])("rejects the rating %j", (rating) => {
+    expect(validateFeedbackInput({ message: "ok", rating })).toEqual({
+      error: "rating must be a whole number from 1 to 5",
+    });
+  });
+
+  it("rejects a non-string message", () => {
+    expect(validateFeedbackInput({ message: 42 })).toEqual({ error: "message must be a string" });
   });
 
   it("rejects a message over the length limit", () => {
@@ -81,6 +106,7 @@ describe("toFeedbackDto", () => {
       message: "Slow",
       suggestion: null,
       page: "/results",
+      rating: 2,
       createdAt,
       learner: { email: "tester@ntnu.no", name: "Tess Tester" },
     };
@@ -90,6 +116,7 @@ describe("toFeedbackDto", () => {
       message: "Slow",
       suggestion: null,
       page: "/results",
+      rating: 2,
       createdAt,
       learner: { email: "tester@ntnu.no", name: "Tess Tester" },
     });

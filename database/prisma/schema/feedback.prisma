@@ -1,12 +1,13 @@
 /// Feedback module — what testers tell us should be improved, sent from the
-/// "Feedback" button shown on every page. Read by the team in admin mode.
-/// Tables: feedback_*.
+/// "Feedback" button shown on every page, and how satisfied they are overall.
+/// Read by the team in admin mode. Tables: feedback_*.
 
 model Feedback {
   id         String   @id @default(uuid())
   learnerId  String
   learner    Learner  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
-  message    String   @db.Text // what should be improved
+  message    String?  @db.Text // what should be improved; optional when a rating is given
+  rating     Int? // overall satisfaction, 1 (very unhappy) to 5 (very happy); optional
   suggestion String?  @db.Text // how the tester would improve it (optional)
   page       String?  @db.VarChar(191) // app path the tester was on, e.g. "/dashboard"
   createdAt  DateTime @default(now())
