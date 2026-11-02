@@ -31,10 +31,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [learner, setLearner] = useState<Learner | null>(null);
   const [status, setStatus] = useState<Status>("loading");
 
-  // Only the backend saying the session is gone (401) signs the learner out.
-  // A slow or failed connection (the proxy in front of the server can take
-  // many seconds to connect) says nothing about the session: dropping the
-  // token then would sign everyone out whenever the network is slow.
+  // Only the backend refusing the session (any 4xx: an expired token, an
+  // account that's gone) signs the learner out. No answer at all, or a server
+  // error, says nothing about the session (the proxy in front of the server
+  // can take many seconds to connect): dropping the token then would sign
+  // everyone out whenever the network is slow.
   function checkSession() {
     if (!getToken()) {
       setStatus("signedOut");
@@ -47,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStatus("signedIn");
       })
       .catch((err: unknown) => {
-        if (isApiError(err) && err.status === 401) {
+        if (isApiError(err) && err.status >= 400 && err.status < 500) {
           clearToken();
           setStatus("signedOut");
         } else {

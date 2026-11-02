@@ -64,6 +64,31 @@ describe("GoogleLoginButton", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Couldn't reach AIOS to finish signing in");
   });
 
+  it("says it's signing in while the server checks, and clears an old error at once", async () => {
+    let answer!: (value: unknown) => void;
+    vi.mocked(googleLogin)
+      .mockRejectedValueOnce({ status: 0, message: "timeout" })
+      .mockReturnValueOnce(new Promise((resolve) => (answer = resolve)) as never);
+    const onLogin = vi.fn();
+    render(<GoogleLoginButton onLogin={onLogin} />);
+    await act(() => googleCallback()({ credential: "first" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't reach AIOS");
+
+    let second!: Promise<void>;
+    act(() => {
+      second = googleCallback()({ credential: "second" });
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("Signing in…");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    await act(async () => {
+      answer({ token: "t", learner: { id: "l1" } });
+      await second;
+    });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(onLogin).toHaveBeenCalledWith({ id: "l1" });
+  });
+
   it("clears the message once a later attempt signs in", async () => {
     vi.mocked(googleLogin)
       .mockRejectedValueOnce({ status: 0, message: "timeout" })

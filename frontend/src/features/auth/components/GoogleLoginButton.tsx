@@ -33,19 +33,32 @@ const GOOGLE_SCRIPT = 'script[src^="https://accounts.google.com/gsi/client"]';
 export function GoogleLoginButton({ onLogin }: { onLogin: (learner: Learner) => void }) {
   const [unavailable, setUnavailable] = useState(false);
   const [signInError, setSignInError] = useState<string | null>(null);
-  const signIn = (learner: Learner) => {
-    setSignInError(null);
-    onLogin(learner);
+  // From Google handing back the credential until our server has answered,
+  // which on a slow connection can take many seconds.
+  const [signingIn, setSigningIn] = useState(false);
+  const handlers: SignInHandlers = {
+    onStart: () => {
+      setSignInError(null);
+      setSigningIn(true);
+    },
+    onLogin: (learner) => {
+      setSigningIn(false);
+      onLogin(learner);
+    },
+    onError: (message) => {
+      setSigningIn(false);
+      setSignInError(message);
+    },
   };
 
   useEffect(() => {
     // Google's script loads async, so it can still be on its way when this
     // mounts (the production bundle is often faster): draw the button once
     // it has loaded. If it can't load (blocked by an extension, a network
-    // filter or the page's own security policy), say so: it's the only way
-    // to sign in.
+    // filter or the page's own security policy), say so rather than leave
+    // an empty slot.
     if (window.google) {
-      drawButton(window.google, signIn, setSignInError);
+      drawButton(window.google, handlers);
       return;
     }
     const script = document.querySelector(GOOGLE_SCRIPT);
@@ -55,7 +68,7 @@ export function GoogleLoginButton({ onLogin }: { onLogin: (learner: Learner) => 
       return;
     }
     const onLoad = () => {
-      if (window.google) drawButton(window.google, signIn, setSignInError);
+      if (window.google) drawButton(window.google, handlers);
       else setUnavailable(true);
     };
     const onError = () => setUnavailable(true);
@@ -70,6 +83,11 @@ export function GoogleLoginButton({ onLogin }: { onLogin: (learner: Learner) => 
   return (
     <>
       <div id="google-signin-button"></div>
+      {signingIn && (
+        <p className={styles.signingIn} role="status">
+          Signing in…
+        </p>
+      )}
       {signInError && (
         <p className={styles.unavailable} role="alert">
           {signInError}
@@ -93,14 +111,18 @@ function signInFailure(err: unknown): string {
   return "Signing in with Google didn't work. Please try again.";
 }
 
-function drawButton(
-  google: GoogleIdentityServices,
-  onLogin: (learner: Learner) => void,
-  onError: (message: string) => void,
-) {
+/** What the button reports while a sign-in runs. */
+type SignInHandlers = {
+  onStart: () => void;
+  onLogin: (learner: Learner) => void;
+  onError: (message: string) => void;
+};
+
+function drawButton(google: GoogleIdentityServices, { onStart, onLogin, onError }: SignInHandlers) {
   google.accounts.id.initialize({
     client_id: env.GOOGLE_CLIENT_ID,
     callback: async (response: { credential: string }) => {
+      onStart();
       try {
         const { learner } = await googleLogin(response.credential);
         onLogin(learner);

@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
 import { AppShell } from "@/app/layout/AppShell";
-import { RequireAuth } from "@/app/guards/RequireAuth";
+import { CheckingSession, RequireAuth } from "@/app/guards/RequireAuth";
 import { RequireAdmin } from "@/app/guards/RequireAdmin";
 import { RequireProfile } from "@/app/guards/RequireProfile";
 import { useAuth } from "@/app/providers/AuthProvider";
@@ -60,7 +60,7 @@ function LoadingAdminPage() {
 function HomeRedirect() {
   const { status } = useAuth();
 
-  if (status === "loading") return <Spinner />;
+  if (status === "loading") return <CheckingSession />;
   if (status === "signedOut") return <Navigate to="/login" replace />;
   return <Navigate to="/dashboard" replace />;
 }

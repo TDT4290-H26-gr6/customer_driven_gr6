@@ -122,6 +122,35 @@ describe("AuthProvider session", () => {
     await vi.waitFor(() => expect(session()).toMatch(/^signedIn/));
   });
 
+  it.each([
+    [404, "an account that's gone"],
+    [403, "a session the server refuses"],
+  ])("signs out on a %i (%s) rather than waiting for it to come back", async (status) => {
+    vi.mocked(getToken).mockReturnValue("token");
+    vi.mocked(getMe).mockRejectedValue({ status, message: "Account not found" });
+    render(
+      <AuthProvider>
+        <SessionControls />
+      </AuthProvider>,
+    );
+    await vi.waitFor(() => expect(session()).toBe("signedOut"));
+    expect(clearToken).toHaveBeenCalled();
+    // Not retried: the server answered.
+    expect(getMe).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats a server error as unreachable, keeping the session", async () => {
+    vi.mocked(getToken).mockReturnValue("token");
+    vi.mocked(getMe).mockRejectedValue({ status: 502, message: "Bad gateway" });
+    render(
+      <AuthProvider>
+        <SessionControls />
+      </AuthProvider>,
+    );
+    await vi.waitFor(() => expect(session()).toBe("unreachable"));
+    expect(clearToken).not.toHaveBeenCalled();
+  });
+
   it("tries the check once more when the first attempt gets no response", async () => {
     vi.mocked(getToken).mockReturnValue("token");
     vi.mocked(getMe)
