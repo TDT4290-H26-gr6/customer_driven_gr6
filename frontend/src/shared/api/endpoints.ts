@@ -30,6 +30,7 @@ export const endpoints = {
     start: "/assessment/start",
     journey: "/assessment/journey",
     history: "/assessment/history",
+    journeyHistory: "/assessment/journey-history",
   },
   admin: {
     visibility: "/admin/visibility",

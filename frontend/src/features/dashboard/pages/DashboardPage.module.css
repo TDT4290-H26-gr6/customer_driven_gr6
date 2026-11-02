@@ -7,44 +7,16 @@
   margin: 0 auto;
 }
 
-/* Mirrors SectionDetailsPage.module.css's own per-assessment tabs, for a
-   consistent look between the two tab bars on the dashboard. */
 .tabs {
-  align-self: stretch;
-  display: flex;
-  gap: 4px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  border-bottom: 1px solid var(--color-border);
+  composes: tabs from "../../../styles/tabs.module.css";
 }
 
-.tab,
-.tabActive {
-  flex: none;
-  padding: 10px 14px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  background: transparent;
-  font: inherit;
-  font-size: var(--font-size-md);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-text-muted);
-  cursor: pointer;
-}
-
-.tab:hover {
-  color: var(--color-text);
-}
-
-.tab:focus-visible,
-.tabActive:focus-visible {
-  outline-offset: -2px;
+.tab {
+  composes: tab from "../../../styles/tabs.module.css";
 }
 
 .tabActive {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+  composes: tabActive from "../../../styles/tabs.module.css";
 }
 
 .tabPanel {

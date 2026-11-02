@@ -18,6 +18,7 @@ import {
   getAttemptSectionScores,
   getCompetencies,
   getDashboardProgress,
+  getJourneyHistory,
   getLatestCompetenceScores,
   getProgress,
   getSatHistory,
@@ -239,6 +240,15 @@ assessmentRouter.get(
   requireRole,
   asyncHandler<AuthedRequest>(async (req, res) => {
     res.json(await getSatHistory(req.learnerId!));
+  }),
+);
+
+assessmentRouter.get(
+  "/assessment/journey-history",
+  requireAuth,
+  requireRole,
+  asyncHandler<AuthedRequest>(async (req, res) => {
+    res.json(await getJourneyHistory(req.learnerId!));
   }),
 );
 

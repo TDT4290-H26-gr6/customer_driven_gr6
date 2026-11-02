@@ -1,6 +1,6 @@
 import { apiFetch } from "@/shared/api/client";
 import { endpoints } from "@/shared/api/endpoints";
-import type { LearningJourney, WeakCompetence } from "./types";
+import type { JourneyHistoryEntry, LearningJourney, WeakCompetence } from "./types";
 
 /** Every learning journey, each with its own module list and the sections it covers. */
 export function listJourneys(): Promise<LearningJourney[]> {
@@ -40,9 +40,14 @@ export function getWeakCompetences(): Promise<WeakCompetence[]> {
 /**
  * Starts assessing one learning journey on its own: only the questions in
  * the sections it's centred on, and the result never counts towards the main
- * self-assessment (it shows under Competencies). Rejects with 409 while
- * another assessment is in progress.
+ * self-assessment (it shows under Competencies and the Journeys page's
+ * History tab). Rejects with 409 while another assessment is in progress.
  */
 export function startJourneyAssessment(journeyId: string): Promise<void> {
   return apiFetch<void>(endpoints.assessment.journey, { method: "POST", body: { journeyId } });
+}
+
+/** Every journey assessment the learner has completed on its own, oldest first. */
+export function getJourneyHistory(): Promise<JourneyHistoryEntry[]> {
+  return apiFetch<JourneyHistoryEntry[]>(endpoints.assessment.journeyHistory);
 }

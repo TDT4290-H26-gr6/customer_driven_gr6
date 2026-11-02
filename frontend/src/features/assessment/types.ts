@@ -58,4 +58,6 @@ export type AssessmentPath = {
    * regardless of score, see assessment.path.ts's `exhaustive` mode.
    */
   partial: boolean;
+  /** Every question in this attempt's sections; an exact total only when `partial`. */
+  totalQuestions: number;
 };

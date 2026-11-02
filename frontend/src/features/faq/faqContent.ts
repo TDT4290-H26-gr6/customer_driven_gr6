@@ -42,7 +42,7 @@ export const FAQ: FaqCategory[] = [
       {
         question: "What kinds of questions are there?",
         answer: [
-          "Multiple choice (one or several correct answers), true/false, self-ratings where you choose how comfortable you are with something, and questions where you judge an example, such as a README or a data-sharing plan, against quality criteria.",
+          "Multiple choice (one or several correct answers), true/false, self-ratings where you choose how comfortable you are with something, putting items in the right order, and tables where you pick an answer for each statement or item.",
         ],
       },
       {
@@ -115,7 +115,7 @@ export const FAQ: FaqCategory[] = [
       {
         question: 'What does "Assess this journey" do?',
         answer: [
-          "It starts a short assessment with only the questions from the sections that journey focuses on. It doesn't change your self-assessment or your dashboard; your result shows under Competencies. You can only have one assessment in progress at a time.",
+          "It starts a short assessment with only the questions from the sections that journey focuses on. It doesn't change your self-assessment or your dashboard. Your result shows on the Learning journeys page's History tab, and your best result also counts under Competencies. You can only have one assessment in progress at a time.",
         ],
       },
       {

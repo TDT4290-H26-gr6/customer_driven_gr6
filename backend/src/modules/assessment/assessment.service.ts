@@ -561,6 +561,11 @@ export async function getAssessmentPath(learnerId: string) {
     // A reassessment of chosen sections only (not the full self-assessment,
     // and not a journey assessment either), see isPartialReassessment.
     partial: isPartialReassessment(active),
+    // Only an exact progress total for a partial reassessment (exhaustive mode).
+    totalQuestions: sections.reduce(
+      (sum, s) => sum + s.modules.reduce((n, m) => n + m.questionIds.length, 0),
+      0,
+    ),
   };
 }
 
@@ -693,8 +698,9 @@ export type StartJourneyAssessmentResult =
  * its own, with only the questions in the sections the journey is centred
  * on (coverage M). A separate kind of instance (JOURNEY_KIND), numbered on
  * its own, that never counts towards the main results, only the
- * Competencies overview reads it. Allowed any time, even before the first
- * main assessment, but like every assessment only one at a time.
+ * Competencies overview and getJourneyHistory read it. Allowed any time,
+ * even before the first main assessment, but like every assessment only one
+ * at a time.
  */
 export async function startJourneyAssessment(
   learnerId: string,
@@ -919,52 +925,100 @@ export async function getSatHistory(learnerId: string) {
   });
 
   return instances.map((instance) => {
-    // Group each score under its section (A–E), modules in level order.
-    const sections = new Map<
-      string,
-      {
-        code: string | null;
-        name: string;
-        areas: { name: string; score: number; maxScore: number; level: number | null }[];
-      }
-    >();
-    for (const s of instance.competenceScores) {
-      const module = s.competence?.mainForModules[0];
-      const code = s.sectionCode ?? module?.section.code ?? null;
-      const name = s.sectionName ?? module?.section.name ?? UNKNOWN_SECTION;
-      const key = `${code ?? ""}|${name}`;
-      const entry = sections.get(key) ?? { code, name, areas: [] };
-      entry.areas.push({
-        name: s.competenceName ?? s.competence?.name ?? REMOVED_COMPETENCE,
-        score: s.score,
-        maxScore: s.maxScore,
-        level: s.level ?? module?.level ?? null,
-      });
-      sections.set(key, entry);
-    }
-    const grouped = [...sections.values()].sort(bySectionCode).map(({ code, name, areas }) => ({
-      code,
-      name,
-      areas: areas
-        .sort(
-          (a, b) => (a.level ?? Infinity) - (b.level ?? Infinity) || a.name.localeCompare(b.name),
-        )
-        .map(({ name: areaName, score, maxScore }) => ({ name: areaName, score, maxScore })),
-    }));
-    const all = grouped.flatMap((g) => g.areas);
-
     return {
       instanceNum: instance.instanceNum,
       completedAt: instance.completedAt,
-      sumScore: all.reduce((sum, a) => sum + a.score, 0),
-      sumMaxScore: all.reduce((sum, a) => sum + a.maxScore, 0),
-      sections: grouped,
+      ...groupScoresBySection(instance.competenceScores),
       completedJourney: instance.completedJourneyName ?? instance.completedJourney?.name ?? null,
       reassessedSections: isStringArray(instance.reassessedSectionNames)
         ? instance.reassessedSectionNames
         : instance.sections.map((s) => s.section.name),
     };
   });
+}
+
+/** One instance's scores grouped by section (A–E, modules in level order), plus their sums. */
+function groupScoresBySection(
+  scores: {
+    competence: {
+      name: string;
+      mainForModules: { level: number | null; section: { code: string | null; name: string } }[];
+    } | null;
+    competenceName: string | null;
+    sectionCode: string | null;
+    sectionName: string | null;
+    score: number;
+    maxScore: number;
+    level: number | null;
+  }[],
+) {
+  const sections = new Map<
+    string,
+    {
+      code: string | null;
+      name: string;
+      areas: { name: string; score: number; maxScore: number; level: number | null }[];
+    }
+  >();
+  for (const s of scores) {
+    const module = s.competence?.mainForModules[0];
+    const code = s.sectionCode ?? module?.section.code ?? null;
+    const name = s.sectionName ?? module?.section.name ?? UNKNOWN_SECTION;
+    const key = `${code ?? ""}|${name}`;
+    const entry = sections.get(key) ?? { code, name, areas: [] };
+    entry.areas.push({
+      name: s.competenceName ?? s.competence?.name ?? REMOVED_COMPETENCE,
+      score: s.score,
+      maxScore: s.maxScore,
+      level: s.level ?? module?.level ?? null,
+    });
+    sections.set(key, entry);
+  }
+  const grouped = [...sections.values()].sort(bySectionCode).map(({ code, name, areas }) => ({
+    code,
+    name,
+    areas: areas
+      .sort((a, b) => (a.level ?? Infinity) - (b.level ?? Infinity) || a.name.localeCompare(b.name))
+      .map(({ name: areaName, score, maxScore }) => ({ name: areaName, score, maxScore })),
+  }));
+  const all = grouped.flatMap((g) => g.areas);
+
+  return {
+    sections: grouped,
+    sumScore: all.reduce((sum, a) => sum + a.score, 0),
+    sumMaxScore: all.reduce((sum, a) => sum + a.maxScore, 0),
+  };
+}
+
+/** Every completed journey assessment, oldest first, broken down like getSatHistory. */
+export async function getJourneyHistory(learnerId: string) {
+  const instances = await prisma.satInstance.findMany({
+    where: { learnerId, kind: JOURNEY_KIND, completedAt: { not: null } },
+    orderBy: { instanceNum: "asc" },
+    include: {
+      competenceScores: {
+        include: {
+          competence: {
+            select: {
+              name: true,
+              // Fallback for scores recorded before sections were copied.
+              mainForModules: {
+                select: { level: true, section: { select: { code: true, name: true } } },
+                take: 1,
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return instances.map((instance) => ({
+    instanceNum: instance.instanceNum,
+    completedAt: instance.completedAt,
+    journeyName: instance.assessedJourneyName,
+    ...groupScoresBySection(instance.competenceScores),
+  }));
 }
 
 /** Sections in A–E order; any without a code go last, by name. */

@@ -1,3 +1,5 @@
+import type { HistoryEntrySection } from "@/shared/components/HistoryEntryCard";
+
 export type LearningJourneyModule = {
   id: string;
   order: number;
@@ -31,4 +33,14 @@ export type WeakCompetence = {
   maxScore: number;
   /** The journey that addresses it, with its Moodle page (placeholder until the real page exists). */
   journey: { id: string; name: string; moodleUrl: string | null } | null;
+};
+
+/** One completed journey assessment, broken down like a History entry. */
+export type JourneyHistoryEntry = {
+  instanceNum: number;
+  completedAt: string;
+  journeyName: string | null;
+  sumScore: number;
+  sumMaxScore: number;
+  sections: HistoryEntrySection[];
 };

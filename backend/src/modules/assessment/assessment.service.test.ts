@@ -7,6 +7,7 @@ import {
   getAttemptSectionScores,
   getCompetencies,
   getDashboardProgress,
+  getJourneyHistory,
   getLatestCompetenceScores,
   getSatHistory,
   hasCompletedMainAssessment,
@@ -856,6 +857,19 @@ describe("getAssessmentPath", () => {
     expect(path?.done).toBe(false);
     expect(path?.items.map((i) => i.question.id)).toEqual(["q1", "q2", "q3"]);
   });
+
+  it("reports the total question count for the sections this attempt covers", async () => {
+    mockPathInputs({
+      questions: [
+        { id: "q1", competenceId: "comp-a", level: 1 },
+        { id: "q2", competenceId: "comp-a", level: 1 },
+        { id: "q3", competenceId: "comp-a", level: 2 },
+      ],
+      active: { id: "instance-1", instanceNum: 1 },
+      responses: [],
+    });
+    expect((await getAssessmentPath("learner-1"))?.totalQuestions).toBe(3);
+  });
 });
 
 describe("completeActiveInstance", () => {
@@ -1536,6 +1550,84 @@ describe("getSatHistory", () => {
     expect(mockPrisma.satInstance.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { learnerId: "learner-1", kind: "main", completedAt: { not: null } },
+        orderBy: { instanceNum: "asc" },
+      }),
+    );
+  });
+});
+
+describe("getJourneyHistory", () => {
+  /** A score with its section and level copied, as completeActiveInstance stores it. */
+  function copied(
+    competenceName: string,
+    score: number,
+    maxScore: number,
+    sectionCode: string,
+    sectionName: string,
+    level: number,
+  ) {
+    return { score, maxScore, competence: null, competenceName, sectionCode, sectionName, level };
+  }
+
+  it("groups a journey attempt's module scores by section, the same way getSatHistory does", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([
+      {
+        instanceNum: 1,
+        completedAt: new Date("2026-01-01"),
+        assessedJourneyId: "journey-1",
+        assessedJourneyName: "LJ2 - Research Data",
+        competenceScores: [
+          copied("Proofing", 1, 3, "B", "Baking", 1),
+          copied("Onion", 2, 3, "A", "Knife Skills", 1),
+        ],
+      },
+    ] as never);
+
+    const [entry] = await getJourneyHistory("learner-1");
+
+    expect(entry).toEqual({
+      instanceNum: 1,
+      completedAt: new Date("2026-01-01"),
+      journeyName: "LJ2 - Research Data",
+      sumScore: 3,
+      sumMaxScore: 6,
+      sections: [
+        { code: "A", name: "Knife Skills", areas: [{ name: "Onion", score: 2, maxScore: 3 }] },
+        { code: "B", name: "Baking", areas: [{ name: "Proofing", score: 1, maxScore: 3 }] },
+      ],
+    });
+  });
+
+  it("keeps the copied journey name once the journey itself is deleted", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([
+      {
+        instanceNum: 2,
+        completedAt: new Date("2026-02-01"),
+        // Journey deleted: the link is gone, the copied name isn't.
+        assessedJourneyId: null,
+        assessedJourneyName: "Knife Ninja",
+        competenceScores: [],
+      },
+    ] as never);
+
+    const [entry] = await getJourneyHistory("learner-1");
+
+    expect(entry.journeyName).toBe("Knife Ninja");
+  });
+
+  it("returns an empty list when the learner has no completed journey attempts", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([]);
+    expect(await getJourneyHistory("learner-1")).toEqual([]);
+  });
+
+  it("queries only completed journey-kind instances, ordered oldest first", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([]);
+
+    await getJourneyHistory("learner-1");
+
+    expect(mockPrisma.satInstance.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { learnerId: "learner-1", kind: "journey", completedAt: { not: null } },
         orderBy: { instanceNum: "asc" },
       }),
     );
