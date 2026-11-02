@@ -5,6 +5,7 @@ import { FundingLogos } from "@/shared/components/FundingLogos";
 import { Logo } from "@/shared/components/Logo";
 import { GoogleLoginButton } from "../components/GoogleLoginButton";
 import { GreetingBot } from "../components/GreetingBot";
+import { OrcidLoginButton } from "../components/OrcidLoginButton";
 import type { Learner } from "../types";
 import styles from "./LoginPage.module.css";
 
@@ -32,6 +33,7 @@ export function LoginPage() {
         <p className={styles.tagline}>Assess and grow your AI &amp; open-science skills.</p>
         <div className={styles.signIn}>
           <GoogleLoginButton onLogin={handleLogin} />
+          <OrcidLoginButton />
         </div>
         {/* Funders' logos at the foot of the card, below a divider. */}
         <FundingLogos className={styles.funding} />

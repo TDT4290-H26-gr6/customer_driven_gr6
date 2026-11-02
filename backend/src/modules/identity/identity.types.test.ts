@@ -23,6 +23,7 @@ function learner(overrides: Partial<LearnerWithRole> = {}): LearnerWithRole {
     email: "learner@example.com",
     name: "Ada Lovelace",
     googleSubId: "sub-1",
+    orcidId: null,
     roleId: "role-1",
     userRole: {
       id: "role-1",
