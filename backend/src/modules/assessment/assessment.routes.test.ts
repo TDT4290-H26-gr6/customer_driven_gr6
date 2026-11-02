@@ -24,6 +24,7 @@ describe.each([
   ["/assessment/sections", "listAssessableSections"],
   ["/competence-scores", "getLatestCompetenceScores"],
   ["/assessment/history", "getSatHistory"],
+  ["/assessment/journey-history", "getJourneyHistory"],
   ["/competencies", "getCompetencies"],
 ] as const)("GET %s", (path, serviceFn) => {
   it("returns the service's result for the signed-in learner", async () => {

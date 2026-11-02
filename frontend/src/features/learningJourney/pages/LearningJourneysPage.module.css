@@ -31,6 +31,26 @@
   color: var(--color-text-muted);
 }
 
+.tabs {
+  composes: tabs from "../../../styles/tabs.module.css";
+}
+
+.tab {
+  composes: tab from "../../../styles/tabs.module.css";
+}
+
+.tabActive {
+  composes: tabActive from "../../../styles/tabs.module.css";
+}
+
+.tabPanel {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+
 .failed {
   display: flex;
   flex-direction: column;

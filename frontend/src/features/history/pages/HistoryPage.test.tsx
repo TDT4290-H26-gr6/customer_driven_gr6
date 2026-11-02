@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HistoryPage } from "./HistoryPage";
 import { getSatHistory } from "../api";
@@ -12,6 +13,14 @@ vi.mock("../api", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
 });
+
+function renderPage(state?: { tab: "full" | "partial" }) {
+  return render(
+    <MemoryRouter initialEntries={[{ pathname: "/history", state }]}>
+      <HistoryPage />
+    </MemoryRouter>,
+  );
+}
 
 const FULL_1: SatHistoryEntry = {
   instanceNum: 1,
@@ -69,7 +78,7 @@ describe("HistoryPage", () => {
     vi.mocked(getSatHistory).mockResolvedValue(ENTRIES);
     const user = userEvent.setup();
 
-    render(<HistoryPage />);
+    renderPage();
 
     const headings = await screen.findAllByRole("heading", { name: /^Assessment \d$/ });
     expect(headings.map((h) => h.textContent)).toEqual(["Assessment 3", "Assessment 1"]);
@@ -82,10 +91,23 @@ describe("HistoryPage", () => {
     expect(screen.queryByText("Assessment 3")).not.toBeInTheDocument();
   });
 
+  it("opens on the Partial tab when navigated here with that tab requested", async () => {
+    vi.mocked(getSatHistory).mockResolvedValue(ENTRIES);
+
+    renderPage({ tab: "partial" });
+
+    expect(await screen.findByText("Assessment 2")).toBeInTheDocument();
+    expect(screen.queryByText("Assessment 1")).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Partial assessments" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
   it("shows the sum score and percentage for the active tab's entries", async () => {
     vi.mocked(getSatHistory).mockResolvedValue([FULL_1]);
 
-    render(<HistoryPage />);
+    renderPage();
 
     expect(await screen.findByText("4 / 6")).toBeInTheDocument();
     expect(screen.getByText("(67%)")).toBeInTheDocument();
@@ -95,7 +117,7 @@ describe("HistoryPage", () => {
     vi.mocked(getSatHistory).mockResolvedValue(ENTRIES);
     const user = userEvent.setup();
 
-    render(<HistoryPage />);
+    renderPage();
     await user.click(await screen.findByRole("tab", { name: "Partial assessments" }));
 
     expect(await screen.findByText("Knife Ninja Journey")).toBeInTheDocument();
@@ -108,7 +130,7 @@ describe("HistoryPage", () => {
     ]);
     const user = userEvent.setup();
 
-    render(<HistoryPage />);
+    renderPage();
     await user.click(await screen.findByRole("tab", { name: "Partial assessments" }));
 
     expect(await screen.findByText("Reassessed: Baking")).toBeInTheDocument();
@@ -118,7 +140,7 @@ describe("HistoryPage", () => {
   it("lists each instance's module scores under the section they belong to", async () => {
     vi.mocked(getSatHistory).mockResolvedValue([FULL_1]);
 
-    render(<HistoryPage />);
+    renderPage();
 
     const knife = await screen.findByRole("heading", { name: "Section A · Knife Skills" });
     const baking = screen.getByRole("heading", { name: "Section B · Baking" });
@@ -133,7 +155,7 @@ describe("HistoryPage", () => {
     vi.mocked(getSatHistory).mockResolvedValue([FULL_1]);
     const user = userEvent.setup();
 
-    render(<HistoryPage />);
+    renderPage();
     expect(await screen.findByText("Assessment 1")).toBeInTheDocument();
 
     await user.click(screen.getByRole("tab", { name: "Partial assessments" }));
@@ -148,7 +170,7 @@ describe("HistoryPage", () => {
   it("shows no tabs and the overall empty-state message when nothing's been completed yet", async () => {
     vi.mocked(getSatHistory).mockResolvedValue([]);
 
-    render(<HistoryPage />);
+    renderPage();
 
     expect(await screen.findByText(/haven't completed a self-assessment/i)).toBeInTheDocument();
     expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
@@ -157,7 +179,7 @@ describe("HistoryPage", () => {
   it("shows an error message instead of crashing when the request fails", async () => {
     vi.mocked(getSatHistory).mockRejectedValue(new Error("network error"));
 
-    render(<HistoryPage />);
+    renderPage();
 
     expect(await screen.findByText(/couldn't load your history/i)).toBeInTheDocument();
   });

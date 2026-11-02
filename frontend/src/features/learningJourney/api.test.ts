@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  getJourneyHistory,
   getRecommendedJourneys,
   getWeakCompetences,
   listJourneys,
@@ -55,5 +56,13 @@ describe("getWeakCompetences", () => {
     vi.mocked(apiFetch).mockResolvedValueOnce([]);
     expect(await getWeakCompetences()).toEqual([]);
     expect(apiFetch).toHaveBeenCalledWith("/learning-journeys/weak-competences");
+  });
+});
+
+describe("getJourneyHistory", () => {
+  it("fetches every past journey assessment attempt", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce([]);
+    expect(await getJourneyHistory()).toEqual([]);
+    expect(apiFetch).toHaveBeenCalledWith("/assessment/journey-history");
   });
 });

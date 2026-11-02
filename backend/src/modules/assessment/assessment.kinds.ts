@@ -2,7 +2,8 @@
 // learner's main results, dashboard, History, progress, AI advice,
 // recommendations, weak competences, filters on MAIN_KIND, so a journey
 // assessment never overrides or compares with the main self-assessment.
-// Only the Competencies overview reads both.
+// The Competencies overview and getJourneyHistory are the only readers of
+// JOURNEY_KIND instances.
 
 /** The self-assessment: the initial one and its retakes. */
 export const MAIN_KIND = "main";
