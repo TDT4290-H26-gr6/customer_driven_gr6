@@ -19,6 +19,7 @@ import {
   scheduleDeletion,
   setLearnerRole,
   upsertLearnerFromGoogle,
+  upsertLearnerFromOrcid,
 } from "./identity.service";
 import { toLearnerDto, validateProfileInput } from "./identity.types";
 
@@ -52,6 +53,82 @@ identityRouter.post(
     }
 
     const learner = await upsertLearnerFromGoogle(payload.sub, payload.email, payload.name);
+    const token = jwt.sign({ learnerId: learner.id, email: learner.email }, config.jwtSecret, {
+      algorithm: "HS256",
+      expiresIn: "7d",
+    });
+
+    res.json({ token, learner: toLearnerDto(learner) });
+  }),
+);
+
+/** An ORCID authorization code is short; this just bounds what we forward to ORCID. */
+const MAX_ORCID_CODE_LENGTH = 256;
+const ORCID_ID = /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/;
+
+/** The primary public email on an ORCID record, if the user shares one. */
+async function fetchPublicOrcidEmail(
+  orcid: NonNullable<typeof config.orcid>,
+  orcidId: string,
+): Promise<{ email: string | null; verified: boolean }> {
+  try {
+    const res = await fetch(`${orcid.publicApiUrl}/v3.0/${orcidId}/email`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) return { email: null, verified: false };
+    const body = (await res.json()) as {
+      email?: { email: string; verified: boolean; primary: boolean }[];
+    };
+    const emails = body.email ?? [];
+    const chosen = emails.find((entry) => entry.primary) ?? emails[0];
+    return chosen
+      ? { email: chosen.email, verified: chosen.verified }
+      : { email: null, verified: false };
+  } catch (err) {
+    // Not having an email isn't fatal — the learner gets a placeholder.
+    console.warn("ORCID email lookup failed:", err);
+    return { email: null, verified: false };
+  }
+}
+
+identityRouter.post(
+  "/auth/orcid",
+  asyncHandler(async (req, res) => {
+    const orcid = config.orcid;
+    if (!orcid) return res.status(404).json({ error: "ORCID login is not enabled" });
+
+    const code = requireString(req.body?.code, "code", MAX_ORCID_CODE_LENGTH);
+
+    // Only the ORCID exchange itself is a 401; what follows is ours.
+    let orcidId: string;
+    let name: string | null;
+    try {
+      const tokenRes = await fetch(`${orcid.baseUrl}/oauth/token`, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          client_id: orcid.clientId,
+          client_secret: orcid.clientSecret,
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: orcid.redirectUri,
+        }),
+      });
+      if (!tokenRes.ok) throw new Error(`ORCID answered ${tokenRes.status}`);
+      const token = (await tokenRes.json()) as { orcid?: string; name?: string };
+      if (!token.orcid || !ORCID_ID.test(token.orcid)) throw new Error("No ORCID iD in response");
+      orcidId = token.orcid;
+      name = token.name?.trim() || null;
+    } catch (err) {
+      console.warn("ORCID code exchange failed:", err);
+      return res.status(401).json({ error: "ORCID sign-in failed" });
+    }
+
+    const { email, verified } = await fetchPublicOrcidEmail(orcid, orcidId);
+    const learner = await upsertLearnerFromOrcid(orcidId, email, verified, name);
     const token = jwt.sign({ learnerId: learner.id, email: learner.email }, config.jwtSecret, {
       algorithm: "HS256",
       expiresIn: "7d",

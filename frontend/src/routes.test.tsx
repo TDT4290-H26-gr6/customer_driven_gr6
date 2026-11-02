@@ -14,7 +14,10 @@ const { page } = vi.hoisted(() => ({
       return <p>{name}</p>;
     },
 }));
-vi.mock("@/features/auth", () => ({ LoginPage: page("login") }));
+vi.mock("@/features/auth", () => ({
+  LoginPage: page("login"),
+  OrcidCallbackPage: page("orcid-callback"),
+}));
 vi.mock("@/features/assessment", () => ({
   AssessmentRunnerPage: page("assessment"),
   ReassessPage: page("reassess"),

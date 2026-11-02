@@ -27,6 +27,11 @@ const SETTINGS = [
   "LLM_API_KEY",
   "LLM_BASE_URL",
   "LLM_MODEL",
+  "ORCID_CLIENT_ID",
+  "ORCID_CLIENT_SECRET",
+  "ORCID_REDIRECT_URI",
+  "ORCID_BASE_URL",
+  "ORCID_PUBLIC_API_URL",
 ];
 
 beforeEach(() => {
@@ -86,6 +91,27 @@ describe("in production", () => {
       apiKey: "sk-test",
       baseUrl: "https://llm.hpc.ntnu.no/v1",
       model: "openai/gpt-oss-120b",
+    });
+  });
+
+  it("turns ORCID login off unless it is fully configured", async () => {
+    expect((await loadConfig(production)).orcid).toBeNull();
+    expect((await loadConfig({ ...production, ORCID_CLIENT_ID: "APP-1" })).orcid).toBeNull();
+  });
+
+  it("reads the ORCID settings, defaulting to production ORCID", async () => {
+    const config = await loadConfig({
+      ...production,
+      ORCID_CLIENT_ID: "APP-1",
+      ORCID_CLIENT_SECRET: "secret",
+      ORCID_REDIRECT_URI: "https://aios.idi.ntnu.no/auth/orcid/callback",
+    });
+    expect(config.orcid).toEqual({
+      clientId: "APP-1",
+      clientSecret: "secret",
+      redirectUri: "https://aios.idi.ntnu.no/auth/orcid/callback",
+      baseUrl: "https://orcid.org",
+      publicApiUrl: "https://pub.orcid.org",
     });
   });
 

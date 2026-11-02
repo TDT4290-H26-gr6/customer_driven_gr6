@@ -63,10 +63,13 @@ frontend/
     ├── features/
     │   ├── auth/
     │   │   ├── components/
-    │   │   │   └── GoogleLoginButton.tsx
+    │   │   │   ├── GoogleLoginButton.tsx
+    │   │   │   └── OrcidLoginButton.tsx  # "Sign in with ORCID"; hidden without VITE_ORCID_CLIENT_ID
     │   │   ├── pages/
-    │   │   │   └── LoginPage.tsx
-    │   │   ├── api.ts               # POST /auth/google, GET /auth/me
+    │   │   │   ├── LoginPage.tsx
+    │   │   │   └── OrcidCallbackPage.tsx # /auth/orcid/callback: checks `state`, posts the code
+    │   │   ├── orcid.ts             # authorize URL + the per-tab `state` (CSRF) helpers
+    │   │   ├── api.ts               # POST /auth/google, POST /auth/orcid, GET /auth/me
     │   │   ├── hooks.ts             # useAuth(), useCurrentUser()
     │   │   ├── session.ts           # localStorage token read/write/clear
     │   │   ├── types.ts             # Learner, Session
