@@ -27,3 +27,33 @@ SET @sql := IF(
 PREPARE pre_push FROM @sql;
 EXECUTE pre_push;
 DEALLOCATE PREPARE pre_push;
+
+-- Why: identity_learner gets an `orcidId` (ORCID sign-in, CD-116), nullable
+-- and unique. `db push` refuses any new unique constraint without
+-- --accept-data-loss ("if there are existing duplicate values, this will
+-- fail"), although a new column holds only NULLs, which never clash. Adding
+-- the column and its index first, exactly as Prisma would, leaves the push
+-- nothing to change.
+--
+-- Safe to run every time: it does nothing when the column already exists, or
+-- when the table doesn't exist yet (a fresh database — db push creates it).
+SET @has_learner := (
+  SELECT COUNT(*) FROM information_schema.tables
+  WHERE table_schema = DATABASE() AND table_name = 'identity_learner'
+);
+SET @has_orcid := (
+  SELECT COUNT(*) FROM information_schema.columns
+  WHERE table_schema = DATABASE()
+    AND table_name = 'identity_learner'
+    AND column_name = 'orcidId'
+);
+SET @sql := IF(
+  @has_learner = 1 AND @has_orcid = 0,
+  'ALTER TABLE identity_learner
+     ADD COLUMN orcidId VARCHAR(191) COLLATE utf8mb4_unicode_ci NULL AFTER googleSubId,
+     ADD UNIQUE INDEX identity_learner_orcidId_key (orcidId)',
+  'DO 0'
+);
+PREPARE pre_push FROM @sql;
+EXECUTE pre_push;
+DEALLOCATE PREPARE pre_push;
