@@ -13,10 +13,10 @@ import styles from "./LearningJourneysPage.module.css";
 type Tab = "overview" | "history";
 
 /** One past attempt at assessing a single journey, the same card shape as HistoryPage's. */
-function JourneyHistoryCard({ entry }: { entry: JourneyHistoryEntry }) {
+function JourneyHistoryCard({ entry, attempt }: { entry: JourneyHistoryEntry; attempt: number }) {
   return (
     <HistoryEntryCard
-      heading={entry.journeyName ?? "Removed journey"}
+      heading={`${entry.journeyName ?? "Removed journey"} · attempt ${attempt}`}
       completedAt={entry.completedAt}
       sumScore={entry.sumScore}
       sumMaxScore={entry.sumMaxScore}
@@ -78,8 +78,15 @@ export function LearningJourneysPage() {
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  // Fetched the first time the History tab is shown, not on every visit.
+  const historyRequested = useRef(false);
+  useEffect(() => {
+    if (tab !== "history" || historyRequested.current) return;
+    historyRequested.current = true;
     loadHistory();
-  }, [load, loadHistory]);
+  }, [tab, loadHistory]);
 
   // Arriving from elsewhere (e.g. the Competencies page's "Assess this
   // journey") can ask for a specific journey's modal to open straight away.
@@ -233,7 +240,19 @@ export function LearningJourneysPage() {
               You haven&apos;t assessed a learning journey on its own yet.
             </p>
           ) : (
-            history.map((entry) => <JourneyHistoryCard key={entry.instanceNum} entry={entry} />)
+            history.map((entry) => (
+              <JourneyHistoryCard
+                key={entry.instanceNum}
+                entry={entry}
+                // instanceNum counts journey assessments in the order taken.
+                attempt={
+                  history.filter(
+                    (e) =>
+                      e.journeyName === entry.journeyName && e.instanceNum <= entry.instanceNum,
+                  ).length
+                }
+              />
+            ))
           )}
         </div>
       )}

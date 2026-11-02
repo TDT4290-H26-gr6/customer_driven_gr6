@@ -173,7 +173,44 @@ const HISTORY_ENTRY: JourneyHistoryEntry = {
 };
 
 describe("LearningJourneysPage's History tab", () => {
-  it("lists every past journey attempt, most recent first, with its score breakdown", async () => {
+  it("doesn't fetch the history until the History tab is opened", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+    const user = userEvent.setup();
+
+    render(<LearningJourneysPage />);
+    await screen.findByText("Open Science Foundations");
+    expect(getJourneyHistory).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("tab", { name: "History" }));
+    await user.click(screen.getByRole("tab", { name: "Overview" }));
+    await user.click(screen.getByRole("tab", { name: "History" }));
+    expect(getJourneyHistory).toHaveBeenCalledOnce();
+  });
+
+  it("lists every past journey attempt, most recent first, numbered per journey", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+    const later = { ...HISTORY_ENTRY, instanceNum: 2, completedAt: "2026-03-15T00:00:00.000Z" };
+    const other = {
+      ...HISTORY_ENTRY,
+      instanceNum: 3,
+      completedAt: "2026-04-15T00:00:00.000Z",
+      journeyName: "Legal Deep Dive",
+    };
+    vi.mocked(getJourneyHistory).mockResolvedValue([HISTORY_ENTRY, later, other]);
+    const user = userEvent.setup();
+
+    render(<LearningJourneysPage />);
+    await user.click(await screen.findByRole("tab", { name: "History" }));
+
+    const headings = await screen.findAllByRole("heading", { level: 2 });
+    expect(headings.map((h) => h.textContent)).toEqual([
+      "Legal Deep Dive · attempt 1",
+      "Open Science Foundations · attempt 2",
+      "Open Science Foundations · attempt 1",
+    ]);
+  });
+
+  it("shows each attempt's score breakdown", async () => {
     vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
     const later = { ...HISTORY_ENTRY, instanceNum: 2, completedAt: "2026-03-15T00:00:00.000Z" };
     vi.mocked(getJourneyHistory).mockResolvedValue([HISTORY_ENTRY, later]);
@@ -182,8 +219,7 @@ describe("LearningJourneysPage's History tab", () => {
     render(<LearningJourneysPage />);
     await user.click(await screen.findByRole("tab", { name: "History" }));
 
-    const headings = await screen.findAllByRole("heading", { name: "Open Science Foundations" });
-    expect(headings).toHaveLength(2);
+    expect(await screen.findAllByText("5 / 6")).toHaveLength(2);
     expect(screen.getAllByText("5 / 6")).toHaveLength(2);
     expect(screen.getAllByText("(83%)")).toHaveLength(2);
     expect(screen.getAllByText("Section A · Knife Skills")).toHaveLength(2);
@@ -197,7 +233,7 @@ describe("LearningJourneysPage's History tab", () => {
 
     render(<LearningJourneysPage />);
 
-    expect(await screen.findByText("Open Science Foundations")).toBeInTheDocument();
+    expect(await screen.findByText("Open Science Foundations · attempt 1")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "History" })).toHaveAttribute("aria-selected", "true");
   });
 
@@ -224,6 +260,6 @@ describe("LearningJourneysPage's History tab", () => {
     expect(await screen.findByText(/couldn't load your journey history/i)).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByText("Open Science Foundations")).toBeInTheDocument();
+    expect(await screen.findByText("Open Science Foundations · attempt 1")).toBeInTheDocument();
   });
 });
