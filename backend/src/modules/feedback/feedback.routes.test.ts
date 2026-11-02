@@ -30,12 +30,26 @@ describe("POST /feedback", () => {
       message: "The chart is hard to read",
       suggestion: null,
       page: "/dashboard",
+      rating: null,
     });
   });
 
-  it("is 400 without a message", async () => {
-    const res = await api.request("POST", "/feedback", { token, body: { message: "  " } });
-    expect(res.status).toBe(400);
+  it("saves a satisfaction rating on its own", async () => {
+    const res = await api.request("POST", "/feedback", { token, body: { rating: 5 } });
+    expect(res.status).toBe(204);
+    expect(createFeedback).toHaveBeenCalledWith(
+      "learner-1",
+      expect.objectContaining({ message: null, rating: 5 }),
+    );
+  });
+
+  it("is 400 with neither a rating nor a message, or an out-of-range rating", async () => {
+    expect(
+      (await api.request("POST", "/feedback", { token, body: { message: "  " } })).status,
+    ).toBe(400);
+    expect((await api.request("POST", "/feedback", { token, body: { rating: 9 } })).status).toBe(
+      400,
+    );
     expect(createFeedback).not.toHaveBeenCalled();
   });
 
@@ -57,6 +71,7 @@ describe("GET /admin/feedback", () => {
         message: "Great",
         suggestion: null,
         page: "/faq",
+        rating: 4,
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         learner: { email: "learner@example.com", name: "Ada" },
       },
@@ -71,6 +86,7 @@ describe("GET /admin/feedback", () => {
         message: "Great",
         suggestion: null,
         page: "/faq",
+        rating: 4,
         createdAt: "2026-01-01T00:00:00.000Z",
         learner: { email: "learner@example.com", name: "Ada" },
       },

@@ -145,3 +145,60 @@
     width: 100%;
   }
 }
+
+/* The satisfaction faces: five radio buttons, each drawn as a face. */
+.rating {
+  margin: 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.faces {
+  display: flex;
+  gap: 8px;
+}
+
+.face {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+/* The real radio button stays for keyboards and screen readers, invisible on
+   top of its face. */
+.face input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.faceEmoji {
+  font-size: 1.6rem;
+  line-height: 1;
+  filter: grayscale(0.6);
+}
+
+.face:hover .faceEmoji,
+.face:has(input:checked) .faceEmoji {
+  filter: none;
+}
+
+.face:has(input:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.face:has(input:focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

@@ -790,6 +790,7 @@ describe("getAssessmentPath", () => {
     const path = await getAssessmentPath("learner-1");
 
     expect(path?.done).toBe(false);
+    expect(path?.instanceNum).toBe(1);
     expect(path?.sectionCount).toBe(1);
     expect(path?.items.map((i) => i.question.id)).toEqual(["q1", "q2"]);
     expect(path?.items[0]).toMatchObject({

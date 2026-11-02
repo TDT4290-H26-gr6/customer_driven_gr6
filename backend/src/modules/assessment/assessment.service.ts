@@ -554,6 +554,9 @@ export async function getAssessmentPath(learnerId: string) {
 
   return {
     items,
+    // Which attempt this is (History's "Assessment N"); journey assessments
+    // are numbered on their own.
+    instanceNum,
     sectionCount: sections.length,
     done: next === null,
     // Set while the learner is assessing one learning journey on its own.

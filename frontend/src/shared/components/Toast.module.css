@@ -1,0 +1,95 @@
+/* Bottom-right, just above the Feedback button (FeedbackWidget.module.css),
+   so a "Give feedback" toast sits next to where feedback is given. Same
+   layer as that button: above the page and the mobile tab bar, below any
+   dialog. */
+.toast {
+  position: fixed;
+  right: max(24px, env(safe-area-inset-right, 0px));
+  bottom: calc(max(24px, env(safe-area-inset-bottom, 0px)) + 64px);
+  z-index: var(--z-floating);
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  width: min(360px, calc(100vw - 32px));
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  opacity: 1;
+  transition: opacity 300ms ease;
+}
+
+.fading {
+  opacity: 0;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 12px 0 12px 14px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.body {
+  cursor: pointer;
+}
+
+button.body:hover .action {
+  text-decoration: underline;
+}
+
+.title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.action {
+  color: var(--color-primary);
+  font-size: var(--font-size-md);
+}
+
+.close {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  margin: 4px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: var(--color-text);
+}
+
+/* Mobile: above the round Feedback button, which sits above the tab bar. */
+@media (max-width: 767px) {
+  .toast {
+    right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + 72px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: none;
+  }
+}
+
+@media print {
+  .toast {
+    display: none;
+  }
+}
