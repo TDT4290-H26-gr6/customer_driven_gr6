@@ -19,11 +19,6 @@
   font-size: var(--font-size-3xl);
 }
 
-.question {
-  margin: 0;
-  font-size: var(--font-size-lg);
-}
-
 .hint {
   margin: 0;
   color: var(--color-text-muted);

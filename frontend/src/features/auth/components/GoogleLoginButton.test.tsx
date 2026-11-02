@@ -46,13 +46,35 @@ describe("GoogleLoginButton", () => {
     expect(onLogin).toHaveBeenCalledWith(learner);
   });
 
-  it("stays put when the backend refuses the sign-in", async () => {
-    vi.mocked(googleLogin).mockRejectedValue(new Error("401"));
+  it("stays put, and says so, when the backend refuses the sign-in", async () => {
+    vi.mocked(googleLogin).mockRejectedValue({ status: 401, message: "Unauthorized" });
     const onLogin = vi.fn();
     render(<GoogleLoginButton onLogin={onLogin} />);
 
-    await expect(googleCallback()({ credential: "forged" })).resolves.toBeUndefined();
+    await act(() => googleCallback()({ credential: "forged" }));
     expect(onLogin).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("Signing in with Google didn't work");
+  });
+
+  it("says when the server couldn't be reached to finish signing in", async () => {
+    vi.mocked(googleLogin).mockRejectedValue({ status: 0, message: "The server took too long" });
+    render(<GoogleLoginButton onLogin={vi.fn()} />);
+
+    await act(() => googleCallback()({ credential: "google-credential" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't reach AIOS to finish signing in");
+  });
+
+  it("clears the message once a later attempt signs in", async () => {
+    vi.mocked(googleLogin)
+      .mockRejectedValueOnce({ status: 0, message: "timeout" })
+      .mockResolvedValueOnce({ token: "t", learner: { id: "l1" } } as never);
+    const onLogin = vi.fn();
+    render(<GoogleLoginButton onLogin={onLogin} />);
+
+    await act(() => googleCallback()({ credential: "first" }));
+    await act(() => googleCallback()({ credential: "second" }));
+    expect(onLogin).toHaveBeenCalledWith({ id: "l1" });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   describe("when Google's script is still loading", () => {

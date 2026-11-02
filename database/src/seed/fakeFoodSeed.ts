@@ -7,6 +7,3 @@ import { createDatasetLoader } from "./datasetLoader";
 // seed/index.ts, and loadable by hand via `npx prisma db seed`.
 
 export const fakeFoodDataset = createDatasetLoader(seedData);
-
-export const seedFakeFood = fakeFoodDataset.seed;
-export const seedIfEmpty = fakeFoodDataset.seedIfEmpty;

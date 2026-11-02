@@ -131,11 +131,6 @@ frontend/
     │   │   │   └── DropoffTable.tsx     # sortable ranked table, low-sample badge
     │   │   ├── pages/
     │   │   │   └── AdminPage.tsx        # /admin: drop-off filters, cards, chart, table + feedback / CSV / exit buttons
-    │   │   ├── legacy/              # parked, NOT routed: role-visibility screen (role selection is off)
-    │   │   │   ├── components/GrantChecklist.tsx   # one card of checkboxes, the selected role's grants
-    │   │   │   ├── pages/RoleVisibilityPage.tsx    # role picker + Sections / Competences checklists
-    │   │   │   ├── api.ts           # PUT/DELETE role grants
-    │   │   │   └── index.ts
     │   │   ├── api.ts               # GET /admin/sat/dropoff, GET /admin/visibility (section filter list), CSV downloads
     │   │   ├── dropoff.ts           # shortTitle + default/column sorting for the drop-off table
     │   │   ├── types.ts             # Dropoff*, VisibilityMatrix, Grantable
@@ -289,6 +284,11 @@ is given everything it needs via props and stays reusable. A feature's
 /             -> redirect to /login or /dashboard based on session
 ```
 
+Admin mode's pages (`/admin`, `/admin/feedback`, `/admin/curriculum/...`) are
+loaded on demand (`React.lazy` in `routes.tsx`), so the bundle every learner
+downloads doesn't carry them. They're imported from their own files, not the
+feature barrels, because learner code imports those barrels too.
+
 `RequireAuth` (in `app/guards/`) is the only route guard. There is no
 `/onboarding` route and no `RequireRole` guard, see "Role gating" below for
 why picking a role is a modal, not a page or a redirect target.
@@ -354,12 +354,10 @@ summary cards, a bar chart and a ranked table of where learners stop (the last
 question they were shown before abandoning). Its title row also links to the
 tester feedback (`/admin/feedback`) and holds the two CSV exports.
 
-The old role-visibility screen (pick a role, tick sections and competences,
-`PUT` / `DELETE` to `/admin/roles/...`) is parked, unrouted, in
-`features/admin/legacy/` while role selection is switched off. The backend
-allow-list endpoints (`context/backend-structure.md` §11) are unchanged;
-bringing the screen back is one `<Route>` in `routes.tsx`. The drop-off section
-filter still reads its section list from `GET /admin/visibility`.
+The old role-visibility screen (pick a role, tick sections and competences)
+and the backend endpoints it used were removed while role selection is
+switched off; both are in git history. The drop-off section filter reads its
+section list from `GET /admin/visibility`.
 
 **Not secured yet.** Any signed-in learner with a role sees the menu item and
 can use the page, a demo-stage decision. Hiding the button later would only be

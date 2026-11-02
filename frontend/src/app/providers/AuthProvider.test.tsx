@@ -11,9 +11,14 @@ vi.mock("@/features/auth", () => ({
   clearToken: vi.fn(),
 }));
 
-vi.mock("@/shared/api/client", () => ({
+vi.mock("@/shared/api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/api/client")>()),
   onUnauthorized: vi.fn(() => () => {}),
 }));
+
+/** What apiFetch throws: a 401, or no response at all (offline, timeout). */
+const expired = { status: 401, message: "Unauthorized" };
+const noResponse = { status: 0, message: "The server took too long to respond." };
 
 function Status() {
   const { status, learner } = useAuth();
@@ -47,6 +52,11 @@ describe("AuthProvider", () => {
     expect(screen.getByText("signedOut")).toBeInTheDocument();
   });
 });
+
+function Recheck() {
+  const { recheck } = useAuth();
+  return <button onClick={recheck}>recheck</button>;
+}
 
 /** Shows the session and offers every action the context provides. */
 function SessionControls() {
@@ -82,7 +92,7 @@ describe("AuthProvider session", () => {
 
   it("drops a saved token the backend no longer accepts", async () => {
     vi.mocked(getToken).mockReturnValue("expired");
-    vi.mocked(getMe).mockRejectedValue(new Error("401"));
+    vi.mocked(getMe).mockRejectedValue(expired);
     render(
       <AuthProvider>
         <SessionControls />
@@ -91,6 +101,39 @@ describe("AuthProvider session", () => {
     expect(session()).toBe("loading");
     await vi.waitFor(() => expect(session()).toBe("signedOut"));
     expect(clearToken).toHaveBeenCalled();
+  });
+
+  it("keeps the session when it can't be checked (slow or no connection), and can try again", async () => {
+    vi.mocked(getToken).mockReturnValue("token");
+    vi.mocked(getMe).mockRejectedValue(noResponse);
+    render(
+      <AuthProvider>
+        <SessionControls />
+        <Recheck />
+      </AuthProvider>,
+    );
+    await vi.waitFor(() => expect(session()).toBe("unreachable"));
+    // Tried twice before giving up, and the saved login is kept.
+    expect(getMe).toHaveBeenCalledTimes(2);
+    expect(clearToken).not.toHaveBeenCalled();
+
+    vi.mocked(getMe).mockResolvedValue({ id: "l1", email: "a@example.com" } as never);
+    await userEvent.click(screen.getByRole("button", { name: "recheck" }));
+    await vi.waitFor(() => expect(session()).toMatch(/^signedIn/));
+  });
+
+  it("tries the check once more when the first attempt gets no response", async () => {
+    vi.mocked(getToken).mockReturnValue("token");
+    vi.mocked(getMe)
+      .mockRejectedValueOnce(noResponse)
+      .mockResolvedValueOnce({ id: "l1", email: "a@example.com" } as never);
+    render(
+      <AuthProvider>
+        <SessionControls />
+      </AuthProvider>,
+    );
+    await vi.waitFor(() => expect(session()).toMatch(/^signedIn/));
+    expect(clearToken).not.toHaveBeenCalled();
   });
 
   it("logs in, updates the learner, and logs out", async () => {

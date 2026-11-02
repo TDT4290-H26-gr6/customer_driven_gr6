@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { env } from "@/config/env";
+import { isApiError, NETWORK_ERROR_STATUS } from "@/shared/api/client";
 import { googleLogin } from "../api";
 import type { Learner } from "../types";
 import styles from "./GoogleLoginButton.module.css";
@@ -31,6 +32,11 @@ const GOOGLE_SCRIPT = 'script[src^="https://accounts.google.com/gsi/client"]';
 
 export function GoogleLoginButton({ onLogin }: { onLogin: (learner: Learner) => void }) {
   const [unavailable, setUnavailable] = useState(false);
+  const [signInError, setSignInError] = useState<string | null>(null);
+  const signIn = (learner: Learner) => {
+    setSignInError(null);
+    onLogin(learner);
+  };
 
   useEffect(() => {
     // Google's script loads async, so it can still be on its way when this
@@ -39,7 +45,7 @@ export function GoogleLoginButton({ onLogin }: { onLogin: (learner: Learner) => 
     // filter or the page's own security policy), say so: it's the only way
     // to sign in.
     if (window.google) {
-      drawButton(window.google, onLogin);
+      drawButton(window.google, signIn, setSignInError);
       return;
     }
     const script = document.querySelector(GOOGLE_SCRIPT);
@@ -49,7 +55,7 @@ export function GoogleLoginButton({ onLogin }: { onLogin: (learner: Learner) => 
       return;
     }
     const onLoad = () => {
-      if (window.google) drawButton(window.google, onLogin);
+      if (window.google) drawButton(window.google, signIn, setSignInError);
       else setUnavailable(true);
     };
     const onError = () => setUnavailable(true);
@@ -64,6 +70,11 @@ export function GoogleLoginButton({ onLogin }: { onLogin: (learner: Learner) => 
   return (
     <>
       <div id="google-signin-button"></div>
+      {signInError && (
+        <p className={styles.unavailable} role="alert">
+          {signInError}
+        </p>
+      )}
       {unavailable && (
         <p className={styles.unavailable} role="alert">
           Google sign-in couldn&apos;t load. Check your connection, or allow this site in any
@@ -74,15 +85,29 @@ export function GoogleLoginButton({ onLogin }: { onLogin: (learner: Learner) => 
   );
 }
 
-function drawButton(google: GoogleIdentityServices, onLogin: (learner: Learner) => void) {
+/** Why signing in failed, in words the learner can act on. */
+function signInFailure(err: unknown): string {
+  if (isApiError(err) && err.status === NETWORK_ERROR_STATUS) {
+    return "Couldn't reach AIOS to finish signing in. The connection may be slow right now. Please try again.";
+  }
+  return "Signing in with Google didn't work. Please try again.";
+}
+
+function drawButton(
+  google: GoogleIdentityServices,
+  onLogin: (learner: Learner) => void,
+  onError: (message: string) => void,
+) {
   google.accounts.id.initialize({
     client_id: env.GOOGLE_CLIENT_ID,
     callback: async (response: { credential: string }) => {
       try {
         const { learner } = await googleLogin(response.credential);
         onLogin(learner);
-      } catch {
-        // Leave the button in place; the next session check will show state.
+      } catch (err) {
+        // The button stays, so the learner can try again; say what went
+        // wrong rather than nothing at all.
+        onError(signInFailure(err));
       }
     },
   });

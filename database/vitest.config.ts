@@ -17,9 +17,6 @@ export default defineConfig({
         "src/seed/contentRebuild.cli.ts",
         // Constructs the Prisma client; every test mocks it.
         "src/db/prisma.ts",
-        // Dormant: nothing calls it (see the file's header). Delete or test it
-        // when it's brought back.
-        "src/seed/openScienceSeed.ts",
       ],
       // CI fails below these (npm run test:coverage).
       thresholds: {

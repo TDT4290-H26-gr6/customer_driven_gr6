@@ -13,8 +13,13 @@ type Options = Omit<RequestInit, "body"> & {
   responseType?: "json" | "blob";
 };
 
-/** Long enough for a slow network, short enough that a hung request doesn't spin forever. */
-const DEFAULT_TIMEOUT_MS = 15_000;
+/**
+ * Long enough for a slow network, short enough that a hung request doesn't
+ * spin forever. Every request goes through IDI's shared proxy, which at
+ * times takes 10-20 s just to open a connection; a request that waits that
+ * long still succeeds.
+ */
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 /** Status used for failures that never got an HTTP response (offline, DNS, timeout). */
 export const NETWORK_ERROR_STATUS = 0;

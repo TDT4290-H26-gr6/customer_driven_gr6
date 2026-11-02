@@ -40,7 +40,7 @@ possible without a rewrite.
 
 | Module                | Responsibility                                                                                                                                                                                                                                                                                 | Tables (target names)                                                                                                                                                                                                                                                          | Routes                                                                                                                                                                                                                                                 |
 | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **`identity`**        | who the user is: accounts, Google sign‑in, the persona role picked at onboarding, initial-assessment completion, and which sections / competences each role may see (the allow-lists managed in admin mode)                                                                                    | `identity_learner`, `identity_role`, `identity_role_section`, `identity_role_competence`, _(later)_ `identity_session`                                                                                                                                                         | `POST /auth/google`, `GET /auth/me`, `PUT /auth/me/role`, `PUT /auth/me/initial-assessment`, `GET /roles`, `GET /admin/visibility`, `PUT/DELETE /admin/roles/:roleId/sections/:sectionId`, `PUT/DELETE /admin/roles/:roleId/competences/:competenceId` |
+| **`identity`**        | who the user is: accounts, Google sign‑in, the persona role picked at onboarding, initial-assessment completion, and which sections / competences each role may see (allow-lists set by the dataset)                                                                                    | `identity_learner`, `identity_role`, `identity_role_section`, `identity_role_competence`, _(later)_ `identity_session`                                                                                                                                                         | `POST /auth/google`, `GET /auth/me`, `PUT /auth/me/role`, `PUT /auth/me/initial-assessment`, `GET /roles`, `GET /admin/visibility`, `PUT/DELETE /admin/roles/:roleId/sections/:sectionId`, `PUT/DELETE /admin/roles/:roleId/competences/:competenceId` |
 | **`assessment`**      | the content hierarchy (competence, section, module), the question bank, self‑assessment runs, answers, scores                                                                                                                                                                                  | `assessment_competence`, `assessment_competence_secondary_source`, `assessment_section`, `assessment_section_module`, `assessment_section_module_secondary_competence`, `assessment_question`, `assessment_sat_instance`, `assessment_response`, `assessment_question_view`, `assessment_competence_score` | `GET /questions`, `GET /assessment/progress`, `POST /assessment/responses`, `POST /assessment/views` (CD-125: a question was shown, first view per learner/kind/attempt only, keyed to the attempt not an instance because the instance is created by the first answer; deleted again when the attempt is aborted), `POST /assessment/complete`, `GET /competence-scores`, `GET /competence-scores/by-section`, `GET /competence-scores/progress` (dashboard: latest vs previous SAT)                                                                                                                      |
 | **`sources`**         | third‑party learning resources (courses, training programmes, institutional initiatives) that build a competence                                                                                                                                                                               | `sources_source`                                                                                                                                                                                                                                                               | `GET /sources`                                                                                                                                                                                                                                         |
 | **`learningJourney`** | curated step-by-step journeys, the sections each covers, and the score-based recommendation                                                                                                                                                                                                    | `learning_journey_journey`, `learning_journey_journey_section`, `learning_journey_learning_module`, `learning_journey_recommendation`                                                                                                                                          | `GET /learning-journeys`, `GET /learning-journeys/recommendation`                                                                                                                                                                                      |
@@ -137,7 +137,6 @@ starts (`docker-compose.yml`: mysql → db-init → backend).
 database/
 ├── Dockerfile               # db-init: pre-push.sql, prisma db push, then the seed; exits
 ├── prisma/                  # the schema (§3) and pre-push.sql
-├── scripts/seed-dev-scores.ts  # old dev helper; predates schema v3 and no longer runs
 └── src/
     ├── index.ts             # db-init's last step: seedChosenDataset(); a failure stops db-init
     ├── config.ts            # SEED_DATASET, MOODLE_BASE_URL
@@ -164,7 +163,7 @@ backend/src/
 ├── modules/
 │   ├── identity/
 │   │   ├── identity.routes.ts       # /auth/*, /roles, /auth/me/role, /auth/me/privacy-notice (sets Learner.privacyNoticeAcceptedAt)
-│   │   ├── identity.admin.routes.ts # /admin/*, role visibility grants (admin mode)
+│   │   ├── identity.admin.routes.ts # GET /admin/visibility: the role allow-lists, for admin mode's filters
 │   │   ├── identity.service.ts      # all Prisma access for identity_* tables
 │   │   └── identity.types.ts
 │   ├── assessment/
@@ -381,11 +380,12 @@ risk hiding a competence the learner was genuinely just scored on (e.g. after
 a role change since that run); they show exactly what that instance actually
 covered.
 
-**Admin mode** role endpoints (`/admin/visibility`, `/admin/roles/...`, `identity.admin.routes.ts`) edit these allow-lists (their frontend screen is parked in `features/admin/legacy/`, unrouted, while role selection is off);
-each grant is stamped with `grantedByLearnerId`. **It is not secured yet**, any
-signed-in learner who has picked a role can call it. That is a demo-stage
-decision; gate it on a real admin check (the planned `security` module) before
-real users exist.
+The allow-lists come from the dataset; admin mode only reads them
+(`GET /admin/visibility`, `identity.admin.routes.ts`, for its section filter).
+The endpoints and screen that edited them were removed while role selection is
+off (they're in git history); a grant's `grantedByLearnerId` stays in the schema.
+Like all of admin mode, it's limited to the accounts in `ADMIN_EMAILS`
+(`requireAdmin`).
 
 ### Question types and scoring
 
@@ -598,11 +598,9 @@ so running it again never duplicates or overwrites.
   the scores, as 0 of 1, so every SAT is scored over the same questions.
 - There is no longer a default-roles bootstrap: roles come from the seed, so the
   role picker lists the seed's (fake) roles.
-- **The real open-science content is dormant, not deleted.**
-  `database/src/seed/openScienceSeed.ts` + `data/aios_open_science_seed.json`
-  are untouched and still valid, but nothing calls `seedOpenScienceContent()`,
-  so it never runs. To bring it back (e.g. as a _second_, later assessment
-  rather than the initial one), call it from `database/src/index.ts`.
+- **The earlier open-science content was removed** once the WP2 curriculum
+  replaced it (`openScienceSeed.ts` and `data/aios_open_science_seed.json`,
+  dormant since schema v3). It's in git history if it's ever needed again.
 
 ### Journey assessments and the Competencies overview
 

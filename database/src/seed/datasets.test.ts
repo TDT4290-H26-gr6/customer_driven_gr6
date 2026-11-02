@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import fakeData from "./data/aios_fake_food_seed.json";
 import wp2Data from "./data/aios_wp2_seed.json";
-import { fakeFoodDataset, seedFakeFood, seedIfEmpty } from "./fakeFoodSeed";
+import { fakeFoodDataset } from "./fakeFoodSeed";
 import { wp2Dataset } from "./wp2Seed";
 
 vi.mock("../db/prisma", () => ({ prisma: {} }));
@@ -22,10 +22,5 @@ describe("the dataset loaders", () => {
   it("the two datasets share no sections, so they can be told apart in a database", () => {
     const shared = fakeFoodDataset.sectionIds.filter((id) => wp2Dataset.sectionIds.includes(id));
     expect(shared).toEqual([]);
-  });
-
-  it("the fake dataset's shortcuts are its loader's own functions", () => {
-    expect(seedFakeFood).toBe(fakeFoodDataset.seed);
-    expect(seedIfEmpty).toBe(fakeFoodDataset.seedIfEmpty);
   });
 });
