@@ -718,7 +718,11 @@ Not covered, so worth a pass before relying on it:
   on-screen keyboard, `dvh` and safe-area behavior in particular.
 - **Other question types.** The matrix questions (`aios-match`) have been
   checked at phone width: the table scrolls sideways on its own with the row
-  texts pinned (globals.css). Ordering (`aios-placement-ordering`) has too,
+  texts pinned (globals.css). On a computer (768px and wider) it fits the
+  assessment card instead: smaller headers that wrap after a "/"
+  (`buildMatchModel`), and less cell padding; every WP2 matrix fits the
+  card's 638px. Rows are shuffled per attempt by the backend
+  (`withShuffledMatrixRows`), so right answers don't run down a diagonal. Ordering (`aios-placement-ordering`) has too,
   including dragging by mouse and touch in dark mode. Other PIE widgets would
   need the same check.
 - **Desktop radar with long names.** Inline labels aren't wrapped, and the

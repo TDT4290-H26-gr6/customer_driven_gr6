@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { prisma } from "../db/prisma";
-import { otherDatasetsPresent } from ".";
+import { holdsOldFakeDataset, OLD_FAKE_DATASET_MESSAGE } from ".";
 import {
   applyContentSync,
   formatPlan,
@@ -52,13 +52,8 @@ function parseArgs(argv: string[]) {
 async function main() {
   const { apply, onlyNew, file } = parseArgs(process.argv.slice(2));
 
-  // Same rule as the seed: two datasets never share a database.
-  const conflicting = await otherDatasetsPresent("wp2");
-  if (conflicting.length > 0) {
-    throw new Error(
-      `The database holds the "${conflicting.join(", ")}" dataset, not "wp2". Nothing was changed.`,
-    );
-  }
+  // Same rule as the seed: never mix WP2 into the old test dataset.
+  if (await holdsOldFakeDataset()) throw new Error(OLD_FAKE_DATASET_MESSAGE);
 
   // Read fresh from disk (not imported), so the latest edits are what's synced.
   const data: unknown = JSON.parse(readFileSync(file, "utf8"));

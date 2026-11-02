@@ -587,6 +587,57 @@ describe("listQuestions", () => {
     expect(choices.every((c) => !("correct" in c))).toBe(true);
   });
 
+  describe("a matrix question", () => {
+    // Written in the order of the answers, so the right ones run down a diagonal.
+    const rows = ["r1", "r2", "r3"].map((id, i) => ({
+      id,
+      title: `Row ${id}`,
+      values: [0, 1, 2].map((c) => c === i).concat(false),
+    }));
+    function mockMatrixQuestion() {
+      vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);
+      mockPrisma.satInstance.count.mockResolvedValue(0);
+      mockPrisma.question.findMany.mockResolvedValue([
+        {
+          id: "q-match",
+          prompt: "Match them",
+          questionType: "matching",
+          competence: { id: "c1", name: "Comp" },
+          content: {
+            element: "aios-match",
+            model: { headers: ["", "A", "B", "C", "I don't know"], layout: 5, rows },
+          },
+        },
+      ] as never);
+    }
+    const shown = (question: { content: unknown }) =>
+      (question.content as { model: { rows: { id: string }[]; headers: string[] } }).model;
+
+    it("shows its rows in a random order, the columns where they were", async () => {
+      mockMatrixQuestion();
+      const random = vi.spyOn(Math, "random").mockReturnValue(0);
+
+      const [question] = await listQuestions("learner-1");
+      random.mockRestore();
+
+      expect(shown(question).rows.map((r) => r.id)).toEqual(["r2", "r3", "r1"]);
+      expect(shown(question).headers).toEqual(["", "A", "B", "C", "I don't know"]);
+    });
+
+    it("never shows them in the order they were written", async () => {
+      mockMatrixQuestion();
+      // A shuffle that changes nothing.
+      const random = vi.spyOn(Math, "random").mockReturnValue(0.99);
+
+      const [question] = await listQuestions("learner-1");
+      random.mockRestore();
+
+      const ids = shown(question).rows.map((r) => r.id);
+      expect(ids).not.toEqual(["r1", "r2", "r3"]);
+      expect([...ids].sort()).toEqual(["r1", "r2", "r3"]);
+    });
+  });
+
   describe("an ordering question", () => {
     function mockOrderingQuestion() {
       vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);

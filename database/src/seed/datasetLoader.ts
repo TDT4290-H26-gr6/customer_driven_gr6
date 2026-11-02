@@ -6,8 +6,8 @@ import { buildPieContent, type AuthoredContent } from "./pie";
 // Loads one content dataset (a JSON file in data/) into an empty database:
 // every table of schema v3 except the ones a learner fills in themselves
 // (sat_instance, response, competence_score, recommendation), so a freshly
-// signed-in learner starts with all questions unanswered. Used for both the
-// fake food-themed dataset and the real WP2 curriculum (see seed/index.ts).
+// signed-in learner starts with all questions unanswered. Used for the WP2
+// curriculum (see wp2Seed.ts and seed/index.ts).
 //
 // Once a database holds the content, the database is the source of truth:
 // admins change it in the curriculum editor, and this never reloads or

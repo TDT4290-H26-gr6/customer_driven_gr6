@@ -22,5 +22,5 @@ RUN npx prisma generate
 # 2. Apply prisma/schema. Never with --accept-data-loss: a change that would
 #    drop or narrow data stops here for a person to decide (see README,
 #    "Schema changes that would lose data").
-# 3. Load (or bring up to date) the SEED_DATASET content; see src/index.ts.
+# 3. Load the WP2 curriculum into an empty database; see src/index.ts.
 CMD ["sh", "-c", "npm run schema:prepare && npm run schema:push && npm run seed"]

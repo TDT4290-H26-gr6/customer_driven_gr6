@@ -37,8 +37,8 @@ import {
 
 /**
  * Question types whose on-screen choice order is meaningful and must never
- * be shuffled. ("ordering" is shuffled its own way, see
- * withShuffledOrderingItems.)
+ * be shuffled. (Ordering and matrix questions are shuffled their own way, see
+ * withShuffledOrderingItems and withShuffledMatrixRows.)
  */
 const ORDERED_QUESTION_TYPES: readonly string[] = ["likert", "true_false"];
 
@@ -59,6 +59,7 @@ function withShuffledChoices<T extends Pick<Question, "questionType" | "content"
 ): T {
   if (ORDERED_QUESTION_TYPES.includes(question.questionType)) return question;
   if (question.questionType === "ordering") return withShuffledOrderingItems(question, random);
+  if (isMatrixType(question.questionType)) return withShuffledMatrixRows(question, random);
 
   const content = question.content as { models?: { choices?: { value?: unknown }[] }[] } | null;
   const models = content?.models;
@@ -97,6 +98,27 @@ function withShuffledOrderingItems<T extends Pick<Question, "content">>(
     choices = [...choices.slice(1), choices[0]];
   }
   return { ...question, content: { ...content, model: { ...model, choices } } as Prisma.JsonValue };
+}
+
+/**
+ * A matrix question's rows (statements, items), in a random order that is
+ * never the one they were written in. Rows are often written in the order of
+ * the answer columns (actor 1 matches answer 1, ...), so unshuffled the right
+ * answers would run down a diagonal. Only the rows move: a saved answer
+ * points at each row by id, but at the columns by position.
+ */
+function withShuffledMatrixRows<T extends Pick<Question, "content">>(
+  question: T,
+  random: () => number,
+): T {
+  const content = question.content as { model?: { rows?: unknown[] } } | null;
+  const model = content?.model;
+  if (!content || !model || !Array.isArray(model.rows) || model.rows.length < 2) return question;
+  const authored = model.rows;
+  let rows = shuffle(authored, random);
+  // Moving the first row to the end can't land on the written order again.
+  if (rows.every((row, i) => row === authored[i])) rows = [...rows.slice(1), rows[0]];
+  return { ...question, content: { ...content, model: { ...model, rows } } as Prisma.JsonValue };
 }
 
 /**

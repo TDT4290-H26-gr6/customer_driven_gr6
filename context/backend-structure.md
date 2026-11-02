@@ -138,17 +138,16 @@ database/
 ├── Dockerfile               # db-init: pre-push.sql, prisma db push, then the seed; exits
 ├── prisma/                  # the schema (§3) and pre-push.sql
 └── src/
-    ├── index.ts             # db-init's last step: seedChosenDataset(); a failure stops db-init
-    ├── config.ts            # SEED_DATASET, MOODLE_BASE_URL
+    ├── index.ts             # db-init's last step: seedWp2(); a failure stops db-init
+    ├── config.ts            # MOODLE_BASE_URL
     ├── db/prisma.ts         # this package's PrismaClient
     └── seed/                # content datasets, see §11
-        ├── index.ts         # seedChosenDataset(): the SEED_DATASET one, never mixed
+        ├── index.ts         # seedWp2(): into an empty database, never over the old test dataset
         ├── datasetLoader.ts # createDatasetLoader(): load one dataset JSON into an empty database
         ├── pie.ts           # authored question -> PIE item content (buildPieContent)
         ├── contentSync.ts   # `npm run content:sync`: make the DB match the WP2 JSON
-        ├── fakeFoodSeed.ts  # the fake food dataset (default)
-        ├── wp2Seed.ts       # the real WP2 curriculum (SEED_DATASET=wp2)
-        └── data/aios_fake_food_seed.json, aios_wp2_seed.json
+        ├── wp2Seed.ts       # the WP2 curriculum
+        └── data/aios_wp2_seed.json
 
 backend/src/
 ├── index.ts                 # process entry: start the server (the database is already prepared)
@@ -472,21 +471,18 @@ A recommendation row is logged only when the recommended journey changes.
 
 ### Seeding
 
-There are two content datasets, and `SEED_DATASET` picks which one db-init
-loads (`database/src/seed/index.ts`):
+db-init loads one content dataset, the AIOS WP2 curriculum
+(`database/src/seed/data/aios_wp2_seed.json`, see `seed/index.ts`): sections
+A–E, 20 modules (A1–E4) with main and secondary competences, 36 competences,
+the learning journeys, and the self-assessment items delivered so far.
 
-| `SEED_DATASET` | File | What it is |
-| --- | --- | --- |
-| `fake` (default) | `data/aios_fake_food_seed.json` | Fake food-themed test data, described below |
-| `wp2` | `data/aios_wp2_seed.json` | The real AIOS WP2 curriculum: sections A–E, 20 modules (A1–E4) with main and secondary competences, 36 competences, the 4 learning journeys, and the self-assessment items delivered so far |
-
-- **Never mixed.** A learner's first assessment covers the whole question bank,
-  so two datasets in one database would hand learners both. If the database
-  already holds the other dataset, db-init refuses to load it (logged in
-  `docker compose logs db-init`, nothing changed) and exits with an error, so
-  the backend doesn't start until `SEED_DATASET` is fixed. Switching an
-  existing database = back it up, start from an empty one.
-- **WP2 is not complete yet**, which is why `fake` stays the default: A1 and A4
+- **The old food-themed test dataset was removed** (it used to be the
+  default). A database that still holds it is refused rather than mixed with
+  WP2: a learner's first assessment covers the whole question bank, so a mix
+  would hand them both. db-init (and `content:sync`) then exits with an error
+  in `docker compose logs db-init`, nothing changed: back the database up and
+  start from an empty one.
+- **WP2 is not complete yet**: A1 and A4
   have no items and several modules have 1–2. All 61 items delivered so far
   are loaded, the true/false matrices, classification and matching ones as
   the matrix question types. The file's `_meta` lists the open points
@@ -501,18 +497,13 @@ loads (`database/src/seed/index.ts`):
   database through `npm run content:sync`, so swapping the placeholders for
   real links is a data change.
 
-`database/src/seed/fakeFoodSeed.ts` loads `database/src/seed/data/aios_fake_food_seed.json`, a
-**fake**, food-themed dataset that _is_ every learner's initial assessment:
-**5 sections (A–E) × 4 section modules (levels 1–4, one competence each) ×
-3 questions = 60 questions**, plus 26
-Moodle-linked sources (each competence has its own primary source and 1–2
-secondary ones) and 4 fake roles. It covers every table except those a learner
-fills in (`sat_instance`, `response`, `competence_score`, `recommendation`). It
-is inserted in dependency order with `createMany({ skipDuplicates: true })`,
-so running it again never duplicates or overwrites.
+It covers every table except those a learner fills in (`sat_instance`,
+`response`, `competence_score`, `recommendation`). It is inserted in dependency
+order with `createMany({ skipDuplicates: true })`, so running it again never
+duplicates or overwrites.
 
 - **Automatically, into an empty database only:** db-init runs
-  `seedChosenDataset()` (`database/src/index.ts`) before the backend starts. A
+  `seedWp2()` (`database/src/index.ts`) before the backend starts. A
   database that holds none of the dataset gets all of it. **Once a database has
   its content, the database is the source of truth**: admins change it in the
   curriculum editor, and db-init never re-adds what was deleted or overwrites
@@ -546,8 +537,7 @@ so running it again never duplicates or overwrites.
   questions of a running system, use the curriculum editor (admin mode → Edit
   curriculum); editing the JSON only affects new databases and `content:sync`
   (a new question there needs a real `sectionModuleId` and the `competenceId`
-  of that module; in the fake dataset every module (level) has exactly 3
-  questions, `fakeFoodSeed.data.test.ts` checks this).
+  of that module; `wp2Seed.data.test.ts` checks this).
 - **Retired content:** the editor deletes only what nothing uses, and retires
   (`retiredAt`) the rest, which can be restored:
   - a question is deleted when nobody has answered it;
@@ -597,7 +587,7 @@ so running it again never duplicates or overwrites.
   asked (the rest of a failed level and the levels above it) still count in
   the scores, as 0 of 1, so every SAT is scored over the same questions.
 - There is no longer a default-roles bootstrap: roles come from the seed, so the
-  role picker lists the seed's (fake) roles.
+  role picker lists the dataset's roles.
 - **The earlier open-science content was removed** once the WP2 curriculum
   replaced it (`openScienceSeed.ts` and `data/aios_open_science_seed.json`,
   dormant since schema v3). It's in git history if it's ever needed again.
