@@ -398,7 +398,8 @@ export function AssessmentRunnerPage() {
       {path.journey && (
         <p className={styles.journeyBanner}>
           Assessing the journey <strong>{path.journey.name ?? "you chose"}</strong>. Your result
-          shows under Competencies and doesn&apos;t change your self-assessment.
+          shows on the Learning journeys page&apos;s History tab, your best result also counts under
+          Competencies, and it doesn&apos;t change your self-assessment.
         </p>
       )}
 
