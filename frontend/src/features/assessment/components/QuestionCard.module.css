@@ -19,11 +19,6 @@
   font-weight: var(--font-weight-semibold);
 }
 
-.prompt {
-  margin: 0;
-  font-size: var(--font-size-lg);
-}
-
 @media (max-width: 767px) {
   .card {
     padding: 16px;

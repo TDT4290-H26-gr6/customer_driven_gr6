@@ -7,6 +7,7 @@ import {
   getAttemptSectionScores,
   getCompetencies,
   getDashboardProgress,
+  getJourneyHistory,
   getLatestCompetenceScores,
   getSatHistory,
   hasCompletedMainAssessment,
@@ -587,6 +588,57 @@ describe("listQuestions", () => {
     expect(choices.every((c) => !("correct" in c))).toBe(true);
   });
 
+  describe("a matrix question", () => {
+    // Written in the order of the answers, so the right ones run down a diagonal.
+    const rows = ["r1", "r2", "r3"].map((id, i) => ({
+      id,
+      title: `Row ${id}`,
+      values: [0, 1, 2].map((c) => c === i).concat(false),
+    }));
+    function mockMatrixQuestion() {
+      vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);
+      mockPrisma.satInstance.count.mockResolvedValue(0);
+      mockPrisma.question.findMany.mockResolvedValue([
+        {
+          id: "q-match",
+          prompt: "Match them",
+          questionType: "matching",
+          competence: { id: "c1", name: "Comp" },
+          content: {
+            element: "aios-match",
+            model: { headers: ["", "A", "B", "C", "I don't know"], layout: 5, rows },
+          },
+        },
+      ] as never);
+    }
+    const shown = (question: { content: unknown }) =>
+      (question.content as { model: { rows: { id: string }[]; headers: string[] } }).model;
+
+    it("shows its rows in a random order, the columns where they were", async () => {
+      mockMatrixQuestion();
+      const random = vi.spyOn(Math, "random").mockReturnValue(0);
+
+      const [question] = await listQuestions("learner-1");
+      random.mockRestore();
+
+      expect(shown(question).rows.map((r) => r.id)).toEqual(["r2", "r3", "r1"]);
+      expect(shown(question).headers).toEqual(["", "A", "B", "C", "I don't know"]);
+    });
+
+    it("never shows them in the order they were written", async () => {
+      mockMatrixQuestion();
+      // A shuffle that changes nothing.
+      const random = vi.spyOn(Math, "random").mockReturnValue(0.99);
+
+      const [question] = await listQuestions("learner-1");
+      random.mockRestore();
+
+      const ids = shown(question).rows.map((r) => r.id);
+      expect(ids).not.toEqual(["r1", "r2", "r3"]);
+      expect([...ids].sort()).toEqual(["r1", "r2", "r3"]);
+    });
+  });
+
   describe("an ordering question", () => {
     function mockOrderingQuestion() {
       vi.mocked(findLearnerById).mockResolvedValue({ roleId: "student" } as never);
@@ -738,6 +790,7 @@ describe("getAssessmentPath", () => {
     const path = await getAssessmentPath("learner-1");
 
     expect(path?.done).toBe(false);
+    expect(path?.instanceNum).toBe(1);
     expect(path?.sectionCount).toBe(1);
     expect(path?.items.map((i) => i.question.id)).toEqual(["q1", "q2"]);
     expect(path?.items[0]).toMatchObject({
@@ -804,6 +857,19 @@ describe("getAssessmentPath", () => {
     const path = await getAssessmentPath("learner-1");
     expect(path?.done).toBe(false);
     expect(path?.items.map((i) => i.question.id)).toEqual(["q1", "q2", "q3"]);
+  });
+
+  it("reports the total question count for the sections this attempt covers", async () => {
+    mockPathInputs({
+      questions: [
+        { id: "q1", competenceId: "comp-a", level: 1 },
+        { id: "q2", competenceId: "comp-a", level: 1 },
+        { id: "q3", competenceId: "comp-a", level: 2 },
+      ],
+      active: { id: "instance-1", instanceNum: 1 },
+      responses: [],
+    });
+    expect((await getAssessmentPath("learner-1"))?.totalQuestions).toBe(3);
   });
 });
 
@@ -1485,6 +1551,84 @@ describe("getSatHistory", () => {
     expect(mockPrisma.satInstance.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { learnerId: "learner-1", kind: "main", completedAt: { not: null } },
+        orderBy: { instanceNum: "asc" },
+      }),
+    );
+  });
+});
+
+describe("getJourneyHistory", () => {
+  /** A score with its section and level copied, as completeActiveInstance stores it. */
+  function copied(
+    competenceName: string,
+    score: number,
+    maxScore: number,
+    sectionCode: string,
+    sectionName: string,
+    level: number,
+  ) {
+    return { score, maxScore, competence: null, competenceName, sectionCode, sectionName, level };
+  }
+
+  it("groups a journey attempt's module scores by section, the same way getSatHistory does", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([
+      {
+        instanceNum: 1,
+        completedAt: new Date("2026-01-01"),
+        assessedJourneyId: "journey-1",
+        assessedJourneyName: "LJ2 - Research Data",
+        competenceScores: [
+          copied("Proofing", 1, 3, "B", "Baking", 1),
+          copied("Onion", 2, 3, "A", "Knife Skills", 1),
+        ],
+      },
+    ] as never);
+
+    const [entry] = await getJourneyHistory("learner-1");
+
+    expect(entry).toEqual({
+      instanceNum: 1,
+      completedAt: new Date("2026-01-01"),
+      journeyName: "LJ2 - Research Data",
+      sumScore: 3,
+      sumMaxScore: 6,
+      sections: [
+        { code: "A", name: "Knife Skills", areas: [{ name: "Onion", score: 2, maxScore: 3 }] },
+        { code: "B", name: "Baking", areas: [{ name: "Proofing", score: 1, maxScore: 3 }] },
+      ],
+    });
+  });
+
+  it("keeps the copied journey name once the journey itself is deleted", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([
+      {
+        instanceNum: 2,
+        completedAt: new Date("2026-02-01"),
+        // Journey deleted: the link is gone, the copied name isn't.
+        assessedJourneyId: null,
+        assessedJourneyName: "Knife Ninja",
+        competenceScores: [],
+      },
+    ] as never);
+
+    const [entry] = await getJourneyHistory("learner-1");
+
+    expect(entry.journeyName).toBe("Knife Ninja");
+  });
+
+  it("returns an empty list when the learner has no completed journey attempts", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([]);
+    expect(await getJourneyHistory("learner-1")).toEqual([]);
+  });
+
+  it("queries only completed journey-kind instances, ordered oldest first", async () => {
+    mockPrisma.satInstance.findMany.mockResolvedValue([]);
+
+    await getJourneyHistory("learner-1");
+
+    expect(mockPrisma.satInstance.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { learnerId: "learner-1", kind: "journey", completedAt: { not: null } },
         orderBy: { instanceNum: "asc" },
       }),
     );

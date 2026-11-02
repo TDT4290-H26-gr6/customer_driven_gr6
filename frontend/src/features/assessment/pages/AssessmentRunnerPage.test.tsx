@@ -38,6 +38,11 @@ vi.mock("react-router-dom", () => ({
   useNavigate: () => navigate,
 }));
 
+const showToast = vi.fn();
+vi.mock("@/app/providers/ToastProvider", () => ({ useToast: () => ({ showToast }) }));
+const openFeedback = vi.fn();
+vi.mock("@/features/feedback", () => ({ useFeedback: () => ({ openFeedback }) }));
+
 // Retries are covered in retry.test.ts; here one try keeps the tests instant.
 vi.mock("@/shared/api/retry", () => ({
   withRetry: (fn: () => Promise<unknown>) => fn(),
@@ -90,8 +95,10 @@ function path(
   sectionCount = 2,
   journey: AssessmentPath["journey"] = null,
   partial = false,
+  totalQuestions = 0,
+  instanceNum = 1,
 ): AssessmentPath {
-  return { items, sectionCount, done: isDone, journey, partial };
+  return { items, sectionCount, done: isDone, journey, partial, totalQuestions, instanceNum };
 }
 
 const networkError = { status: 0, message: "offline" };
@@ -181,6 +188,51 @@ describe("AssessmentRunnerPage", () => {
     expect(screen.queryByText("Section C")).not.toBeInTheDocument();
   });
 
+  it("shows section progress, not per-question, during a journey assessment", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path([item("1")], false, 2, { id: "journey-2", name: "LJ2" }),
+    );
+
+    render(<AssessmentRunnerPage />);
+
+    expect(await screen.findByText("Section 1 of 2")).toBeInTheDocument();
+  });
+
+  it("shows per-question progress during a partial reassessment, instead of sections", async () => {
+    vi.mocked(getAssessmentPath).mockResolvedValue(
+      path(
+        [item("1", { answered: true }), item("2", { answered: true }), item("3")],
+        false,
+        1,
+        null,
+        true,
+        5,
+      ),
+    );
+
+    render(<AssessmentRunnerPage />);
+
+    expect(await screen.findByText("2 of 5 answered")).toBeInTheDocument();
+    expect(screen.queryByText(/section 1 of 1/i)).not.toBeInTheDocument();
+  });
+
+  it("updates the per-question progress bar as each answer is saved", async () => {
+    vi.mocked(getAssessmentPath)
+      .mockResolvedValueOnce(path([item("1")], false, 1, null, true, 3))
+      .mockResolvedValueOnce(
+        path([item("1", { answered: true }), item("2")], false, 1, null, true, 3),
+      );
+    const user = userEvent.setup();
+
+    render(<AssessmentRunnerPage />);
+    expect(await screen.findByText("0 of 3 answered")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Answer" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(await screen.findByText("1 of 3 answered")).toBeInTheDocument();
+  });
+
   it("resumes at the next question, after the ones already answered", async () => {
     vi.mocked(getAssessmentPath).mockResolvedValue(
       path([item("1", { answered: true }), item("2", { answered: true }), item("3")]),
@@ -244,7 +296,26 @@ describe("AssessmentRunnerPage", () => {
     expect(saveResponse).toHaveBeenCalledOnce();
   });
 
-  it("finishes a journey assessment on Competencies, without completing the self-assessment", async () => {
+  it("finishes a partial reassessment on the History page's Partial tab", async () => {
+    vi.mocked(getAssessmentPath)
+      .mockResolvedValueOnce(path([item("1")], false, 1, null, true))
+      .mockResolvedValueOnce(path([item("1", { answered: true })], true, 1, null, true));
+    const user = userEvent.setup();
+
+    render(<AssessmentRunnerPage />);
+    await user.click(await screen.findByRole("button", { name: "Answer" }));
+    await user.click(screen.getByRole("button", { name: "Next" }));
+
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith("/history", {
+        replace: true,
+        state: { tab: "partial" },
+      }),
+    );
+    expect(completeAssessment).toHaveBeenCalledOnce();
+  });
+
+  it("finishes a journey assessment on the Journeys page's History tab, without completing the self-assessment", async () => {
     const lj2 = { id: "journey-2", name: "LJ2 - Research Data" };
     vi.mocked(getAssessmentPath)
       .mockResolvedValueOnce(path([item("1")], false, 2, lj2))
@@ -255,10 +326,75 @@ describe("AssessmentRunnerPage", () => {
     await user.click(await screen.findByRole("button", { name: "Answer" }));
     await user.click(screen.getByRole("button", { name: "Next" }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith("/competencies", { replace: true }));
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith("/journeys", {
+        replace: true,
+        state: { tab: "history" },
+      }),
+    );
     expect(completeAssessment).toHaveBeenCalledOnce();
     expect(completeInitialAssessment).not.toHaveBeenCalled();
     expect(markInitialAssessmentComplete).not.toHaveBeenCalled();
+  });
+
+  describe("the prompt once it's finished", () => {
+    /** Finishes an attempt: number `instanceNum`, partial or not, or a journey's. */
+    async function finishAttempt(
+      instanceNum: number,
+      { partial = false, journey = null as AssessmentPath["journey"] } = {},
+    ) {
+      vi.mocked(getAssessmentPath)
+        .mockResolvedValueOnce(path([item("1")], false, 1, journey, partial, 1, instanceNum))
+        .mockResolvedValueOnce(
+          path([item("1", { answered: true })], true, 1, journey, partial, 1, instanceNum),
+        );
+      const user = userEvent.setup();
+      render(<AssessmentRunnerPage />);
+      await user.click(await screen.findByRole("button", { name: "Answer" }));
+      await user.click(screen.getByRole("button", { name: "Next" }));
+      await waitFor(() => expect(navigate).toHaveBeenCalled());
+    }
+
+    it("shows nothing after the first self-assessment", async () => {
+      await finishAttempt(1);
+      expect(showToast).not.toHaveBeenCalled();
+    });
+
+    it("asks for feedback after the second self-assessment, opening the feedback window", async () => {
+      await finishAttempt(2);
+      expect(showToast).toHaveBeenCalledWith({
+        title: "Assessment completed.",
+        action: { label: "How was it? Give feedback", onAction: openFeedback },
+      });
+      showToast.mock.calls[0][0].action.onAction();
+      expect(openFeedback).toHaveBeenCalled();
+    });
+
+    it("combines the two prompts when the second one was partial", async () => {
+      await finishAttempt(2, { partial: true });
+      expect(showToast).toHaveBeenCalledOnce();
+      expect(showToast).toHaveBeenCalledWith({
+        title: "Partial assessment completed.",
+        action: { label: "How was it? Give feedback", onAction: openFeedback },
+      });
+    });
+
+    it("says a later partial reassessment is complete, without asking for feedback again", async () => {
+      await finishAttempt(3, { partial: true });
+      expect(showToast).toHaveBeenCalledWith({
+        title: "Partial assessment completed. Your results are below.",
+      });
+    });
+
+    it("shows nothing after a later full self-assessment", async () => {
+      await finishAttempt(3);
+      expect(showToast).not.toHaveBeenCalled();
+    });
+
+    it("shows nothing after a journey assessment, which is numbered on its own", async () => {
+      await finishAttempt(2, { journey: { id: "journey-2", name: "LJ2" } });
+      expect(showToast).not.toHaveBeenCalled();
+    });
   });
 
   it("says which journey is being assessed, and that it doesn't change the self-assessment", async () => {

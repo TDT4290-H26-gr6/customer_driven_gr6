@@ -14,7 +14,7 @@ vi.mock("../../db/prisma", () => {
   });
   return {
     prisma: {
-      learner: model(),
+      learner: { ...model(), create: vi.fn() },
       learnerProfile: model(),
       advice: model(),
       role: model(),
@@ -161,6 +161,75 @@ describe("upsertLearnerFromGoogle", () => {
   });
 });
 
+describe("upsertLearnerFromOrcid", () => {
+  const ORCID = "0000-0002-1825-0097";
+  const find = () => mockPrisma.learner.findUnique;
+
+  it("returns the learner already linked to this ORCID iD", async () => {
+    find().mockResolvedValueOnce({ id: "l1" } as never);
+
+    await identity.upsertLearnerFromOrcid(ORCID, "a@example.com", true, "Ada");
+
+    expect(find()).toHaveBeenCalledWith({ where: { orcidId: ORCID }, include });
+    expect(mockPrisma.learner.create).not.toHaveBeenCalled();
+    expect(mockPrisma.learner.update).not.toHaveBeenCalled();
+  });
+
+  it("links the ORCID iD to the learner that has the same verified email", async () => {
+    find()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "l1", orcidId: null } as never);
+
+    await identity.upsertLearnerFromOrcid(ORCID, "A@Example.com", true, "Ada");
+
+    expect(find()).toHaveBeenLastCalledWith({ where: { email: "a@example.com" } });
+    expect(mockPrisma.learner.update).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { orcidId: ORCID },
+      include,
+    });
+  });
+
+  it("creates a learner with a verified email when it is free", async () => {
+    find().mockResolvedValue(null);
+
+    await identity.upsertLearnerFromOrcid(ORCID, "a@example.com", true, "Ada");
+
+    expect(mockPrisma.learner.create).toHaveBeenCalledWith({
+      data: { email: "a@example.com", name: "Ada", orcidId: ORCID },
+      include,
+    });
+  });
+
+  it.each([
+    ["has no email", null, false],
+    ["has an unverified email", "a@example.com", false],
+  ])("uses a placeholder email when the ORCID record %s", async (_label, email, verified) => {
+    find().mockResolvedValue(null);
+
+    await identity.upsertLearnerFromOrcid(ORCID, email, verified, "Ada");
+
+    expect(mockPrisma.learner.create).toHaveBeenCalledWith({
+      data: { email: `${ORCID}@orcid.invalid`, name: "Ada", orcidId: ORCID },
+      include,
+    });
+  });
+
+  it("uses a placeholder when the verified email belongs to a learner with another ORCID iD", async () => {
+    find()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "l1", orcidId: "other" } as never);
+
+    await identity.upsertLearnerFromOrcid(ORCID, "a@example.com", true, "Ada");
+
+    expect(mockPrisma.learner.update).not.toHaveBeenCalled();
+    expect(mockPrisma.learner.create).toHaveBeenCalledWith({
+      data: { email: `${ORCID}@orcid.invalid`, name: "Ada", orcidId: ORCID },
+      include,
+    });
+  });
+});
+
 describe("roles", () => {
   it("lists roles alphabetically", async () => {
     await identity.listRoles();
@@ -273,41 +342,6 @@ describe("getVisibilityMatrix", () => {
       competences: [{ id: "c-1" }],
       roleSections: [{ roleId: "role-1", sectionId: "sec-1" }],
       roleCompetences: [],
-    });
-  });
-});
-
-describe("grants", () => {
-  it("grants a section once, recording who granted it", async () => {
-    await identity.grantSection("role-1", "sec-1", "admin-1");
-    expect(mockPrisma.roleSection.upsert).toHaveBeenCalledWith({
-      where: { roleId_sectionId: { roleId: "role-1", sectionId: "sec-1" } },
-      // Granting again leaves the original grant (and who made it) alone.
-      update: {},
-      create: { roleId: "role-1", sectionId: "sec-1", grantedByLearnerId: "admin-1" },
-    });
-  });
-
-  it("revokes a section grant", async () => {
-    await identity.revokeSection("role-1", "sec-1");
-    expect(mockPrisma.roleSection.deleteMany).toHaveBeenCalledWith({
-      where: { roleId: "role-1", sectionId: "sec-1" },
-    });
-  });
-
-  it("grants a competence once, recording who granted it", async () => {
-    await identity.grantCompetence("role-1", "c-1", "admin-1");
-    expect(mockPrisma.roleCompetence.upsert).toHaveBeenCalledWith({
-      where: { roleId_competenceId: { roleId: "role-1", competenceId: "c-1" } },
-      update: {},
-      create: { roleId: "role-1", competenceId: "c-1", grantedByLearnerId: "admin-1" },
-    });
-  });
-
-  it("revokes a competence grant", async () => {
-    await identity.revokeCompetence("role-1", "c-1");
-    expect(mockPrisma.roleCompetence.deleteMany).toHaveBeenCalledWith({
-      where: { roleId: "role-1", competenceId: "c-1" },
     });
   });
 });

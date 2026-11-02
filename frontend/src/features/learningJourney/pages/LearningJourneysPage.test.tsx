@@ -2,12 +2,13 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LearningJourneysPage } from "./LearningJourneysPage";
-import { listJourneys, startJourneyAssessment } from "../api";
-import type { LearningJourney } from "../types";
+import { getJourneyHistory, listJourneys, startJourneyAssessment } from "../api";
+import type { JourneyHistoryEntry, LearningJourney } from "../types";
 
 vi.mock("../api", () => ({
   listJourneys: vi.fn(),
   startJourneyAssessment: vi.fn(),
+  getJourneyHistory: vi.fn(),
 }));
 
 const navigate = vi.fn();
@@ -20,6 +21,7 @@ vi.mock("react-router-dom", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   locationState = null;
+  vi.mocked(getJourneyHistory).mockResolvedValue([]);
 });
 
 const section = (code: string, coverageLevel: "M" | "R" | "S") => ({
@@ -147,5 +149,117 @@ describe("LearningJourneysPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("Open Science Foundations")).toBeInTheDocument();
+  });
+});
+
+const HISTORY_ENTRY: JourneyHistoryEntry = {
+  instanceNum: 1,
+  completedAt: "2026-02-15T00:00:00.000Z",
+  journeyName: "Open Science Foundations",
+  sumScore: 5,
+  sumMaxScore: 6,
+  sections: [
+    {
+      code: "A",
+      name: "Knife Skills",
+      areas: [{ name: "Onion Dicing", score: 2, maxScore: 3 }],
+    },
+    {
+      code: "D",
+      name: "Data Management",
+      areas: [{ name: "FAIR Principles", score: 3, maxScore: 3 }],
+    },
+  ],
+};
+
+describe("LearningJourneysPage's History tab", () => {
+  it("doesn't fetch the history until the History tab is opened", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+    const user = userEvent.setup();
+
+    render(<LearningJourneysPage />);
+    await screen.findByText("Open Science Foundations");
+    expect(getJourneyHistory).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("tab", { name: "History" }));
+    await user.click(screen.getByRole("tab", { name: "Overview" }));
+    await user.click(screen.getByRole("tab", { name: "History" }));
+    expect(getJourneyHistory).toHaveBeenCalledOnce();
+  });
+
+  it("lists every past journey attempt, most recent first, numbered per journey", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+    const later = { ...HISTORY_ENTRY, instanceNum: 2, completedAt: "2026-03-15T00:00:00.000Z" };
+    const other = {
+      ...HISTORY_ENTRY,
+      instanceNum: 3,
+      completedAt: "2026-04-15T00:00:00.000Z",
+      journeyName: "Legal Deep Dive",
+    };
+    vi.mocked(getJourneyHistory).mockResolvedValue([HISTORY_ENTRY, later, other]);
+    const user = userEvent.setup();
+
+    render(<LearningJourneysPage />);
+    await user.click(await screen.findByRole("tab", { name: "History" }));
+
+    const headings = await screen.findAllByRole("heading", { level: 2 });
+    expect(headings.map((h) => h.textContent)).toEqual([
+      "Legal Deep Dive · attempt 1",
+      "Open Science Foundations · attempt 2",
+      "Open Science Foundations · attempt 1",
+    ]);
+  });
+
+  it("shows each attempt's score breakdown", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+    const later = { ...HISTORY_ENTRY, instanceNum: 2, completedAt: "2026-03-15T00:00:00.000Z" };
+    vi.mocked(getJourneyHistory).mockResolvedValue([HISTORY_ENTRY, later]);
+    const user = userEvent.setup();
+
+    render(<LearningJourneysPage />);
+    await user.click(await screen.findByRole("tab", { name: "History" }));
+
+    expect(await screen.findAllByText("5 / 6")).toHaveLength(2);
+    expect(screen.getAllByText("5 / 6")).toHaveLength(2);
+    expect(screen.getAllByText("(83%)")).toHaveLength(2);
+    expect(screen.getAllByText("Section A · Knife Skills")).toHaveLength(2);
+    expect(screen.getAllByText("Onion Dicing")).toHaveLength(2);
+  });
+
+  it("opens on the History tab when navigated here with that tab requested", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+    vi.mocked(getJourneyHistory).mockResolvedValue([HISTORY_ENTRY]);
+    locationState = { tab: "history" };
+
+    render(<LearningJourneysPage />);
+
+    expect(await screen.findByText("Open Science Foundations · attempt 1")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "History" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("shows an empty-state message when no journey has been assessed on its own yet", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+    vi.mocked(getJourneyHistory).mockResolvedValue([]);
+    const user = userEvent.setup();
+
+    render(<LearningJourneysPage />);
+    await user.click(await screen.findByRole("tab", { name: "History" }));
+
+    expect(await screen.findByText(/haven't assessed a learning journey/i)).toBeInTheDocument();
+  });
+
+  it("shows a message with a retry when loading the journey history fails", async () => {
+    vi.mocked(listJourneys).mockResolvedValue(JOURNEYS);
+    vi.mocked(getJourneyHistory)
+      .mockRejectedValueOnce({ status: 0, message: "offline" })
+      .mockResolvedValueOnce([HISTORY_ENTRY]);
+    const user = userEvent.setup();
+
+    render(<LearningJourneysPage />);
+    await user.click(await screen.findByRole("tab", { name: "History" }));
+    expect(await screen.findByText(/couldn't load your journey history/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByText("Open Science Foundations · attempt 1")).toBeInTheDocument();
   });
 });

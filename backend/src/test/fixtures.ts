@@ -11,6 +11,7 @@ export function learner(overrides: Partial<LearnerWithRole> = {}): LearnerWithRo
     email: "learner@example.com",
     name: "Ada",
     googleSubId: "google-sub-1",
+    orcidId: null,
     roleId: null,
     userRole: null,
     profile: null,

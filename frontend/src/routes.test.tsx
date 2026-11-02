@@ -14,7 +14,10 @@ const { page } = vi.hoisted(() => ({
       return <p>{name}</p>;
     },
 }));
-vi.mock("@/features/auth", () => ({ LoginPage: page("login") }));
+vi.mock("@/features/auth", () => ({
+  LoginPage: page("login"),
+  OrcidCallbackPage: page("orcid-callback"),
+}));
 vi.mock("@/features/assessment", () => ({
   AssessmentRunnerPage: page("assessment"),
   ReassessPage: page("reassess"),
@@ -29,11 +32,18 @@ vi.mock("@/features/history", () => ({ HistoryPage: page("history") }));
 vi.mock("@/features/competencies", () => ({ CompetenciesPage: page("competencies") }));
 vi.mock("@/features/faq", () => ({ FaqPage: page("faq") }));
 vi.mock("@/features/learningJourney", () => ({ LearningJourneysPage: page("journeys") }));
-vi.mock("@/features/admin", () => ({ AdminPage: page("admin") }));
-vi.mock("@/features/feedback", () => ({ FeedbackAdminPage: page("feedback admin") }));
-vi.mock("@/features/curriculum", () => ({
+// Admin pages are loaded on demand, straight from their own files.
+vi.mock("@/features/admin/pages/AdminPage", () => ({ AdminPage: page("admin") }));
+vi.mock("@/features/feedback/pages/FeedbackAdminPage", () => ({
+  FeedbackAdminPage: page("feedback admin"),
+}));
+vi.mock("@/features/curriculum/pages/CurriculumPage", () => ({
   CurriculumPage: page("curriculum editor"),
+}));
+vi.mock("@/features/curriculum/pages/QuestionEditorPage", () => ({
   QuestionEditorPage: page("question editor"),
+}));
+vi.mock("@/features/curriculum/pages/JourneyEditorPage", () => ({
   JourneyEditorPage: page("journey editor"),
 }));
 
@@ -112,9 +122,9 @@ describe("AppRoutes", () => {
     ["/admin/curriculum/questions/q-1", "question editor"],
     ["/admin/curriculum/journeys/new", "journey editor"],
     ["/admin/curriculum/journeys/lj-1", "journey editor"],
-  ])("%s is for admins only", (path, name) => {
+  ])("%s is for admins only, loaded when opened", async (path, name) => {
     visit(path, { status: "signedIn", learner: { hasCompletedProfile: true, isAdmin: true } });
-    expect(screen.getByText(name)).toBeInTheDocument();
+    expect(await screen.findByText(name)).toBeInTheDocument();
   });
 
   it("sends a non-admin away from admin pages", () => {

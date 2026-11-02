@@ -12,10 +12,21 @@ const mockPrisma = vi.mocked(prisma, true);
 
 describe("createFeedback", () => {
   it("stores the feedback against the learner who sent it", async () => {
-    await createFeedback("learner-1", { message: "Slow", suggestion: null, page: "/results" });
+    await createFeedback("learner-1", {
+      message: "Slow",
+      suggestion: null,
+      page: "/results",
+      rating: 3,
+    });
 
     expect(mockPrisma.feedback.create).toHaveBeenCalledWith({
-      data: { learnerId: "learner-1", message: "Slow", suggestion: null, page: "/results" },
+      data: {
+        learnerId: "learner-1",
+        message: "Slow",
+        suggestion: null,
+        page: "/results",
+        rating: 3,
+      },
     });
   });
 });

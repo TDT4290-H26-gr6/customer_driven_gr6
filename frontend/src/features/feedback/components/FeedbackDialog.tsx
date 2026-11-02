@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef } from "react";
 import { Button } from "@/shared/components/Button";
+import { RATINGS } from "../ratings";
 import { MAX_FEEDBACK_LENGTH } from "../types";
 import styles from "./FeedbackDialog.module.css";
 
-export type FeedbackDraft = { message: string; suggestion: string };
+export type FeedbackDraft = { message: string; suggestion: string; rating: number | null };
 export type FeedbackStatus = "idle" | "sending" | "sent" | "error";
 
 type Props = {
@@ -16,7 +17,7 @@ type Props = {
   onClose: () => void;
 };
 
-const FOCUSABLE = "button:not([disabled]), textarea:not([disabled]), [href]";
+const FOCUSABLE = "button:not([disabled]), textarea:not([disabled]), input:not([disabled]), [href]";
 
 /**
  * The feedback form, as a modal. Presentational: FeedbackWidget owns the
@@ -33,12 +34,15 @@ export function FeedbackDialog({
 }: Props) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
-  const firstFieldRef = useRef<HTMLTextAreaElement>(null);
+  const firstFieldRef = useRef<HTMLInputElement>(null);
+  const ratingName = useId();
   const sent = status === "sent";
   const sending = status === "sending";
-  const canSubmit = draft.message.trim() !== "" && !sending;
+  // A face, a few words, or both.
+  const canSubmit = (draft.message.trim() !== "" || draft.rating !== null) && !sending;
 
-  // Put focus in the dialog on open, and on the "thanks" screen once sent.
+  // Put focus in the dialog on open (on the faces, the first question), and
+  // on the "thanks" screen once sent.
   useEffect(() => {
     if (sent) dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
     else firstFieldRef.current?.focus();
@@ -122,20 +126,46 @@ export function FeedbackDialog({
             }}
           >
             <p className={styles.hint}>
-              You&apos;re testing an early version of AIOS. Tell us what could be better, a couple
-              of sentences is plenty.
+              You&apos;re testing an early version of AIOS. Pick a face, tell us what could be
+              better, or both. A couple of sentences is plenty.
             </p>
 
+            <fieldset className={styles.rating} disabled={sending}>
+              <legend className={styles.label}>
+                How satisfied are you with AIOS overall?{" "}
+                <span className={styles.optional}>(optional)</span>
+              </legend>
+              <div className={styles.faces}>
+                {RATINGS.map((r, i) => (
+                  <label key={r.value} className={styles.face} title={r.label}>
+                    <input
+                      ref={i === 0 ? firstFieldRef : undefined}
+                      type="radio"
+                      name={ratingName}
+                      value={r.value}
+                      checked={draft.rating === r.value}
+                      onChange={() => onDraftChange({ ...draft, rating: r.value })}
+                      aria-label={r.label}
+                    />
+                    <span className={styles.faceEmoji} aria-hidden="true">
+                      {r.face}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
             <label className={styles.field}>
-              <span className={styles.label}>What should be improved?</span>
+              <span className={styles.label}>
+                What should be improved?{" "}
+                {draft.rating !== null && <span className={styles.optional}>(optional)</span>}
+              </span>
               <textarea
-                ref={firstFieldRef}
                 className={styles.textarea}
                 value={draft.message}
                 onChange={(e) => onDraftChange({ ...draft, message: e.target.value })}
                 maxLength={MAX_FEEDBACK_LENGTH}
                 disabled={sending}
-                required
                 rows={4}
                 placeholder="E.g. I wasn't sure what the score on the dashboard meant."
               />

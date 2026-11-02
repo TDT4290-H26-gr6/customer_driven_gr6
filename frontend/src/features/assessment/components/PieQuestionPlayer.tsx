@@ -1,7 +1,12 @@
 import { createElement, useEffect, useRef } from "react";
 import type { NativeElementContent, PieContent } from "../types";
 import { clearOthersIfIdk, IDK_VALUE } from "./idkSession";
-import { buildPlacementOrderingModel, loadMatch, loadPlacementOrdering } from "./loadNativeElement";
+import {
+  buildMatchModel,
+  buildPlacementOrderingModel,
+  loadMatch,
+  loadPlacementOrdering,
+} from "./loadNativeElement";
 import { loadPiePlayer } from "./loadPiePlayer";
 import styles from "./PieQuestionPlayer.module.css";
 
@@ -49,11 +54,13 @@ const NATIVE_LOADERS: Record<string, () => Promise<void>> = {
 };
 
 /**
- * Native elements that take the model their controller builds out of the
- * stored one, see buildPlacementOrderingModel. The others take it as stored.
+ * What each native element is given instead of the stored model: the one
+ * placement-ordering's controller builds (see buildPlacementOrderingModel),
+ * and match's with wrappable headers (see buildMatchModel).
  */
 const MODEL_BUILDERS: Record<string, (model: Record<string, unknown>) => Promise<object>> = {
   "aios-placement-ordering": buildPlacementOrderingModel,
+  "aios-match": buildMatchModel,
 };
 
 /**

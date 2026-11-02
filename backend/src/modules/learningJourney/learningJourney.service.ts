@@ -379,12 +379,9 @@ export async function recommendJourneys(learnerId: string) {
     competenceIds = [lowest];
   }
 
-  const sectionIds: string[] = [];
-  for (const id of competenceIds) {
-    for (const sectionId of await sectionIdsForCompetence(id)) {
-      if (!sectionIds.includes(sectionId)) sectionIds.push(sectionId);
-    }
-  }
+  // Looked up together, kept in the competences' order, each section once.
+  const perCompetence = await Promise.all(competenceIds.map(sectionIdsForCompetence));
+  const sectionIds = [...new Set(perCompetence.flat())];
   const covering = await journeyCandidatesForSections(sectionIds);
   const ordered = first
     ? [first.id, ...covering.map((c) => c.id).filter((id) => id !== first!.id)]

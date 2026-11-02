@@ -6,3 +6,11 @@
   font-size: var(--font-size-sm);
   text-align: center;
 }
+
+/* While our server checks the credential Google handed back. */
+.signingIn {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}

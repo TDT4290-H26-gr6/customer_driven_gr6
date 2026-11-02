@@ -4,8 +4,8 @@ import { buildPieContent, QUESTION_TYPES, type AuthoredContent } from "./pie";
 
 // Structural checks on the WP2 curriculum dataset itself, no DB, no loader.
 // Catches a broken id reference or a malformed item before it reaches a
-// database. Unlike the fake dataset it isn't complete yet (modules without
-// items, pending item types), so the counts below describe what's delivered.
+// database. It isn't complete yet (some modules have no items), so the
+// counts below describe what's delivered.
 
 type Row = Record<string, unknown>;
 const tables = seedData as unknown as Record<string, Row[]>;
@@ -139,8 +139,7 @@ describe("WP2 seed data: questions", () => {
 
   it("loads every delivered item: none is left pending", () => {
     expect(tables).not.toHaveProperty("_pendingItems");
-    // The 61 WP2 items, plus the 3 the dev team wrote (see _meta.devAuthoredItems).
-    expect(questions).toHaveLength(64);
+    expect(questions).toHaveLength(61);
   });
 });
 
@@ -181,27 +180,5 @@ describe("WP2 seed data: partner sources", () => {
         secondarySources.some((l) => l.sourceId === source.id);
       expect(used).toBe(true);
     }
-  });
-});
-
-describe("WP2 seed data: judge-an-example items (criteria_check)", () => {
-  const criteriaItems = questions.filter((q) => q.questionType === "criteria_check");
-  const meta = (seedData as unknown as { _meta: { devAuthoredItems: { questionIds: string[] } } })
-    ._meta;
-
-  it("gives every item an example to judge and at least one criterion it doesn't meet", () => {
-    expect(criteriaItems.length).toBeGreaterThan(0);
-    for (const q of criteriaItems) {
-      const content = q.content as AuthoredContent;
-      expect(content.exhibit?.trim()).toBeTruthy();
-      // Otherwise ticking everything would score full marks.
-      expect(content.correctOptionIds!.length).toBeLessThan(content.options!.length);
-    }
-  });
-
-  it("lists the items the dev team wrote, for the content team to review", () => {
-    const questionIds = new Set(questions.map((q) => q.id));
-    for (const id of meta.devAuthoredItems.questionIds) expect(questionIds.has(id)).toBe(true);
-    expect(meta.devAuthoredItems.questionIds).toEqual(criteriaItems.map((q) => q.id));
   });
 });

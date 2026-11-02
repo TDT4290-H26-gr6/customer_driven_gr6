@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { useToast } from "@/app/providers/ToastProvider";
 import { completeInitialAssessment } from "@/features/auth";
+import { useFeedback } from "@/features/feedback";
 import { isApiError } from "@/shared/api/client";
 import { withRetry } from "@/shared/api/retry";
 import { Button } from "@/shared/components/Button";
@@ -97,6 +99,8 @@ export function AssessmentRunnerPage() {
   const [exitStatus, setExitStatus] = useState<ExitStatus>("idle");
   const [exitError, setExitError] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { openFeedback } = useFeedback();
   const { learner, markInitialAssessmentComplete } = useAuth();
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideSeen, setGuideSeen] = useLocalStorage(
@@ -239,6 +243,7 @@ export function AssessmentRunnerPage() {
   // Back is hidden only for the full self-assessment; a partial
   // reassessment and a journey assessment both keep it.
   const canGoBack = path.journey !== null || path.partial;
+  const answeredCount = path.items.filter((i) => i.answer !== null).length;
 
   function handleAnswerChange(answer: PieAnswer) {
     setAnswers((prev) => ({ ...prev, [current.id]: answer }));
@@ -260,6 +265,22 @@ export function AssessmentRunnerPage() {
     return false;
   }
 
+  /**
+   * Once a self-assessment is finished: a partial reassessment says so, and
+   * the learner's second self-assessment (full or partial, Assessment 2 on
+   * History) asks for feedback, once, since that attempt only finishes once.
+   * Clicking the feedback prompt opens the feedback window.
+   */
+  function showCompletedToast() {
+    const askFeedback = path?.instanceNum === 2;
+    const title = path?.partial ? "Partial assessment completed." : "Assessment completed.";
+    if (askFeedback) {
+      showToast({ title, action: { label: "How was it? Give feedback", onAction: openFeedback } });
+    } else if (path?.partial) {
+      showToast({ title: `${title} Your results are below.` });
+    }
+  }
+
   async function finish() {
     setIsFinishing(true);
     finishing.current = true;
@@ -269,13 +290,18 @@ export function AssessmentRunnerPage() {
       await pendingSaves.current;
       await withRetry(() => completeAssessment());
       // A journey assessment stands on its own: it doesn't complete the
-      // self-assessment, and its result is shown under Competencies.
+      // self-assessment, so it lands on the Journeys page's History tab.
       if (path?.journey) {
-        navigate("/competencies", { replace: true });
+        navigate("/journeys", { replace: true, state: { tab: "history" } });
         return;
       }
       await withRetry(() => completeInitialAssessment());
       markInitialAssessmentComplete();
+      showCompletedToast();
+      if (path?.partial) {
+        navigate("/history", { replace: true, state: { tab: "partial" } });
+        return;
+      }
       navigate("/", { replace: true });
     } catch {
       // Safe to press Finish again: completing an already-completed
@@ -362,13 +388,21 @@ export function AssessmentRunnerPage() {
           Exit
         </Button>
         <div className={styles.progress} data-guide="progress">
-          {/* Sections are the unit of progress: how many questions a section
-              takes depends on the answers. */}
-          <AssessmentProgress
-            current={item.sectionNumber - 1}
-            total={path.sectionCount}
-            label={`Section ${item.sectionNumber} of ${path.sectionCount}`}
-          />
+          {/* A partial reassessment asks every question, so it can count
+              them; otherwise how many a section takes depends on the answers. */}
+          {path.partial ? (
+            <AssessmentProgress
+              current={answeredCount}
+              total={path.totalQuestions}
+              label={`${answeredCount} of ${path.totalQuestions} answered`}
+            />
+          ) : (
+            <AssessmentProgress
+              current={item.sectionNumber - 1}
+              total={path.sectionCount}
+              label={`Section ${item.sectionNumber} of ${path.sectionCount}`}
+            />
+          )}
         </div>
         <button
           type="button"
@@ -385,7 +419,8 @@ export function AssessmentRunnerPage() {
       {path.journey && (
         <p className={styles.journeyBanner}>
           Assessing the journey <strong>{path.journey.name ?? "you chose"}</strong>. Your result
-          shows under Competencies and doesn&apos;t change your self-assessment.
+          shows on the Learning journeys page&apos;s History tab, your best result also counts under
+          Competencies, and it doesn&apos;t change your self-assessment.
         </p>
       )}
 

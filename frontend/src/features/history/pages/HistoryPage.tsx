@@ -1,17 +1,10 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { HistoryEntryCard } from "@/shared/components/HistoryEntryCard";
 import { Spinner } from "@/shared/components/Spinner";
-import { APP_LOCALE, DATE_FORMAT } from "@/shared/lib/format";
 import { getSatHistory } from "../api";
 import type { SatHistoryEntry } from "../types";
 import styles from "./HistoryPage.module.css";
-
-// Questions can earn fractional points (e.g. 3 of 4 checkbox alternatives
-// right), so show at most two decimals instead of a long float.
-const POINTS_FORMAT = new Intl.NumberFormat(APP_LOCALE, { maximumFractionDigits: 2 });
-
-function percent(score: number, maxScore: number): number {
-  return maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
-}
 
 /** A reassessment limited to some sections, rather than the whole bank. */
 function isPartial(entry: SatHistoryEntry): boolean {
@@ -22,49 +15,29 @@ type Tab = "full" | "partial";
 
 function EntryCard({ entry }: { entry: SatHistoryEntry }) {
   return (
-    <div className={styles.card}>
-      <div className={styles.cardHeader}>
-        <h2 className={styles.cardHeading}>Assessment {entry.instanceNum}</h2>
-        <span className={styles.date}>{DATE_FORMAT.format(new Date(entry.completedAt))}</span>
-      </div>
-
-      {(entry.completedJourney || entry.reassessedSections.length > 0) && (
-        <div className={styles.journey}>
-          {entry.completedJourney && (
-            <p className={styles.journeyLine}>
-              After completing <strong>{entry.completedJourney}</strong>
-            </p>
-          )}
-          {entry.reassessedSections.length > 0 && (
-            <p className={styles.journeyLine}>Reassessed: {entry.reassessedSections.join(", ")}</p>
-          )}
-        </div>
-      )}
-
-      <p className={styles.sumScore}>
-        {POINTS_FORMAT.format(entry.sumScore)} / {POINTS_FORMAT.format(entry.sumMaxScore)}
-        <span className={styles.sumPercent}>({percent(entry.sumScore, entry.sumMaxScore)}%)</span>
-      </p>
-
-      {/* Each module's score under the section it belongs to, A–E. */}
-      {entry.sections.map((section) => (
-        <div key={`${section.code ?? ""}|${section.name}`} className={styles.sectionGroup}>
-          <h3 className={styles.sectionName}>
-            {section.code ? `Section ${section.code} · ${section.name}` : section.name}
-          </h3>
-          <ul className={styles.areaList}>
-            {section.areas.map((area) => (
-              <li key={area.name} className={styles.areaRow}>
-                <span className={styles.areaName}>{area.name}</span>
-                <span className={styles.areaScore}>
-                  {POINTS_FORMAT.format(area.score)} / {POINTS_FORMAT.format(area.maxScore)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
+    <HistoryEntryCard
+      heading={`Assessment ${entry.instanceNum}`}
+      completedAt={entry.completedAt}
+      sumScore={entry.sumScore}
+      sumMaxScore={entry.sumMaxScore}
+      sections={entry.sections}
+      badge={
+        (entry.completedJourney || entry.reassessedSections.length > 0) && (
+          <div className={styles.journey}>
+            {entry.completedJourney && (
+              <p className={styles.journeyLine}>
+                After completing <strong>{entry.completedJourney}</strong>
+              </p>
+            )}
+            {entry.reassessedSections.length > 0 && (
+              <p className={styles.journeyLine}>
+                Reassessed: {entry.reassessedSections.join(", ")}
+              </p>
+            )}
+          </div>
+        )
+      }
+    />
   );
 }
 
@@ -82,9 +55,10 @@ const EMPTY_TAB_MESSAGE: Record<Tab, string> = {
  * bank), the same tab pattern as the dashboard's Overview/Detailed view.
  */
 export function HistoryPage() {
+  const location = useLocation();
   const [entries, setEntries] = useState<SatHistoryEntry[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [tab, setTab] = useState<Tab>("full");
+  const [tab, setTab] = useState<Tab>((location.state as { tab?: Tab } | null)?.tab ?? "full");
 
   useEffect(() => {
     getSatHistory()

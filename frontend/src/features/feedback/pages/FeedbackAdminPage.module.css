@@ -63,7 +63,9 @@
   color: var(--color-text);
 }
 
-.page {
+/* The app path the feedback was sent from. (Was `.page`, which clashed with
+   the page container's class above.) */
+.pagePath {
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   background: var(--color-bg);
@@ -93,4 +95,97 @@
   .card {
     padding: 14px 16px;
   }
+}
+
+/* Overall satisfaction across every rating: the median face, how many it's
+   based on, and a bar per face. */
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 32px;
+  padding: 16px 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
+.median {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+}
+
+.medianFace {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.medianText {
+  display: flex;
+  flex-direction: column;
+}
+
+.medianLabel {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.medianCount {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-md);
+}
+
+.spread {
+  flex: 1;
+  min-width: 220px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spreadRow {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr 2.5rem;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-md);
+}
+
+.spreadBar {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  overflow: hidden;
+}
+
+.spreadFill {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+}
+
+.spreadCount {
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
+/* A card's own rating, next to who sent it. */
+.cardRating {
+  color: var(--color-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Read out by screen readers, not shown. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

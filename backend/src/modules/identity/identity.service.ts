@@ -30,6 +30,47 @@ export function upsertLearnerFromGoogle(sub: string, email: string, name?: strin
   });
 }
 
+/**
+ * Email is required and unique on a learner, but ORCID only shares one the
+ * user made public. So: a *verified* email may link this ORCID iD to the
+ * learner that already has it (e.g. a Google account); in every other case —
+ * no email, unverified, or taken by a learner with a different ORCID iD — the
+ * account gets a placeholder address, and the ORCID iD is the real identity.
+ * As with Google, a later sign-in never overwrites the name.
+ */
+export async function upsertLearnerFromOrcid(
+  orcidId: string,
+  email: string | null,
+  emailVerified: boolean,
+  name?: string | null,
+) {
+  const existing = await prisma.learner.findUnique({ where: { orcidId }, include: learnerInclude });
+  if (existing) return existing;
+
+  const verifiedEmail = email && emailVerified ? email.toLowerCase() : null;
+  if (verifiedEmail) {
+    const sameEmail = await prisma.learner.findUnique({ where: { email: verifiedEmail } });
+    if (sameEmail && !sameEmail.orcidId) {
+      return prisma.learner.update({
+        where: { id: sameEmail.id },
+        data: { orcidId },
+        include: learnerInclude,
+      });
+    }
+    if (!sameEmail) {
+      return prisma.learner.create({
+        data: { email: verifiedEmail, name, orcidId },
+        include: learnerInclude,
+      });
+    }
+  }
+
+  return prisma.learner.create({
+    data: { email: `${orcidId}@orcid.invalid`, name, orcidId },
+    include: learnerInclude,
+  });
+}
+
 export function listRoles() {
   return prisma.role.findMany({ orderBy: { name: "asc" } });
 }
@@ -203,28 +244,4 @@ export async function getVisibilityMatrix() {
     prisma.roleCompetence.findMany({ select: { roleId: true, competenceId: true } }),
   ]);
   return { roles, sections, competences, roleSections, roleCompetences };
-}
-
-export function grantSection(roleId: string, sectionId: string, grantedByLearnerId: string) {
-  return prisma.roleSection.upsert({
-    where: { roleId_sectionId: { roleId, sectionId } },
-    update: {},
-    create: { roleId, sectionId, grantedByLearnerId },
-  });
-}
-
-export function revokeSection(roleId: string, sectionId: string) {
-  return prisma.roleSection.deleteMany({ where: { roleId, sectionId } });
-}
-
-export function grantCompetence(roleId: string, competenceId: string, grantedByLearnerId: string) {
-  return prisma.roleCompetence.upsert({
-    where: { roleId_competenceId: { roleId, competenceId } },
-    update: {},
-    create: { roleId, competenceId, grantedByLearnerId },
-  });
-}
-
-export function revokeCompetence(roleId: string, competenceId: string) {
-  return prisma.roleCompetence.deleteMany({ where: { roleId, competenceId } });
 }

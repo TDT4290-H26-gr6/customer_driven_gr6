@@ -1,9 +1,15 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { getMe, getToken, clearToken } from "@/features/auth";
-import { onUnauthorized } from "@/shared/api/client";
+import { isApiError, onUnauthorized } from "@/shared/api/client";
+import { withRetry } from "@/shared/api/retry";
 import type { Learner, Role } from "@/features/auth";
 
-type Status = "loading" | "signedOut" | "signedIn";
+/**
+ * "unreachable": there's a saved session, but checking it failed for a reason
+ * that says nothing about the session (no connection, a timeout, a server
+ * error). The learner stays signed in and can try again.
+ */
+type Status = "loading" | "signedOut" | "signedIn" | "unreachable";
 
 type AuthContextValue = {
   learner: Learner | null;
@@ -14,6 +20,8 @@ type AuthContextValue = {
   markInitialAssessmentComplete: () => void;
   /** Replaces the session's learner with a fresh copy from the backend (e.g. after saving the profile). */
   updateLearner: (learner: Learner) => void;
+  /** Checks the saved session again, after it was "unreachable". */
+  recheck: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -23,21 +31,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [learner, setLearner] = useState<Learner | null>(null);
   const [status, setStatus] = useState<Status>("loading");
 
-  useEffect(() => {
+  // Only the backend refusing the session (any 4xx: an expired token, an
+  // account that's gone) signs the learner out. No answer at all, or a server
+  // error, says nothing about the session (the proxy in front of the server
+  // can take many seconds to connect): dropping the token then would sign
+  // everyone out whenever the network is slow.
+  function checkSession() {
     if (!getToken()) {
       setStatus("signedOut");
       return;
     }
-    getMe()
+    setStatus("loading");
+    withRetry(getMe, { attempts: 2 })
       .then((me) => {
         setLearner(me);
         setStatus("signedIn");
       })
-      .catch(() => {
-        clearToken();
-        setStatus("signedOut");
+      .catch((err: unknown) => {
+        if (isApiError(err) && err.status >= 400 && err.status < 500) {
+          clearToken();
+          setStatus("signedOut");
+        } else {
+          setStatus("unreachable");
+        }
       });
-  }, []);
+  }
+
+  // On load; recheck() runs it again when the learner asks.
+  useEffect(checkSession, []);
 
   // Any request that comes back 401 means the session is dead (expired
   // token, deleted account). apiFetch already dropped the token; this signs
@@ -84,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         setRole,
         markInitialAssessmentComplete,
+        recheck: checkSession,
         updateLearner,
       }}
     >

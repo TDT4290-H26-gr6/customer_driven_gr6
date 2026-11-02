@@ -2,6 +2,7 @@
 export const endpoints = {
   auth: {
     google: "/auth/google",
+    orcid: "/auth/orcid",
     me: "/auth/me",
     myRole: "/auth/me/role",
     myPrivacyNotice: "/auth/me/privacy-notice",
@@ -29,6 +30,7 @@ export const endpoints = {
     start: "/assessment/start",
     journey: "/assessment/journey",
     history: "/assessment/history",
+    journeyHistory: "/assessment/journey-history",
   },
   admin: {
     visibility: "/admin/visibility",
@@ -49,9 +51,5 @@ export const endpoints = {
     curriculumJourneys: "/admin/curriculum/journeys",
     curriculumExport: "/admin/curriculum/export.json",
     curriculumChangeLog: "/admin/curriculum/changelog.csv",
-    roleSection: (roleId: string, sectionId: string) =>
-      `/admin/roles/${encodeURIComponent(roleId)}/sections/${encodeURIComponent(sectionId)}`,
-    roleCompetence: (roleId: string, competenceId: string) =>
-      `/admin/roles/${encodeURIComponent(roleId)}/competences/${encodeURIComponent(competenceId)}`,
   },
 } as const;
