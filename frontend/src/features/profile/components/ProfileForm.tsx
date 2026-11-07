@@ -181,8 +181,8 @@ export function ProfileForm({ onSaved, submitLabel = "Save", requireConsent = fa
           value={background}
           onChange={(e) => setBackground(e.target.value)}
           disabled={disabled}
-          maxLength={2000}
-          placeholder="E.g. PhD candidate in marine biology, working with large sensor datasets"
+          maxLength={50}
+          placeholder="E.g. PhD candidate in marine biology"
           rows={3}
           required
         />

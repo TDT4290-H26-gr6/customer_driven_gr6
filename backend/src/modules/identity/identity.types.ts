@@ -90,6 +90,7 @@ export type LearnerProfileInput = {
 };
 
 export const MAX_NAME_LENGTH = 100;
+const MAX_BACKGROUND_LENGTH = 50;
 const MAX_TEXT_LENGTH = 2000;
 
 /**
@@ -120,7 +121,7 @@ export function validateProfileInput(
   if (typeof background !== "string" || background.trim() === "") {
     return { error: "background is required" };
   }
-  if (background.trim().length > MAX_TEXT_LENGTH) return { error: "background is too long" };
+  if (background.trim().length > MAX_BACKGROUND_LENGTH) return { error: "background is too long" };
 
   if (typeof yearsOfExperience !== "number" || !Number.isInteger(yearsOfExperience)) {
     return { error: "yearsOfExperience must be a whole number" };

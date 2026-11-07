@@ -164,7 +164,7 @@ describe("validateProfileInput", () => {
     expect(validateProfileInput({ ...valid, background: " " })).toEqual({
       error: "background is required",
     });
-    expect(validateProfileInput({ ...valid, background: "x".repeat(2001) })).toEqual({
+    expect(validateProfileInput({ ...valid, background: "x".repeat(51) })).toEqual({
       error: "background is too long",
     });
   });
