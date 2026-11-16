@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "license": "LGPL-3.0-only",
+  "contributors": [
+    "Ragnar Dreier",
+    "Mats Albert Kamps",
+    "Oda Aasen Kjerstad",
+    "Daniel Duy Nguyen",
+    "Arman Zanjani"
+  ],
   "scripts": {
     "schema:prepare": "prisma db execute --schema=./prisma/schema --file ./prisma/pre-push.sql",
     "schema:push": "prisma db push --skip-generate",

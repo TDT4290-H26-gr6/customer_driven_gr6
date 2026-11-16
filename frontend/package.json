@@ -3,6 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "license": "LGPL-3.0-only",
+  "contributors": [
+    "Ragnar Dreier",
+    "Mats Albert Kamps",
+    "Oda Aasen Kjerstad",
+    "Daniel Duy Nguyen",
+    "Arman Zanjani"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
