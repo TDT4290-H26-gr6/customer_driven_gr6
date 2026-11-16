@@ -158,8 +158,8 @@ export function cancelDeletion(learnerId: string) {
 
 /**
  * Deletes one learner's personal data, if their deletion is (still) due ,
- * a cancel that lands first wins. Deleted: email, name and Google id (so
- * signing in again starts a new account), role, the whole profile
+ * a cancel that lands first wins. Deleted: email, name, Google id and
+ * ORCID iD (so signing in again starts a new account), role, the whole profile
  * (industry, degree, years of experience, background, goals), and the AI
  * advice (written from that profile, so it can repeat it). Kept for the
  * research: their assessments, answers and scores, journey
@@ -175,6 +175,7 @@ export function deletePersonalData(learnerId: string, now = new Date()) {
         email: null,
         name: null,
         googleSubId: null,
+        orcidId: null,
         roleId: null,
         deletionScheduledFor: null,
         deletedAt: now,
