@@ -135,4 +135,15 @@ them, rebuild it (the same command, or `... up -d --build frontend`).
 
 ## License
 
-Licensed under the GNU Lesser General Public License v3.0, see [LICENSE](LICENSE).
+Copyright (C) 2026 Ragnar Dreier, Mats Albert Kamps, Oda Aasen Kjerstad,
+Daniel Duy Nguyen and Arman Zanjani (see [AUTHORS](AUTHORS)).
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, version 3 only. It is distributed in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+The LGPL v3 is a set of additional permissions on top of the GNU General
+Public License v3, so both texts apply: [COPYING.LESSER](COPYING.LESSER) (LGPL)
+and [LICENSE](LICENSE) (GPL).
