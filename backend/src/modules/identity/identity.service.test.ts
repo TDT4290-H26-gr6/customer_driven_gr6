@@ -77,6 +77,7 @@ describe("account deletion", () => {
           email: null,
           name: null,
           googleSubId: null,
+          orcidId: null,
           roleId: null,
           deletionScheduledFor: null,
           deletedAt: now,

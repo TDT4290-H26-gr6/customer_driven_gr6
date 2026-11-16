@@ -7,7 +7,7 @@ model Learner {
   email                         String?  @unique // null once the personal data is deleted (see deletedAt)
   name                          String?
   googleSubId                   String?  @unique // "sub" claim from Google's ID token; null once deleted
-  orcidId                       String?  @unique // the learner's ORCID iD, e.g. 0000-0002-1825-0097
+  orcidId                       String?  @unique // the learner's ORCID iD, e.g. 0000-0002-1825-0097; null once deleted
   roleId                        String? // chosen persona (identity_role)
   userRole                      Role?    @relation(fields: [roleId], references: [id])
   hasCompletedInitialAssessment Boolean  @default(false) // true once every visible question in the first SAT instance is answered
